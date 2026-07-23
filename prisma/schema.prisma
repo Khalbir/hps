@@ -1,0 +1,318 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// USER & AUTHENTICATION
+// ============================================
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  phone         String?   @unique
+  firstName     String
+  lastName      String
+  avatar        String?
+  password      String
+  role          String    @default("CUSTOMER") // CUSTOMER, PROFESSIONAL, ADMIN
+  isVerified    Boolean   @default(false)
+  isActive      Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relations
+  professional  Professional?
+  bookings      Booking[]     @relation("CustomerBookings")
+  addresses     Address[]
+  reviews       Review[]      @relation("CustomerReviews")
+  wallet        Wallet?
+  payments      Payment[]
+  notifications Notification[]
+  sessions      Session[]
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ============================================
+// PROFESSIONAL PROFILES
+// ============================================
+
+model Professional {
+  id                 String    @id @default(cuid())
+  userId             String    @unique
+  bio                String?
+  skills             String    @default("[]") // JSON array stored as string
+  yearsExperience    Int       @default(0)
+  rating             Float     @default(0)
+  totalJobs          Int       @default(0)
+  isAvailable        Boolean   @default(true)
+  verificationStatus String    @default("PENDING") // PENDING, VERIFIED, REJECTED
+  documents          String    @default("{}") // JSON
+  bankName           String?
+  bankAccount        String?
+  accountName        String?
+  latitude           Float?
+  longitude          Float?
+  responseTime       Int?      // in minutes
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  // Relations
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bookings Booking[] @relation("ProfessionalBookings")
+  reviews  Review[]  @relation("ProfessionalReviews")
+  services ProfessionalService[]
+}
+
+model ProfessionalService {
+  id             String @id @default(cuid())
+  professionalId String
+  serviceId      String
+
+  professional Professional @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+  service      Service      @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+
+  @@unique([professionalId, serviceId])
+}
+
+// ============================================
+// SERVICES
+// ============================================
+
+model ServiceCategory {
+  id          String    @id @default(cuid())
+  name        String    @unique
+  slug        String    @unique
+  icon        String?
+  description String?
+  order       Int       @default(0)
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+
+  services Service[]
+}
+
+model Service {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  description String?
+  icon        String?
+  categoryId  String
+  basePrice   Float
+  priceUnit   String   @default("per service") // per service, per hour, per sqm
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  category      ServiceCategory       @relation(fields: [categoryId], references: [id])
+  bookings      Booking[]
+  professionals ProfessionalService[]
+  pricingRules  PricingRule[]
+}
+
+model PricingRule {
+  id           String @id @default(cuid())
+  serviceId    String
+  propertyType String // HOME, APARTMENT, OFFICE, COMMERCIAL
+  bedrooms     Int?
+  bathrooms    Int?
+  price        Float
+  description  String?
+
+  service Service @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+
+  @@unique([serviceId, propertyType, bedrooms, bathrooms])
+}
+
+// ============================================
+// BOOKINGS
+// ============================================
+
+model Booking {
+  id             String   @id @default(cuid())
+  reference      String   @unique @default(cuid())
+  customerId     String
+  professionalId String?
+  serviceId      String
+  status         String   @default("PENDING") // PENDING, CONFIRMED, IN_PROGRESS, COMPLETED, CANCELLED
+  scheduledDate  DateTime
+  scheduledTime  String
+  propertyType   String   @default("HOME")
+  bedrooms       Int?
+  bathrooms      Int?
+  address        String   // JSON
+  landmark       String?
+  specialNotes   String?
+  estimatedPrice Float
+  finalPrice     Float?
+  paymentStatus  String   @default("PENDING") // PENDING, PAID, PARTIALLY_PAID, REFUNDED
+  paymentMethod  String?
+  beforePhotos   String   @default("[]") // JSON array
+  afterPhotos    String   @default("[]") // JSON array
+  completionNote String?
+  cancelReason   String?
+  promoCodeId    String?
+  discountAmount Float    @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  // Relations
+  customer     User          @relation("CustomerBookings", fields: [customerId], references: [id])
+  professional Professional? @relation("ProfessionalBookings", fields: [professionalId], references: [id])
+  service      Service       @relation(fields: [serviceId], references: [id])
+  promoCode    PromoCode?    @relation(fields: [promoCodeId], references: [id])
+  payments     Payment[]
+  review       Review?
+}
+
+// ============================================
+// PAYMENTS
+// ============================================
+
+model Payment {
+  id        String   @id @default(cuid())
+  bookingId String
+  userId    String
+  amount    Float
+  currency  String   @default("NGN")
+  provider  String   @default("PAYSTACK") // PAYSTACK, FLUTTERWAVE, WALLET
+  reference String   @unique
+  status    String   @default("PENDING") // PENDING, SUCCESS, FAILED, REFUNDED
+  metadata  String   @default("{}") // JSON
+  createdAt DateTime @default(now())
+
+  booking Booking @relation(fields: [bookingId], references: [id])
+  user    User    @relation(fields: [userId], references: [id])
+}
+
+// ============================================
+// REVIEWS
+// ============================================
+
+model Review {
+  id             String   @id @default(cuid())
+  bookingId      String   @unique
+  customerId     String
+  professionalId String
+  rating         Int // 1-5
+  comment        String?
+  photos         String   @default("[]") // JSON array
+  createdAt      DateTime @default(now())
+
+  booking      Booking      @relation(fields: [bookingId], references: [id])
+  customer     User         @relation("CustomerReviews", fields: [customerId], references: [id])
+  professional Professional @relation("ProfessionalReviews", fields: [professionalId], references: [id])
+}
+
+// ============================================
+// ADDRESSES
+// ============================================
+
+model Address {
+  id        String  @id @default(cuid())
+  userId    String
+  label     String  @default("Home") // Home, Office, Other
+  address   String
+  city      String  @default("Abuja")
+  state     String  @default("FCT")
+  landmark  String?
+  latitude  Float?
+  longitude Float?
+  isDefault Boolean @default(false)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ============================================
+// WALLET
+// ============================================
+
+model Wallet {
+  id       String @id @default(cuid())
+  userId   String @unique
+  balance  Float  @default(0)
+  currency String @default("NGN")
+
+  user         User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions WalletTransaction[]
+}
+
+model WalletTransaction {
+  id          String   @id @default(cuid())
+  walletId    String
+  type        String   // CREDIT, DEBIT
+  amount      Float
+  description String
+  reference   String?
+  createdAt   DateTime @default(now())
+
+  wallet Wallet @relation(fields: [walletId], references: [id], onDelete: Cascade)
+}
+
+// ============================================
+// NOTIFICATIONS
+// ============================================
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  type      String   @default("SYSTEM") // BOOKING, PAYMENT, SYSTEM, PROMO
+  title     String
+  message   String
+  isRead    Boolean  @default(false)
+  data      String?  // JSON
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ============================================
+// PROMO CODES
+// ============================================
+
+model PromoCode {
+  id            String    @id @default(cuid())
+  code          String    @unique
+  discountType  String    @default("PERCENTAGE") // PERCENTAGE, FIXED
+  discountValue Float
+  maxUses       Int       @default(100)
+  usedCount     Int       @default(0)
+  minAmount     Float     @default(0)
+  maxDiscount   Float?
+  expiresAt     DateTime
+  isActive      Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+
+  bookings Booking[]
+}
+
+// ============================================
+// AUDIT LOG
+// ============================================
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String?
+  action    String
+  entity    String
+  entityId  String?
+  details   String?  // JSON
+  ipAddress String?
+  createdAt DateTime @default(now())
+}

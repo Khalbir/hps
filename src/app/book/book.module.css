@@ -1,0 +1,192 @@
+/* ============================================
+   BOOKING PAGE LAYOUT
+   ============================================ */
+
+.page {
+  min-height: 100vh;
+  background: var(--bg-secondary);
+}
+
+/* Header */
+.header {
+  background: var(--bg-primary);
+  border-bottom: 1px solid var(--border-primary);
+  position: sticky;
+  top: 0;
+  z-index: 20;
+}
+
+.headerInner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-block: var(--space-4);
+}
+
+.backBtn {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-medium);
+  color: var(--text-secondary);
+  text-decoration: none;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  transition: color var(--duration-short) var(--ease-default);
+}
+
+.backBtn:hover {
+  color: var(--text-primary);
+  background: var(--bg-tertiary);
+}
+
+.headerTitle {
+  text-align: center;
+}
+
+.stepLabel {
+  font-size: var(--fs-xs);
+  color: var(--color-primary-500);
+  font-weight: var(--fw-semibold);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.stepName {
+  font-family: var(--font-display);
+  font-size: var(--fs-lg);
+  font-weight: var(--fw-bold);
+  color: var(--text-primary);
+}
+
+.headerSpacer {
+  width: 80px;
+}
+
+/* Progress */
+.progressWrapper {
+  background: var(--bg-primary);
+  padding: 0 var(--space-8) var(--space-5);
+}
+
+.progressBar {
+  height: 4px;
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+  margin-bottom: var(--space-4);
+}
+
+.progressFill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--color-primary-500), var(--color-accent-500));
+  border-radius: var(--radius-full);
+}
+
+.progressSteps {
+  display: flex;
+  justify-content: space-between;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.progressStep {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+}
+
+.progressStep:disabled {
+  cursor: default;
+}
+
+.progressDot {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-full);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-bold);
+  background: var(--bg-tertiary);
+  color: var(--text-tertiary);
+  border: 2px solid var(--border-primary);
+  transition: all var(--duration-short) var(--ease-default);
+}
+
+.progressStepActive .progressDot {
+  background: var(--color-primary-500);
+  color: white;
+  border-color: var(--color-primary-500);
+}
+
+.progressStepCurrent .progressDot {
+  box-shadow: 0 0 0 4px rgba(14, 165, 233, 0.2);
+}
+
+.progressDotLabel {
+  font-size: 10px;
+  color: var(--text-tertiary);
+  font-weight: var(--fw-medium);
+}
+
+.progressStepActive .progressDotLabel {
+  color: var(--color-primary-500);
+}
+
+/* Content Grid */
+.content {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: var(--space-8);
+  padding-block: var(--space-8);
+  align-items: start;
+}
+
+.mainCol {
+  min-width: 0;
+}
+
+.sideCol {
+  position: sticky;
+  top: calc(120px + var(--space-8));
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .content {
+    grid-template-columns: 1fr;
+  }
+  .sideCol {
+    position: static;
+    order: -1;
+  }
+  .progressDotLabel {
+    display: none;
+  }
+}
+
+@media (max-width: 768px) {
+  .progressWrapper {
+    padding: 0 var(--space-4) var(--space-4);
+  }
+  .headerInner {
+    padding-inline: var(--space-4);
+  }
+  .stepName {
+    font-size: var(--fs-base);
+  }
+  .headerSpacer {
+    width: 60px;
+  }
+}
