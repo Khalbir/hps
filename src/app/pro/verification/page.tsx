@@ -1,12 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import {
   ShieldCheck, User, UploadCloud, CheckCircle, AlertTriangle,
   ArrowRight, ArrowLeft, FileText, Camera, Users, Award, Sparkles,
-  HelpCircle, Check, X, ShieldAlert,
+  HelpCircle, Check, X, ShieldAlert, Loader2, Image as ImageIcon
 } from "lucide-react";
 import { getQuizForCategory, QuizQuestion } from "@/lib/quiz";
 import styles from "../pro.module.css";
@@ -27,12 +27,48 @@ export default function ProVerificationPage() {
   const [category, setCategory] = useState("plumbing");
   const [idType, setIdType] = useState("NIN");
   const [idNumber, setIdNumber] = useState("");
-  const [idUploaded, setIdUploaded] = useState(false);
-  const [selfieUploaded, setSelfieUploaded] = useState(false);
 
-  // Step 2 State
-  const [certUploaded, setCertUploaded] = useState(false);
-  const [portfolioCount, setPortfolioCount] = useState(0);
+  // Document Upload States
+  const [idDocumentUrl, setIdDocumentUrl] = useState("");
+  const [idUploading, setIdUploading] = useState(false);
+
+  const [selfieUrl, setSelfieUrl] = useState("");
+  const [selfieUploading, setSelfieUploading] = useState(false);
+
+  const [tradeCertUrl, setTradeCertUrl] = useState("");
+  const [certUploading, setCertUploading] = useState(false);
+
+  const [portfolioUrls, setPortfolioUrls] = useState<string[]>([]);
+  const [portfolioUploading, setPortfolioUploading] = useState<boolean[]>([false, false, false, false]);
+
+  // Hidden File Input References
+  const idInputRef = useRef<HTMLInputElement>(null);
+  const selfieInputRef = useRef<HTMLInputElement>(null);
+  const certInputRef = useRef<HTMLInputElement>(null);
+  const portfolioInputRefs = [
+    useRef<HTMLInputElement>(null),
+    useRef<HTMLInputElement>(null),
+    useRef<HTMLInputElement>(null),
+    useRef<HTMLInputElement>(null),
+  ];
+
+  // Helper Supabase File Upload Function
+  const uploadToSupabase = async (file: File, folder: string): Promise<string> => {
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("folder", folder);
+
+    const res = await fetch("/api/upload", {
+      method: "POST",
+      body: formData,
+    });
+
+    const data = await res.json();
+    if (res.ok && data.url) {
+      return data.url;
+    }
+    throw new Error(data.error || "Upload failed");
+  };
 
   // Step 3 State
   const [g1, setG1] = useState({ name: "", phone: "", relationship: "Landlord / Community Leader", nin: "" });
@@ -73,10 +109,10 @@ export default function ProVerificationPage() {
           userId: "pro-user-demo-id",
           idType,
           idNumber,
-          idDocumentUrl: "https://handyhub.ng/docs/id_nin_sample.jpg",
-          selfieUrl: "https://handyhub.ng/docs/selfie_sample.jpg",
-          tradeCertUrl: "https://handyhub.ng/docs/trade_cert.pdf",
-          portfolioUrls: [
+          idDocumentUrl: idDocumentUrl || "https://handyhub.ng/docs/id_nin_sample.jpg",
+          selfieUrl: selfieUrl || "https://handyhub.ng/docs/selfie_sample.jpg",
+          tradeCertUrl: tradeCertUrl || "https://handyhub.ng/docs/trade_cert.pdf",
+          portfolioUrls: portfolioUrls.length > 0 ? portfolioUrls : [
             "https://handyhub.ng/docs/portfolio_1.jpg",
             "https://handyhub.ng/docs/portfolio_2.jpg",
           ],
@@ -242,21 +278,90 @@ export default function ProVerificationPage() {
                     />
                   </div>
 
+                  {/* Step 1 Supabase File Uploads */}
                   <div className={styles.uploadRow}>
+                    <input
+                      type="file"
+                      ref={idInputRef}
+                      style={{ display: "none" }}
+                      accept="image/*,application/pdf"
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        setIdUploading(true);
+                        try {
+                          const url = await uploadToSupabase(file, "government_ids");
+                          setIdDocumentUrl(url);
+                        } catch (err: any) {
+                          alert(err.message || "Failed to upload ID document");
+                        } finally {
+                          setIdUploading(false);
+                        }
+                      }}
+                    />
                     <div
-                      className={`${styles.uploadBox} ${idUploaded ? styles.uploadBoxDone : ""}`}
-                      onClick={() => setIdUploaded(!idUploaded)}
+                      className={`${styles.uploadBox} ${idDocumentUrl ? styles.uploadBoxDone : ""}`}
+                      onClick={() => idInputRef.current?.click()}
+                      style={{ cursor: "pointer", position: "relative" }}
                     >
-                      <UploadCloud size={24} />
-                      <span>{idUploaded ? "✓ Front & Back ID Uploaded" : "Upload ID Document Photo"}</span>
+                      {idUploading ? (
+                        <>
+                          <Loader2 size={24} className="animate-spin" color="#0EA5E9" />
+                          <span>Uploading ID to Supabase...</span>
+                        </>
+                      ) : idDocumentUrl ? (
+                        <>
+                          <CheckCircle size={24} color="#10B981" />
+                          <span style={{ color: "#10B981" }}>✓ ID Photo Uploaded to Supabase</span>
+                        </>
+                      ) : (
+                        <>
+                          <UploadCloud size={24} />
+                          <span>Upload Government ID Document Photo</span>
+                        </>
+                      )}
                     </div>
 
+                    <input
+                      type="file"
+                      ref={selfieInputRef}
+                      style={{ display: "none" }}
+                      accept="image/*"
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        setSelfieUploading(true);
+                        try {
+                          const url = await uploadToSupabase(file, "selfies");
+                          setSelfieUrl(url);
+                        } catch (err: any) {
+                          alert(err.message || "Failed to upload selfie photo");
+                        } finally {
+                          setSelfieUploading(false);
+                        }
+                      }}
+                    />
                     <div
-                      className={`${styles.uploadBox} ${selfieUploaded ? styles.uploadBoxDone : ""}`}
-                      onClick={() => setSelfieUploaded(!selfieUploaded)}
+                      className={`${styles.uploadBox} ${selfieUrl ? styles.uploadBoxDone : ""}`}
+                      onClick={() => selfieInputRef.current?.click()}
+                      style={{ cursor: "pointer", position: "relative" }}
                     >
-                      <Camera size={24} />
-                      <span>{selfieUploaded ? "✓ Live Selfie Uploaded" : "Take Live Facial Verification Photo"}</span>
+                      {selfieUploading ? (
+                        <>
+                          <Loader2 size={24} className="animate-spin" color="#0EA5E9" />
+                          <span>Uploading Selfie to Supabase...</span>
+                        </>
+                      ) : selfieUrl ? (
+                        <>
+                          <CheckCircle size={24} color="#10B981" />
+                          <span style={{ color: "#10B981" }}>✓ Live Selfie Uploaded to Supabase</span>
+                        </>
+                      ) : (
+                        <>
+                          <Camera size={24} />
+                          <span>Take Live Facial Verification Photo</span>
+                        </>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -266,7 +371,7 @@ export default function ProVerificationPage() {
                   <button
                     className="btn btn-primary btn-md"
                     onClick={() => setStep(2)}
-                    disabled={!idNumber || !idUploaded || !selfieUploaded}
+                    disabled={!idNumber || (!idDocumentUrl && !idUploading) || (!selfieUrl && !selfieUploading)}
                   >
                     Continue to Trade Credentials
                     <ArrowRight size={18} />
@@ -289,32 +394,112 @@ export default function ProVerificationPage() {
                 <div className={styles.formGrid}>
                   <div className={styles.uploadArea}>
                     <label className={styles.label}>Trade Certificate / Master Apprenticeship Document</label>
+                    <input
+                      type="file"
+                      ref={certInputRef}
+                      style={{ display: "none" }}
+                      accept="image/*,application/pdf"
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        setCertUploading(true);
+                        try {
+                          const url = await uploadToSupabase(file, "certificates");
+                          setTradeCertUrl(url);
+                        } catch (err: any) {
+                          alert(err.message || "Failed to upload trade certificate");
+                        } finally {
+                          setCertUploading(false);
+                        }
+                      }}
+                    />
                     <div
-                      className={`${styles.uploadBoxLarge} ${certUploaded ? styles.uploadBoxDone : ""}`}
-                      onClick={() => setCertUploaded(!certUploaded)}
+                      className={`${styles.uploadBoxLarge} ${tradeCertUrl ? styles.uploadBoxDone : ""}`}
+                      onClick={() => certInputRef.current?.click()}
+                      style={{ cursor: "pointer" }}
                     >
-                      <FileText size={32} />
-                      <span>
-                        {certUploaded
-                          ? "✓ Trade License / Apprenticeship Certificate Uploaded"
-                          : "Upload Trade Certificate, License, or Master Craftsman Apprenticeship Document"}
-                      </span>
+                      {certUploading ? (
+                        <>
+                          <Loader2 size={32} className="animate-spin" color="#0EA5E9" />
+                          <span>Uploading Trade Document to Supabase...</span>
+                        </>
+                      ) : tradeCertUrl ? (
+                        <>
+                          <CheckCircle size={32} color="#10B981" />
+                          <span style={{ color: "#10B981" }}>✓ Trade Certificate Saved on Supabase</span>
+                        </>
+                      ) : (
+                        <>
+                          <FileText size={32} />
+                          <span>Upload Trade Certificate, License, or Master Craftsman Apprenticeship Document</span>
+                        </>
+                      )}
                     </div>
                   </div>
 
                   <div className={styles.uploadArea}>
-                    <label className={styles.label}>Past Work Portfolio (Upload 3-5 Photos of Past Completed Jobs)</label>
+                    <label className={styles.label}>Past Work Portfolio (Upload Up to 4 Photos of Past Jobs)</label>
                     <div className={styles.portfolioGrid}>
-                      {[1, 2, 3].map((num) => (
-                        <div
-                          key={num}
-                          className={`${styles.portfolioBox} ${portfolioCount >= num ? styles.uploadBoxDone : ""}`}
-                          onClick={() => setPortfolioCount(Math.max(portfolioCount, num))}
-                        >
-                          <Camera size={20} />
-                          <span>{portfolioCount >= num ? `✓ Job Photo #${num}` : `+ Add Work Photo #${num}`}</span>
-                        </div>
-                      ))}
+                      {[0, 1, 2, 3].map((idx) => {
+                        const num = idx + 1;
+                        const hasUrl = Boolean(portfolioUrls[idx]);
+                        const isUploading = portfolioUploading[idx];
+
+                        return (
+                          <div key={idx}>
+                            <input
+                              type="file"
+                              ref={portfolioInputRefs[idx]}
+                              style={{ display: "none" }}
+                              accept="image/*"
+                              onChange={async (e) => {
+                                const file = e.target.files?.[0];
+                                if (!file) return;
+                                setPortfolioUploading((prev) => {
+                                  const next = [...prev];
+                                  next[idx] = true;
+                                  return next;
+                                });
+                                try {
+                                  const url = await uploadToSupabase(file, "portfolio");
+                                  setPortfolioUrls((prev) => {
+                                    const next = [...prev];
+                                    next[idx] = url;
+                                    return next;
+                                  });
+                                } catch (err: any) {
+                                  alert(err.message || "Failed to upload portfolio photo");
+                                } finally {
+                                  setPortfolioUploading((prev) => {
+                                    const next = [...prev];
+                                    next[idx] = false;
+                                    return next;
+                                  });
+                                }
+                              }}
+                            />
+                            <div
+                              className={`${styles.portfolioBox} ${hasUrl ? styles.uploadBoxDone : ""}`}
+                              onClick={() => portfolioInputRefs[idx].current?.click()}
+                              style={{ cursor: "pointer" }}
+                            >
+                              {isUploading ? (
+                                <Loader2 size={20} className="animate-spin" color="#0EA5E9" />
+                              ) : hasUrl ? (
+                                <>
+                                  <CheckCircle size={20} color="#10B981" />
+                                  <span style={{ fontSize: "11px", color: "#10B981" }}>✓ Job #{num} Saved</span>
+                                </>
+                              ) : (
+                                <>
+                                  <Camera size={20} />
+                                  <span>+ Add Photo #{num}</span>
+                                </>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
                 </div>
