@@ -30,17 +30,35 @@ export default function LoginPage() {
       const data = await res.json();
 
       if (!res.ok) {
-        setError(data.error || "Invalid credentials");
+        setError(data.error || "Invalid email or password");
         setLoading(false);
         return;
       }
 
-      // Redirect based on role
+      // Store Session Tokens & Cookies according to Role
       if (data.user.role === "ADMIN") {
-        router.push("/admin");
+        localStorage.setItem("handyhub_admin_session", JSON.stringify({
+          authenticated: true,
+          user: data.user,
+          timestamp: Date.now(),
+        }));
+        document.cookie = "handyhub_admin_session=authenticated; path=/; max-age=86400; SameSite=Lax";
+        router.push("/admin/dashboard");
       } else if (data.user.role === "PROFESSIONAL") {
+        localStorage.setItem("handyhub_pro_session", JSON.stringify({
+          authenticated: true,
+          user: data.user,
+          timestamp: Date.now(),
+        }));
+        document.cookie = "handyhub_pro_session=authenticated; path=/; max-age=86400; SameSite=Lax";
         router.push("/pro");
       } else {
+        localStorage.setItem("handyhub_user_session", JSON.stringify({
+          authenticated: true,
+          user: data.user,
+          timestamp: Date.now(),
+        }));
+        document.cookie = "handyhub_user_session=authenticated; path=/; max-age=86400; SameSite=Lax";
         router.push("/dashboard");
       }
     } catch {
