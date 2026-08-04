@@ -3,18 +3,23 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, X, Sun, Moon, ChevronDown, Phone, MessageSquare } from "lucide-react";
+import {
+  Sparkles, Wrench, Zap, SnowFlake, Paintbrush, Hammer, Camera, SunMedium,
+  Menu, X, Sun, Moon, ChevronDown, Phone, MessageSquare, ArrowRight, Layers
+} from "lucide-react";
 import { useTheme } from "@/components/ThemeProvider";
 import styles from "./Header.module.css";
 
 const services = [
-  { name: "Residential Cleaning", href: "/book?category=cleaning&service=residential-cleaning" },
-  { name: "Commercial Cleaning", href: "/book?category=cleaning&service=commercial-cleaning" },
-  { name: "Plumbing", href: "/book?category=plumbing&service=pipe-repairs" },
-  { name: "Electrical Repairs", href: "/book?category=electrical&service=socket-switch" },
-  { name: "AC Installation & Repair", href: "/book?category=hvac&service=ac-repair" },
-  { name: "Painting", href: "/book?category=painting&service=interior-painting" },
-  { name: "View All Services →", href: "/book" },
+  { name: "Cleaning Services", desc: "Residential, Deep & Office Cleaning", href: "/book?category=cleaning", icon: Sparkles },
+  { name: "Plumbing Services", desc: "Pipe Leak Repairs, Pumps & Drainage", href: "/book?category=plumbing", icon: Wrench },
+  { name: "Electrical Repairs", desc: "Wiring, Socket Fixes & Fault Checks", href: "/book?category=electrical", icon: Zap },
+  { name: "AC Servicing & Repair", desc: "Gas Refill, Installation & Maintenance", href: "/book?category=hvac", icon: SnowFlake },
+  { name: "Painting & Wall Deco", desc: "Interior, Exterior & POP Finishing", href: "/book?category=painting", icon: Paintbrush },
+  { name: "Carpentry & Woodwork", desc: "Furniture Assembly, Doors & Locks", href: "/book?category=carpentry", icon: Hammer },
+  { name: "CCTV & Security", desc: "Smart Cameras & Intercom Setup", href: "/book?category=cctv", icon: Camera },
+  { name: "Solar & Inverter Setup", desc: "Clean Power & Solar System Install", href: "/book?category=solar", icon: SunMedium },
+  { name: "View Full Service Catalog →", desc: "Explore all 25+ verified home solutions", href: "/services", icon: Layers },
 ];
 
 export function Header() {
@@ -22,6 +27,7 @@ export function Header() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [servicesOpen, setServicesOpen] = useState(false);
+  const [mobileServicesOpen, setMobileServicesOpen] = useState(true);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -66,7 +72,12 @@ export function Header() {
               onMouseEnter={() => setServicesOpen(true)}
               onMouseLeave={() => setServicesOpen(false)}
             >
-              <button className={styles.navLink} aria-expanded={servicesOpen} aria-haspopup="true">
+              <button
+                className={styles.navLink}
+                aria-expanded={servicesOpen}
+                aria-haspopup="true"
+                onClick={() => setServicesOpen(!servicesOpen)}
+              >
                 Services
                 <ChevronDown
                   size={16}
@@ -81,17 +92,26 @@ export function Header() {
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: 8, scale: 0.96 }}
                     transition={{ duration: 0.2, ease: [0, 0, 0.2, 1] }}
+                    style={{ width: 340 }}
                   >
-                    {services.map((s) => (
-                      <Link
-                        key={s.name}
-                        href={s.href}
-                        className={styles.dropdownItem}
-                        onClick={() => setServicesOpen(false)}
-                      >
-                        {s.name}
-                      </Link>
-                    ))}
+                    {services.map((s) => {
+                      const IconComponent = s.icon;
+                      return (
+                        <Link
+                          key={s.name}
+                          href={s.href}
+                          className={styles.dropdownItem}
+                          onClick={() => setServicesOpen(false)}
+                          style={{ display: "flex", alignItems: "flex-start", gap: 12, padding: "10px 12px" }}
+                        >
+                          <IconComponent size={18} color="var(--color-primary-500)" style={{ flexShrink: 0, marginTop: 2 }} />
+                          <div>
+                            <strong style={{ display: "block", fontSize: "13px", color: "var(--text-primary)" }}>{s.name}</strong>
+                            <span style={{ fontSize: "11px", color: "var(--text-tertiary)" }}>{s.desc}</span>
+                          </div>
+                        </Link>
+                      );
+                    })}
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -180,26 +200,51 @@ export function Header() {
                   </button>
                 </div>
                 <div className={styles.mobileLinks}>
-                  <Link
-                    href="/services"
-                    className={styles.mobileLink}
-                    onClick={() => setMobileOpen(false)}
-                  >
-                    Services
-                  </Link>
+                  <div>
+                    <button
+                      className={styles.mobileLink}
+                      onClick={() => setMobileServicesOpen(!mobileServicesOpen)}
+                      style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between" }}
+                    >
+                      <span>Our Services</span>
+                      <ChevronDown
+                        size={18}
+                        style={{ transform: mobileServicesOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s ease" }}
+                      />
+                    </button>
+                    {mobileServicesOpen && (
+                      <div style={{ paddingLeft: 12, borderLeft: "2px solid var(--color-primary-500)", margin: "4px 0 12px 12px", display: "flex", flexDirection: "column", gap: 6 }}>
+                        {services.map((s) => {
+                          const IconComp = s.icon;
+                          return (
+                            <Link
+                              key={s.name}
+                              href={s.href}
+                              className={styles.mobileSubLink}
+                              onClick={() => setMobileOpen(false)}
+                              style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 10px", borderRadius: 6, fontSize: "13px", color: "var(--text-secondary)" }}
+                            >
+                              <IconComp size={16} color="var(--color-primary-500)" style={{ flexShrink: 0 }} />
+                              <span>{s.name}</span>
+                            </Link>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
                   <Link
                     href="/about"
                     className={styles.mobileLink}
                     onClick={() => setMobileOpen(false)}
                   >
-                    About
+                    About Us
                   </Link>
                   <Link
                     href="/contact"
                     className={styles.mobileLink}
                     onClick={() => setMobileOpen(false)}
                   >
-                    Contact
+                    Contact & Support
                   </Link>
                   <div className={styles.mobileDivider} />
                   <Link
