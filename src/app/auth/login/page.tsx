@@ -167,11 +167,6 @@ export default function LoginPage() {
             </button>
           </div>
 
-          <p className={styles.testCreds}>
-            <strong>Test accounts:</strong><br />
-            Customer: customer@test.com / Customer123!<br />
-            Admin: admin@handyhubpro.ng / AdminPass123!
-          </p>
         </motion.div>
       </div>
     </div>

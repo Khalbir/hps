@@ -6,8 +6,9 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 // ============================================
@@ -25,6 +26,8 @@ model User {
   role          String    @default("CUSTOMER") // CUSTOMER, PROFESSIONAL, ADMIN
   isVerified    Boolean   @default(false)
   isActive      Boolean   @default(true)
+  verificationToken String?
+  tokenExpires  DateTime?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
@@ -244,23 +247,44 @@ model Address {
 // ============================================
 
 model Wallet {
-  id       String @id @default(cuid())
-  userId   String @unique
-  balance  Float  @default(0)
-  currency String @default("NGN")
+  id            String @id @default(cuid())
+  userId        String @unique
+  balance       Float  @default(0)
+  pendingEscrow Float  @default(0)
+  currency      String @default("NGN")
 
   user         User              @relation(fields: [userId], references: [id], onDelete: Cascade)
   transactions WalletTransaction[]
+  withdrawals  WithdrawalRequest[]
 }
 
 model WalletTransaction {
   id          String   @id @default(cuid())
   walletId    String
-  type        String   // CREDIT, DEBIT
+  type        String   // CREDIT, DEBIT, ESCROW_HOLD, ESCROW_RELEASE
   amount      Float
   description String
   reference   String?
+  gateway     String?  // PAYSTACK, FLUTTERWAVE, WALLET
   createdAt   DateTime @default(now())
+
+  wallet Wallet @relation(fields: [walletId], references: [id], onDelete: Cascade)
+}
+
+model WithdrawalRequest {
+  id            String   @id @default(cuid())
+  walletId      String
+  amount        Float
+  bankCode      String
+  bankName      String
+  accountNumber String
+  accountName   String
+  status        String   @default("PENDING") // PENDING, PROCESSING, COMPLETED, FAILED
+  reference     String   @unique
+  transferCode  String?
+  failureReason String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   wallet Wallet @relation(fields: [walletId], references: [id], onDelete: Cascade)
 }

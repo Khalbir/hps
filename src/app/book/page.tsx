@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
@@ -11,6 +12,7 @@ import { StepTechnician } from "@/components/features/booking/StepTechnician";
 import { StepPayment } from "@/components/features/booking/StepPayment";
 import { StepConfirmation } from "@/components/features/booking/StepConfirmation";
 import { BookingSummary } from "@/components/features/booking/BookingSummary";
+import { resolveServiceCategory } from "@/lib/services";
 import styles from "./book.module.css";
 
 export interface BookingData {
@@ -35,6 +37,7 @@ export interface BookingData {
   promoCode: string;
   discountAmount: number;
   totalPrice: number;
+  initialQuery?: string;
 }
 
 const initialBookingData: BookingData = {
@@ -70,10 +73,33 @@ const stepTitles = [
   "Confirmation",
 ];
 
-export default function BookPage() {
+function BookingContent() {
+  const searchParams = useSearchParams();
   const [step, setStep] = useState(1);
   const [booking, setBooking] = useState<BookingData>(initialBookingData);
   const [direction, setDirection] = useState(1);
+
+  useEffect(() => {
+    const categoryParam = searchParams.get("category");
+    const serviceParam = searchParams.get("service");
+    const queryParam = searchParams.get("query");
+
+    if (categoryParam || serviceParam || queryParam) {
+      const resolved = resolveServiceCategory({
+        categoryParam,
+        serviceParam,
+        queryParam,
+      });
+
+      if (resolved.categoryId) {
+        setBooking((prev) => ({
+          ...prev,
+          serviceCategory: resolved.categoryId || "",
+          initialQuery: queryParam || undefined,
+        }));
+      }
+    }
+  }, [searchParams]);
 
   const updateBooking = (updates: Partial<BookingData>) => {
     setBooking((prev) => ({ ...prev, ...updates }));
@@ -204,5 +230,13 @@ export default function BookPage() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function BookPage() {
+  return (
+    <Suspense fallback={<div style={{ padding: "4rem", textAlign: "center" }}>Loading booking page...</div>}>
+      <BookingContent />
+    </Suspense>
   );
 }

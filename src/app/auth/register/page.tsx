@@ -4,8 +4,25 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { Mail, Lock, Eye, EyeOff, User, Phone, ArrowRight } from "lucide-react";
+import { Mail, Lock, Eye, EyeOff, User, Phone, ArrowRight, Wrench, Sparkles, HeartHandshake } from "lucide-react";
 import styles from "../auth.module.css";
+
+const PRO_SERVICE_OPTIONS = [
+  { value: "cleaning", label: "Cleaning (Residential, Commercial, Deep Cleaning)" },
+  { value: "plumbing", label: "Plumbing (Pipes, Drainage, Water Heaters)" },
+  { value: "electrical", label: "Electrical (Wiring, Sockets, Lighting)" },
+  { value: "hvac", label: "AC & HVAC (Installation, Servicing, Repairs)" },
+  { value: "painting", label: "Painting (Interior & Exterior)" },
+  { value: "carpentry", label: "Carpentry & Furniture Assembly" },
+  { value: "security", label: "Security & CCTV Installation" },
+  { value: "solar", label: "Solar & Power (Panels, Inverters, Generators)" },
+  { value: "home-improvement", label: "Home Improvement & Renovation" },
+  { value: "outdoor", label: "Gardening & Landscaping" },
+  { value: "laundry", label: "Laundry & Garment Care" },
+  { value: "moving", label: "Moving & Relocation Services" },
+  { value: "general", label: "General Handyman" },
+  { value: "others", label: "Others (Skillset Not Listed)" },
+];
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -17,6 +34,8 @@ export default function RegisterPage() {
     password: "",
     confirmPassword: "",
     role: "CUSTOMER" as "CUSTOMER" | "PROFESSIONAL",
+    serviceCategory: "",
+    customSkill: "",
   });
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
@@ -39,6 +58,17 @@ export default function RegisterPage() {
       return;
     }
 
+    if (form.role === "PROFESSIONAL") {
+      if (!form.serviceCategory) {
+        setError("Please select your primary service field / skillset.");
+        return;
+      }
+      if (form.serviceCategory === "others" && !form.customSkill.trim()) {
+        setError("Please specify your skillset.");
+        return;
+      }
+    }
+
     setLoading(true);
 
     try {
@@ -52,6 +82,8 @@ export default function RegisterPage() {
           phone: form.phone,
           password: form.password,
           role: form.role,
+          serviceCategory: form.role === "PROFESSIONAL" ? form.serviceCategory : undefined,
+          customSkill: form.role === "PROFESSIONAL" && form.serviceCategory === "others" ? form.customSkill.trim() : undefined,
         }),
       });
 
@@ -166,6 +198,64 @@ export default function RegisterPage() {
                 </div>
               </div>
             </div>
+
+            {/* Mandatory Service Field Selection for Professionals */}
+            {form.role === "PROFESSIONAL" && (
+              <div className={styles.inputGroup}>
+                <label className={styles.label}>
+                  Primary Service / Skillset <span style={{ color: "#EF4444" }}>*</span>
+                </label>
+                <div className={styles.inputWrap}>
+                  <Wrench size={18} className={styles.inputIcon} />
+                  <select
+                    className={styles.input}
+                    value={form.serviceCategory}
+                    onChange={(e) => update("serviceCategory", e.target.value)}
+                    required
+                    style={{ cursor: "pointer" }}
+                  >
+                    <option value="" disabled>
+                      -- Select your service skillset --
+                    </option>
+                    {PRO_SERVICE_OPTIONS.map((opt) => (
+                      <option key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            )}
+
+            {/* Custom Skill Input & Appreciation Banner if "Others" Selected */}
+            {form.role === "PROFESSIONAL" && form.serviceCategory === "others" && (
+              <div className={styles.inputGroup}>
+                <label className={styles.label}>
+                  Specify Your Skillset <span style={{ color: "#EF4444" }}>*</span>
+                </label>
+                <div className={styles.inputWrap}>
+                  <Sparkles size={18} className={styles.inputIcon} />
+                  <input
+                    type="text"
+                    className={styles.input}
+                    placeholder="e.g., Roofing, Locksmith, Pest Control..."
+                    value={form.customSkill}
+                    onChange={(e) => update("customSkill", e.target.value)}
+                    required
+                  />
+                </div>
+
+                <div className={styles.otherSkillBanner}>
+                  <div className={styles.bannerHeader}>
+                    <HeartHandshake size={20} className={styles.bannerIcon} />
+                    <span>Skillset Taken Under Consideration</span>
+                  </div>
+                  <p className={styles.bannerText}>
+                    Your skillset is not listed on our services for the moment, but we do appreciate your support and your skillset will be taken under consideration.
+                  </p>
+                </div>
+              </div>
+            )}
 
             <div className={styles.inputGroup}>
               <label className={styles.label}>Email Address</label>

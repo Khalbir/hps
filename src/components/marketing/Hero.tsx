@@ -1,22 +1,27 @@
 "use client";
 
-import { useRef } from "react";
+import { useState, useRef, FormEvent } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { motion, useInView } from "framer-motion";
 import { Search, ArrowRight, Shield, Star, Clock, Sparkles } from "lucide-react";
+import { POPULAR_SUGGESTIONS, getBookingUrl } from "@/lib/services";
 import styles from "./Hero.module.css";
-
-const suggestions = [
-  "My kitchen sink is leaking",
-  "I need a deep cleaning",
-  "AC not cooling properly",
-  "Install CCTV cameras",
-  "Paint my living room",
-];
 
 export function Hero() {
   const ref = useRef(null);
   const isInView = useInView(ref, { once: true });
+  const router = useRouter();
+  const [query, setQuery] = useState("");
+
+  const handleSearchSubmit = (e: FormEvent) => {
+    e.preventDefault();
+    if (query.trim()) {
+      router.push(`/book?query=${encodeURIComponent(query.trim())}`);
+    } else {
+      router.push("/book");
+    }
+  };
 
   return (
     <section className={styles.hero} ref={ref}>
@@ -70,25 +75,31 @@ export function Hero() {
             animate={isInView ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.6, delay: 0.4 }}
           >
-            <div className={styles.searchBar}>
+            <form onSubmit={handleSearchSubmit} className={styles.searchBar}>
               <Search size={22} className={styles.searchIcon} />
               <input
                 type="text"
-                placeholder="What do you need help with?"
+                placeholder="What do you need help with? e.g. My kitchen sink is leaking"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
                 className={styles.searchInput}
                 aria-label="Search for a service"
                 id="hero-search"
               />
-              <Link href="/book" className={styles.searchBtn}>
+              <button type="submit" className={styles.searchBtn}>
                 <span>Search</span>
                 <ArrowRight size={18} />
-              </Link>
-            </div>
+              </button>
+            </form>
             <div className={styles.suggestions}>
               <span className={styles.suggestionsLabel}>Popular:</span>
-              {suggestions.slice(0, 3).map((s) => (
-                <Link key={s} href="/book" className={styles.suggestion}>
-                  {s}
+              {POPULAR_SUGGESTIONS.map((s) => (
+                <Link
+                  key={s.text}
+                  href={getBookingUrl(s.categoryId, s.serviceId, s.text)}
+                  className={styles.suggestion}
+                >
+                  {s.label}
                 </Link>
               ))}
             </div>

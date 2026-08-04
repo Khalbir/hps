@@ -4,7 +4,7 @@ import {
   Sparkles, Droplets, Zap, Paintbrush, Wind, Camera, Sun,
   Hammer, Home, TreePine, Shirt, Truck, Settings, Search,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { BookingData } from "@/app/book/page";
 import styles from "./Steps.module.css";
 
@@ -85,7 +85,13 @@ interface StepProps {
 
 export function StepService({ booking, updateBooking, onNext }: StepProps) {
   const [selectedCategory, setSelectedCategory] = useState(booking.serviceCategory || "");
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useState(booking.initialQuery || "");
+
+  useEffect(() => {
+    if (booking.serviceCategory) {
+      setSelectedCategory(booking.serviceCategory);
+    }
+  }, [booking.serviceCategory]);
 
   const activeCategory = categories.find((c) => c.id === selectedCategory);
 

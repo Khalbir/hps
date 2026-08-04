@@ -26,6 +26,8 @@ const services = [
   {
     icon: Sparkles,
     name: "Residential Cleaning",
+    category: "cleaning",
+    slug: "residential-cleaning",
     description: "Professional deep cleaning for your home",
     price: "₦15,000",
     color: "#0EA5E9",
@@ -34,6 +36,8 @@ const services = [
   {
     icon: Sparkles,
     name: "Commercial Cleaning",
+    category: "cleaning",
+    slug: "commercial-cleaning",
     description: "Office and business space cleaning",
     price: "₦35,000",
     color: "#8B5CF6",
@@ -42,6 +46,8 @@ const services = [
   {
     icon: Droplets,
     name: "Plumbing",
+    category: "plumbing",
+    slug: "pipe-repairs",
     description: "Pipe repairs, installations & maintenance",
     price: "₦10,000",
     color: "#3B82F6",
@@ -50,6 +56,8 @@ const services = [
   {
     icon: Zap,
     name: "Electrical Repairs",
+    category: "electrical",
+    slug: "socket-switch",
     description: "Wiring, sockets, breakers & panels",
     price: "₦12,000",
     color: "#F59E0B",
@@ -58,6 +66,8 @@ const services = [
   {
     icon: Paintbrush,
     name: "Painting",
+    category: "painting",
+    slug: "interior-painting",
     description: "Interior & exterior painting services",
     price: "₦20,000",
     color: "#EC4899",
@@ -66,6 +76,8 @@ const services = [
   {
     icon: Wind,
     name: "AC Installation & Repair",
+    category: "hvac",
+    slug: "ac-repair",
     description: "Split unit installation, servicing & gas refill",
     price: "₦15,000",
     color: "#06B6D4",
@@ -74,6 +86,8 @@ const services = [
   {
     icon: Camera,
     name: "CCTV Installation",
+    category: "security",
+    slug: "cctv-installation",
     description: "Security camera setup & configuration",
     price: "₦25,000",
     color: "#6366F1",
@@ -82,6 +96,8 @@ const services = [
   {
     icon: Sun,
     name: "Solar & Inverter",
+    category: "solar",
+    slug: "solar-installation",
     description: "Solar panel & inverter installation",
     price: "₦50,000",
     color: "#F97316",
@@ -90,6 +106,8 @@ const services = [
   {
     icon: Hammer,
     name: "Carpentry",
+    category: "carpentry",
+    slug: "furniture-assembly",
     description: "Custom furniture, repairs & installations",
     price: "₦18,000",
     color: "#A16207",
@@ -98,6 +116,8 @@ const services = [
   {
     icon: Sofa,
     name: "Interior Decoration",
+    category: "home-improvement",
+    slug: "interior-decoration",
     description: "Space planning & interior design",
     price: "₦30,000",
     color: "#DC2626",
@@ -106,6 +126,8 @@ const services = [
   {
     icon: Home,
     name: "Home Renovation",
+    category: "home-improvement",
+    slug: "home-renovation",
     description: "Complete home remodeling & upgrades",
     price: "₦100,000",
     color: "#059669",
@@ -114,6 +136,8 @@ const services = [
   {
     icon: Wrench,
     name: "Generator Repairs",
+    category: "solar",
+    slug: "generator-repairs",
     description: "Generator servicing & maintenance",
     price: "₦8,000",
     color: "#7C3AED",
@@ -122,6 +146,8 @@ const services = [
   {
     icon: TreePine,
     name: "Gardening",
+    category: "outdoor",
+    slug: "gardening",
     description: "Lawn care, landscaping & plant maintenance",
     price: "₦12,000",
     color: "#16A34A",
@@ -130,6 +156,8 @@ const services = [
   {
     icon: Shirt,
     name: "Laundry Services",
+    category: "laundry",
+    slug: "laundry-services",
     description: "Professional washing, ironing & dry cleaning",
     price: "₦5,000",
     color: "#0891B2",
@@ -138,6 +166,8 @@ const services = [
   {
     icon: Truck,
     name: "Moving Services",
+    category: "moving",
+    slug: "moving-services",
     description: "Home & office relocation services",
     price: "₦25,000",
     color: "#CA8A04",
@@ -146,6 +176,8 @@ const services = [
   {
     icon: Settings,
     name: "General Handyman",
+    category: "general",
+    slug: "general-handyman",
     description: "Furniture assembly, odd jobs & repairs",
     price: "₦8,000",
     color: "#64748B",
@@ -185,7 +217,7 @@ export function ServiceGrid() {
               transition={{ duration: 0.4, delay: Math.min(i * 0.05, 0.4) }}
             >
               <Link
-                href={`/book?service=${service.name.toLowerCase().replace(/\s+/g, "-")}`}
+                href={`/book?category=${service.category}&service=${service.slug}`}
                 className={`card card-hover ${styles.serviceCard}`}
               >
                 <div

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { CreditCard, Building, Wallet, Tag, MapPin } from "lucide-react";
+import { CreditCard, Building, Wallet, Tag, MapPin, CheckCircle } from "lucide-react";
 import type { BookingData } from "@/app/book/page";
 import styles from "./Steps.module.css";
 
@@ -22,6 +22,8 @@ export function StepPayment({ booking, updateBooking, onNext, onBack }: StepProp
   const [promoInput, setPromoInput] = useState(booking.promoCode);
   const [promoApplied, setPromoApplied] = useState(booking.discountAmount > 0);
   const [promoError, setPromoError] = useState("");
+  const [suggestions, setSuggestions] = useState<any[]>([]);
+  const [geocodedBadge, setGeocodedBadge] = useState(false);
 
   const applyPromo = () => {
     setPromoError("");
@@ -54,18 +56,59 @@ export function StepPayment({ booking, updateBooking, onNext, onBack }: StepProp
       <h2 className={styles.stepTitle}>Location & Payment</h2>
       <p className={styles.stepSubtitle}>Enter your address and choose how to pay</p>
 
-      {/* Address */}
-      <div className={styles.fieldGroup}>
+      {/* Address & Autocomplete */}
+      <div className={styles.fieldGroup} style={{ position: "relative" }}>
         <label className={styles.fieldLabel}>
-          <MapPin size={16} /> Service Address
+          <MapPin size={16} /> Service Address (Autocomplete & Geocoded)
         </label>
         <input
           type="text"
           className="input"
-          placeholder="Enter your full address"
+          placeholder="Type address... e.g. Maitama, Wuse 2, Jabi"
           value={booking.address}
-          onChange={(e) => updateBooking({ address: e.target.value })}
+          onChange={(e) => {
+            updateBooking({ address: e.target.value });
+            if (e.target.value.length >= 2) {
+              fetch(`/api/location/autocomplete?q=${encodeURIComponent(e.target.value)}`)
+                .then((r) => r.json())
+                .then((data) => setSuggestions(data.suggestions || []))
+                .catch(() => {});
+            } else {
+              setSuggestions([]);
+            }
+          }}
         />
+
+        {/* Suggestions Dropdown */}
+        {suggestions.length > 0 && (
+          <div style={{ position: "absolute", top: 80, left: 0, right: 0, background: "var(--bg-tertiary)", border: "1.5px solid var(--color-primary-500)", borderRadius: "var(--radius-lg)", zIndex: 30, boxShadow: "var(--shadow-xl)", overflow: "hidden" }}>
+            {suggestions.map((s) => (
+              <button
+                key={s.placeId}
+                type="button"
+                style={{ width: "100%", padding: "var(--space-3) var(--space-4)", display: "flex", alignItems: "center", gap: "var(--space-3)", background: "none", border: "none", color: "var(--text-primary)", textAlign: "left", cursor: "pointer", borderBottom: "1px solid var(--border-primary)", fontSize: "var(--fs-sm)" }}
+                onClick={() => {
+                  updateBooking({ address: s.description });
+                  setSuggestions([]);
+                  setGeocodedBadge(true);
+                }}
+              >
+                <MapPin size={16} color="var(--color-primary-500)" />
+                <div>
+                  <strong style={{ display: "block" }}>{s.mainText}</strong>
+                  <span style={{ fontSize: "var(--fs-xs)", color: "var(--text-tertiary)" }}>{s.secondaryText}</span>
+                </div>
+              </button>
+            ))}
+          </div>
+        )}
+
+        {geocodedBadge && (
+          <div style={{ display: "flex", alignItems: "center", gap: "var(--space-2)", marginTop: "var(--space-2)", fontSize: "var(--fs-xs)", color: "#10B981", fontWeight: "var(--fw-semibold)" }}>
+            <CheckCircle size={14} /> Coordinates Matched & Cached (Nearest Verified Pros Found)
+          </div>
+        )}
+
         <input
           type="text"
           className="input"

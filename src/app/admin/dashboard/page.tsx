@@ -1,35 +1,20 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
+import { AdminLayoutShell } from "@/components/layout/AdminLayoutShell";
 import {
-  LayoutDashboard, Users, ClipboardList, CreditCard, Star,
-  Settings, Shield, BarChart3, Tag, Bell, LogOut, Menu, X,
-  TrendingUp, TrendingDown, DollarSign, UserPlus, Activity,
-  ArrowRight,
+  TrendingUp, DollarSign, UserPlus, Activity, ClipboardList, Shield,
+  ArrowRight, CheckCircle2, Clock, MapPin,
 } from "lucide-react";
 import styles from "../admin.module.css";
 
-const adminNav = [
-  { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/admin/dashboard/bookings", label: "Bookings", icon: ClipboardList, badge: 5 },
-  { href: "/admin/dashboard/users", label: "Users", icon: Users },
-  { href: "/admin/dashboard/professionals", label: "Professionals", icon: Shield, badge: 3 },
-  { href: "/admin/dashboard/payments", label: "Payments", icon: CreditCard },
-  { href: "/admin/dashboard/reviews", label: "Reviews", icon: Star },
-  { href: "/admin/dashboard/promo-codes", label: "Promo Codes", icon: Tag },
-  { href: "/admin/dashboard/analytics", label: "Analytics", icon: BarChart3 },
-  { href: "/admin/dashboard/notifications", label: "Notifications", icon: Bell },
-  { href: "/admin/dashboard/settings", label: "Settings", icon: Settings },
-];
-
 const stats = [
-  { label: "Total Revenue", value: "₦4.2M", icon: DollarSign, change: "+12.5%", up: true, color: "#10B981", bg: "rgba(16,185,129,0.15)" },
-  { label: "Active Bookings", value: "47", icon: ClipboardList, change: "+8", up: true, color: "#0EA5E9", bg: "rgba(14,165,233,0.15)" },
-  { label: "New Users (30d)", value: "182", icon: UserPlus, change: "+23%", up: true, color: "#8B5CF6", bg: "rgba(139,92,246,0.15)" },
-  { label: "Pending Verifications", value: "3", icon: Shield, change: "Review now", up: false, color: "#F59E0B", bg: "rgba(245,158,11,0.15)" },
-  { label: "System Health", value: "99.8%", icon: Activity, change: "Operational", up: true, color: "#10B981", bg: "rgba(16,185,129,0.15)" },
+  { label: "Total Revenue", value: "₦4.2M", icon: DollarSign, change: "+12.5%", color: "#10B981", bg: "rgba(16,185,129,0.15)" },
+  { label: "Active Bookings", value: "47", icon: ClipboardList, change: "+8", color: "#0EA5E9", bg: "rgba(14,165,233,0.15)" },
+  { label: "New Users (30d)", value: "182", icon: UserPlus, change: "+23%", color: "#8B5CF6", bg: "rgba(139,92,246,0.15)" },
+  { label: "Pending Verifications", value: "3", icon: Shield, change: "Review now", color: "#F59E0B", bg: "rgba(245,158,11,0.15)" },
+  { label: "System Health", value: "99.8%", icon: Activity, change: "Operational", color: "#10B981", bg: "rgba(16,185,129,0.15)" },
 ];
 
 const recentBookings = [
@@ -37,204 +22,115 @@ const recentBookings = [
   { id: "HHP-N2L0Y", customer: "Chidi Okonkwo", service: "Electrical Repairs", pro: "Abubakar T.", status: "CONFIRMED", amount: "₦15,000", date: "Today" },
   { id: "HHP-O3M1Z", customer: "Fatima Yusuf", service: "AC Installation", pro: "Yusuf A.", status: "PENDING", amount: "₦15,000", date: "Tomorrow" },
   { id: "HHP-P4N2A", customer: "David Adekunle", service: "Plumbing", pro: "Ibrahim M.", status: "COMPLETED", amount: "₦10,000", date: "Jul 17" },
-  { id: "HHP-Q5O3B", customer: "Grace Nwosu", service: "Painting", pro: "Ngozi N.", status: "COMPLETED", amount: "₦20,000", date: "Jul 16" },
 ];
 
 const pendingPros = [
-  { name: "Emeka Uzor", service: "Electrical", applied: "2 days ago", docs: "3/4" },
-  { name: "Aisha Bello", service: "Cleaning", applied: "1 day ago", docs: "4/4" },
-  { name: "Tunde Bakare", service: "Plumbing", applied: "5 hours ago", docs: "2/4" },
+  { name: "Emeka Uzor", service: "Electrical", applied: "2 hours ago", score: "100%" },
+  { name: "Aisha Bello", service: "Cleaning", applied: "1 day ago", score: "80%" },
+  { name: "Tunde Bakare", service: "Plumbing", applied: "5 hours ago", score: "100%" },
 ];
 
-const statusColors: Record<string, string> = {
-  PENDING: "#F59E0B",
-  CONFIRMED: "#3B82F6",
-  IN_PROGRESS: "#8B5CF6",
-  COMPLETED: "#10B981",
-  CANCELLED: "#EF4444",
-};
-
 export default function AdminDashboardPage() {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-
   return (
-    <div className={styles.adminDashLayout}>
-      {sidebarOpen && (
-        <div className={styles.adminOverlay} onClick={() => setSidebarOpen(false)} />
-      )}
-
-      {/* Sidebar */}
-      <aside className={`${styles.adminSidebar} ${sidebarOpen ? styles.adminSidebarOpen : ""}`}>
-        <div className={styles.adminSidebarHeader}>
-          <Link href="/admin/dashboard" className={styles.adminLogo}>
-            <Shield size={24} />
-            <div>
-              <span>HandyHub</span>
-              <span>Admin</span>
-            </div>
-          </Link>
-          <button
-            className={styles.adminMenuBtn}
-            onClick={() => setSidebarOpen(false)}
-            style={{ display: sidebarOpen ? "block" : undefined }}
-          >
-            <X size={20} />
-          </button>
+    <AdminLayoutShell>
+      <header className={styles.adminTopBar}>
+        <div>
+          <h1 className="h3">System Administration Dashboard</h1>
+          <p style={{ color: "var(--text-secondary)", fontSize: "var(--fs-sm)" }}>
+            Welcome back, Administrator. Real-time platform metrics and checkmate audits.
+          </p>
         </div>
+      </header>
 
-        <nav className={styles.adminNav}>
-          {adminNav.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              className={`${styles.adminNavLink} ${link.href === "/admin/dashboard" ? styles.adminNavLinkActive : ""}`}
+      <div className={styles.adminContent}>
+        {/* Stats Grid */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: "var(--space-4)", marginBottom: "var(--space-6)" }}>
+          {stats.map((s, idx) => (
+            <motion.div
+              key={s.label}
+              className="card"
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: idx * 0.05 }}
+              style={{ padding: "var(--space-4)" }}
             >
-              <link.icon size={18} />
-              <span>{link.label}</span>
-              {link.badge && <span className={styles.adminNavBadge}>{link.badge}</span>}
-            </Link>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "var(--space-2)" }}>
+                <span style={{ fontSize: "var(--fs-xs)", color: "var(--text-tertiary)", fontWeight: "var(--fw-medium)" }}>{s.label}</span>
+                <div style={{ background: s.bg, color: s.color, padding: 6, borderRadius: 8 }}>
+                  <s.icon size={16} />
+                </div>
+              </div>
+              <h3 className="h3" style={{ color: "var(--text-primary)", margin: 0 }}>{s.value}</h3>
+              <span style={{ fontSize: "11px", color: s.color, fontWeight: "bold" }}>{s.change}</span>
+            </motion.div>
           ))}
-        </nav>
-
-        <div className={styles.adminSidebarFooter}>
-          <Link href="/admin" className={styles.adminNavLink}>
-            <LogOut size={18} />
-            <span>Log Out</span>
-          </Link>
         </div>
-      </aside>
 
-      {/* Main */}
-      <main className={styles.adminMain}>
-        <header className={styles.adminTopBar}>
-          <div className={styles.adminTopLeft}>
-            <button className={styles.adminMenuBtn} onClick={() => setSidebarOpen(true)}>
-              <Menu size={22} />
-            </button>
-            <div>
-              <h1 className={styles.adminGreeting}>Dashboard Overview</h1>
-              <p className={styles.adminGreetingSub}>Welcome back, Administrator</p>
+        {/* 2-Column Grid */}
+        <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: "var(--space-6)" }}>
+          {/* Recent Bookings Card */}
+          <div className="card" style={{ padding: 0, overflow: "hidden" }}>
+            <div style={{ padding: "var(--space-4)", borderBottom: "1px solid var(--border-primary)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <h3 className="h4">Recent Active Bookings</h3>
+              <Link href="/admin/dashboard/bookings" className="btn btn-secondary btn-xs">
+                View All Bookings <ArrowRight size={14} />
+              </Link>
             </div>
-          </div>
-        </header>
-
-        <div className={styles.adminContent}>
-          {/* Stats */}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: "var(--space-4)" }}>
-            {stats.map((stat, i) => (
-              <motion.div
-                key={stat.label}
-                className={styles.adminStatCard}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.08 }}
-              >
-                <div className={styles.adminStatIcon} style={{ background: stat.bg, color: stat.color }}>
-                  <stat.icon size={20} />
-                </div>
-                <div>
-                  <span className={styles.adminStatValue}>{stat.value}</span>
-                  <span className={styles.adminStatLabel}>{stat.label}</span>
-                  <span className={styles.adminStatChange} style={{ color: stat.up ? "#10B981" : stat.color }}>
-                    {stat.up && <TrendingUp size={12} style={{ display: "inline", marginRight: 4 }} />}
-                    {stat.change}
-                  </span>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-
-          {/* Recent Bookings & Pending Pros */}
-          <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: "var(--space-6)" }}>
-            {/* Recent Bookings */}
-            <div className={styles.adminTableCard}>
-              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "var(--space-5)" }}>
-                <h2 style={{ fontFamily: "var(--font-display)", fontSize: "var(--fs-lg)", fontWeight: "var(--fw-semibold)", color: "white" }}>
-                  Recent Bookings
-                </h2>
-                <Link href="/admin/dashboard/bookings" style={{ color: "var(--color-primary-400)", fontSize: "var(--fs-sm)", display: "flex", alignItems: "center", gap: "4px" }}>
-                  View All <ArrowRight size={14} />
-                </Link>
-              </div>
-              <div style={{ overflowX: "auto" }}>
-                <table className={styles.adminTable}>
-                  <thead>
-                    <tr>
-                      <th>Reference</th>
-                      <th>Customer</th>
-                      <th>Service</th>
-                      <th>Professional</th>
-                      <th>Amount</th>
-                      <th>Status</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {recentBookings.map((b) => (
-                      <tr key={b.id}>
-                        <td style={{ fontFamily: "var(--font-mono)", fontSize: "var(--fs-xs)", color: "white" }}>{b.id}</td>
-                        <td style={{ color: "white" }}>{b.customer}</td>
-                        <td>{b.service}</td>
-                        <td>{b.pro}</td>
-                        <td style={{ fontFamily: "var(--font-mono)", color: "white" }}>{b.amount}</td>
-                        <td>
-                          <span
-                            style={{
-                              display: "inline-flex",
-                              padding: "2px 10px",
-                              borderRadius: "var(--radius-full)",
-                              fontSize: "var(--fs-xs)",
-                              fontWeight: "var(--fw-semibold)",
-                              color: statusColors[b.status],
-                              background: `${statusColors[b.status]}15`,
-                            }}
-                          >
-                            {b.status.replace(/_/g, " ")}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-            {/* Pending Verifications */}
-            <div className={styles.adminTableCard}>
-              <h2 style={{ fontFamily: "var(--font-display)", fontSize: "var(--fs-lg)", fontWeight: "var(--fw-semibold)", color: "white", marginBottom: "var(--space-5)" }}>
-                Pending Verifications
-              </h2>
-              <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
-                {pendingPros.map((pro) => (
-                  <div
-                    key={pro.name}
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                      padding: "var(--space-4)",
-                      background: "rgba(255,255,255,0.03)",
-                      borderRadius: "var(--radius-lg)",
-                      border: "1px solid rgba(255,255,255,0.04)",
-                    }}
-                  >
-                    <div>
-                      <div style={{ color: "white", fontSize: "var(--fs-sm)", fontWeight: "var(--fw-semibold)" }}>{pro.name}</div>
-                      <div style={{ color: "rgba(255,255,255,0.4)", fontSize: "var(--fs-xs)" }}>{pro.service} · Applied {pro.applied}</div>
-                      <div style={{ color: "rgba(255,255,255,0.4)", fontSize: "var(--fs-xs)", marginTop: "2px" }}>Documents: {pro.docs}</div>
-                    </div>
-                    <button
-                      className="btn btn-primary btn-sm"
-                      style={{ flexShrink: 0 }}
-                    >
-                      Review
-                    </button>
-                  </div>
+            <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left", fontSize: "var(--fs-sm)" }}>
+              <thead>
+                <tr style={{ background: "var(--bg-tertiary)", borderBottom: "1px solid var(--border-primary)", color: "var(--text-secondary)" }}>
+                  <th style={{ padding: "var(--space-3) var(--space-4)" }}>Ref</th>
+                  <th style={{ padding: "var(--space-3) var(--space-4)" }}>Customer</th>
+                  <th style={{ padding: "var(--space-3) var(--space-4)" }}>Service</th>
+                  <th style={{ padding: "var(--space-3) var(--space-4)" }}>Pro</th>
+                  <th style={{ padding: "var(--space-3) var(--space-4)" }}>Amount</th>
+                  <th style={{ padding: "var(--space-3) var(--space-4)" }}>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {recentBookings.map((b) => (
+                  <tr key={b.id} style={{ borderBottom: "1px solid var(--border-primary)" }}>
+                    <td style={{ padding: "var(--space-3) var(--space-4)", fontFamily: "monospace" }}>{b.id}</td>
+                    <td style={{ padding: "var(--space-3) var(--space-4)", fontWeight: "bold" }}>{b.customer}</td>
+                    <td style={{ padding: "var(--space-3) var(--space-4)" }}>{b.service}</td>
+                    <td style={{ padding: "var(--space-3) var(--space-4)" }}>{b.pro}</td>
+                    <td style={{ padding: "var(--space-3) var(--space-4)", fontWeight: "bold", color: "var(--color-primary-400)" }}>{b.amount}</td>
+                    <td style={{ padding: "var(--space-3) var(--space-4)" }}>
+                      <span className="badge" style={{ background: b.status === "COMPLETED" ? "rgba(16,185,129,0.15)" : b.status === "IN_PROGRESS" ? "rgba(139,92,246,0.15)" : "rgba(245,158,11,0.15)", color: b.status === "COMPLETED" ? "#10B981" : b.status === "IN_PROGRESS" ? "#8B5CF6" : "#F59E0B" }}>
+                        {b.status}
+                      </span>
+                    </td>
+                  </tr>
                 ))}
-              </div>
+              </tbody>
+            </table>
+          </div>
+
+          {/* Pending Pro Verifications */}
+          <div className="card">
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "var(--space-4)" }}>
+              <h3 className="h4">Pending Pro Audits</h3>
+              <Link href="/admin/dashboard/professionals" className="btn btn-primary btn-xs">
+                Audit Panel
+              </Link>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
+              {pendingPros.map((p) => (
+                <div key={p.name} style={{ background: "var(--bg-tertiary)", padding: "var(--space-3)", borderRadius: "var(--radius-lg)", border: "1px solid var(--border-primary)" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 2 }}>
+                    <strong style={{ fontSize: "var(--fs-sm)" }}>{p.name}</strong>
+                    <span style={{ fontSize: "11px", color: "#10B981", fontWeight: "bold" }}>Score: {p.score}</span>
+                  </div>
+                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: "var(--fs-xs)", color: "var(--text-tertiary)" }}>
+                    <span>Field: {p.service}</span>
+                    <span>{p.applied}</span>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         </div>
-      </main>
-    </div>
+      </div>
+    </AdminLayoutShell>
   );
 }

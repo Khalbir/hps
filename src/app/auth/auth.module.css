@@ -283,6 +283,44 @@
   gap: var(--space-3);
 }
 
+.otherSkillBanner {
+  margin-top: var(--space-2);
+  padding: var(--space-4);
+  background: rgba(249, 115, 22, 0.08);
+  border: 1.5px solid rgba(249, 115, 22, 0.3);
+  border-radius: var(--radius-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  animation: fadeIn 0.3s ease;
+}
+
+.bannerHeader {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: #F97316;
+  font-weight: var(--fw-bold);
+  font-size: var(--fs-sm);
+}
+
+.bannerIcon {
+  color: #F97316;
+  flex-shrink: 0;
+}
+
+.bannerText {
+  font-size: var(--fs-xs);
+  color: var(--text-secondary);
+  line-height: var(--lh-relaxed);
+  margin: 0;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
 @media (max-width: 1024px) {
   .page {
     grid-template-columns: 1fr;

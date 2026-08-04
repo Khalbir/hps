@@ -8,13 +8,13 @@ import { useTheme } from "@/components/ThemeProvider";
 import styles from "./Header.module.css";
 
 const services = [
-  { name: "Residential Cleaning", href: "/book?service=residential-cleaning" },
-  { name: "Commercial Cleaning", href: "/book?service=commercial-cleaning" },
-  { name: "Plumbing", href: "/book?service=plumbing" },
-  { name: "Electrical Repairs", href: "/book?service=electrical" },
-  { name: "AC Installation & Repair", href: "/book?service=ac-repair" },
-  { name: "Painting", href: "/book?service=painting" },
-  { name: "View All Services →", href: "/services" },
+  { name: "Residential Cleaning", href: "/book?category=cleaning&service=residential-cleaning" },
+  { name: "Commercial Cleaning", href: "/book?category=cleaning&service=commercial-cleaning" },
+  { name: "Plumbing", href: "/book?category=plumbing&service=pipe-repairs" },
+  { name: "Electrical Repairs", href: "/book?category=electrical&service=socket-switch" },
+  { name: "AC Installation & Repair", href: "/book?category=hvac&service=ac-repair" },
+  { name: "Painting", href: "/book?category=painting&service=interior-painting" },
+  { name: "View All Services →", href: "/book" },
 ];
 
 export function Header() {

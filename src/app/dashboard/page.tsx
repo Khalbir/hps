@@ -36,7 +36,7 @@ const statusColors: Record<string, string> = {
 
 export default function DashboardPage() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const user = { firstName: "Test", lastName: "Customer", email: "customer@test.com" };
+  const user = { firstName: "Valued", lastName: "Customer", email: "user@handyhubpro.ng" };
 
   return (
     <div className={styles.layout}>
@@ -104,6 +104,9 @@ export default function DashboardPage() {
             </Link>
           </div>
         </header>
+
+        {/* Verification Alert Banner */}
+        <EmailVerificationBanner email={user.email} />
 
         {/* Dashboard Content */}
         <div className={styles.content}>
@@ -209,3 +212,71 @@ export default function DashboardPage() {
     </div>
   );
 }
+
+function EmailVerificationBanner({ email }: { email: string }) {
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
+
+  const handleResend = async () => {
+    setLoading(true);
+    setMessage(null);
+    try {
+      const res = await fetch("/api/auth/resend-verification", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+      const data = await res.json();
+      setMessage(data.message || data.error || "Confirmation email sent!");
+    } catch {
+      setMessage("Failed to resend confirmation email.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div style={{
+      background: "#fffbe6",
+      border: "1px solid #ffe58f",
+      borderRadius: "10px",
+      padding: "16px 20px",
+      margin: "0 30px 20px 30px",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "space-between",
+      gap: "15px",
+      flexWrap: "wrap",
+    }}>
+      <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+        <span style={{ fontSize: "20px" }}>📧</span>
+        <div>
+          <strong style={{ color: "#d48806", display: "block", fontSize: "14px" }}>Email Verification Required</strong>
+          <span style={{ color: "#595959", fontSize: "13px" }}>
+            Please check your inbox ({email}) to confirm your email address and activate all features.
+          </span>
+        </div>
+      </div>
+      <div>
+        <button
+          onClick={handleResend}
+          disabled={loading}
+          style={{
+            background: "#faad14",
+            color: "#ffffff",
+            border: "none",
+            borderRadius: "6px",
+            padding: "8px 16px",
+            fontWeight: 600,
+            fontSize: "13px",
+            cursor: loading ? "not-allowed" : "pointer",
+          }}
+        >
+          {loading ? "Sending..." : "Resend Confirmation Email"}
+        </button>
+        {message && <div style={{ fontSize: "12px", color: "#389e0d", marginTop: "4px" }}>{message}</div>}
+      </div>
+    </div>
+  );
+}
+
