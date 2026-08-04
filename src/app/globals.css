@@ -1191,10 +1191,55 @@ body, #__next, main {
     -webkit-overflow-scrolling: touch;
   }
 
-  /* Prevent oversized full-screen height gaps in landscape */
-  [class*="hero"], [class*="Hero"] {
-    min-height: auto !important;
-    padding-block: var(--space-8) !important;
+/* ============================================
+   SMARTPHONE VERTICAL (PORTRAIT) OPTIMIZATION
+   ============================================ */
+@media (max-width: 600px) and (orientation: portrait) {
+  :root {
+    --header-height: 60px;
+  }
+
+  .container {
+    padding-inline: 16px !important;
+    max-width: 100% !important;
+  }
+
+  /* Compact top spacing for portrait mode */
+  main {
+    padding-top: 60px;
+  }
+
+  .section {
+    padding-block: var(--space-10);
+  }
+
+  /* Form controls & touch buttons for portrait typing */
+  .input, select, textarea {
+    min-height: 48px;
+    font-size: 16px !important; /* Fixes iOS Safari auto-zoom */
+    padding: 12px 14px;
+    border-radius: var(--radius-lg);
+  }
+
+  .btn {
+    min-height: 48px;
+    font-size: var(--fs-sm);
+    padding-inline: var(--space-4);
+  }
+
+  /* Modals & Bottom Drawers in Portrait View */
+  [class*="modal"], [class*="Modal"], [class*="overlay"], [class*="Overlay"] {
+    max-height: 90dvh !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch;
+    border-top-left-radius: var(--radius-2xl);
+    border-top-right-radius: var(--radius-2xl);
+  }
+
+  /* 1-Column Stacking for cards & service grids in portrait */
+  [class*="Grid"], [class*="grid"], [class*="CardGrid"], [class*="serviceGrid"] {
+    grid-template-columns: 1fr !important;
+    gap: 14px !important;
   }
 }
 
