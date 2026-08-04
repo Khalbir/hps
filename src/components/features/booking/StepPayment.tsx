@@ -202,8 +202,31 @@ export function StepPayment({ booking, updateBooking, onNext, onBack }: StepProp
         <button className="btn btn-secondary btn-lg" onClick={onBack}>Back</button>
         <button
           className="btn btn-primary btn-lg"
-          onClick={onNext}
           disabled={!booking.address}
+          onClick={async () => {
+            try {
+              const res = await fetch("/api/payments/initialize", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  email: "customer@handyhubpro.ng",
+                  amountNgn: Math.max(0, finalPrice),
+                  bookingId: booking.serviceCategory || "BKG",
+                  customerName: "HandyHub Customer",
+                  customerPhone: "+2348122222936",
+                }),
+              });
+
+              const data = await res.json();
+              if (res.ok && data.checkout?.authorizationUrl) {
+                window.location.href = data.checkout.authorizationUrl;
+              } else {
+                onNext();
+              }
+            } catch {
+              onNext();
+            }
+          }}
         >
           Confirm & Pay ₦{Math.max(0, finalPrice).toLocaleString()}
         </button>
