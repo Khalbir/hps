@@ -192,19 +192,28 @@ export default function ProVerificationPage() {
 
                 <div className={styles.formGrid}>
                   <div className={styles.fieldGroup}>
-                    <label className={styles.label}>Select Service Field</label>
+                    <label className={styles.label}>Select Primary Skill Category</label>
                     <select
                       className={styles.input}
                       value={category}
                       onChange={(e) => setCategory(e.target.value)}
                     >
-                      <option value="plumbing">Plumbing</option>
+                      <option value="plumbing">Plumbing (Pipes, Drainage, Water Heaters)</option>
                       <option value="electrical">Electrical Repairs & Wiring</option>
-                      <option value="cleaning">Cleaning Services</option>
-                      <option value="hvac">AC & HVAC Technical</option>
-                      <option value="painting">Painting & Surface Finish</option>
-                      <option value="solar">Solar & Inverter Power</option>
-                      <option value="general">General Handyman</option>
+                      <option value="cleaning">Cleaning Services (Residential, Commercial, Deep Clean)</option>
+                      <option value="hvac">AC & HVAC Technical (Servicing, Gas Refill, Repair)</option>
+                      <option value="painting">Painting & Surface Finish (POP, Screeding)</option>
+                      <option value="carpentry">Carpentry & Custom Furniture</option>
+                      <option value="security">Security & CCTV Camera Installation</option>
+                      <option value="solar">Solar & Inverter Power Systems</option>
+                      <option value="home-improvement">Home Improvement & Building Renovation</option>
+                      <option value="outdoor">Gardening, Lawn Care & Landscaping</option>
+                      <option value="laundry">Laundry & Garment Care</option>
+                      <option value="moving">Moving & Relocation Services</option>
+                      <option value="automotive">Auto Repair & Mobile Mechanic</option>
+                      <option value="smart-home">Smart Home & Automation Systems</option>
+                      <option value="general">General Handyman Maintenance</option>
+                      <option value="others">Others (Custom Skillset Request)</option>
                     </select>
                   </div>
 
