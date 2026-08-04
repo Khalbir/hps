@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, X, Sun, Moon, ChevronDown, Phone } from "lucide-react";
+import { Menu, X, Sun, Moon, ChevronDown, Phone, MessageSquare } from "lucide-react";
 import { useTheme } from "@/components/ThemeProvider";
 import styles from "./Header.module.css";
 
@@ -106,9 +106,13 @@ export function Header() {
 
           {/* Right Section */}
           <div className={styles.actions}>
-            <a href="tel:+2349000000000" className={styles.phoneLink}>
+            <a href="https://wa.me/2348122222936?text=Hello%20HandyHub%20Support" target="_blank" rel="noopener noreferrer" className={styles.phoneLink} style={{ background: "rgba(37,211,102,0.12)", color: "#25D366", borderColor: "rgba(37,211,102,0.3)" }} title="Chat on WhatsApp">
+              <MessageSquare size={16} />
+              <span>WhatsApp</span>
+            </a>
+            <a href="tel:+2348122222936" className={styles.phoneLink} title="Call Customer Support (+234 812 222 2936)">
               <Phone size={16} />
-              <span>Call Us</span>
+              <span>+234 812 222 2936</span>
             </a>
             <button
               onClick={toggleTheme}

@@ -5,6 +5,7 @@ import {
   MapPin,
   ArrowRight,
   ExternalLink,
+  MessageSquare,
 } from "lucide-react";
 import styles from "./Footer.module.css";
 
@@ -92,9 +93,13 @@ export function Footer() {
               professionals. Your Property, Our Priority.
             </p>
             <div className={styles.contactInfo}>
-              <a href="tel:+2349000000000" className={styles.contactItem}>
+              <a href="tel:+2348122222936" className={styles.contactItem} title="Call Customer Support">
                 <Phone size={16} />
-                <span>+234 900 000 0000</span>
+                <span>+234 812 222 2936</span>
+              </a>
+              <a href="https://wa.me/2348122222936?text=Hello%20HandyHub%20Support" target="_blank" rel="noopener noreferrer" className={styles.contactItem} style={{ color: "#25D366" }} title="Chat on WhatsApp">
+                <MessageSquare size={16} />
+                <span>WhatsApp: +234 812 222 2936</span>
               </a>
               <a href="mailto:hello@handyhubpro.ng" className={styles.contactItem}>
                 <Mail size={16} />

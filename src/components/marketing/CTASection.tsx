@@ -36,9 +36,9 @@ export function CTASection() {
               Book Your First Service
               <ArrowRight size={20} />
             </Link>
-            <a href="tel:+2349000000000" className={`btn btn-xl ${styles.ctaSecondary}`}>
+            <a href="tel:+2348122222936" className={`btn btn-xl ${styles.ctaSecondary}`} title="Call Customer Support (+234 812 222 2936)">
               <Phone size={18} />
-              Call Us Now
+              Call Us (+234 812 222 2936)
             </a>
           </div>
           <p className={styles.note}>
