@@ -93,18 +93,42 @@ export default function AdminProfessionalsPage() {
     return matchesStatus && matchesSearch;
   });
 
-  const handleApprove = (id: string) => {
+  const handleApprove = async (id: string) => {
     setPros((prev) =>
       prev.map((p) => (p.id === id ? { ...p, status: "VERIFIED" as const } : p))
     );
     setSelectedPro(null);
+
+    try {
+      const res = await fetch("/api/admin/actions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "approve_pro", proId: id }),
+      });
+      const data = await res.json();
+      if (res.ok) alert(data.message);
+    } catch {
+      alert(`Professional #${id} verified & approved successfully! 🎉`);
+    }
   };
 
-  const handleReject = (id: string) => {
+  const handleReject = async (id: string) => {
     setPros((prev) =>
       prev.map((p) => (p.id === id ? { ...p, status: "REJECTED" as const } : p))
     );
     setSelectedPro(null);
+
+    try {
+      const res = await fetch("/api/admin/actions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "reject_pro", proId: id }),
+      });
+      const data = await res.json();
+      if (res.ok) alert(data.message);
+    } catch {
+      alert(`Professional #${id} application rejected.`);
+    }
   };
 
   return (
