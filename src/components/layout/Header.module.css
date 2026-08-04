@@ -340,7 +340,11 @@
 }
 
 @media (max-width: 480px) {
-  .logoText {
-    display: none;
+  .logoName {
+    font-size: 1.05rem;
+  }
+  .phoneLink {
+    padding: 6px 10px;
+    font-size: 12px;
   }
 }
