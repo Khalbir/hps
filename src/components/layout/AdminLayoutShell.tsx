@@ -1,12 +1,12 @@
 "use client";
 
-import { useState, ReactNode } from "react";
+import { useState, useEffect, ReactNode } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard, Users, ClipboardList, CreditCard, Star,
   Settings, Shield, BarChart3, Tag, Bell, LogOut, Menu, X,
-  MapPin, DollarSign,
+  MapPin, DollarSign, Lock,
 } from "lucide-react";
 import styles from "@/app/admin/admin.module.css";
 
@@ -26,7 +26,55 @@ const adminNav = [
 
 export function AdminLayoutShell({ children }: { children: ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [authenticated, setAuthenticated] = useState<boolean | null>(null);
   const pathname = usePathname();
+  const router = useRouter();
+
+  useEffect(() => {
+    // Check if Admin Session token exists in localStorage or cookies
+    const sessionStr = localStorage.getItem("handyhub_admin_session");
+    const hasCookie = document.cookie.includes("handyhub_admin_session=authenticated");
+
+    if (!sessionStr && !hasCookie) {
+      setAuthenticated(false);
+      router.replace("/admin?unauthorized=1");
+      return;
+    }
+
+    try {
+      if (sessionStr) {
+        const sess = JSON.parse(sessionStr);
+        if (!sess.authenticated) {
+          setAuthenticated(false);
+          router.replace("/admin?unauthorized=1");
+          return;
+        }
+      }
+      setAuthenticated(true);
+    } catch {
+      setAuthenticated(false);
+      router.replace("/admin?unauthorized=1");
+    }
+  }, [router]);
+
+  const handleLogout = () => {
+    localStorage.removeItem("handyhub_admin_session");
+    document.cookie = "handyhub_admin_session=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;";
+    router.replace("/admin");
+  };
+
+  if (authenticated === false) {
+    return null;
+  }
+
+  if (authenticated === null) {
+    return (
+      <div style={{ minHeight: "100vh", background: "#0F172A", color: "white", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 16 }}>
+        <Lock size={40} color="#0EA5E9" style={{ animation: "pulse 1.5s infinite" }} />
+        <p style={{ fontSize: "14px", color: "rgba(255,255,255,0.7)" }}>Authenticating Admin Credentials & Security Session...</p>
+      </div>
+    );
+  }
 
   return (
     <div className={styles.adminDashLayout}>
@@ -71,10 +119,10 @@ export function AdminLayoutShell({ children }: { children: ReactNode }) {
         </nav>
 
         <div className={styles.adminSidebarFooter}>
-          <Link href="/admin" className={styles.adminNavLink}>
+          <button onClick={handleLogout} className={styles.adminNavLink} style={{ width: "100%", cursor: "pointer" }}>
             <LogOut size={18} />
-            <span>Exit Portal</span>
-          </Link>
+            <span>Sign Out & Lock</span>
+          </button>
         </div>
       </aside>
 

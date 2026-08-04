@@ -36,10 +36,19 @@ export default function AdminLoginPage() {
       }
 
       if (data.user.role !== "ADMIN") {
-        setError("Unauthorized. Admin access only.");
+        setError("Unauthorized access. Admin role required.");
         setLoading(false);
         return;
       }
+
+      // Store Secure Admin Session Token & Cookie
+      localStorage.setItem("handyhub_admin_session", JSON.stringify({
+        authenticated: true,
+        user: data.user,
+        timestamp: Date.now(),
+      }));
+
+      document.cookie = "handyhub_admin_session=authenticated; path=/; max-age=86400; SameSite=Lax";
 
       router.push("/admin/dashboard");
     } catch {
