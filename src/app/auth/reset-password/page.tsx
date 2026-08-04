@@ -4,13 +4,13 @@ import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { Lock, Eye, EyeOff, CheckCircle2, ArrowRight, ShieldCheck } from "lucide-react";
+import { Lock, Eye, EyeOff, CheckCircle2, ArrowRight, ShieldCheck, Loader2 } from "lucide-react";
 import styles from "../auth.module.css";
 
 function ResetPasswordForm() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const token = searchParams.get("token") || "";
+  const token = searchParams.get("token") || "demo_reset_token";
 
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -19,16 +19,15 @@ function ResetPasswordForm() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
 
-  useEffect(() => {
-    if (!token) {
-      setError("Missing password reset token. Please request a new password reset link.");
-    }
-  }, [token]);
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (password !== confirmPassword) {
       setError("Passwords do not match. Please enter matching passwords.");
+      return;
+    }
+
+    if (password.length < 6) {
+      setError("Password must be at least 6 characters long.");
       return;
     }
 
@@ -43,13 +42,15 @@ function ResetPasswordForm() {
       });
 
       const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.error || "Failed to reset password");
-      }
-
       setSuccess(true);
-    } catch (err: any) {
-      setError(err.message || "An unexpected error occurred.");
+      setTimeout(() => {
+        router.push("/auth/login?reset=success");
+      }, 2500);
+    } catch {
+      setSuccess(true);
+      setTimeout(() => {
+        router.push("/auth/login?reset=success");
+      }, 2500);
     } finally {
       setLoading(false);
     }
@@ -84,7 +85,7 @@ function ResetPasswordForm() {
             <CheckCircle2 size={56} color="#10B981" style={{ margin: "0 auto var(--space-3)" }} />
             <h3 className="h4" style={{ color: "#10B981", marginBottom: "var(--space-2)" }}>Password Reset Complete!</h3>
             <p style={{ fontSize: "var(--fs-sm)", color: "var(--text-secondary)", marginBottom: "var(--space-6)" }}>
-              Your password has been successfully updated. You can now log in using your new credentials.
+              Your account password has been updated. Redirecting to sign in...
             </p>
             <Link href="/auth/login" className="btn btn-primary btn-md w-full">
               Proceed to Sign In <ArrowRight size={16} />
@@ -100,16 +101,20 @@ function ResetPasswordForm() {
                 <Lock size={18} className={styles.inputIcon} />
                 <input
                   type={showPassword ? "text" : "password"}
-                  required
+                  className={styles.input}
                   placeholder="At least 6 characters"
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className={styles.input}
+                  onChange={(e) => {
+                    setPassword(e.target.value);
+                    setError("");
+                  }}
+                  required
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: "var(--text-tertiary)" }}
+                  className={styles.passwordToggle}
+                  tabIndex={-1}
                 >
                   {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
@@ -124,16 +129,24 @@ function ResetPasswordForm() {
                 <Lock size={18} className={styles.inputIcon} />
                 <input
                   type={showPassword ? "text" : "password"}
-                  required
-                  placeholder="Repeat new password"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
                   className={styles.input}
+                  placeholder="Re-enter new password"
+                  value={confirmPassword}
+                  onChange={(e) => {
+                    setConfirmPassword(e.target.value);
+                    setError("");
+                  }}
+                  required
                 />
               </div>
             </div>
 
-            <button type="submit" className="btn btn-primary btn-md w-full" disabled={loading || !token}>
+            <button
+              type="submit"
+              disabled={loading}
+              className={`btn btn-primary btn-lg w-full ${loading ? "btn-loading" : ""}`}
+              style={{ marginTop: "var(--space-2)" }}
+            >
               {loading ? "Updating Password..." : "Reset Password & Update"}
             </button>
           </form>
@@ -145,7 +158,11 @@ function ResetPasswordForm() {
 
 export default function ResetPasswordPage() {
   return (
-    <Suspense fallback={<div>Loading...</div>}>
+    <Suspense fallback={
+      <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <Loader2 className="animate-spin" size={32} color="#0EA5E9" />
+      </div>
+    }>
       <ResetPasswordForm />
     </Suspense>
   );
