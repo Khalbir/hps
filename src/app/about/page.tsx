@@ -56,8 +56,8 @@ export default function AboutPage() {
           >
             {/* Founder Bio Column */}
             <div className={styles.founderColumn}>
-              <div className={styles.founderAvatar}>
-                <span>KK</span>
+              <div className={styles.founderAvatar} style={{ position: "relative", padding: 4 }}>
+                <img src="/logo.png" alt="HandyHub Pro Solutions Logo" style={{ width: "100%", height: "100%", borderRadius: "50%", objectFit: "cover" }} />
               </div>
               <h2 className={styles.founderName}>Khalid Kabir</h2>
               <span className={styles.founderTitle}>Founder & CEO, HandyHub Pro</span>

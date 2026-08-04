@@ -54,12 +54,7 @@ export default function LoginPage() {
       <div className={styles.leftPanel}>
         <div className={styles.leftContent}>
           <Link href="/" className={styles.logo}>
-            <svg width="36" height="36" viewBox="0 0 32 32" fill="none">
-              <rect width="32" height="32" rx="8" fill="url(#auth-logo)" />
-              <path d="M8 16C8 11.58 11.58 8 16 8C20.42 8 24 11.58 24 16C24 20.42 20.42 24 16 24" stroke="white" strokeWidth="2.5" strokeLinecap="round" />
-              <path d="M16 12V16L19 19" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-              <defs><linearGradient id="auth-logo" x1="0" y1="0" x2="32" y2="32"><stop stopColor="#0EA5E9" /><stop offset="1" stopColor="#0284C7" /></linearGradient></defs>
-            </svg>
+            <img src="/logo.png" alt="HandyHub Logo" style={{ width: 36, height: 36, borderRadius: 8, objectFit: "contain" }} />
             <span>HandyHub <strong>PRO</strong></span>
           </Link>
           <h1 className={styles.leftTitle}>Welcome back</h1>

@@ -36,12 +36,7 @@ export function ProLayoutShell({ children }: { children: ReactNode }) {
       <aside className={`${styles.sidebar} ${sidebarOpen ? styles.sidebarOpen : ""}`}>
         <div className={styles.sidebarHeader}>
           <Link href="/pro" className={styles.sidebarLogo}>
-            <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
-              <rect width="32" height="32" rx="8" fill="url(#pro-logo)" />
-              <path d="M8 16C8 11.58 11.58 8 16 8C20.42 8 24 11.58 24 16C24 20.42 20.42 24 16 24" stroke="white" strokeWidth="2.5" strokeLinecap="round" />
-              <path d="M16 12V16L19 19" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-              <defs><linearGradient id="pro-logo" x1="0" y1="0" x2="32" y2="32"><stop stopColor="#F97316" /><stop offset="1" stopColor="#EA580C" /></linearGradient></defs>
-            </svg>
+            <img src="/logo.png" alt="HandyHub Pro Logo" style={{ width: 32, height: 32, borderRadius: 8, objectFit: "contain" }} />
             <span>HandyHub <strong style={{ fontSize: "var(--fs-xs)", color: "var(--color-accent-500)" }}>PRO</strong></span>
           </Link>
           <button className={styles.closeSidebar} onClick={() => setSidebarOpen(false)}>

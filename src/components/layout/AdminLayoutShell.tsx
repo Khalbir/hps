@@ -38,7 +38,7 @@ export function AdminLayoutShell({ children }: { children: ReactNode }) {
       <aside className={`${styles.adminSidebar} ${sidebarOpen ? styles.adminSidebarOpen : ""}`}>
         <div className={styles.adminSidebarHeader}>
           <Link href="/admin/dashboard" className={styles.adminLogo}>
-            <Shield size={24} color="#0EA5E9" />
+            <img src="/logo.png" alt="HandyHub Admin Logo" style={{ width: 32, height: 32, borderRadius: 8, objectFit: "contain" }} />
             <div>
               <span>HandyHub</span>
               <span style={{ fontSize: "10px", color: "var(--color-primary-400)" }}>ADMIN PORTAL</span>
