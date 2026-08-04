@@ -512,7 +512,7 @@ export default function ProVerificationPage() {
                   <button
                     className="btn btn-primary btn-md"
                     onClick={() => setStep(3)}
-                    disabled={!certUploaded || portfolioCount < 2}
+                    disabled={(!tradeCertUrl && !certUploading)}
                   >
                     Continue to Guarantors
                     <ArrowRight size={18} />
