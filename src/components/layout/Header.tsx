@@ -134,7 +134,7 @@ export function Header() {
             <Link href="/auth/login" className={`${styles.loginBtn}`}>
               Log In
             </Link>
-            <Link href="/book" className="btn btn-primary btn-md">
+            <Link href="/book" className={`btn btn-primary btn-md ${styles.bookNowBtn}`}>
               Book Now
             </Link>
             <button

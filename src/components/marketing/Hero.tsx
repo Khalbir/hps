@@ -79,7 +79,7 @@ export function Hero() {
               <Search size={22} className={styles.searchIcon} />
               <input
                 type="text"
-                placeholder="What do you need help with? e.g. My kitchen sink is leaking"
+                placeholder="Search services... e.g. Leaking sink, AC repair"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 className={styles.searchInput}

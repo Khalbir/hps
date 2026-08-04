@@ -4,16 +4,21 @@
   left: 0;
   right: 0;
   height: var(--header-height);
-  z-index: var(--z-sticky);
+  z-index: 1000;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border-primary);
   transition: all var(--duration-medium) var(--ease-default);
 }
 
+[data-theme="dark"] .header {
+  background: rgba(9, 13, 22, 0.96);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
 .scrolled {
-  background: var(--bg-glass);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border-bottom: 1px solid var(--bg-glass-border);
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--shadow-md);
 }
 
 .container {
@@ -328,11 +333,14 @@
   .loginBtn {
     display: none;
   }
+  .bookNowBtn {
+    display: none !important;
+  }
   .menuBtn {
     display: flex;
   }
   .actions .btn-primary {
-    display: none;
+    display: none !important;
   }
 }
 

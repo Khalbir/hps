@@ -420,14 +420,26 @@
 
 @media (max-width: 640px) {
   .hero {
-    padding-top: calc(var(--header-height) + var(--space-6));
+    padding-top: calc(var(--header-height) + var(--space-8));
     min-height: auto;
     padding-bottom: var(--space-12);
+  }
+
+  .headline {
+    font-size: var(--fs-3xl);
+    line-height: 1.25;
+    margin-bottom: var(--space-3);
+  }
+
+  .subheadline {
+    font-size: var(--fs-base);
+    margin-bottom: var(--space-6);
   }
 
   .ctas {
     flex-direction: column;
     width: 100%;
+    gap: var(--space-3);
   }
 
   .ctas a {
@@ -438,11 +450,14 @@
     flex-direction: column;
     padding: var(--space-3);
     border-radius: var(--radius-xl);
+    gap: var(--space-2);
   }
 
   .searchInput {
     width: 100%;
-    text-align: center;
+    text-align: left;
+    padding: var(--space-3);
+    font-size: 15px;
   }
 
   .searchIcon {
@@ -453,6 +468,17 @@
     width: 100%;
     justify-content: center;
     border-radius: var(--radius-lg);
+    min-height: 48px;
+  }
+
+  .suggestions {
+    gap: var(--space-2);
+    justify-content: flex-start;
+  }
+
+  .suggestion {
+    font-size: 11px;
+    padding: 4px 10px;
   }
 
   .trustDivider {
