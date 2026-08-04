@@ -122,6 +122,9 @@ export function Header() {
             <Link href="/contact" className={styles.navLink}>
               Contact
             </Link>
+            <Link href="/track" className={styles.navLink} style={{ color: "#0EA5E9", fontWeight: "bold" }}>
+              Track Booking
+            </Link>
           </nav>
 
           {/* Right Section */}
@@ -245,6 +248,14 @@ export function Header() {
                     onClick={() => setMobileOpen(false)}
                   >
                     Contact & Support
+                  </Link>
+                  <Link
+                    href="/track"
+                    className={styles.mobileLink}
+                    onClick={() => setMobileOpen(false)}
+                    style={{ color: "#0EA5E9", fontWeight: "bold" }}
+                  >
+                    Track My Booking
                   </Link>
                   <div className={styles.mobileDivider} />
                   <Link
