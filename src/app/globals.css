@@ -1138,19 +1138,32 @@ body, #__next, main {
   }
 }
 
-/* Extra Small Screens (320px - 480px) */
+/* Extra Small Screens & Smartphones (320px - 480px) */
 @media (max-width: 480px) {
+  .container {
+    width: 100% !important;
+    max-width: 100% !important;
+    padding-inline: 16px !important;
+    margin-inline: auto !important;
+  }
   .h1 {
     font-size: var(--fs-3xl);
+    line-height: 1.2;
   }
   .h2 {
     font-size: var(--fs-2xl);
+    line-height: 1.25;
   }
   .h3 {
     font-size: var(--fs-xl);
   }
   .card {
     padding: var(--space-4);
+    border-radius: var(--radius-lg);
+  }
+  /* Auto-stack grids on small smartphone displays */
+  [class*="Grid"], [class*="grid"] {
+    grid-template-columns: 1fr;
   }
 }
 
