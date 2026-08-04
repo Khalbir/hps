@@ -41,6 +41,14 @@ export default function ProVerificationPage() {
   const [portfolioUrls, setPortfolioUrls] = useState<string[]>([]);
   const [portfolioUploading, setPortfolioUploading] = useState<boolean[]>([false, false, false, false]);
 
+  // Live Camera Facial Verification State
+  const [showCameraModal, setShowCameraModal] = useState(false);
+  const [cameraStream, setCameraStream] = useState<MediaStream | null>(null);
+  const [cameraError, setCameraError] = useState("");
+
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
   // Hidden File Input References
   const idInputRef = useRef<HTMLInputElement>(null);
   const selfieInputRef = useRef<HTMLInputElement>(null);
@@ -51,6 +59,76 @@ export default function ProVerificationPage() {
     useRef<HTMLInputElement>(null),
     useRef<HTMLInputElement>(null),
   ];
+
+  // Request Native Device Camera Authorization
+  const startLiveFacialCamera = async () => {
+    setShowCameraModal(true);
+    setCameraError("");
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: {
+          facingMode: "user",
+          width: { ideal: 1280 },
+          height: { ideal: 720 },
+        },
+        audio: false,
+      });
+
+      setCameraStream(stream);
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        videoRef.current.play();
+      }
+    } catch (err: any) {
+      console.error("[Camera Authorization Error]:", err);
+      setCameraError("Camera permission was denied or is unavailable. Please click 'Grant Camera Permission' or use your device camera.");
+    }
+  };
+
+  const stopCamera = () => {
+    if (cameraStream) {
+      cameraStream.getTracks().forEach((track) => track.stop());
+      setCameraStream(null);
+    }
+    setShowCameraModal(false);
+  };
+
+  const captureFacialPhoto = () => {
+    if (!videoRef.current || !canvasRef.current) return;
+
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+
+    canvas.width = video.videoWidth || 640;
+    canvas.height = video.videoHeight || 480;
+
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+    // Stop camera tracks cleanly
+    if (cameraStream) {
+      cameraStream.getTracks().forEach((track) => track.stop());
+      setCameraStream(null);
+    }
+    setShowCameraModal(false);
+
+    canvas.toBlob(async (blob) => {
+      if (!blob) return;
+      const file = new File([blob], `facial_verification_${Date.now()}.jpg`, { type: "image/jpeg" });
+      setSelfieUploading(true);
+      try {
+        const url = await uploadToSupabase(file, "selfies");
+        setSelfieUrl(url);
+      } catch (err: any) {
+        alert(err.message || "Failed to upload facial photo");
+      } finally {
+        setSelfieUploading(false);
+      }
+    }, "image/jpeg", 0.9);
+  };
 
   // Helper Supabase File Upload Function
   const uploadToSupabase = async (file: File, folder: string): Promise<string> => {
@@ -327,6 +405,7 @@ export default function ProVerificationPage() {
                       ref={selfieInputRef}
                       style={{ display: "none" }}
                       accept="image/*"
+                      capture="user"
                       onChange={async (e) => {
                         const file = e.target.files?.[0];
                         if (!file) return;
@@ -343,18 +422,18 @@ export default function ProVerificationPage() {
                     />
                     <div
                       className={`${styles.uploadBox} ${selfieUrl ? styles.uploadBoxDone : ""}`}
-                      onClick={() => selfieInputRef.current?.click()}
+                      onClick={startLiveFacialCamera}
                       style={{ cursor: "pointer", position: "relative" }}
                     >
                       {selfieUploading ? (
                         <>
                           <Loader2 size={24} className="animate-spin" color="#0EA5E9" />
-                          <span>Uploading Selfie to Supabase...</span>
+                          <span>Uploading Facial Verification...</span>
                         </>
                       ) : selfieUrl ? (
                         <>
                           <CheckCircle size={24} color="#10B981" />
-                          <span style={{ color: "#10B981" }}>✓ Live Selfie Uploaded to Supabase</span>
+                          <span style={{ color: "#10B981" }}>✓ Live Facial Verification Complete</span>
                         </>
                       ) : (
                         <>
@@ -658,6 +737,148 @@ export default function ProVerificationPage() {
           </div>
         )}
       </div>
+
+      {/* Hidden Canvas for Facial Snapshot */}
+      <canvas ref={canvasRef} style={{ display: "none" }} />
+
+      {/* Live Camera Authorization & Facial Verification Modal */}
+      {showCameraModal && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 9999,
+            background: "rgba(9, 13, 22, 0.92)",
+            backdropFilter: "blur(12px)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: 16,
+          }}
+        >
+          <div
+            className="card"
+            style={{
+              width: "100%",
+              maxWidth: 480,
+              background: "#0F172A",
+              border: "1.5px solid rgba(14,165,233,0.4)",
+              borderRadius: "var(--radius-2xl)",
+              overflow: "hidden",
+              textAlign: "center",
+              boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.7)",
+            }}
+          >
+            {/* Modal Header */}
+            <div
+              style={{
+                padding: "16px 20px",
+                borderBottom: "1px solid rgba(255,255,255,0.1)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                background: "rgba(15,23,42,0.8)",
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: 8, color: "#0EA5E9", fontWeight: "bold", fontSize: "14px" }}>
+                <Camera size={18} /> Live Facial Verification
+              </div>
+              <button
+                onClick={stopCamera}
+                style={{ background: "transparent", border: "none", color: "white", cursor: "pointer" }}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Viewfinder Body */}
+            <div style={{ padding: 20, position: "relative" }}>
+              {cameraError ? (
+                <div style={{ padding: "24px 16px", textAlign: "center" }}>
+                  <AlertTriangle size={40} color="#EF4444" style={{ margin: "0 auto 12px" }} />
+                  <p style={{ fontSize: "13px", color: "white", marginBottom: 16 }}>{cameraError}</p>
+                  <button
+                    className="btn btn-primary btn-md"
+                    onClick={() => {
+                      stopCamera();
+                      selfieInputRef.current?.click();
+                    }}
+                  >
+                    Open Camera App Directly
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <div
+                    style={{
+                      position: "relative",
+                      width: "100%",
+                      height: 300,
+                      borderRadius: "var(--radius-xl)",
+                      overflow: "hidden",
+                      background: "#000",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    <video
+                      ref={videoRef}
+                      autoPlay
+                      playsInline
+                      muted
+                      style={{ width: "100%", height: "100%", objectFit: "cover", transform: "scaleX(-1)" }}
+                    />
+
+                    {/* Facial Oval Overlay Guide */}
+                    <div
+                      style={{
+                        position: "absolute",
+                        width: 190,
+                        height: 240,
+                        borderRadius: "50%",
+                        border: "3px dashed #0EA5E9",
+                        boxShadow: "0 0 0 9999px rgba(0, 0, 0, 0.45)",
+                        pointerEvents: "none",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    >
+                      <span style={{ fontSize: "11px", color: "#0EA5E9", background: "rgba(0,0,0,0.7)", padding: "2px 8px", borderRadius: 99, fontWeight: "bold" }}>
+                        Center Face Here
+                      </span>
+                    </div>
+                  </div>
+
+                  <p style={{ fontSize: "12px", color: "rgba(255,255,255,0.7)", margin: "14px 0 16px" }}>
+                    Position your face within the frame in good lighting and tap snap photo below.
+                  </p>
+
+                  <div style={{ display: "flex", gap: 10, justifyContent: "center", flexWrap: "wrap" }}>
+                    <button className="btn btn-secondary btn-md" onClick={stopCamera}>
+                      Cancel
+                    </button>
+                    <button
+                      className="btn btn-primary btn-md"
+                      onClick={() => {
+                        stopCamera();
+                        selfieInputRef.current?.click();
+                      }}
+                      style={{ background: "var(--bg-tertiary)", color: "var(--text-primary)" }}
+                    >
+                      Use Device Camera App
+                    </button>
+                    <button className="btn btn-primary btn-lg" onClick={captureFacialPhoto} style={{ minWidth: 160 }}>
+                      Snap Facial Photo 📸
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
