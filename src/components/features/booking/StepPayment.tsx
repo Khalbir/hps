@@ -24,6 +24,7 @@ export function StepPayment({ booking, updateBooking, onNext, onBack }: StepProp
   const [promoError, setPromoError] = useState("");
   const [suggestions, setSuggestions] = useState<any[]>([]);
   const [geocodedBadge, setGeocodedBadge] = useState(false);
+  const [isPaying, setIsPaying] = useState(false);
 
   const applyPromo = () => {
     setPromoError("");
@@ -199,18 +200,19 @@ export function StepPayment({ booking, updateBooking, onNext, onBack }: StepProp
       </p>
 
       <div className={styles.stepActions}>
-        <button className="btn btn-secondary btn-lg" onClick={onBack}>Back</button>
+        <button className="btn btn-secondary btn-lg" onClick={onBack} disabled={isPaying}>Back</button>
         <button
           className="btn btn-primary btn-lg"
-          disabled={!booking.address}
+          disabled={isPaying}
           onClick={async () => {
+            setIsPaying(true);
             try {
               const res = await fetch("/api/payments/initialize", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
-                  email: "customer@handyhubpro.ng",
-                  amountNgn: Math.max(0, finalPrice),
+                  email: "khalid.kabir@handyhubpro.ng",
+                  amountNgn: Math.max(100, finalPrice),
                   bookingId: booking.serviceCategory || "BKG",
                   customerName: "HandyHub Customer",
                   customerPhone: "+2348122222936",
@@ -221,14 +223,23 @@ export function StepPayment({ booking, updateBooking, onNext, onBack }: StepProp
               if (res.ok && data.checkout?.authorizationUrl) {
                 window.location.href = data.checkout.authorizationUrl;
               } else {
+                setIsPaying(false);
                 onNext();
               }
             } catch {
+              setIsPaying(false);
               onNext();
             }
           }}
         >
-          Confirm & Pay ₦{Math.max(0, finalPrice).toLocaleString()}
+          {isPaying ? (
+            <>
+              <span className="spinner" style={{ width: 18, height: 18, marginRight: 8, display: "inline-block" }} />
+              Connecting to Paystack...
+            </>
+          ) : (
+            `Confirm & Pay ₦${Math.max(0, finalPrice).toLocaleString()}`
+          )}
         </button>
       </div>
     </div>

@@ -14,7 +14,8 @@ export async function POST(request: Request) {
     }
 
     const reference = `HHP_${bookingId || "BKG"}_${Date.now()}`;
-    const callbackUrl = "http://localhost:3000/book?status=success";
+    const origin = request.headers.get("origin") || request.headers.get("referer")?.replace(/\/$/, "") || "http://localhost:3000";
+    const callbackUrl = `${origin}/book?status=success`;
 
     // Dual-gateway checkout router (Paystack primary -> Flutterwave failover)
     const checkout = await initializeDualGatewayCheckout({
