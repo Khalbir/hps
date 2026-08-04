@@ -101,9 +101,9 @@ export function Footer() {
                 <MessageSquare size={16} />
                 <span>WhatsApp: +234 812 222 2936</span>
               </a>
-              <a href="mailto:hello@handyhubpro.ng" className={styles.contactItem}>
+              <a href="mailto:info@handyhubpro.ng" className={styles.contactItem}>
                 <Mail size={16} />
-                <span>hello@handyhubpro.ng</span>
+                <span>info@handyhubpro.ng</span>
               </a>
               <div className={styles.contactItem}>
                 <MapPin size={16} />

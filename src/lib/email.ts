@@ -99,7 +99,7 @@ export async function sendConfirmationEmail({
   try {
     if (process.env.SMTP_USER && process.env.SMTP_PASS) {
       await transporter.sendMail({
-        from: process.env.SMTP_FROM || `"HandyHub Pro" <noreply@handyhubpro.ng>`,
+        from: process.env.SMTP_FROM || `"HandyHub Pro Solutions" <info@handyhubpro.ng>`,
         to: email,
         subject: title,
         html: htmlContent,

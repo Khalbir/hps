@@ -216,7 +216,7 @@ export function StepPayment({ booking, updateBooking, onNext, onBack }: StepProp
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
-                  email: "khalid.kabir@handyhubpro.ng",
+                  email: "info@handyhubpro.ng",
                   amountNgn: Math.max(100, finalPrice),
                   bookingId: booking.serviceCategory || "BKG",
                   customerName: "HandyHub Customer",

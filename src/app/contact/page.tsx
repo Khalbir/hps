@@ -73,8 +73,8 @@ export default function ContactPage() {
             <p style={{ fontSize: "var(--fs-xs)", color: "var(--text-secondary)", marginBottom: "var(--space-4)" }}>
               Send formal requests, partnership proposals, or billing queries.
             </p>
-            <a href="mailto:hello@handyhubpro.ng" className="btn btn-secondary btn-md w-full">
-              hello@handyhubpro.ng
+            <a href="mailto:info@handyhubpro.ng" className="btn btn-secondary btn-md w-full">
+              info@handyhubpro.ng
             </a>
           </div>
         </div>
