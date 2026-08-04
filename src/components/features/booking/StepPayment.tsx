@@ -207,6 +207,11 @@ export function StepPayment({ booking, updateBooking, onNext, onBack }: StepProp
           onClick={async () => {
             setIsPaying(true);
             try {
+              localStorage.setItem("handyhub_pending_booking", JSON.stringify({
+                ...booking,
+                totalPrice: Math.max(0, finalPrice),
+              }));
+
               const res = await fetch("/api/payments/initialize", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },

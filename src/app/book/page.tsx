@@ -83,6 +83,32 @@ function BookingContent() {
     const categoryParam = searchParams.get("category");
     const serviceParam = searchParams.get("service");
     const queryParam = searchParams.get("query");
+    const statusParam = searchParams.get("status");
+    const refParam = searchParams.get("reference") || searchParams.get("trxref");
+
+    // Handle Paystack / Gateway Payment Success Callback
+    if (statusParam === "success" || refParam) {
+      const savedDraft = localStorage.getItem("handyhub_pending_booking");
+      let restoredData: Partial<BookingData> = {};
+      if (savedDraft) {
+        try {
+          restoredData = JSON.parse(savedDraft);
+          localStorage.removeItem("handyhub_pending_booking");
+        } catch {}
+      }
+
+      setBooking((prev) => ({
+        ...prev,
+        ...restoredData,
+        paymentMethod: "paystack",
+        serviceName: restoredData.serviceName || prev.serviceName || "Verified Property Service",
+        totalPrice: restoredData.totalPrice || prev.totalPrice || 15000,
+        address: restoredData.address || prev.address || "Abuja, FCT, Nigeria",
+      }));
+
+      setStep(6);
+      return;
+    }
 
     if (categoryParam || serviceParam || queryParam) {
       const resolved = resolveServiceCategory({
@@ -102,7 +128,11 @@ function BookingContent() {
   }, [searchParams]);
 
   const updateBooking = (updates: Partial<BookingData>) => {
-    setBooking((prev) => ({ ...prev, ...updates }));
+    setBooking((prev) => {
+      const updated = { ...prev, ...updates };
+      localStorage.setItem("handyhub_pending_booking", JSON.stringify(updated));
+      return updated;
+    });
   };
 
   const nextStep = () => {
