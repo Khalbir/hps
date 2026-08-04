@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Sparkles, Wrench, Zap, SnowFlake, Paintbrush, Hammer, Camera, SunMedium,
+  Sparkles, Wrench, Zap, Snowflake, Paintbrush, Hammer, Camera, SunMedium,
   Menu, X, Sun, Moon, ChevronDown, Phone, MessageSquare, ArrowRight, Layers
 } from "lucide-react";
 import { useTheme } from "@/components/ThemeProvider";
@@ -14,7 +14,7 @@ const services = [
   { name: "Cleaning Services", desc: "Residential, Deep & Office Cleaning", href: "/book?category=cleaning", icon: Sparkles },
   { name: "Plumbing Services", desc: "Pipe Leak Repairs, Pumps & Drainage", href: "/book?category=plumbing", icon: Wrench },
   { name: "Electrical Repairs", desc: "Wiring, Socket Fixes & Fault Checks", href: "/book?category=electrical", icon: Zap },
-  { name: "AC Servicing & Repair", desc: "Gas Refill, Installation & Maintenance", href: "/book?category=hvac", icon: SnowFlake },
+  { name: "AC Servicing & Repair", desc: "Gas Refill, Installation & Maintenance", href: "/book?category=hvac", icon: Snowflake },
   { name: "Painting & Wall Deco", desc: "Interior, Exterior & POP Finishing", href: "/book?category=painting", icon: Paintbrush },
   { name: "Carpentry & Woodwork", desc: "Furniture Assembly, Doors & Locks", href: "/book?category=carpentry", icon: Hammer },
   { name: "CCTV & Security", desc: "Smart Cameras & Intercom Setup", href: "/book?category=cctv", icon: Camera },

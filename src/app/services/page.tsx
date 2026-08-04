@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { motion } from "framer-motion";
 import {
-  Sparkles, Wrench, Zap, SnowFlake, Paintbrush, Hammer, Camera, SunMedium,
+  Sparkles, Wrench, Zap, Snowflake, Paintbrush, Hammer, Camera, SunMedium,
   CheckCircle2, ArrowRight, ShieldCheck, Star, Clock, MapPin, Users
 } from "lucide-react";
 
@@ -38,7 +38,7 @@ const serviceCatalog = [
   {
     id: "hvac",
     title: "AC Servicing & Gas Refill",
-    icon: SnowFlake,
+    icon: Snowflake,
     price: "From ₦12,000",
     desc: "Split unit & central AC chemical cleaning, R22/R410 gas recharging, compressor repairs & new unit installations.",
     popularItems: ["Split AC Chemical Wash", "Refrigerant Gas Top-Up", "AC Compressor Replacement", "New AC Unit Installation"],
