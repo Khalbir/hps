@@ -1167,3 +1167,34 @@ body, #__next, main {
   }
 }
 
+/* ============================================
+   SMARTPHONE HORIZONTAL (LANDSCAPE) OPTIMIZATION
+   ============================================ */
+@media (max-height: 520px) and (orientation: landscape) {
+  :root {
+    --header-height: 54px;
+  }
+
+  .section {
+    padding-block: var(--space-8);
+  }
+
+  /* Compact hero vertical padding for landscape view */
+  main {
+    padding-top: 54px;
+  }
+
+  /* Modals & Overlays scrollable in landscape */
+  [class*="modal"], [class*="Modal"], [class*="overlay"], [class*="Overlay"], [class*="drawer"], [class*="Drawer"] {
+    max-height: 95vh !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Prevent oversized full-screen height gaps in landscape */
+  [class*="hero"], [class*="Hero"] {
+    min-height: auto !important;
+    padding-block: var(--space-8) !important;
+  }
+}
+
