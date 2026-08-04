@@ -124,15 +124,17 @@ interface SendPasswordResetEmailParams {
   email: string;
   name: string;
   token: string;
+  resetUrl?: string;
 }
 
 export async function sendPasswordResetEmail({
   email,
   name,
   token,
+  resetUrl: customResetUrl,
 }: SendPasswordResetEmailParams) {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
-  const resetUrl = `${baseUrl}/auth/reset-password?token=${token}`;
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://handyhubpro.ng";
+  const resetUrl = customResetUrl || `${baseUrl}/auth/reset-password?token=${token}`;
 
   const transporter = nodemailer.createTransport({
     host: process.env.SMTP_HOST || "smtp.gmail.com",
@@ -199,7 +201,7 @@ export async function sendPasswordResetEmail({
   try {
     if (process.env.SMTP_USER && process.env.SMTP_PASS) {
       await transporter.sendMail({
-        from: process.env.SMTP_FROM || `"HandyHub Pro Security" <noreply@handyhubpro.ng>`,
+        from: process.env.SMTP_FROM || `"HandyHub Pro Solutions" <info@handyhubpro.ng>`,
         to: email,
         subject: "Reset Your HandyHub Pro Password",
         html: htmlContent,
