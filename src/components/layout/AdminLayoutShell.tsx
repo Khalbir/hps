@@ -108,6 +108,11 @@ export function AdminLayoutShell({ children }: { children: ReactNode }) {
   // Filter allowed navigation items based on active role permissions
   const filteredNav = adminNav.filter((item) => hasPermission(role, item.permissionKey));
 
+  // Check if current page is allowed for active staff role
+  const activeNavItem = adminNav.find((item) => item.href === pathname);
+  const isPageAllowed = !activeNavItem || hasPermission(role, activeNavItem.permissionKey);
+  const firstAllowedHref = filteredNav[0]?.href || "/admin/dashboard";
+
   return (
     <div className={styles.adminDashLayout}>
       {sidebarOpen && (
@@ -211,7 +216,23 @@ export function AdminLayoutShell({ children }: { children: ReactNode }) {
           </div>
         </div>
 
-        {children}
+        {isPageAllowed ? (
+          children
+        ) : (
+          <div className="card" style={{ background: "#1E293B", border: "1px solid #EF4444", borderRadius: "16px", padding: "40px", textAlign: "center", maxWidth: "600px", margin: "40px auto" }}>
+            <Lock size={48} color="#EF4444" style={{ marginBottom: "16px" }} />
+            <h2 className="h3" style={{ color: "#F8FAFC", margin: "0 0 8px 0" }}>Access Restricted 🔒</h2>
+            <p style={{ color: "#CBD5E1", fontSize: "14px", marginBottom: "20px" }}>
+              Your assigned staff role (<strong style={{ color: badgeInfo.badgeColor }}>{badgeInfo.label}</strong>) does not have administrative permission to view <strong>{activeNavItem?.label}</strong>.
+            </p>
+            <div style={{ background: "#0F172A", padding: "14px", borderRadius: "8px", border: "1px solid #334155", marginBottom: "24px", textAlign: "left", fontSize: "13px", color: "#94A3B8" }}>
+              🛡️ <strong>RBAC Policy Notice:</strong> Only <strong style={{ color: "#EF4444" }}>Chief Commander</strong> or <strong style={{ color: "#F97316" }}>Admin General</strong> can modify staff privileges or system settings. Contact your administrator if you require additional operational privileges.
+            </div>
+            <Link href={firstAllowedHref} className="btn btn-primary btn-md" style={{ background: "#0EA5E9", display: "inline-flex", alignItems: "center", gap: "8px" }}>
+              Return to My Authorized Dashboard ↗
+            </Link>
+          </div>
+        )}
       </main>
     </div>
   );

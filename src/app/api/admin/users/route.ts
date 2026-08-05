@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { hash } from "bcryptjs";
 
 export async function GET(request: Request) {
   try {
@@ -34,6 +35,57 @@ export async function GET(request: Request) {
   }
 }
 
+// POST: Add or promote staff member by email
+export async function POST(request: Request) {
+  try {
+    const body = await request.json();
+    const { email, firstName, lastName, role, phone } = body;
+
+    if (!email || !role) {
+      return NextResponse.json({ error: "Email and designated Staff Role are required" }, { status: 400 });
+    }
+
+    const cleanEmail = email.toLowerCase().trim();
+    let user = await prisma.user.findUnique({ where: { email: cleanEmail } });
+
+    if (user) {
+      user = await prisma.user.update({
+        where: { id: user.id },
+        data: {
+          role,
+          isVerified: true,
+          firstName: firstName || user.firstName,
+          lastName: lastName || user.lastName,
+          phone: phone || user.phone,
+        },
+      });
+    } else {
+      const tempHash = await hash(`StaffPassword_${Date.now()}`, 10);
+      user = await prisma.user.create({
+        data: {
+          email: cleanEmail,
+          firstName: firstName || "Staff",
+          lastName: lastName || "Member",
+          phone: phone || "+2349000000000",
+          password: tempHash,
+          role,
+          isVerified: true,
+        },
+      });
+    }
+
+    return NextResponse.json({
+      success: true,
+      message: `Staff member ${user.email} successfully assigned role: ${role}`,
+      user,
+    });
+  } catch (error) {
+    console.error("[Admin Users POST Error]:", error);
+    return NextResponse.json({ error: "Failed to assign staff role" }, { status: 500 });
+  }
+}
+
+// PUT: Change existing staff member role
 export async function PUT(request: Request) {
   try {
     const body = await request.json();
@@ -45,7 +97,7 @@ export async function PUT(request: Request) {
 
     const updatedUser = await prisma.user.update({
       where: { id: userId },
-      data: { role },
+      data: { role, isVerified: true },
     });
 
     return NextResponse.json({
