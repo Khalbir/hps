@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ProLayoutShell } from "@/components/layout/ProLayoutShell";
 import {
   Camera, Key, Clock, MapPin, User, ArrowRight, UploadCloud, CheckCircle, X,
+  Inbox, RefreshCw, AlertCircle
 } from "lucide-react";
 import styles from "../pro.module.css";
 
@@ -17,45 +18,15 @@ export interface ActiveJob {
   date: string;
   time: string;
   price: string;
-  status: "CONFIRMED" | "IN_PROGRESS" | "COMPLETED_PENDING_RELEASE" | "PAID";
+  status: string;
   otpCode: string;
   beforePhoto: string | null;
   afterPhoto: string | null;
 }
 
-const mockJobs: ActiveJob[] = [
-  {
-    id: "HHP-M1K9X",
-    service: "Deep Cleaning",
-    customer: "Amina I.",
-    phone: "+234 802 111 4455",
-    address: "12 Aminu Kano Crescent, Maitama, Abuja",
-    date: "Today",
-    time: "2:00 PM",
-    price: "₦25,000",
-    status: "CONFIRMED",
-    otpCode: "4819",
-    beforePhoto: null,
-    afterPhoto: null,
-  },
-  {
-    id: "HHP-N2L0Y",
-    service: "Residential Cleaning",
-    customer: "Chidi O.",
-    phone: "+234 803 222 5566",
-    address: "Plot 5, Wuse 2, Abuja",
-    date: "Tomorrow",
-    time: "9:00 AM",
-    price: "₦15,000",
-    status: "CONFIRMED",
-    otpCode: "9204",
-    beforePhoto: null,
-    afterPhoto: null,
-  },
-];
-
 export default function ProJobsPage() {
-  const [jobs, setJobs] = useState<ActiveJob[]>(mockJobs);
+  const [jobs, setJobs] = useState<ActiveJob[]>([]);
+  const [loading, setLoading] = useState(true);
   const [selectedJob, setSelectedJob] = useState<ActiveJob | null>(null);
 
   const [beforeUploaded, setBeforeUploaded] = useState(false);
@@ -63,227 +34,339 @@ export default function ProJobsPage() {
   const [inputOtp, setInputOtp] = useState("");
   const [otpError, setOtpError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
-  const handleStartJob = (jobId: string) => {
-    if (!beforeUploaded) return;
-    setJobs((prev) =>
-      prev.map((j) => (j.id === jobId ? { ...j, status: "IN_PROGRESS", beforePhoto: "https://handyhub.ng/photos/before_sample.jpg" } : j))
-    );
-    if (selectedJob) {
-      setSelectedJob({ ...selectedJob, status: "IN_PROGRESS", beforePhoto: "https://handyhub.ng/photos/before_sample.jpg" });
+  const fetchRealActiveJobs = async () => {
+    setLoading(true);
+    let activeUserId = "";
+    let activeEmail = "";
+
+    if (typeof window !== "undefined") {
+      try {
+        const storedPro = localStorage.getItem("handyhub_pro_session");
+        const storedUser = localStorage.getItem("handyhub_user");
+        const parsed = storedPro ? JSON.parse(storedPro) : storedUser ? JSON.parse(storedUser) : null;
+        if (parsed?.user?.id || parsed?.id) activeUserId = parsed.user?.id || parsed.id;
+        if (parsed?.user?.email || parsed?.email) activeEmail = parsed.user?.email || parsed.email;
+      } catch (err) {
+        console.warn("Session read warning:", err);
+      }
+    }
+
+    try {
+      const res = await fetch(`/api/pro/jobs?userId=${activeUserId}&email=${encodeURIComponent(activeEmail)}`);
+      const data = await res.json();
+      if (res.ok && data.jobs) {
+        setJobs(data.jobs);
+      }
+    } catch (err) {
+      console.warn("Failed to fetch real active jobs:", err);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleCompleteJobWithOtp = (jobId: string) => {
+  useEffect(() => {
+    fetchRealActiveJobs();
+  }, []);
+
+  const handleStartJob = async (jobId: string) => {
+    if (!beforeUploaded) return;
+    setSubmitting(true);
+    try {
+      const res = await fetch("/api/pro/jobs", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "START_JOB",
+          bookingReference: jobId,
+          beforePhotoUrl: "https://handyhub.ng/photos/before_sample.jpg",
+        }),
+      });
+
+      if (res.ok) {
+        setJobs((prev) =>
+          prev.map((j) => (j.id === jobId ? { ...j, status: "IN_PROGRESS", beforePhoto: "https://handyhub.ng/photos/before_sample.jpg" } : j))
+        );
+        if (selectedJob) {
+          setSelectedJob({ ...selectedJob, status: "IN_PROGRESS", beforePhoto: "https://handyhub.ng/photos/before_sample.jpg" });
+        }
+        setSuccessMessage("Job started successfully! Before photo logged.");
+        setTimeout(() => setSuccessMessage(""), 3000);
+      }
+    } catch (err) {
+      setOtpError("Failed to update job status.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleCompleteJobWithOtp = async (jobId: string) => {
     setOtpError("");
     if (!afterUploaded) {
       setOtpError("Please upload the 'After Job Photo' before completing.");
       return;
     }
-    if (inputOtp.trim() !== selectedJob?.otpCode) {
-      setOtpError("Invalid Completion OTP. Please ask customer for the correct 4-digit code shown on their app.");
+    if (!inputOtp.trim()) {
+      setOtpError("Please enter the 4-digit completion OTP code provided by the customer.");
       return;
     }
 
-    setJobs((prev) =>
-      prev.map((j) =>
-        j.id === jobId
-          ? {
-              ...j,
-              status: "COMPLETED_PENDING_RELEASE",
-              afterPhoto: "https://handyhub.ng/photos/after_sample.jpg",
-            }
-          : j
-      )
-    );
-    setSuccessMessage("Job verified with OTP! Payment entered 24-hour escrow holding window.");
-    setTimeout(() => {
-      setSelectedJob(null);
-      setSuccessMessage("");
-      setInputOtp("");
-      setBeforeUploaded(false);
-      setAfterUploaded(false);
-    }, 2500);
+    setSubmitting(true);
+    try {
+      const res = await fetch("/api/pro/jobs", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "COMPLETE_JOB",
+          bookingReference: jobId,
+          otpCode: inputOtp.trim(),
+          afterPhotoUrl: "https://handyhub.ng/photos/after_sample.jpg",
+        }),
+      });
+
+      const data = await res.json();
+      if (res.ok) {
+        setJobs((prev) =>
+          prev.map((j) =>
+            j.id === jobId
+              ? {
+                  ...j,
+                  status: "COMPLETED",
+                  afterPhoto: "https://handyhub.ng/photos/after_sample.jpg",
+                }
+              : j
+          )
+        );
+        setSuccessMessage("Job verified with OTP! Escrow payout credited to your wallet.");
+        setTimeout(() => {
+          setSelectedJob(null);
+          setSuccessMessage("");
+          setInputOtp("");
+          setBeforeUploaded(false);
+          setAfterUploaded(false);
+          fetchRealActiveJobs();
+        }, 2500);
+      } else {
+        setOtpError(data.error || "Failed to complete job.");
+      }
+    } catch (err) {
+      setOtpError("Network error completing job.");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
     <ProLayoutShell>
-      <div style={{ marginBottom: "var(--space-6)" }}>
-        <h1 className="h2">My Active Jobs & Execution Proof</h1>
-        <p style={{ color: "var(--text-secondary)", fontSize: "var(--fs-md)" }}>
-          Upload before/after photos and input customer completion OTP to unlock escrow payout.
-        </p>
+      <div style={{ marginBottom: "var(--space-6)", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
+        <div>
+          <h1 className="h2">My Active Jobs & Execution Proof</h1>
+          <p style={{ color: "var(--text-secondary)", fontSize: "var(--fs-md)" }}>
+            Upload before/after photos and input customer completion OTP to unlock escrow payout.
+          </p>
+        </div>
+        <button onClick={fetchRealActiveJobs} className="btn btn-secondary btn-sm" style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <RefreshCw size={14} /> Refresh Jobs
+        </button>
       </div>
 
-      <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
-        {jobs.map((job) => (
-          <div key={job.id} className="card" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "var(--space-4)" }}>
-            <div>
-              <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)", marginBottom: "var(--space-2)" }}>
-                <h3 className="h4">{job.service}</h3>
-                <span
-                  className="badge"
-                  style={{
-                    background:
-                      job.status === "COMPLETED_PENDING_RELEASE"
-                        ? "rgba(16,185,129,0.15)"
-                        : job.status === "IN_PROGRESS"
-                        ? "rgba(139,92,246,0.15)"
-                        : "rgba(59,130,246,0.15)",
-                    color:
-                      job.status === "COMPLETED_PENDING_RELEASE"
-                        ? "#10B981"
-                        : job.status === "IN_PROGRESS"
-                        ? "#8B5CF6"
-                        : "#3B82F6",
-                  }}
-                >
-                  {job.status === "COMPLETED_PENDING_RELEASE" ? "Escrow Holding (24h)" : job.status}
-                </span>
-              </div>
-              <p style={{ color: "var(--text-secondary)", fontSize: "var(--fs-sm)", display: "flex", alignItems: "center", gap: "var(--space-2)" }}>
-                <User size={14} /> Client: {job.customer} ({job.phone})
-              </p>
-              <p style={{ color: "var(--text-tertiary)", fontSize: "var(--fs-xs)", marginTop: "var(--space-1)", display: "flex", alignItems: "center", gap: "var(--space-2)" }}>
-                <MapPin size={14} /> {job.address}
-              </p>
-            </div>
-
-            <div style={{ display: "flex", alignItems: "center", gap: "var(--space-4)" }}>
-              <span style={{ fontSize: "var(--fs-lg)", fontWeight: "var(--fw-bold)", color: "var(--color-primary-400)" }}>{job.price}</span>
-              <button
-                className="btn btn-primary btn-md"
-                onClick={() => {
-                  setSelectedJob(job);
-                  setBeforeUploaded(!!job.beforePhoto);
-                  setAfterUploaded(!!job.afterPhoto);
-                }}
-              >
-                {job.status === "CONFIRMED" ? "Start & Upload Before Photo" : job.status === "IN_PROGRESS" ? "Complete & Input OTP" : "View Escrow Payout"}
-                <ArrowRight size={16} />
-              </button>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* Modal Workflow */}
-      <AnimatePresence>
-        {selectedJob && (
-          <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.75)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100, padding: "var(--space-4)" }}>
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="card"
-              style={{ width: "100%", maxWidth: 600 }}
-            >
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid var(--border-primary)", paddingBottom: "var(--space-4)", marginBottom: "var(--space-6)" }}>
-                <div>
-                  <h3 className="h4">{selectedJob.service} — Job Execution Proof</h3>
-                  <p style={{ fontSize: "var(--fs-xs)", color: "var(--text-secondary)" }}>Booking Ref: {selectedJob.id}</p>
+      {loading ? (
+        <div style={{ padding: "40px", textAlign: "center", color: "var(--text-tertiary)" }}>Loading real assigned database jobs...</div>
+      ) : jobs.length === 0 ? (
+        <div className="card" style={{ padding: "50px", textAlign: "center", background: "var(--bg-tertiary)", borderRadius: "var(--radius-2xl)", border: "1px solid var(--border-primary)" }}>
+          <Inbox size={48} color="#0EA5E9" style={{ opacity: 0.6, marginBottom: 16 }} />
+          <h3 className="h3" style={{ margin: "0 0 8px 0", color: "var(--text-primary)" }}>No Active Job Dispatches Assigned</h3>
+          <p style={{ margin: 0, fontSize: "var(--fs-sm)", color: "var(--text-secondary)", maxWidth: "480px", marginLeft: "auto", marginRight: "auto" }}>
+            Zero demo jobs active. When customers book your category services in your region, new dispatch requests will assign to you here for execution proof & OTP payout verification.
+          </p>
+        </div>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
+          {jobs.map((job) => (
+            <div key={job.id} className="card" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "var(--space-4)" }}>
+              <div>
+                <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)", marginBottom: "var(--space-2)" }}>
+                  <h3 className="h4" style={{ margin: 0 }}>{job.service}</h3>
+                  <span className="badge" style={{ background: job.status === "COMPLETED" ? "rgba(16,185,129,0.15)" : job.status === "IN_PROGRESS" ? "rgba(14,165,233,0.15)" : "rgba(245,158,11,0.15)", color: job.status === "COMPLETED" ? "#10B981" : job.status === "IN_PROGRESS" ? "#0EA5E9" : "#F59E0B", fontSize: "11px", fontWeight: 700 }}>
+                    {job.status}
+                  </span>
                 </div>
-                <button onClick={() => setSelectedJob(null)} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-secondary)" }}>
-                  <X size={20} />
+                <div style={{ display: "flex", gap: "var(--space-4)", fontSize: "var(--fs-xs)", color: "var(--text-secondary)", flexWrap: "wrap" }}>
+                  <span style={{ display: "flex", alignItems: "center", gap: 4 }}><User size={14} /> Client: {job.customer} ({job.phone})</span>
+                  <span style={{ display: "flex", alignItems: "center", gap: 4 }}><MapPin size={14} /> {job.address}</span>
+                  <span style={{ display: "flex", alignItems: "center", gap: 4 }}><Clock size={14} /> {job.date} • {job.time}</span>
+                </div>
+              </div>
+
+              <div style={{ display: "flex", alignItems: "center", gap: "var(--space-4)" }}>
+                <strong style={{ fontSize: "var(--fs-lg)", color: "var(--color-primary-400)" }}>{job.price}</strong>
+                <button
+                  className="btn btn-primary btn-md"
+                  style={{ background: "#0EA5E9" }}
+                  onClick={() => setSelectedJob(job)}
+                >
+                  {job.status === "IN_PROGRESS" ? "Verify Completion OTP ➔" : "Start & Upload Before Photo ➔"}
                 </button>
               </div>
+            </div>
+          ))}
+        </div>
+      )}
 
-              {successMessage ? (
-                <div style={{ textAlign: "center", padding: "var(--space-8) 0" }}>
-                  <CheckCircle size={48} color="#10B981" style={{ margin: "0 auto var(--space-4)" }} />
-                  <h3 className="h4" style={{ color: "#10B981" }}>{successMessage}</h3>
+      {/* Execution Proof & OTP Modal */}
+      {selectedJob && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 9999,
+            background: "rgba(9, 13, 22, 0.92)",
+            backdropFilter: "blur(12px)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: 16,
+          }}
+          onClick={() => setSelectedJob(null)}
+        >
+          <div
+            className="card"
+            style={{ width: "100%", maxWidth: "520px", background: "#1E293B", border: "1px solid #334155", borderRadius: 20, padding: 24 }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16, borderBottom: "1px solid #334155", paddingBottom: 12 }}>
+              <div>
+                <h3 className="h4" style={{ margin: 0, color: "#F8FAFC" }}>Job Execution & Escrow Release</h3>
+                <span style={{ fontSize: 12, color: "#94A3B8" }}>Ref: {selectedJob.id} • Client: {selectedJob.customer}</span>
+              </div>
+              <button onClick={() => setSelectedJob(null)} style={{ background: "none", border: "none", color: "#94A3B8", cursor: "pointer" }}>✕</button>
+            </div>
+
+            {successMessage && (
+              <div style={{ background: "rgba(16,185,129,0.2)", border: "1px solid #10B981", color: "#10B981", padding: 12, borderRadius: 8, marginBottom: 16, fontSize: 13 }}>
+                ✅ {successMessage}
+              </div>
+            )}
+
+            {otpError && (
+              <div style={{ background: "rgba(239,68,68,0.2)", border: "1px solid #EF4444", color: "#EF4444", padding: 12, borderRadius: 8, marginBottom: 16, fontSize: 13 }}>
+                ⚠️ {otpError}
+              </div>
+            )}
+
+            {/* Step 1: Start Job & Upload Before Photo */}
+            {selectedJob.status !== "IN_PROGRESS" && selectedJob.status !== "COMPLETED" && (
+              <div>
+                <strong style={{ fontSize: 13, color: "#0EA5E9", textTransform: "uppercase", display: "block", marginBottom: 8 }}>
+                  Step 1: Upload Before-Job Photo Evidence
+                </strong>
+                <p style={{ fontSize: 13, color: "#CBD5E1", marginBottom: 16 }}>
+                  Take or upload a photo of the client site before commencing work to protect your rating and verify job start.
+                </p>
+
+                <div
+                  onClick={() => setBeforeUploaded(true)}
+                  style={{
+                    border: beforeUploaded ? "2px solid #10B981" : "2px dashed #334155",
+                    background: beforeUploaded ? "rgba(16,185,129,0.1)" : "#0F172A",
+                    padding: 24,
+                    borderRadius: 12,
+                    textAlign: "center",
+                    cursor: "pointer",
+                    marginBottom: 20,
+                  }}
+                >
+                  <Camera size={32} color={beforeUploaded ? "#10B981" : "#0EA5E9"} style={{ marginBottom: 8 }} />
+                  <strong style={{ display: "block", color: beforeUploaded ? "#10B981" : "#F8FAFC", fontSize: 14 }}>
+                    {beforeUploaded ? "✓ Before-Job Photo Captured & Attached" : "Tap to Capture / Select Before Photo"}
+                  </strong>
+                  <span style={{ fontSize: 11, color: "#94A3B8" }}>Supports JPG, PNG, WEBP files</span>
                 </div>
-              ) : (
-                <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)" }}>
-                  {/* Step A: Before Photo (If Confirmed) */}
-                  {selectedJob.status === "CONFIRMED" && (
-                    <div>
-                      <h4 style={{ fontSize: "var(--fs-sm)", marginBottom: "var(--space-2)", display: "flex", alignItems: "center", gap: "var(--space-2)" }}>
-                        <Camera size={18} color="#0EA5E9" /> 1. Upload Before-Job Photo (Mandatory Checkpoint)
-                      </h4>
-                      <p style={{ fontSize: "var(--fs-xs)", color: "var(--text-secondary)", marginBottom: "var(--space-4)" }}>
-                        Photograph the area or broken item before touching anything to protect yourself against false damages.
-                      </p>
-                      <div
-                        className={`${styles.uploadBox} ${beforeUploaded ? styles.uploadBoxDone : ""}`}
-                        onClick={() => setBeforeUploaded(true)}
-                      >
-                        <UploadCloud size={28} />
-                        <span>{beforeUploaded ? "✓ Before-Job Photo Uploaded" : "Tap to Upload / Capture Before-Job Photo"}</span>
-                      </div>
-                      <button
-                        className="btn btn-primary btn-md w-full"
-                        style={{ marginTop: "var(--space-6)" }}
-                        disabled={!beforeUploaded}
-                        onClick={() => handleStartJob(selectedJob.id)}
-                      >
-                        Clock-In & Start Work
-                      </button>
-                    </div>
-                  )}
 
-                  {/* Step B: After Photo & OTP (If In Progress) */}
-                  {selectedJob.status === "IN_PROGRESS" && (
-                    <div>
-                      <h4 style={{ fontSize: "var(--fs-sm)", marginBottom: "var(--space-2)", display: "flex", alignItems: "center", gap: "var(--space-2)" }}>
-                        <Camera size={18} color="#8B5CF6" /> 1. Upload After-Job Photo (Completed Resolution)
-                      </h4>
-                      <div
-                        className={`${styles.uploadBox} ${afterUploaded ? styles.uploadBoxDone : ""}`}
-                        onClick={() => setAfterUploaded(true)}
-                        style={{ marginBottom: "var(--space-6)" }}
-                      >
-                        <UploadCloud size={28} />
-                        <span>{afterUploaded ? "✓ After-Job Photo Uploaded" : "Tap to Upload / Capture Finished Fix Photo"}</span>
-                      </div>
-
-                      <h4 style={{ fontSize: "var(--fs-sm)", marginBottom: "var(--space-2)", display: "flex", alignItems: "center", gap: "var(--space-2)" }}>
-                        <Key size={18} color="#F59E0B" /> 2. Enter Customer 4-Digit Completion OTP
-                      </h4>
-                      <p style={{ fontSize: "var(--fs-xs)", color: "var(--text-secondary)", marginBottom: "var(--space-3)" }}>
-                        Ask the customer for their completion PIN code shown on their HandyHub app. (Demo OTP Code: <code>{selectedJob.otpCode}</code>)
-                      </p>
-                      <input
-                        type="text"
-                        maxLength={4}
-                        placeholder="Enter 4-digit OTP"
-                        value={inputOtp}
-                        onChange={(e) => setInputOtp(e.target.value)}
-                        style={{ width: "100%", height: 50, textAlign: "center", fontSize: "var(--fs-xl)", letterSpacing: "0.5em", fontWeight: "bold", background: "var(--bg-tertiary)", border: "2px solid var(--border-primary)", borderRadius: "var(--radius-lg)", color: "var(--text-primary)" }}
-                      />
-
-                      {otpError && <p style={{ color: "#EF4444", fontSize: "var(--fs-xs)", marginTop: "var(--space-2)" }}>{otpError}</p>}
-
-                      <button
-                        className="btn btn-primary btn-lg w-full"
-                        style={{ marginTop: "var(--space-6)" }}
-                        disabled={!afterUploaded || inputOtp.length < 4}
-                        onClick={() => handleCompleteJobWithOtp(selectedJob.id)}
-                      >
-                        Verify OTP & Submit Job for Escrow Release
-                      </button>
-                    </div>
-                  )}
-
-                  {/* Step C: Escrow Pending */}
-                  {selectedJob.status === "COMPLETED_PENDING_RELEASE" && (
-                    <div style={{ textAlign: "center", padding: "var(--space-4) 0" }}>
-                      <Clock size={40} color="#10B981" style={{ margin: "0 auto var(--space-3)" }} />
-                      <h4 className="h4">Payment Held in Escrow (24h Dispute Window)</h4>
-                      <p style={{ fontSize: "var(--fs-sm)", color: "var(--text-secondary)", margin: "var(--space-2) 0 var(--space-4)" }}>
-                        Job complete & OTP verified. Funds ({selectedJob.price}) will automatically disburse to your wallet balance after 24 hours.
-                      </p>
-                      <div className="badge" style={{ background: "rgba(16,185,129,0.15)", color: "#10B981" }}>
-                        Disbursement Countdown: 23h 48m remaining
-                      </div>
-                    </div>
-                  )}
+                <div style={{ display: "flex", gap: 12, justifyContent: "flex-end" }}>
+                  <button className="btn btn-secondary btn-sm" onClick={() => setSelectedJob(null)}>Cancel</button>
+                  <button
+                    className="btn btn-primary btn-sm"
+                    disabled={!beforeUploaded || submitting}
+                    onClick={() => handleStartJob(selectedJob.id)}
+                    style={{ background: "#0EA5E9" }}
+                  >
+                    {submitting ? "Starting..." : "Start Job & Begin Work ➔"}
+                  </button>
                 </div>
-              )}
-            </motion.div>
+              </div>
+            )}
+
+            {/* Step 2: Complete Job & Verify Customer OTP */}
+            {(selectedJob.status === "IN_PROGRESS" || beforeUploaded) && (
+              <div>
+                <strong style={{ fontSize: 13, color: "#10B981", textTransform: "uppercase", display: "block", marginBottom: 8 }}>
+                  Step 2: Upload After-Job Photo & Verify Customer Completion OTP
+                </strong>
+
+                <div
+                  onClick={() => setAfterUploaded(true)}
+                  style={{
+                    border: afterUploaded ? "2px solid #10B981" : "2px dashed #334155",
+                    background: afterUploaded ? "rgba(16,185,129,0.1)" : "#0F172A",
+                    padding: 16,
+                    borderRadius: 12,
+                    textAlign: "center",
+                    cursor: "pointer",
+                    marginBottom: 16,
+                  }}
+                >
+                  <Camera size={28} color={afterUploaded ? "#10B981" : "#0EA5E9"} style={{ marginBottom: 6 }} />
+                  <strong style={{ display: "block", color: afterUploaded ? "#10B981" : "#F8FAFC", fontSize: 13 }}>
+                    {afterUploaded ? "✓ After-Job Proof Photo Captured & Attached" : "Tap to Capture / Select After Photo"}
+                  </strong>
+                </div>
+
+                <div style={{ marginBottom: 20 }}>
+                  <label style={{ fontSize: 12, color: "#64748B", fontWeight: 700, textTransform: "uppercase", display: "block", marginBottom: 6 }}>
+                    Enter 4-Digit Customer Completion OTP Code
+                  </label>
+                  <input
+                    type="text"
+                    maxLength={4}
+                    placeholder="e.g. 4819"
+                    value={inputOtp}
+                    onChange={(e) => setInputOtp(e.target.value)}
+                    style={{
+                      width: "100%",
+                      background: "#0F172A",
+                      border: "1px solid #334155",
+                      borderRadius: 8,
+                      padding: 12,
+                      fontSize: 20,
+                      fontWeight: "bold",
+                      letterSpacing: 4,
+                      textAlign: "center",
+                      color: "#10B981",
+                    }}
+                  />
+                  <span style={{ fontSize: 11, color: "#94A3B8", display: "block", marginTop: 4 }}>
+                    Ask customer for the 4-digit code shown on their HandyHub tracking screen upon completion.
+                  </span>
+                </div>
+
+                <div style={{ display: "flex", gap: 12, justifyContent: "flex-end" }}>
+                  <button className="btn btn-secondary btn-sm" onClick={() => setSelectedJob(null)}>Cancel</button>
+                  <button
+                    className="btn btn-primary btn-sm"
+                    disabled={submitting || !afterUploaded || !inputOtp.trim()}
+                    onClick={() => handleCompleteJobWithOtp(selectedJob.id)}
+                    style={{ background: "#10B981" }}
+                  >
+                    {submitting ? "Verifying..." : "Verify OTP & Release Escrow Payout ✅"}
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
-        )}
-      </AnimatePresence>
+        </div>
+      )}
     </ProLayoutShell>
   );
 }
