@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
 
+export const dynamic = "force-dynamic";
+
 export async function POST(request: Request) {
   try {
     const formData = await request.formData();
@@ -16,7 +18,7 @@ export async function POST(request: Request) {
     const fileExt = file.name.split(".").pop() || "png";
     const fileName = `${folder}/${Date.now()}_${Math.random().toString(36).substring(2, 8)}.${fileExt}`;
 
-    // Attempt direct upload to Supabase Storage Bucket "handyhub-documents"
+    // Direct upload attempt
     let publicUrl = "";
     try {
       const { data, error } = await supabase.storage
@@ -36,7 +38,7 @@ export async function POST(request: Request) {
       console.warn("[Supabase Storage Upload Warning]: Falling back to high-availability CDN Data URI:", storageErr);
     }
 
-    // High-availability CDN Data URI Fallback if bucket permissions or network role key is pending configuration
+    // High-availability CDN Data URI Fallback
     if (!publicUrl) {
       const base64 = buffer.toString("base64");
       const mimeType = file.type || "image/png";

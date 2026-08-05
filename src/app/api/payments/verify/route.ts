@@ -1,25 +1,24 @@
 import { NextResponse } from "next/server";
-import { verifyPaystackPayment, calculateEscrowCommission } from "@/lib/fintech";
+import { verifyAndRecordPayment, calculateEscrowCommission } from "@/lib/fintech";
 
 export async function POST(request: Request) {
   try {
-    const { reference } = await request.json();
+    const { reference, provider } = await request.json();
 
     if (!reference) {
       return NextResponse.json({ error: "Transaction reference is required" }, { status: 400 });
     }
 
-    // Verify status against Gateway API
-    const verification = await verifyPaystackPayment(reference);
+    // Verify status against Modular Gateway Strategy & Update DB + Notifications
+    const verification = await verifyAndRecordPayment(reference, provider);
 
     if (verification.status !== "SUCCESS") {
       return NextResponse.json(
-        { error: "Payment verification failed or pending" },
+        { error: "Payment verification failed or pending", verification },
         { status: 400 }
       );
     }
 
-    // Calculate 15% platform cut vs 85% pro earnings
     const escrowBreakdown = calculateEscrowCommission(verification.amountNgn);
 
     return NextResponse.json({
@@ -27,7 +26,7 @@ export async function POST(request: Request) {
       verification,
       escrowBreakdown,
       unlockedContactDetails: true,
-      message: "Payment verified successfully. Contact details unlocked & funds allocated to 24-hour escrow hold pool.",
+      message: "Payment verified successfully. Booking confirmed and notifications sent to customer and professional.",
     });
   } catch (error) {
     console.error("[Payment Verify REST API Error]:", error);

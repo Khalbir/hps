@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { CreditCard, Building, Wallet, Tag, MapPin, CheckCircle } from "lucide-react";
+import { CreditCard, Building, Wallet, Tag, MapPin, CheckCircle, AlertCircle } from "lucide-react";
 import type { BookingData } from "@/app/book/page";
 import styles from "./Steps.module.css";
 
@@ -13,8 +13,8 @@ interface StepProps {
 }
 
 const paymentMethods = [
-  { id: "paystack", label: "Pay with Card", desc: "Debit/Credit Card via Paystack", icon: CreditCard },
-  { id: "bank-transfer", label: "Bank Transfer", desc: "Direct bank transfer", icon: Building },
+  { id: "paystack", label: "Pay with Card / Paystack", desc: "Debit/Credit Card via Paystack NGN", icon: CreditCard },
+  { id: "monnify", label: "Bank Transfer (Monnify)", desc: "Instant NUBAN transfer", icon: Building },
   { id: "wallet", label: "Wallet Balance", desc: "Pay from your HandyHub wallet", icon: Wallet },
 ];
 
@@ -25,6 +25,7 @@ export function StepPayment({ booking, updateBooking, onNext, onBack }: StepProp
   const [suggestions, setSuggestions] = useState<any[]>([]);
   const [geocodedBadge, setGeocodedBadge] = useState(false);
   const [isPaying, setIsPaying] = useState(false);
+  const [payError, setPayError] = useState("");
 
   const applyPromo = () => {
     setPromoError("");
@@ -55,7 +56,14 @@ export function StepPayment({ booking, updateBooking, onNext, onBack }: StepProp
   return (
     <div className={styles.stepContainer}>
       <h2 className={styles.stepTitle}>Location & Payment</h2>
-      <p className={styles.stepSubtitle}>Enter your address and choose how to pay</p>
+      <p className={styles.stepSubtitle}>Enter your address and choose your payment method</p>
+
+      {payError && (
+        <div style={{ background: "rgba(239,68,68,0.15)", border: "1px solid #EF4444", color: "#EF4444", padding: "12px 16px", borderRadius: "8px", marginBottom: "20px", fontSize: "14px", display: "flex", alignItems: "center", gap: "8px" }}>
+          <AlertCircle size={18} />
+          <span>{payError}</span>
+        </div>
+      )}
 
       {/* Address & Autocomplete */}
       <div className={styles.fieldGroup} style={{ position: "relative" }}>
@@ -65,7 +73,7 @@ export function StepPayment({ booking, updateBooking, onNext, onBack }: StepProp
         <input
           type="text"
           className="input"
-          placeholder="Type address... e.g. Maitama, Wuse 2, Jabi"
+          placeholder="Type address... e.g. Maitama, Wuse 2, Jabi, Ikeja"
           value={booking.address}
           onChange={(e) => {
             updateBooking({ address: e.target.value });
@@ -120,7 +128,7 @@ export function StepPayment({ booking, updateBooking, onNext, onBack }: StepProp
         />
       </div>
 
-      {/* Payment Method */}
+      {/* Payment Method Selector */}
       <div className={styles.fieldGroup}>
         <label className={styles.fieldLabel}>Payment Method</label>
         <div className={styles.paymentMethods}>
@@ -171,8 +179,8 @@ export function StepPayment({ booking, updateBooking, onNext, onBack }: StepProp
       {/* Price Summary */}
       <div className={styles.priceSummary}>
         <div className={styles.priceRow}>
-          <span>{booking.serviceName}</span>
-          <span>₦{(booking.totalPrice || booking.servicePrice).toLocaleString()}</span>
+          <span>{booking.serviceName || "Home Service"}</span>
+          <span>₦{(booking.totalPrice || booking.servicePrice || 15000).toLocaleString()}</span>
         </div>
         {booking.isEmergency && (
           <div className={styles.priceRow}>
@@ -188,11 +196,10 @@ export function StepPayment({ booking, updateBooking, onNext, onBack }: StepProp
         )}
         <div className={`${styles.priceRow} ${styles.priceTotal}`}>
           <span>Total</span>
-          <span>₦{Math.max(0, finalPrice).toLocaleString()}</span>
+          <span>₦{Math.max(0, finalPrice || 15000).toLocaleString()}</span>
         </div>
       </div>
 
-      {/* Terms */}
       <p className={styles.termsText}>
         By proceeding, you agree to our{" "}
         <a href="/terms" className={styles.termsLink}>Terms of Service</a> and{" "}
@@ -206,10 +213,11 @@ export function StepPayment({ booking, updateBooking, onNext, onBack }: StepProp
           disabled={isPaying}
           onClick={async () => {
             setIsPaying(true);
+            setPayError("");
             try {
               localStorage.setItem("handyhub_pending_booking", JSON.stringify({
                 ...booking,
-                totalPrice: Math.max(0, finalPrice),
+                totalPrice: Math.max(0, finalPrice || 15000),
               }));
 
               const res = await fetch("/api/payments/initialize", {
@@ -217,10 +225,11 @@ export function StepPayment({ booking, updateBooking, onNext, onBack }: StepProp
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                   email: "info@handyhubpro.ng",
-                  amountNgn: Math.max(100, finalPrice),
+                  amountNgn: Math.max(100, finalPrice || 15000),
                   bookingId: booking.serviceCategory || "BKG",
                   customerName: "HandyHub Customer",
                   customerPhone: "+2348122222936",
+                  preferredGateway: booking.paymentMethod === "monnify" ? "MONNIFY" : "PAYSTACK",
                 }),
               });
 
@@ -228,22 +237,22 @@ export function StepPayment({ booking, updateBooking, onNext, onBack }: StepProp
               if (res.ok && data.checkout?.authorizationUrl) {
                 window.location.href = data.checkout.authorizationUrl;
               } else {
+                setPayError(data.error || "Failed to initialize payment gateway.");
                 setIsPaying(false);
-                onNext();
               }
-            } catch {
+            } catch (err: any) {
+              setPayError("Network error initializing Paystack gateway. Please try again.");
               setIsPaying(false);
-              onNext();
             }
           }}
         >
           {isPaying ? (
             <>
               <span className="spinner" style={{ width: 18, height: 18, marginRight: 8, display: "inline-block" }} />
-              Connecting to Paystack...
+              Connecting to Paystack Gateway...
             </>
           ) : (
-            `Confirm & Pay ₦${Math.max(0, finalPrice).toLocaleString()}`
+            `Confirm & Pay ₦${Math.max(0, finalPrice || 15000).toLocaleString()}`
           )}
         </button>
       </div>

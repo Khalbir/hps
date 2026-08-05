@@ -41,6 +41,8 @@ model User {
   payments      Payment[]
   notifications Notification[]
   sessions      Session[]
+  disputesRaised   Dispute[]  @relation("CustomerDisputes")
+  disputesAssigned Dispute[]  @relation("AdminDisputes")
 }
 
 model Session {
@@ -72,6 +74,18 @@ model Professional {
   latitude           Float?
   longitude          Float?
   responseTime       Int?      // in minutes
+  
+  // Structured Verification & Audit
+  idType             String?   // NIN, DRIVERS_LICENSE, PASSPORT, VOTERS_CARD
+  idNumber           String?
+  idUrl              String?   // Image/Doc URL
+  addressProofUrl    String?   // Document URL
+  bvn                String?
+  addressVerified    Boolean   @default(false)
+  verificationNotes  String?
+  verifiedBy         String?
+  verifiedAt         DateTime?
+
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
 
@@ -80,6 +94,7 @@ model Professional {
   bookings Booking[] @relation("ProfessionalBookings")
   reviews  Review[]  @relation("ProfessionalReviews")
   services ProfessionalService[]
+  disputes Dispute[]  @relation("ProfessionalDisputes")
 }
 
 model ProfessionalService {
@@ -154,7 +169,7 @@ model Booking {
   customerId     String
   professionalId String?
   serviceId      String
-  status         String   @default("PENDING") // PENDING, CONFIRMED, IN_PROGRESS, COMPLETED, CANCELLED
+  status         String   @default("PENDING") // PENDING, ASSIGNED, ACCEPTED, EN_ROUTE, WORK_IN_PROGRESS, COMPLETED, CANCELLED, REFUNDED
   scheduledDate  DateTime
   scheduledTime  String
   propertyType   String   @default("HOME")
@@ -173,6 +188,15 @@ model Booking {
   cancelReason   String?
   promoCodeId    String?
   discountAmount Float    @default(0)
+
+  // Lifecycle Timestamps
+  assignedAt     DateTime?
+  acceptedAt     DateTime?
+  startedAt      DateTime?
+  completedAt    DateTime?
+  cancelledAt    DateTime?
+  refundedAt     DateTime?
+
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
@@ -183,6 +207,7 @@ model Booking {
   promoCode    PromoCode?    @relation(fields: [promoCodeId], references: [id])
   payments     Payment[]
   review       Review?
+  dispute      Dispute?
 }
 
 // ============================================
@@ -195,7 +220,7 @@ model Payment {
   userId    String
   amount    Float
   currency  String   @default("NGN")
-  provider  String   @default("PAYSTACK") // PAYSTACK, FLUTTERWAVE, WALLET
+  provider  String   @default("PAYSTACK") // PAYSTACK, MONNIFY, FLUTTERWAVE, WALLET
   reference String   @unique
   status    String   @default("PENDING") // PENDING, SUCCESS, FAILED, REFUNDED
   metadata  String   @default("{}") // JSON
@@ -222,6 +247,33 @@ model Review {
   booking      Booking      @relation(fields: [bookingId], references: [id])
   customer     User         @relation("CustomerReviews", fields: [customerId], references: [id])
   professional Professional @relation("ProfessionalReviews", fields: [professionalId], references: [id])
+}
+
+// ============================================
+// COMPLAINTS & DISPUTES
+// ============================================
+
+model Dispute {
+  id              String    @id @default(cuid())
+  reference       String    @unique @default(cuid())
+  bookingId       String    @unique
+  customerId      String
+  professionalId  String
+  assignedToId    String?
+  reason          String    // POOR_WORKMANSHIP, PROPERTY_DAMAGE, LATE_ARRIVAL, NO_SHOW, OVERCHARGING, OTHER
+  description     String
+  evidencePhotos  String    @default("[]") // JSON array
+  status          String    @default("OPEN") // OPEN, UNDER_REVIEW, RESOLVED_REFUNDED, RESOLVED_REJECTED, RESOLVED_PARTIAL_REFUND
+  refundAmount    Float?    @default(0)
+  resolutionNotes String?
+  resolvedAt      DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  booking      Booking      @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  customer     User         @relation("CustomerDisputes", fields: [customerId], references: [id], onDelete: Cascade)
+  professional Professional @relation("ProfessionalDisputes", fields: [professionalId], references: [id], onDelete: Cascade)
+  assignedTo   User?        @relation("AdminDisputes", fields: [assignedToId], references: [id])
 }
 
 // ============================================
@@ -262,11 +314,11 @@ model Wallet {
 model WalletTransaction {
   id          String   @id @default(cuid())
   walletId    String
-  type        String   // CREDIT, DEBIT, ESCROW_HOLD, ESCROW_RELEASE
+  type        String   // CREDIT, DEBIT, ESCROW_HOLD, ESCROW_RELEASE, REFUND
   amount      Float
   description String
   reference   String?
-  gateway     String?  // PAYSTACK, FLUTTERWAVE, WALLET
+  gateway     String?  // PAYSTACK, MONNIFY, FLUTTERWAVE, WALLET
   createdAt   DateTime @default(now())
 
   wallet Wallet @relation(fields: [walletId], references: [id], onDelete: Cascade)
@@ -297,7 +349,7 @@ model WithdrawalRequest {
 model Notification {
   id        String   @id @default(cuid())
   userId    String
-  type      String   @default("SYSTEM") // BOOKING, PAYMENT, SYSTEM, PROMO
+  type      String   @default("SYSTEM") // BOOKING, PAYMENT, DISPUTE, VERIFICATION, SYSTEM, PROMO
   title     String
   message   String
   isRead    Boolean  @default(false)
@@ -341,3 +393,4 @@ model AuditLog {
   ipAddress String?
   createdAt DateTime @default(now())
 }
+

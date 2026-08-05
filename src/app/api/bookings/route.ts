@@ -1,9 +1,20 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { checkRateLimit, sanitizeInput } from "@/lib/security";
 
 // POST: Create a new booking
 export async function POST(request: Request) {
   try {
+    // 1. Rate Limiting Check (30 requests / min)
+    const ip = request.headers.get("x-forwarded-for") || "client_ip";
+    const rateCheck = checkRateLimit(`booking_post_${ip}`, 30);
+    if (!rateCheck.allowed) {
+      return NextResponse.json(
+        { error: "Too many booking requests. Please try again in 1 minute." },
+        { status: 429 }
+      );
+    }
+
     const body = await request.json();
     const {
       serviceId,
@@ -24,7 +35,7 @@ export async function POST(request: Request) {
       autoAssign,
     } = body;
 
-    // Validate required fields
+    // Validate required fields & sanitize inputs
     if (!serviceId || !scheduledDate || !scheduledTime || !address) {
       return NextResponse.json(
         { error: "Service, date, time, and address are required" },
@@ -32,28 +43,36 @@ export async function POST(request: Request) {
       );
     }
 
-    // Get the service to verify it exists and get the price
+    const sanitizedAddress = sanitizeInput(address);
+    const sanitizedLandmark = landmark ? sanitizeInput(landmark) : null;
+    const sanitizedNotes = specialNotes ? sanitizeInput(specialNotes) : null;
+
+    // Get service to verify existence
     const service = await prisma.service.findUnique({
       where: { id: serviceId },
       include: { category: true },
     });
 
     if (!service) {
-      return NextResponse.json(
-        { error: "Service not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "Service not found" }, { status: 404 });
     }
 
-    // Generate a booking reference
-    const ref = `HHP-${Date.now().toString(36).toUpperCase()}`;
-
-    // Find or assign a professional
+    // MANDATORY ARTISAN VERIFICATION GATING CHECK
     let assignedProfessionalId: string | null = null;
     if (!autoAssign && technicianId) {
-      assignedProfessionalId = technicianId;
+      const selectedPro = await prisma.professional.findUnique({
+        where: { id: technicianId },
+      });
+
+      if (!selectedPro || selectedPro.verificationStatus !== "VERIFIED") {
+        return NextResponse.json(
+          { error: "Selected artisan is not yet verified. Bookings are strictly restricted to verified artisans only." },
+          { status: 403 }
+        );
+      }
+      assignedProfessionalId = selectedPro.id;
     } else {
-      // Auto-assign: find the highest-rated available professional
+      // Auto-assign: Only select from VERIFIED professionals
       const availablePro = await prisma.professional.findFirst({
         where: {
           isAvailable: true,
@@ -66,7 +85,8 @@ export async function POST(request: Request) {
       }
     }
 
-    // Use demo customer for now (will use session-based auth later)
+    const ref = `HHP-${Date.now().toString(36).toUpperCase()}`;
+
     const demoCustomer = await prisma.user.findFirst({
       where: { role: "CUSTOMER" },
     });
@@ -95,7 +115,6 @@ export async function POST(request: Request) {
           finalDiscount = promo.discountValue;
         }
         promoCodeId = promo.id;
-        // Increment promo usage
         await prisma.promoCode.update({
           where: { id: promo.id },
           data: { usedCount: { increment: 1 } },
@@ -116,11 +135,11 @@ export async function POST(request: Request) {
         propertyType: propertyType || "HOME",
         bedrooms: bedrooms || 1,
         bathrooms: bathrooms || 1,
-        specialNotes: specialNotes || null,
+        specialNotes: sanitizedNotes,
         scheduledDate: new Date(scheduledDate),
         scheduledTime: scheduledTime,
-        address: address,
-        landmark: landmark || null,
+        address: sanitizedAddress,
+        landmark: sanitizedLandmark,
         estimatedPrice: finalPrice,
         discountAmount: finalDiscount,
         paymentMethod: paymentMethod || "paystack",
@@ -128,7 +147,7 @@ export async function POST(request: Request) {
       },
     });
 
-    // Create notification for the customer
+    // Create notification for customer
     await prisma.notification.create({
       data: {
         userId: demoCustomer.id,
@@ -139,7 +158,7 @@ export async function POST(request: Request) {
       },
     });
 
-    // Create notification for the assigned professional
+    // Create notification for assigned professional if verified
     if (assignedProfessionalId) {
       const pro = await prisma.professional.findUnique({
         where: { id: assignedProfessionalId },
@@ -158,7 +177,7 @@ export async function POST(request: Request) {
       }
     }
 
-    // Log audit
+    // Audit log
     await prisma.auditLog.create({
       data: {
         userId: demoCustomer.id,
@@ -174,21 +193,21 @@ export async function POST(request: Request) {
       },
     });
 
-    return NextResponse.json({
-      booking,
-      reference: ref,
-      message: "Booking created successfully",
-    }, { status: 201 });
+    return NextResponse.json(
+      {
+        booking,
+        reference: ref,
+        message: "Booking created successfully",
+      },
+      { status: 201 }
+    );
   } catch (error) {
     console.error("Booking creation error:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
 
-// GET: Fetch bookings (for dashboard)
+// GET: Fetch bookings
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
@@ -224,9 +243,6 @@ export async function GET(request: Request) {
     return NextResponse.json({ bookings });
   } catch (error) {
     console.error("Bookings fetch error:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch bookings" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Failed to fetch bookings" }, { status: 500 });
   }
 }
