@@ -138,14 +138,14 @@ export const ROLE_PERMISSIONS: Record<string, RolePermissions> = {
 
 export const ROLE_LABELS: Record<string, { label: string; description: string; badgeColor: string }> = {
   SUPER_ADMIN: {
-    label: "Super Admin",
+    label: "Chief Commander",
     description: "Full unchecked administrative control across system config, staff roles, and backups.",
     badgeColor: "#EF4444",
   },
   ADMIN: {
-    label: "Super Admin",
-    description: "Full unchecked administrative control.",
-    badgeColor: "#EF4444",
+    label: "Admin General",
+    description: "High-level administrative operational authority.",
+    badgeColor: "#F97316",
   },
   OPERATIONS_MANAGER: {
     label: "Operations Manager",

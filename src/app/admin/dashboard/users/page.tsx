@@ -45,7 +45,7 @@ export default function UsersRoleManagementPage() {
         <div>
           <h1 className="h3">Role-Based Access Control (RBAC) & User Directory</h1>
           <p style={{ color: "var(--text-secondary)", fontSize: "var(--fs-sm)" }}>
-            Assign granular administrative levels: Super Admin, Operations Manager, Verification Officer, Customer Support, and Finance Admin.
+            Assign granular administrative levels: Chief Commander, Admin General, Operations Manager, Verification Officer, Customer Support, and Finance Admin.
           </p>
         </div>
       </header>
