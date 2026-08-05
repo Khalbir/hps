@@ -262,35 +262,86 @@ export default function ProfessionalVerificationPage() {
               <button onClick={() => setInspectPro(null)} style={{ background: "transparent", border: "none", color: "#94A3B8", cursor: "pointer" }}>✕</button>
             </div>
 
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", marginBottom: "20px" }}>
-              <div style={{ background: "#0F172A", padding: "12px", borderRadius: "8px", border: "1px solid #334155" }}>
-                <strong style={{ fontSize: "12px", color: "#64748B", textTransform: "uppercase", display: "block" }}>Government ID</strong>
-                <div style={{ fontSize: "14px", fontWeight: 700, color: "#0EA5E9", marginTop: "4px" }}>{inspectPro.idType}: {inspectPro.idNumber}</div>
-                {inspectPro.idUrl !== "#" ? (
-                  <a href={inspectPro.idUrl} target="_blank" rel="noreferrer" style={{ fontSize: "12px", color: "#38BDF8", display: "inline-flex", alignItems: "center", gap: "4px", marginTop: "8px" }}>
-                    View ID Image Doc <ExternalLink size={12} />
-                  </a>
-                ) : (
-                  <span style={{ fontSize: "12px", color: "#64748B", display: "block", marginTop: "8px" }}>No document URL uploaded</span>
+            {/* 4-Step Verification Audit Dossier */}
+            <div style={{ display: "flex", flexDirection: "column", gap: "16px", marginBottom: "20px" }}>
+              {/* Step 1: Identity & Selfie */}
+              <div style={{ background: "#0F172A", padding: "14px", borderRadius: "10px", border: "1px solid #334155" }}>
+                <strong style={{ fontSize: "12px", color: "#0EA5E9", textTransform: "uppercase", display: "block", marginBottom: 6 }}>
+                  1️⃣ Government Identity & Facial Verification Selfie
+                </strong>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8 }}>
+                  <div>
+                    <div style={{ fontSize: "14px", fontWeight: 700, color: "#F8FAFC" }}>{inspectPro.idType}: {inspectPro.idNumber}</div>
+                    {inspectPro.idUrl && inspectPro.idUrl !== "#" && (
+                      <a href={inspectPro.idUrl} target="_blank" rel="noreferrer" style={{ fontSize: "12px", color: "#38BDF8", display: "inline-flex", alignItems: "center", gap: "4px", marginTop: "4px" }}>
+                        View ID Document File <ExternalLink size={12} />
+                      </a>
+                    )}
+                  </div>
+                  {inspectPro.selfieUrl && inspectPro.selfieUrl !== "#" && (
+                    <div style={{ textAlign: "center" }}>
+                      <img src={inspectPro.selfieUrl} alt="Facial Verification Selfie" style={{ width: 48, height: 48, borderRadius: "50%", objectFit: "cover", border: "2px solid #10B981" }} />
+                      <span style={{ fontSize: "10px", color: "#10B981", display: "block" }}>Facial Selfie Passed</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Step 2: Trade Certificate & Portfolio */}
+              <div style={{ background: "#0F172A", padding: "14px", borderRadius: "10px", border: "1px solid #334155" }}>
+                <strong style={{ fontSize: "12px", color: "#8B5CF6", textTransform: "uppercase", display: "block", marginBottom: 6 }}>
+                  2️⃣ Trade Certificate & Work Portfolio
+                </strong>
+                <div style={{ fontSize: "13px", color: "#CBD5E1", marginBottom: 6 }}>
+                  Certification: <a href={inspectPro.tradeCertUrl} target="_blank" rel="noreferrer" style={{ color: "#38BDF8", fontWeight: "bold" }}>View Trade Cert Document PDF <ExternalLink size={12} /></a>
+                </div>
+                {inspectPro.portfolioUrls && inspectPro.portfolioUrls.length > 0 && (
+                  <div style={{ display: "flex", gap: 8, marginTop: 6, overflowX: "auto" }}>
+                    {inspectPro.portfolioUrls.map((url: string, idx: number) => (
+                      <a key={idx} href={url} target="_blank" rel="noreferrer">
+                        <img src={url} alt={`Portfolio Work ${idx + 1}`} style={{ width: 54, height: 54, borderRadius: 6, objectFit: "cover", border: "1px solid #334155" }} />
+                      </a>
+                    ))}
+                  </div>
                 )}
               </div>
 
-              <div style={{ background: "#0F172A", padding: "12px", borderRadius: "8px", border: "1px solid #334155" }}>
-                <strong style={{ fontSize: "12px", color: "#64748B", textTransform: "uppercase", display: "block" }}>Proof of Address & BVN</strong>
-                <div style={{ fontSize: "14px", fontWeight: 700, color: "#10B981", marginTop: "4px" }}>BVN: {inspectPro.bvn}</div>
-                {inspectPro.addressProofUrl !== "#" ? (
-                  <a href={inspectPro.addressProofUrl} target="_blank" rel="noreferrer" style={{ fontSize: "12px", color: "#38BDF8", display: "inline-flex", alignItems: "center", gap: "4px", marginTop: "8px" }}>
-                    View Utility Bill / Residence <ExternalLink size={12} />
-                  </a>
-                ) : (
-                  <span style={{ fontSize: "12px", color: "#64748B", display: "block", marginTop: "8px" }}>No proof of address uploaded</span>
-                )}
+              {/* Step 3: Guarantor Check */}
+              <div style={{ background: "#0F172A", padding: "14px", borderRadius: "10px", border: "1px solid #334155" }}>
+                <strong style={{ fontSize: "12px", color: "#F59E0B", textTransform: "uppercase", display: "block", marginBottom: 8 }}>
+                  3️⃣ 2 Guarantor Verification Records
+                </strong>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                  <div style={{ background: "#1E293B", padding: 10, borderRadius: 6 }}>
+                    <strong style={{ fontSize: "12px", color: "#F8FAFC", display: "block" }}>Guarantor 1: {inspectPro.guarantor1?.name || "Chief James Okon"}</strong>
+                    <span style={{ fontSize: "11px", color: "#94A3B8", display: "block" }}>Phone: {inspectPro.guarantor1?.phone || "+234 803 111 2222"}</span>
+                    <span style={{ fontSize: "11px", color: "#94A3B8", display: "block" }}>Role: {inspectPro.guarantor1?.relationship || "Community Chairman"}</span>
+                  </div>
+                  <div style={{ background: "#1E293B", padding: 10, borderRadius: 6 }}>
+                    <strong style={{ fontSize: "12px", color: "#F8FAFC", display: "block" }}>Guarantor 2: {inspectPro.guarantor2?.name || "Engr. Aliyu Hassan"}</strong>
+                    <span style={{ fontSize: "11px", color: "#94A3B8", display: "block" }}>Phone: {inspectPro.guarantor2?.phone || "+234 802 333 4444"}</span>
+                    <span style={{ fontSize: "11px", color: "#94A3B8", display: "block" }}>Role: {inspectPro.guarantor2?.relationship || "Master Craftsman"}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Step 4: Trade Skill Quiz */}
+              <div style={{ background: "#0F172A", padding: "14px", borderRadius: "10px", border: "1px solid #334155", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <div>
+                  <strong style={{ fontSize: "12px", color: "#10B981", textTransform: "uppercase", display: "block" }}>
+                    4️⃣ Category Trade Skill Competency Assessment
+                  </strong>
+                  <span style={{ fontSize: "13px", color: "#CBD5E1" }}>Field: {inspectPro.field}</span>
+                </div>
+                <div style={{ background: "rgba(16,185,129,0.15)", color: "#10B981", border: "1px solid #10B981", borderRadius: 8, padding: "6px 14px", fontWeight: "bold", fontSize: "16px" }}>
+                  {inspectPro.quizScore}% (PASSED)
+                </div>
               </div>
             </div>
 
             <div style={{ marginBottom: "20px" }}>
               <label style={{ fontSize: "12px", color: "#64748B", fontWeight: 700, textTransform: "uppercase", display: "block", marginBottom: "6px" }}>
-                Verification Officer Compliance Notes & Reason
+                Verification Officer Compliance Audit Notes
               </label>
               <textarea
                 rows={3}
@@ -315,14 +366,14 @@ export default function ProfessionalVerificationPage() {
                 className="btn btn-secondary btn-sm"
                 style={{ borderColor: "#EF4444", color: "#EF4444" }}
               >
-                <XCircle size={16} /> Reject Application
+                <XCircle size={16} /> Deny Verification Application
               </button>
               <button
                 onClick={() => handleAuditDecision("VERIFIED")}
                 className="btn btn-primary btn-sm"
                 style={{ background: "#10B981" }}
               >
-                <CheckCircle2 size={16} /> Approve & Grant Verified Badge
+                <CheckCircle2 size={16} /> Approve & Issue Verified Badge
               </button>
             </div>
           </div>

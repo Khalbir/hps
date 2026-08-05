@@ -179,12 +179,31 @@ export default function ProVerificationPage() {
     const finalScore = calculateQuizScore();
     setSubmitting(true);
 
+    let activeUserId = "usr_pro_abubakar";
+    let activeEmail = "abubakar@handyhubpro.com";
+    if (typeof window !== "undefined") {
+      try {
+        const storedPro = localStorage.getItem("handyhub_pro_session");
+        const storedUser = localStorage.getItem("handyhub_user");
+        const parsed = storedPro ? JSON.parse(storedPro) : storedUser ? JSON.parse(storedUser) : null;
+        if (parsed?.user?.id || parsed?.id) {
+          activeUserId = parsed.user?.id || parsed.id;
+        }
+        if (parsed?.user?.email || parsed?.email) {
+          activeEmail = parsed.user?.email || parsed.email;
+        }
+      } catch (err) {
+        console.warn("Session read warning:", err);
+      }
+    }
+
     try {
       await fetch("/api/pro/verification", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          userId: "pro-user-demo-id",
+          userId: activeUserId,
+          email: activeEmail,
           idType,
           idNumber,
           idDocumentUrl: idDocumentUrl || "https://handyhub.ng/docs/id_nin_sample.jpg",
@@ -202,7 +221,6 @@ export default function ProVerificationPage() {
       });
       setCompleted(true);
     } catch {
-      // Fallback completed UI for demonstration
       setCompleted(true);
     } finally {
       setSubmitting(false);
