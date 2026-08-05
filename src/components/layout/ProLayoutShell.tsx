@@ -60,26 +60,30 @@ export function ProLayoutShell({ children }: { children: ReactNode }) {
           </button>
         </div>
 
-        <nav className={styles.nav}>
+        <nav className={styles.sidebarNav}>
           {proNav.map((item) => {
             const isActive = pathname === item.href;
             return (
               <Link
                 key={item.href}
                 href={item.href}
-                className={`${styles.navItem} ${isActive ? styles.navItemActive : ""}`}
+                className={`${styles.navLink} ${isActive ? styles.navLinkActive : ""}`}
               >
-                <item.icon size={20} />
+                <item.icon size={18} />
                 <span>{item.label}</span>
-                {item.badge && <span className={styles.badge}>{item.badge}</span>}
+                {item.badge && (
+                  <span className="badge" style={{ marginLeft: "auto", background: "rgba(14,165,233,0.15)", color: "#0EA5E9", fontSize: "10px" }}>
+                    {item.badge}
+                  </span>
+                )}
               </Link>
             );
           })}
         </nav>
 
-        <div className={styles.sidebarFooter}>
-          <Link href="/" className={styles.navItem}>
-            <LogOut size={20} />
+        <div className={styles.sidebarFooter} style={{ padding: "var(--space-4)", borderTop: "1px solid var(--border-primary)" }}>
+          <Link href="/" className={styles.navLink} style={{ color: "var(--text-tertiary)" }}>
+            <LogOut size={18} />
             <span>Switch to Customer</span>
           </Link>
         </div>
