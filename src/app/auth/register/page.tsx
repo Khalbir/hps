@@ -180,6 +180,9 @@ export default function RegisterPage() {
                 <div className={styles.inputWrap}>
                   <User size={18} className={styles.inputIcon} />
                   <input
+                    id="firstName"
+                    name="given-name"
+                    autoComplete="given-name"
                     className={styles.input}
                     placeholder="First name"
                     value={form.firstName}
@@ -189,10 +192,13 @@ export default function RegisterPage() {
                 </div>
               </div>
               <div className={styles.inputGroup}>
-                <label className={styles.label}>Last Name</label>
+                <label htmlFor="lastName" className={styles.label}>Last Name</label>
                 <div className={styles.inputWrap}>
                   <User size={18} className={styles.inputIcon} />
                   <input
+                    id="lastName"
+                    name="family-name"
+                    autoComplete="family-name"
                     className={styles.input}
                     placeholder="Last name"
                     value={form.lastName}
@@ -262,11 +268,14 @@ export default function RegisterPage() {
             )}
 
             <div className={styles.inputGroup}>
-              <label className={styles.label}>Email Address</label>
+              <label htmlFor="email" className={styles.label}>Email Address</label>
               <div className={styles.inputWrap}>
                 <Mail size={18} className={styles.inputIcon} />
                 <input
+                  id="email"
+                  name="email"
                   type="email"
+                  autoComplete="username email"
                   className={styles.input}
                   placeholder="you@example.com"
                   value={form.email}
@@ -277,11 +286,14 @@ export default function RegisterPage() {
             </div>
 
             <div className={styles.inputGroup}>
-              <label className={styles.label}>Phone Number</label>
+              <label htmlFor="phone" className={styles.label}>Phone Number</label>
               <div className={styles.inputWrap}>
                 <Phone size={18} className={styles.inputIcon} />
                 <input
+                  id="phone"
+                  name="tel"
                   type="tel"
+                  autoComplete="tel"
                   className={styles.input}
                   placeholder="+234 800 000 0000"
                   value={form.phone}
@@ -291,11 +303,14 @@ export default function RegisterPage() {
             </div>
 
             <div className={styles.inputGroup}>
-              <label className={styles.label}>Password</label>
+              <label htmlFor="password" className={styles.label}>Password</label>
               <div className={styles.inputWrap}>
                 <Lock size={18} className={styles.inputIcon} />
                 <input
+                  id="password"
+                  name="password"
                   type={showPassword ? "text" : "password"}
+                  autoComplete="new-password"
                   className={styles.input}
                   placeholder="Min 8 characters"
                   value={form.password}
@@ -313,11 +328,14 @@ export default function RegisterPage() {
             </div>
 
             <div className={styles.inputGroup}>
-              <label className={styles.label}>Confirm Password</label>
+              <label htmlFor="confirmPassword" className={styles.label}>Confirm Password</label>
               <div className={styles.inputWrap}>
                 <Lock size={18} className={styles.inputIcon} />
                 <input
+                  id="confirmPassword"
+                  name="confirmPassword"
                   type="password"
+                  autoComplete="new-password"
                   className={styles.input}
                   placeholder="Confirm your password"
                   value={form.confirmPassword}

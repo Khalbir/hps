@@ -115,11 +115,16 @@ export async function POST(request: Request) {
       });
     }
 
-    // 2. Query Database User
+    // 2. Query Database User (By Email OR Phone Number)
     let dbUser = null;
     try {
-      dbUser = await prisma.user.findUnique({
-        where: { email: cleanEmail },
+      dbUser = await prisma.user.findFirst({
+        where: {
+          OR: [
+            { email: cleanEmail },
+            { phone: email.trim() },
+          ],
+        },
         include: {
           professional: true,
         },

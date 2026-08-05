@@ -118,7 +118,9 @@ export default function LoginPage() {
                 <Mail size={18} className={styles.inputIcon} />
                 <input
                   id="email"
+                  name="email"
                   type="email"
+                  autoComplete="username email"
                   className={styles.input}
                   placeholder="you@example.com"
                   value={email}
@@ -137,7 +139,9 @@ export default function LoginPage() {
                 <Lock size={18} className={styles.inputIcon} />
                 <input
                   id="password"
+                  name="password"
                   type={showPassword ? "text" : "password"}
+                  autoComplete="current-password"
                   className={styles.input}
                   placeholder="Enter your password"
                   value={password}
