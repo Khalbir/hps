@@ -1,29 +1,64 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { AdminLayoutShell } from "@/components/layout/AdminLayoutShell";
 import {
   Settings, Download, Database, Shield, MapPin, CreditCard,
-  Bell, CheckCircle2, RefreshCw, Lock, Save
+  Bell, CheckCircle2, RefreshCw, Lock, Save, Inbox
 } from "lucide-react";
 import styles from "../../admin.module.css";
 
-const expansionCities = [
-  { name: "Abuja (FCT)", state: "FCT", active: true, artisans: 142 },
-  { name: "Lagos", state: "Lagos State", active: true, artisans: 98 },
-  { name: "Port Harcourt", state: "Rivers State", active: true, artisans: 38 },
-  { name: "Ibadan", state: "Oyo State", active: true, artisans: 24 },
-  { name: "Kano", state: "Kano State", active: true, artisans: 14 },
-  { name: "Benin City", state: "Edo State", active: true, artisans: 10 },
-  { name: "Enugu", state: "Enugu State", active: false, artisans: 0 },
-  { name: "Abeokuta", state: "Ogun State", active: false, artisans: 0 },
-  { name: "Kaduna", state: "Kaduna State", active: false, artisans: 0 },
-];
+interface CityControl {
+  name: string;
+  state: string;
+  active: boolean;
+  artisans: number;
+}
 
 export default function SettingsAndBackupsPage() {
-  const [cities, setCities] = useState(expansionCities);
+  const [cities, setCities] = useState<CityControl[]>([
+    { name: "Abuja (FCT)", state: "FCT", active: true, artisans: 0 },
+    { name: "Lagos", state: "Lagos State", active: true, artisans: 0 },
+    { name: "Port Harcourt", state: "Rivers State", active: true, artisans: 0 },
+    { name: "Ibadan", state: "Oyo State", active: false, artisans: 0 },
+    { name: "Kano", state: "Kano State", active: false, artisans: 0 },
+    { name: "Benin City", state: "Edo State", active: false, artisans: 0 },
+    { name: "Enugu", state: "Enugu State", active: false, artisans: 0 },
+    { name: "Abeokuta", state: "Ogun State", active: false, artisans: 0 },
+    { name: "Kaduna", state: "Kaduna State", active: false, artisans: 0 },
+  ]);
+
   const [backupLoading, setBackupLoading] = useState(false);
   const [toast, setToast] = useState("");
+  const [loadingCities, setLoadingCities] = useState(true);
+
+  const fetchRealCityMetrics = async () => {
+    setLoadingCities(true);
+    try {
+      const res = await fetch("/api/admin/telemetry");
+      const data = await res.json();
+      if (res.ok && data.cityArtisans) {
+        setCities((prev) =>
+          prev.map((c) => {
+            const cityNameKey = c.name.split(" ")[0].toLowerCase();
+            const realCount = data.cityArtisans[cityNameKey] || data.cityArtisans[c.name.toLowerCase()] || 0;
+            return {
+              ...c,
+              artisans: realCount,
+            };
+          })
+        );
+      }
+    } catch (err) {
+      console.warn("Failed to fetch real city metrics:", err);
+    } finally {
+      setLoadingCities(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchRealCityMetrics();
+  }, []);
 
   const toggleCity = (cityName: string) => {
     setCities((prev) =>
@@ -68,7 +103,7 @@ export default function SettingsAndBackupsPage() {
               <h3 className="h4" style={{ margin: 0, color: "#F8FAFC", display: "flex", alignItems: "center", gap: "8px" }}>
                 <Database size={18} color="#0EA5E9" /> Database Snapshot & Backups
               </h3>
-              <span style={{ fontSize: "12px", color: "#94A3B8" }}>Generate full JSON database dump of users, bookings, payments, disputes, and audit logs.</span>
+              <span style={{ fontSize: "12px", color: "#94A3B8" }}>Generate full JSON database dump of real users, bookings, payments, disputes, and audit logs.</span>
             </div>
             <button
               onClick={handleDownloadBackup}
@@ -80,7 +115,7 @@ export default function SettingsAndBackupsPage() {
             </button>
           </div>
           <p style={{ fontSize: "13px", color: "#CBD5E1", background: "#0F172A", padding: "12px", borderRadius: "8px", border: "1px solid #334155" }}>
-            🔒 <strong>Disaster Recovery Protocol:</strong> Backups are encrypted and contain complete system telemetry. Super Admin role credentials required.
+            🔒 <strong>Disaster Recovery Protocol:</strong> Backups are encrypted and contain complete system telemetry. Chief Commander or Admin General role credentials required.
           </p>
         </div>
 
@@ -91,18 +126,21 @@ export default function SettingsAndBackupsPage() {
               <h3 className="h4" style={{ margin: 0, color: "#F8FAFC", display: "flex", alignItems: "center", gap: "8px" }}>
                 <MapPin size={18} color="#10B981" /> Multi-City & Regional Expansion Controls
               </h3>
-              <span style={{ fontSize: "12px", color: "#94A3B8" }}>Enable/disable marketplace operations for states beyond Abuja</span>
+              <span style={{ fontSize: "12px", color: "#94A3B8" }}>Enable/disable marketplace operations based on real registered artisan density per state.</span>
             </div>
+            <button onClick={fetchRealCityMetrics} className="btn btn-secondary btn-xs" style={{ display: "flex", alignItems: "center", gap: 4 }}>
+              <RefreshCw size={12} /> Sync Database Counts
+            </button>
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "12px" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: "12px" }}>
             {cities.map((c) => (
               <div
                 key={c.name}
                 style={{
                   background: "#0F172A",
                   border: c.active ? "1px solid #10B981" : "1px solid #334155",
-                  borderRadius: "8px",
+                  borderRadius: "10px",
                   padding: "14px",
                   display: "flex",
                   justifyContent: "space-between",
@@ -111,15 +149,21 @@ export default function SettingsAndBackupsPage() {
               >
                 <div>
                   <strong style={{ fontSize: "14px", color: "#F8FAFC", display: "block" }}>{c.name}</strong>
-                  <span style={{ fontSize: "12px", color: "#94A3B8" }}>{c.state} • {c.artisans} Artisans</span>
+                  <span style={{ fontSize: "12px", color: "#94A3B8" }}>
+                    {c.state} • <strong style={{ color: "#0EA5E9" }}>{c.artisans} Registered Artisans</strong>
+                  </span>
                 </div>
                 <button
                   onClick={() => toggleCity(c.name)}
-                  className="btn btn-xs"
                   style={{
-                    background: c.active ? "rgba(16,185,129,0.2)" : "rgba(100,116,139,0.2)",
-                    color: c.active ? "#10B981" : "#64748B",
-                    border: "none",
+                    background: c.active ? "rgba(16,185,129,0.15)" : "rgba(148,163,184,0.1)",
+                    color: c.active ? "#10B981" : "#94A3B8",
+                    border: c.active ? "1px solid #10B981" : "1px solid #334155",
+                    borderRadius: "6px",
+                    padding: "4px 10px",
+                    fontSize: "11px",
+                    fontWeight: "bold",
+                    cursor: "pointer",
                   }}
                 >
                   {c.active ? "ACTIVE" : "INACTIVE"}
@@ -129,27 +173,25 @@ export default function SettingsAndBackupsPage() {
           </div>
         </div>
 
-        {/* Payment Gateways Config */}
+        {/* Live Payment Gateways & Currency Section */}
         <div className="card" style={{ background: "#1E293B", border: "1px solid #334155", padding: "20px" }}>
           <h3 className="h4" style={{ margin: "0 0 16px 0", color: "#F8FAFC", display: "flex", alignItems: "center", gap: "8px" }}>
-            <CreditCard size={18} color="#8B5CF6" /> Payment Gateways & Currency (NGN ₦)
+            <CreditCard size={18} color="#F59E0B" /> Payment Gateways & Currency (NGN ₦)
           </h3>
-
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
-            <div style={{ background: "#0F172A", padding: "14px", borderRadius: "8px", border: "1px solid #334155" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px" }}>
+            <div style={{ background: "#0F172A", border: "1px solid #334155", borderRadius: "10px", padding: "14px" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
                 <strong style={{ color: "#0EA5E9" }}>Paystack Gateway Primary</strong>
                 <span className="badge" style={{ background: "rgba(16,185,129,0.15)", color: "#10B981", fontSize: "10px" }}>ONLINE</span>
               </div>
-              <p style={{ fontSize: "12px", color: "#94A3B8" }}>Processes NGN Card Payments, USSD, Bank Transfer, and Escrow Payouts.</p>
+              <p style={{ fontSize: "12px", color: "#94A3B8", margin: 0 }}>Processes NGN Card Payments, USSD, Bank Transfer, and Escrow Payouts.</p>
             </div>
-
-            <div style={{ background: "#0F172A", padding: "14px", borderRadius: "8px", border: "1px solid #334155" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px" }}>
+            <div style={{ background: "#0F172A", border: "1px solid #334155", borderRadius: "10px", padding: "14px" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
                 <strong style={{ color: "#F59E0B" }}>Monnify Gateway Secondary</strong>
                 <span className="badge" style={{ background: "rgba(16,185,129,0.15)", color: "#10B981", fontSize: "10px" }}>ONLINE</span>
               </div>
-              <p style={{ fontSize: "12px", color: "#94A3B8" }}>Processes Direct NUBAN Accounts, Instant Transfers & Refunds.</p>
+              <p style={{ fontSize: "12px", color: "#94A3B8", margin: 0 }}>Processes Direct NUBAN Accounts, Instant Transfers & Refunds.</p>
             </div>
           </div>
         </div>

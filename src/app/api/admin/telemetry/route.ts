@@ -19,11 +19,25 @@ export async function GET(request: Request) {
     });
 
     // 3. Verified Artisans & Pending Verifications
-    const [verifiedArtisansCount, pendingVerificationsCount, totalPros] = await Promise.all([
+    const [verifiedArtisansCount, pendingVerificationsCount, totalPros, prosList] = await Promise.all([
       prisma.professional.count({ where: { verificationStatus: "VERIFIED" } }),
       prisma.professional.count({ where: { verificationStatus: "PENDING" } }),
       prisma.professional.count(),
+      prisma.professional.findMany({ select: { documents: true } }),
     ]);
+
+    // Calculate real city artisan counts
+    const cityArtisans: Record<string, number> = {};
+    prosList.forEach((p) => {
+      let city = "abuja";
+      try {
+        if (p.documents) {
+          const parsed = JSON.parse(p.documents);
+          if (parsed.city) city = parsed.city.toLowerCase().trim();
+        }
+      } catch {}
+      cityArtisans[city] = (cityArtisans[city] || 0) + 1;
+    });
 
     // 4. Open Disputes Count
     const openDisputesCount = await prisma.dispute.count({
@@ -41,7 +55,7 @@ export async function GET(request: Request) {
     });
     const avgResponseTimeMin = Math.round(proResponseAvg._avg.responseTime || 0);
 
-    // 7. Booking Status Breakdown across all 8 states
+    // 7. Booking Status Breakdown across all states
     const allBookings = await prisma.booking.findMany({
       select: { status: true, address: true, createdAt: true, estimatedPrice: true, reference: true },
     });
@@ -66,7 +80,6 @@ export async function GET(request: Request) {
         statusCounts[b.status] = 1;
       }
 
-      // Extract city from JSON address string or fallback
       let city = "Abuja";
       try {
         if (b.address) {
@@ -128,6 +141,7 @@ export async function GET(request: Request) {
     return NextResponse.json({
       success: true,
       timestamp: new Date().toISOString(),
+      cityArtisans,
       stats: {
         totalRevenueNgn,
         activeBookingsCount,
@@ -146,9 +160,9 @@ export async function GET(request: Request) {
       revenueMonthly,
       recentBookings: recentBookings.map((b) => ({
         id: b.reference,
-        customer: `${b.customer.firstName} ${b.customer.lastName}`,
-        service: b.service.name,
-        pro: b.professional ? `${b.professional.user.firstName} ${b.professional.user.lastName}` : "Unassigned",
+        customer: b.customer ? `${b.customer.firstName} ${b.customer.lastName}` : "Client User",
+        service: b.service?.name || "HandyHub Service",
+        pro: b.professional?.user ? `${b.professional.user.firstName} ${b.professional.user.lastName}` : "Unassigned",
         status: b.status,
         amount: `₦${b.estimatedPrice.toLocaleString()}`,
         date: new Date(b.createdAt).toLocaleDateString(),

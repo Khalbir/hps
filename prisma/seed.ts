@@ -4,26 +4,42 @@ import { hash } from "bcryptjs";
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log("🌱 Seeding database...");
+  console.log("🌱 Seeding database structure...");
 
   // ============================================
-  // 1. Create Admin User
+  // 1. Create Super Admin & Admin General Accounts
   // ============================================
   const adminPassword = await hash(process.env.ADMIN_PASSWORD || "AdminPass123!", 12);
-  const admin = await prisma.user.upsert({
-    where: { email: process.env.ADMIN_EMAIL || "admin@handyhubpro.com" },
-    update: {},
+  
+  await prisma.user.upsert({
+    where: { email: "admin@handyhubpro.ng" },
+    update: { role: "SUPER_ADMIN", isVerified: true },
     create: {
-      email: process.env.ADMIN_EMAIL || "admin@handyhubpro.com",
+      email: "admin@handyhubpro.ng",
       phone: "+2349000000001",
+      firstName: "Chief",
+      lastName: "Commander",
+      password: adminPassword,
+      role: "SUPER_ADMIN",
+      isVerified: true,
+    },
+  });
+
+  await prisma.user.upsert({
+    where: { email: "admin@handyhubpro.com" },
+    update: { role: "ADMIN", isVerified: true },
+    create: {
+      email: "admin@handyhubpro.com",
+      phone: "+2349000000002",
       firstName: "Admin",
-      lastName: "HandyHub",
+      lastName: "General",
       password: adminPassword,
       role: "ADMIN",
       isVerified: true,
     },
   });
-  console.log("✅ Admin user created:", admin.email);
+
+  console.log("✅ Admin accounts initialized (Chief Commander & Admin General)");
 
   // ============================================
   // 2. Create Service Categories
@@ -51,10 +67,10 @@ async function main() {
       create: cat,
     });
   }
-  console.log("✅ Service categories created");
+  console.log("✅ Service categories initialized");
 
   // ============================================
-  // 3. Create Services with Pricing
+  // 3. Create Services with Base Pricing
   // ============================================
   const cleaningCat = await prisma.serviceCategory.findUnique({ where: { slug: "cleaning" } });
   const plumbingCat = await prisma.serviceCategory.findUnique({ where: { slug: "plumbing" } });
@@ -120,99 +136,10 @@ async function main() {
       create: svc,
     });
   }
-  console.log("✅ Services created");
+  console.log("✅ Services initialized");
 
   // ============================================
-  // 4. Create Sample Professionals
-  // ============================================
-  const proPasswords = await hash("ProPass123!", 12);
-
-  const professionals = [
-    { firstName: "Abubakar", lastName: "Tanko", email: "abubakar@handyhubpro.com", phone: "+2349000000010", bio: "Licensed electrician with 8 years of experience. Specializes in industrial and residential wiring.", yearsExperience: 8, rating: 4.9, totalJobs: 247 },
-    { firstName: "Blessing", lastName: "Okafor", email: "blessing@handyhubpro.com", phone: "+2349000000011", bio: "Professional cleaner and team lead. Known for meticulous attention to detail.", yearsExperience: 5, rating: 4.8, totalJobs: 312 },
-    { firstName: "Ibrahim", lastName: "Musa", email: "ibrahim@handyhubpro.com", phone: "+2349000000012", bio: "Master plumber certified by the Nigerian Institute of Plumbing. Emergency services available.", yearsExperience: 12, rating: 4.9, totalJobs: 189 },
-    { firstName: "Chioma", lastName: "Eze", email: "chioma@handyhubpro.com", phone: "+2349000000013", bio: "Interior decorator with a keen eye for modern Nigerian aesthetics. Featured in Bellanaija Decor.", yearsExperience: 6, rating: 5.0, totalJobs: 78 },
-    { firstName: "Yusuf", lastName: "Abdullahi", email: "yusuf@handyhubpro.com", phone: "+2349000000014", bio: "AC and refrigeration technician. Trained by Samsung and LG certified programs.", yearsExperience: 7, rating: 4.7, totalJobs: 156 },
-    { firstName: "Ngozi", lastName: "Nwankwo", email: "ngozi@handyhubpro.com", phone: "+2349000000015", bio: "Professional painter with expertise in texturing, murals, and modern finishes.", yearsExperience: 10, rating: 4.8, totalJobs: 201 },
-  ];
-
-  for (const pro of professionals) {
-    const user = await prisma.user.upsert({
-      where: { email: pro.email },
-      update: {},
-      create: {
-        email: pro.email,
-        phone: pro.phone,
-        firstName: pro.firstName,
-        lastName: pro.lastName,
-        password: proPasswords,
-        role: "PROFESSIONAL",
-        isVerified: true,
-      },
-    });
-
-    await prisma.professional.upsert({
-      where: { userId: user.id },
-      update: {},
-      create: {
-        userId: user.id,
-        bio: pro.bio,
-        yearsExperience: pro.yearsExperience,
-        rating: pro.rating,
-        totalJobs: pro.totalJobs,
-        verificationStatus: "VERIFIED",
-        isAvailable: true,
-        responseTime: Math.floor(Math.random() * 30) + 15,
-      },
-    });
-  }
-  console.log("✅ Professionals created");
-
-  // ============================================
-  // 5. Create Sample Customer
-  // ============================================
-  const customerPassword = await hash("Customer123!", 12);
-  const customer = await prisma.user.upsert({
-    where: { email: "customer@test.com" },
-    update: {},
-    create: {
-      email: "customer@test.com",
-      phone: "+2349000000099",
-      firstName: "Test",
-      lastName: "Customer",
-      password: customerPassword,
-      role: "CUSTOMER",
-      isVerified: true,
-    },
-  });
-
-  await prisma.wallet.upsert({
-    where: { userId: customer.id },
-    update: {},
-    create: {
-      userId: customer.id,
-      balance: 50000,
-    },
-  });
-
-  await prisma.address.upsert({
-    where: { id: "default-address" },
-    update: {},
-    create: {
-      id: "default-address",
-      userId: customer.id,
-      label: "Home",
-      address: "12 Aminu Kano Crescent",
-      city: "Abuja",
-      state: "FCT",
-      landmark: "Opposite Transcorp Hilton",
-      isDefault: true,
-    },
-  });
-  console.log("✅ Sample customer created");
-
-  // ============================================
-  // 6. Create Promo Code
+  // 4. Create Active Promo Codes
   // ============================================
   await prisma.promoCode.upsert({
     where: { code: "WELCOME50" },
@@ -239,13 +166,9 @@ async function main() {
       expiresAt: new Date("2027-06-30"),
     },
   });
-  console.log("✅ Promo codes created");
+  console.log("✅ Production promo codes initialized");
 
-  console.log("\n🎉 Database seeded successfully!");
-  console.log("\n📋 Test Accounts:");
-  console.log("   Admin:    admin@handyhubpro.com / AdminPass123!");
-  console.log("   Customer: customer@test.com / Customer123!");
-  console.log("   Pro:      abubakar@handyhubpro.com / ProPass123!");
+  console.log("\n🎉 Clean database structure ready for live users and real artisans!");
 }
 
 main()
