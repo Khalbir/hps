@@ -14,6 +14,7 @@ export default function ProfessionalVerificationPage() {
   const [pros, setPros] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [inspectPro, setInspectPro] = useState<any>(null);
+  const [previewMediaUrl, setPreviewMediaUrl] = useState<string | null>(null);
   const [officerNotes, setOfficerNotes] = useState("");
   const [toast, setToast] = useState("");
 
@@ -273,15 +274,19 @@ export default function ProfessionalVerificationPage() {
                   <div>
                     <div style={{ fontSize: "14px", fontWeight: 700, color: "#F8FAFC" }}>{inspectPro.idType}: {inspectPro.idNumber}</div>
                     {inspectPro.idUrl && inspectPro.idUrl !== "#" && (
-                      <a href={inspectPro.idUrl} target="_blank" rel="noreferrer" style={{ fontSize: "12px", color: "#38BDF8", display: "inline-flex", alignItems: "center", gap: "4px", marginTop: "4px" }}>
-                        View ID Document File <ExternalLink size={12} />
-                      </a>
+                      <button
+                        type="button"
+                        onClick={() => setPreviewMediaUrl(inspectPro.idUrl)}
+                        style={{ background: "none", border: "none", padding: 0, fontSize: "12px", color: "#38BDF8", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: "4px", marginTop: "4px" }}
+                      >
+                        👁️ Inspect ID Document <ExternalLink size={12} />
+                      </button>
                     )}
                   </div>
                   {inspectPro.selfieUrl && inspectPro.selfieUrl !== "#" && (
-                    <div style={{ textAlign: "center" }}>
-                      <img src={inspectPro.selfieUrl} alt="Facial Verification Selfie" style={{ width: 48, height: 48, borderRadius: "50%", objectFit: "cover", border: "2px solid #10B981" }} />
-                      <span style={{ fontSize: "10px", color: "#10B981", display: "block" }}>Facial Selfie Passed</span>
+                    <div style={{ textAlign: "center", cursor: "pointer" }} onClick={() => setPreviewMediaUrl(inspectPro.selfieUrl)}>
+                      <img src={inspectPro.selfieUrl} alt="Facial Verification Selfie" style={{ width: 54, height: 54, borderRadius: "50%", objectFit: "cover", border: "2px solid #10B981" }} />
+                      <span style={{ fontSize: "10px", color: "#10B981", display: "block" }}>Click to Enlarge Selfie 🔍</span>
                     </div>
                   )}
                 </div>
@@ -293,14 +298,21 @@ export default function ProfessionalVerificationPage() {
                   2️⃣ Trade Certificate & Work Portfolio
                 </strong>
                 <div style={{ fontSize: "13px", color: "#CBD5E1", marginBottom: 6 }}>
-                  Certification: <a href={inspectPro.tradeCertUrl} target="_blank" rel="noreferrer" style={{ color: "#38BDF8", fontWeight: "bold" }}>View Trade Cert Document PDF <ExternalLink size={12} /></a>
+                  Certification:{" "}
+                  <button
+                    type="button"
+                    onClick={() => setPreviewMediaUrl(inspectPro.tradeCertUrl)}
+                    style={{ background: "none", border: "none", padding: 0, color: "#38BDF8", fontWeight: "bold", cursor: "pointer" }}
+                  >
+                    Inspect Trade Cert PDF / Image 👁️
+                  </button>
                 </div>
                 {inspectPro.portfolioUrls && inspectPro.portfolioUrls.length > 0 && (
                   <div style={{ display: "flex", gap: 8, marginTop: 6, overflowX: "auto" }}>
                     {inspectPro.portfolioUrls.map((url: string, idx: number) => (
-                      <a key={idx} href={url} target="_blank" rel="noreferrer">
-                        <img src={url} alt={`Portfolio Work ${idx + 1}`} style={{ width: 54, height: 54, borderRadius: 6, objectFit: "cover", border: "1px solid #334155" }} />
-                      </a>
+                      <div key={idx} onClick={() => setPreviewMediaUrl(url)} style={{ cursor: "pointer" }}>
+                        <img src={url} alt={`Portfolio Work ${idx + 1}`} style={{ width: 60, height: 60, borderRadius: 6, objectFit: "cover", border: "1px solid #0EA5E9" }} />
+                      </div>
                     ))}
                   </div>
                 )}
@@ -376,6 +388,69 @@ export default function ProfessionalVerificationPage() {
                 <CheckCircle2 size={16} /> Approve & Issue Verified Badge
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* In-App Full Resolution Document & Photo Lightbox */}
+      {previewMediaUrl && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 10000,
+            background: "rgba(9, 13, 22, 0.95)",
+            backdropFilter: "blur(12px)",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: 24,
+          }}
+          onClick={() => setPreviewMediaUrl(null)}
+        >
+          <div style={{ position: "absolute", top: 20, right: 20, display: "flex", gap: 12 }}>
+            <a
+              href={previewMediaUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="btn btn-secondary btn-sm"
+              style={{ color: "#38BDF8", borderColor: "#0EA5E9" }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              Open Original File ↗
+            </a>
+            <button
+              onClick={() => setPreviewMediaUrl(null)}
+              className="btn btn-secondary btn-sm"
+              style={{ color: "#F8FAFC" }}
+            >
+              Close Preview ✕
+            </button>
+          </div>
+
+          <div
+            style={{
+              maxWidth: "90vw",
+              maxHeight: "80vh",
+              overflow: "auto",
+              borderRadius: 12,
+              border: "1px solid #334155",
+              boxShadow: "0 25px 50px -12px rgba(0,0,0,0.7)",
+              background: "#0F172A",
+              padding: 12,
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {previewMediaUrl.endsWith(".pdf") ? (
+              <iframe src={previewMediaUrl} style={{ width: "80vw", height: "75vh", border: "none" }} title="Document PDF Preview" />
+            ) : (
+              <img
+                src={previewMediaUrl}
+                alt="Document Full Resolution Inspection Preview"
+                style={{ maxWidth: "100%", maxHeight: "75vh", objectFit: "contain", borderRadius: 8 }}
+              />
+            )}
           </div>
         </div>
       )}
