@@ -15,7 +15,7 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "https://hps-web-dev-handyhub-pro.vercel.app"),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "https://handyhubpro.ng"),
   title: "HandyHub Pro Solutions — Your Property, Our Priority",
   description:
     "Book verified cleaners, plumbers, electricians & more in Abuja, Nigeria. Transparent pricing, insured professionals, and 100% satisfaction guaranteed. The #1 home services platform.",
