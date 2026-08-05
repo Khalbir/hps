@@ -19,13 +19,10 @@ function TrackContent() {
   const initialRef = searchParams.get("reference") || searchParams.get("ref") || searchParams.get("id") || "";
 
   useEffect(() => {
-    if (initialRef) {
-      setQuery(initialRef);
-      fetchBookingTrack(initialRef);
-    } else {
-      // Default to sample trackable booking HHP-M1K9X for immediate demonstration
-      fetchBookingTrack("HHP-M1K9X");
-    }
+    const savedRef = typeof window !== "undefined" ? localStorage.getItem("handyhub_last_booking_ref") : "";
+    const targetRef = initialRef || savedRef || "HHP-M1K9X";
+    setQuery(targetRef);
+    fetchBookingTrack(targetRef);
   }, [initialRef]);
 
   const fetchBookingTrack = async (searchQuery: string) => {

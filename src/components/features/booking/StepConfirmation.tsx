@@ -17,8 +17,15 @@ export function StepConfirmation({ booking }: Props) {
 
   useEffect(() => {
     const timer = setTimeout(() => setShowConfetti(false), 3000);
+    if (bookingRef) {
+      try {
+        localStorage.setItem("handyhub_last_booking_ref", bookingRef);
+      } catch (err) {
+        console.warn("LocalStorage save warning:", err);
+      }
+    }
     return () => clearTimeout(timer);
-  }, []);
+  }, [bookingRef]);
 
   const finalPrice = (booking.totalPrice || booking.servicePrice) - booking.discountAmount;
 
@@ -125,8 +132,8 @@ export function StepConfirmation({ booking }: Props) {
         animate={{ opacity: 1 }}
         transition={{ delay: 1.4 }}
       >
-        <Link href="/dashboard/bookings" className="btn btn-primary btn-lg">
-          Track Your Booking
+        <Link href={`/track?ref=${bookingRef}`} className="btn btn-primary btn-lg">
+          Track Your Booking Live 📍
           <ArrowRight size={18} />
         </Link>
         <Link href="/" className="btn btn-secondary btn-lg">
