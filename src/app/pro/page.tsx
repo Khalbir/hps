@@ -44,7 +44,7 @@ export default function ProDashboard() {
     }
 
     try {
-      const res = await fetch(`/api/pro/dashboard?userId=${activeUserId}&email=${encodeURIComponent(activeEmail)}`);
+      const res = await fetch(`/api/pro/dashboard?userId=${activeUserId}&email=${encodeURIComponent(activeEmail)}&_t=${Date.now()}`);
       const data = await res.json();
       if (res.ok && data.success) {
         setProData({
