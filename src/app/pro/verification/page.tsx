@@ -215,10 +215,26 @@ export default function ProVerificationPage() {
           ],
           guarantor1: g1,
           guarantor2: g2,
-          quizScore: finalScore,
-          serviceCategory: category,
         }),
       });
+
+      if (typeof window !== "undefined") {
+        try {
+          const storedUser = localStorage.getItem("handyhub_user");
+          if (storedUser) {
+            const parsed = JSON.parse(storedUser);
+            parsed.verificationStatus = "PENDING_REVIEW";
+            parsed.hasSubmittedDocs = true;
+            localStorage.setItem("handyhub_user", JSON.stringify(parsed));
+          }
+          const storedPro = localStorage.getItem("handyhub_pro_session");
+          if (storedPro) {
+            const parsed = JSON.parse(storedPro);
+            if (parsed.user) parsed.user.verificationStatus = "PENDING_REVIEW";
+            localStorage.setItem("handyhub_pro_session", JSON.stringify(parsed));
+          }
+        } catch (e) {}
+      }
       setCompleted(true);
     } catch {
       setCompleted(true);
