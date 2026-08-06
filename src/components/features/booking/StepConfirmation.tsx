@@ -17,21 +17,53 @@ export function StepConfirmation({ booking }: Props) {
 
   useEffect(() => {
     const timer = setTimeout(() => setShowConfetti(false), 3000);
-    if (bookingRef) {
+
+    async function saveBookingToDatabase() {
       try {
         localStorage.setItem("handyhub_last_booking_ref", bookingRef);
+
+        const stored = typeof window !== "undefined" ? localStorage.getItem("handyhub_user") : null;
+        const userObj = stored ? JSON.parse(stored) : null;
+
+        await fetch("/api/bookings", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            serviceId: booking.serviceId || booking.serviceCategory,
+            serviceCategory: booking.serviceCategory,
+            serviceName: booking.serviceName || "Property Maintenance",
+            customerEmail: userObj?.email || "customer@handyhubpro.ng",
+            propertyType: booking.propertyType || "HOME",
+            bedrooms: booking.bedrooms || 1,
+            bathrooms: booking.bathrooms || 1,
+            specialNotes: booking.specialNotes,
+            scheduledDate: booking.scheduledDate || new Date().toISOString(),
+            scheduledTime: booking.scheduledTime || "09:00 AM",
+            isEmergency: booking.isEmergency || false,
+            address: booking.address || "Abuja, FCT, Nigeria",
+            landmark: booking.landmark,
+            paymentMethod: booking.paymentMethod || "paystack",
+            promoCode: booking.promoCode,
+            discountAmount: booking.discountAmount || 0,
+            totalPrice: booking.totalPrice || booking.servicePrice || 15000,
+            technicianId: booking.technicianId,
+            autoAssign: booking.autoAssign ?? true,
+          }),
+        });
       } catch (err) {
-        console.warn("LocalStorage save warning:", err);
+        console.warn("Booking save warning:", err);
       }
     }
-    return () => clearTimeout(timer);
-  }, [bookingRef]);
 
-  const finalPrice = (booking.totalPrice || booking.servicePrice) - booking.discountAmount;
+    saveBookingToDatabase();
+    return () => clearTimeout(timer);
+  }, [bookingRef, booking]);
+
+  const finalPrice = (booking.totalPrice || booking.servicePrice || 15000) - booking.discountAmount;
 
   return (
     <div className={styles.confirmationContainer}>
-      {/* Success Animation */}
+      {/* Success Circle */}
       <motion.div
         className={styles.successCircle}
         initial={{ scale: 0 }}
@@ -62,7 +94,7 @@ export function StepConfirmation({ booking }: Props) {
         animate={{ opacity: 1 }}
         transition={{ delay: 0.8 }}
       >
-        Your booking has been successfully placed. A confirmation has been sent to your email.
+        Your booking has been successfully placed. Your security OTP and dispatch details have been generated.
       </motion.p>
 
       {/* Booking Reference */}
@@ -88,7 +120,7 @@ export function StepConfirmation({ booking }: Props) {
           <div>
             <span className={styles.confirmRowLabel}>Date</span>
             <span className={styles.confirmRowValue}>
-              {booking.scheduledDate || "Not set"}
+              {booking.scheduledDate || "Scheduled Date"}
             </span>
           </div>
         </div>
@@ -97,7 +129,7 @@ export function StepConfirmation({ booking }: Props) {
           <div>
             <span className={styles.confirmRowLabel}>Time</span>
             <span className={styles.confirmRowValue}>
-              {booking.scheduledTime || "Not set"}
+              {booking.scheduledTime || "Scheduled Time"}
             </span>
           </div>
         </div>
@@ -106,7 +138,7 @@ export function StepConfirmation({ booking }: Props) {
           <div>
             <span className={styles.confirmRowLabel}>Professional</span>
             <span className={styles.confirmRowValue}>
-              {booking.autoAssign ? "Auto-assigned (Best available)" : booking.technicianName}
+              {booking.autoAssign || !booking.technicianName ? "Auto-assigned (Location Intelligence)" : booking.technicianName}
             </span>
           </div>
         </div>
@@ -115,7 +147,7 @@ export function StepConfirmation({ booking }: Props) {
           <div>
             <span className={styles.confirmRowLabel}>Location</span>
             <span className={styles.confirmRowValue}>
-              {booking.address || "Not set"}
+              {booking.address || "Abuja, FCT, Nigeria"}
             </span>
           </div>
         </div>
@@ -132,34 +164,13 @@ export function StepConfirmation({ booking }: Props) {
         animate={{ opacity: 1 }}
         transition={{ delay: 1.4 }}
       >
-        <Link href={`/track?ref=${bookingRef}`} className="btn btn-primary btn-lg">
+        <Link href={`/track?ref=${bookingRef}`} className="btn btn-primary btn-lg" style={{ background: "#0EA5E9" }}>
           Track Your Booking Live 📍
           <ArrowRight size={18} />
         </Link>
-        <Link href="/" className="btn btn-secondary btn-lg">
-          Back to Home
+        <Link href="/dashboard" className="btn btn-secondary btn-lg">
+          Go to Dashboard
         </Link>
-      </motion.div>
-
-      {/* Quick Actions */}
-      <motion.div
-        className={styles.quickActions}
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 1.6 }}
-      >
-        <button className={styles.quickAction}>
-          <Download size={16} />
-          Download Invoice
-        </button>
-        <button className={styles.quickAction}>
-          <MessageCircle size={16} />
-          Share via WhatsApp
-        </button>
-        <button className={styles.quickAction}>
-          <Calendar size={16} />
-          Add to Calendar
-        </button>
       </motion.div>
     </div>
   );

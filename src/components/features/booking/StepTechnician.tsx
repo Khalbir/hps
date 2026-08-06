@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Star, Clock, CheckCircle } from "lucide-react";
+import { Star, Clock, CheckCircle, UserCheck } from "lucide-react";
 import type { BookingData } from "@/app/book/page";
 import styles from "./Steps.module.css";
 
@@ -24,66 +24,48 @@ export interface Technician {
   available: boolean;
 }
 
-export const technicians: Technician[] = [
-  // Cleaning
-  { id: "2", name: "Blessing O.", initials: "BO", rating: 4.8, jobs: 312, specialty: "Cleaning Lead", categories: ["cleaning"], responseTime: 15, available: true },
-  { id: "7", name: "Grace E.", initials: "GE", rating: 4.9, jobs: 184, specialty: "Deep Cleaning Specialist", categories: ["cleaning"], responseTime: 20, available: true },
-  { id: "8", name: "Kemi A.", initials: "KA", rating: 4.7, jobs: 142, specialty: "Residential Cleaner", categories: ["cleaning"], responseTime: 25, available: true },
-
-  // Plumbing
-  { id: "3", name: "Ibrahim M.", initials: "IM", rating: 4.9, jobs: 189, specialty: "Master Plumber", categories: ["plumbing"], responseTime: 25, available: true },
-  { id: "9", name: "Sunday O.", initials: "SO", rating: 4.8, jobs: 215, specialty: "Pipe & Drainage Pro", categories: ["plumbing"], responseTime: 20, available: true },
-  { id: "10", name: "Paul K.", initials: "PK", rating: 4.7, jobs: 96, specialty: "Water Heater Specialist", categories: ["plumbing"], responseTime: 30, available: true },
-
-  // Electrical
-  { id: "1", name: "Abubakar T.", initials: "AT", rating: 4.9, jobs: 247, specialty: "Senior Electrician", categories: ["electrical"], responseTime: 20, available: true },
-  { id: "11", name: "Samuel I.", initials: "SI", rating: 4.8, jobs: 178, specialty: "Wiring & Breaker Specialist", categories: ["electrical"], responseTime: 15, available: true },
-
-  // AC & HVAC
-  { id: "5", name: "Yusuf A.", initials: "YA", rating: 4.7, jobs: 156, specialty: "AC Technician", categories: ["hvac"], responseTime: 20, available: true },
-  { id: "12", name: "David O.", initials: "DO", rating: 4.9, jobs: 230, specialty: "Cooling & Servicing Pro", categories: ["hvac"], responseTime: 18, available: true },
-
-  // Painting
-  { id: "6", name: "Ngozi N.", initials: "NN", rating: 4.8, jobs: 201, specialty: "Professional Painter", categories: ["painting"], responseTime: 18, available: true },
-  { id: "13", name: "Emeka U.", initials: "EU", rating: 4.9, jobs: 165, specialty: "Interior & Exterior Painter", categories: ["painting", "home-improvement"], responseTime: 22, available: true },
-
-  // Carpentry
-  { id: "14", name: "Usman B.", initials: "UB", rating: 4.8, jobs: 145, specialty: "Master Carpenter", categories: ["carpentry"], responseTime: 25, available: true },
-  { id: "15", name: "John D.", initials: "JD", rating: 4.7, jobs: 110, specialty: "Furniture Assembly Pro", categories: ["carpentry"], responseTime: 30, available: true },
-
-  // Security
-  { id: "16", name: "Farouk H.", initials: "FH", rating: 4.9, jobs: 198, specialty: "CCTV & Security Specialist", categories: ["security"], responseTime: 20, available: true },
-
-  // Solar & Power
-  { id: "17", name: "Emmanuel K.", initials: "EK", rating: 4.9, jobs: 260, specialty: "Solar & Inverter Engineer", categories: ["solar"], responseTime: 15, available: true },
-  { id: "18", name: "Mohammed S.", initials: "MS", rating: 4.7, jobs: 134, specialty: "Generator Specialist", categories: ["solar"], responseTime: 25, available: true },
-
-  // Home Improvement
-  { id: "4", name: "Chioma E.", initials: "CE", rating: 5.0, jobs: 78, specialty: "Interior Decorator", categories: ["home-improvement"], responseTime: 30, available: true },
-  { id: "19", name: "Jude A.", initials: "JA", rating: 4.8, jobs: 112, specialty: "Renovation Specialist", categories: ["home-improvement"], responseTime: 20, available: true },
-
-  // Gardening
-  { id: "20", name: "Patrick O.", initials: "PO", rating: 4.8, jobs: 89, specialty: "Gardener & Landscaper", categories: ["outdoor"], responseTime: 20, available: true },
-
-  // Laundry
-  { id: "21", name: "Victoria A.", initials: "VA", rating: 4.9, jobs: 240, specialty: "Laundry & Fabric Care Pro", categories: ["laundry"], responseTime: 15, available: true },
-
-  // Moving
-  { id: "22", name: "Victor E.", initials: "VE", rating: 4.8, jobs: 175, specialty: "Relocation & Moving Lead", categories: ["moving"], responseTime: 25, available: true },
-
-  // General Handyman
-  { id: "23", name: "Chidi N.", initials: "CN", rating: 4.7, jobs: 310, specialty: "General Handyman Pro", categories: ["general"], responseTime: 15, available: true },
-];
-
 export function StepTechnician({ booking, updateBooking, onNext, onBack }: StepProps) {
-  const [autoAssign, setAutoAssign] = useState(booking.autoAssign);
+  const [autoAssign, setAutoAssign] = useState(booking.autoAssign ?? true);
+  const [realTechnicians, setRealTechnicians] = useState<Technician[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  // Filter technicians strictly by the selected service category
-  const filteredTechnicians = booking.serviceCategory
-    ? technicians.filter((tech) => tech.categories.includes(booking.serviceCategory))
-    : technicians;
+  useEffect(() => {
+    async function fetchRealArtisans() {
+      setLoading(true);
+      try {
+        const res = await fetch("/api/admin/verification");
+        const data = await res.json();
+        if (res.ok && data.professionals) {
+          const verified = data.professionals
+            .filter((p: any) => p.status === "VERIFIED" || p.status === "APPROVED")
+            .map((p: any) => {
+              const fullName = p.name || "Verified Partner";
+              const parts = fullName.split(" ");
+              const initials = parts.length >= 2 ? `${parts[0].charAt(0)}${parts[1].charAt(0)}` : "VP";
+              return {
+                id: p.id,
+                name: fullName,
+                initials: initials.toUpperCase(),
+                rating: 5.0,
+                jobs: 0,
+                specialty: p.category || "Certified Service Partner",
+                categories: [p.category ? p.category.toLowerCase() : "general"],
+                responseTime: 15,
+                available: true,
+              };
+            });
 
-  const displayedTechnicians = filteredTechnicians.length > 0 ? filteredTechnicians : technicians;
+          setRealTechnicians(verified);
+        }
+      } catch (err) {
+        console.warn("Failed to fetch real database artisans:", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchRealArtisans();
+  }, []);
 
   const selectTechnician = (tech: Technician) => {
     setAutoAssign(false);
@@ -99,7 +81,7 @@ export function StepTechnician({ booking, updateBooking, onNext, onBack }: StepP
     updateBooking({
       autoAssign: true,
       technicianId: "",
-      technicianName: "",
+      technicianName: "Auto-assign",
     });
   };
 
@@ -114,13 +96,14 @@ export function StepTechnician({ booking, updateBooking, onNext, onBack }: StepP
       <button
         className={`card ${styles.autoAssignCard} ${autoAssign ? styles.autoAssignActive : ""}`}
         onClick={selectAutoAssign}
+        style={{ border: autoAssign ? "2px solid #0EA5E9" : "1px solid var(--border-primary)" }}
       >
         <div className={styles.autoAssignIcon}>
-          <CheckCircle size={24} />
+          <CheckCircle size={24} color={autoAssign ? "#0EA5E9" : "var(--text-tertiary)"} />
         </div>
         <div className={styles.autoAssignContent}>
           <h3>Auto-assign best available</h3>
-          <p>We&apos;ll match you with the highest-rated professional available for your time slot</p>
+          <p>We&apos;ll match you with the highest-rated verified professional available for your time slot</p>
         </div>
         <div className={styles.recommendBadge}>Recommended</div>
       </button>
@@ -130,48 +113,68 @@ export function StepTechnician({ booking, updateBooking, onNext, onBack }: StepP
       </div>
 
       {/* Technician List */}
-      <div className={styles.techList}>
-        {displayedTechnicians.map((tech) => (
-          <button
-            key={tech.id}
-            className={`card ${styles.techCard} ${
-              !autoAssign && booking.technicianId === tech.id ? styles.techCardActive : ""
-            } ${!tech.available ? styles.techCardDisabled : ""}`}
-            onClick={() => tech.available && selectTechnician(tech)}
-            disabled={!tech.available}
-          >
-            <div className={styles.techAvatar}>
-              <span>{tech.initials}</span>
-            </div>
-            <div className={styles.techInfo}>
-              <div className={styles.techHeader}>
-                <h3 className={styles.techName}>{tech.name}</h3>
-                {!tech.available && <span className={styles.unavailableBadge}>Unavailable</span>}
+      {loading ? (
+        <div style={{ padding: "30px", textAlign: "center", color: "var(--text-tertiary)" }}>
+          Checking registered verified artisans...
+        </div>
+      ) : realTechnicians.length === 0 ? (
+        <div
+          className="card"
+          style={{
+            padding: "24px",
+            textAlign: "center",
+            background: "var(--bg-tertiary)",
+            borderRadius: "var(--radius-lg)",
+            border: "1px solid var(--border-primary)",
+            marginBottom: "24px",
+          }}
+        >
+          <UserCheck size={32} color="#0EA5E9" style={{ opacity: 0.6, marginBottom: 8 }} />
+          <strong style={{ display: "block", color: "var(--text-primary)", fontSize: "14px", marginBottom: 4 }}>
+            Location Dispatch Active
+          </strong>
+          <span style={{ fontSize: "13px", color: "var(--text-secondary)", lineHeight: 1.5, display: "block", maxWidth: "480px", margin: "0 auto" }}>
+            Select &quot;Auto-assign best available&quot; above and our location intelligence will dispatch the nearest verified partner in your area upon booking confirmation.
+          </span>
+        </div>
+      ) : (
+        <div className={styles.techList}>
+          {realTechnicians.map((tech) => (
+            <button
+              key={tech.id}
+              className={`card ${styles.techCard} ${
+                !autoAssign && booking.technicianId === tech.id ? styles.techCardActive : ""
+              }`}
+              onClick={() => selectTechnician(tech)}
+            >
+              <div className={styles.techAvatar}>
+                <span>{tech.initials}</span>
               </div>
-              <span className={styles.techSpecialty}>{tech.specialty}</span>
-              <div className={styles.techStats}>
-                <span className={styles.techStat}>
-                  <Star size={14} fill="#F59E0B" stroke="#F59E0B" />
-                  {tech.rating}
-                </span>
-                <span className={styles.techStat}>
-                  <CheckCircle size={14} />
-                  {tech.jobs} jobs
-                </span>
-                <span className={styles.techStat}>
-                  <Clock size={14} />
-                  ~{tech.responseTime}min
-                </span>
+              <div className={styles.techInfo}>
+                <div className={styles.techHeader}>
+                  <h3 className={styles.techName}>{tech.name}</h3>
+                </div>
+                <span className={styles.techSpecialty}>{tech.specialty}</span>
+                <div className={styles.techStats}>
+                  <span className={styles.techStat}>
+                    <Star size={14} fill="#F59E0B" stroke="#F59E0B" />
+                    {tech.rating}
+                  </span>
+                  <span className={styles.techStat}>
+                    <CheckCircle size={14} />
+                    Verified Partner
+                  </span>
+                </div>
               </div>
-            </div>
-          </button>
-        ))}
-      </div>
+            </button>
+          ))}
+        </div>
+      )}
 
       <div className={styles.stepActions}>
         <button className="btn btn-secondary btn-lg" onClick={onBack}>Back</button>
-        <button className="btn btn-primary btn-lg" onClick={onNext}>
-          Continue to Payment
+        <button className="btn btn-primary btn-lg" onClick={onNext} style={{ background: "#0EA5E9" }}>
+          Continue to Payment ➔
         </button>
       </div>
     </div>
