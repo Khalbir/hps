@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, ReactNode } from "react";
+import { useState, useEffect, ReactNode } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -11,20 +11,47 @@ import {
 import styles from "@/app/dashboard/dashboard.module.css";
 
 const proNav = [
-  { href: "/pro", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/pro/jobs", label: "My Jobs", icon: ClipboardList, badge: 2 },
-  { href: "/pro/calendar", label: "Calendar", icon: Calendar },
-  { href: "/pro/reviews", label: "Reviews", icon: Star },
-  { href: "/pro/earnings", label: "Earnings", icon: Wallet },
-  { href: "/pro/profile", label: "Profile", icon: User },
-  { href: "/pro/notifications", label: "Notifications", icon: Bell, badge: 1 },
-  { href: "/pro/settings", label: "Settings", icon: Settings },
+  { href: "/pro", label: "Dashboard", icon: LayoutDashboard, key: "dashboard" },
+  { href: "/pro/jobs", label: "My Jobs", icon: ClipboardList, key: "jobs" },
+  { href: "/pro/calendar", label: "Calendar", icon: Calendar, key: "calendar" },
+  { href: "/pro/reviews", label: "Reviews", icon: Star, key: "reviews" },
+  { href: "/pro/earnings", label: "Earnings", icon: Wallet, key: "earnings" },
+  { href: "/pro/profile", label: "Profile", icon: User, key: "profile" },
+  { href: "/pro/notifications", label: "Notifications", icon: Bell, key: "notifications" },
+  { href: "/pro/settings", label: "Settings", icon: Settings, key: "settings" },
 ];
 
 export function ProLayoutShell({ children }: { children: ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [available, setAvailable] = useState(true);
+  const [jobCount, setJobCount] = useState(0);
+  const [notifCount, setNotifCount] = useState(0);
   const pathname = usePathname();
+
+  useEffect(() => {
+    let activeUserId = "";
+    let activeEmail = "";
+    if (typeof window !== "undefined") {
+      try {
+        const storedPro = localStorage.getItem("handyhub_pro_session");
+        const storedUser = localStorage.getItem("handyhub_user");
+        const parsed = storedPro ? JSON.parse(storedPro) : storedUser ? JSON.parse(storedUser) : null;
+        if (parsed?.user?.id || parsed?.id) activeUserId = parsed.user?.id || parsed.id;
+        if (parsed?.user?.email || parsed?.email) activeEmail = parsed.user?.email || parsed.email;
+      } catch (err) {}
+    }
+
+    if (activeUserId || activeEmail) {
+      fetch(`/api/pro/dashboard?userId=${activeUserId}&email=${encodeURIComponent(activeEmail)}`)
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.activeJobs) {
+            setJobCount(data.activeJobs.length);
+          }
+        })
+        .catch(() => {});
+    }
+  }, []);
 
   return (
     <div className={styles.layout}>
@@ -63,6 +90,8 @@ export function ProLayoutShell({ children }: { children: ReactNode }) {
         <nav className={styles.sidebarNav}>
           {proNav.map((item) => {
             const isActive = pathname === item.href;
+            const badgeValue = item.key === "jobs" ? jobCount : item.key === "notifications" ? notifCount : 0;
+
             return (
               <Link
                 key={item.href}
@@ -71,9 +100,9 @@ export function ProLayoutShell({ children }: { children: ReactNode }) {
               >
                 <item.icon size={18} />
                 <span>{item.label}</span>
-                {item.badge && (
+                {badgeValue > 0 && (
                   <span className="badge" style={{ marginLeft: "auto", background: "rgba(14,165,233,0.15)", color: "#0EA5E9", fontSize: "10px" }}>
-                    {item.badge}
+                    {badgeValue}
                   </span>
                 )}
               </Link>
