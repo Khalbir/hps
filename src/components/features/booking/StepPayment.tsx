@@ -335,13 +335,47 @@ export function StepPayment({ booking, updateBooking, onNext, onBack }: StepProp
             </p>
 
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-              <Link href="/auth/login?redirect=/book" className="btn btn-primary btn-md w-full" style={{ background: "#0EA5E9", justifyContent: "center" }}>
+              <Link
+                href="/auth/login?redirect=/book"
+                className="btn btn-primary btn-md w-full"
+                style={{ background: "#0EA5E9", color: "#FFFFFF", fontWeight: "bold", fontSize: 15, justifyContent: "center", borderRadius: 12, padding: "12px 16px" }}
+              >
                 Log In to Existing Account ➔
               </Link>
-              <Link href="/auth/register?redirect=/book" className="btn btn-secondary btn-md w-full" style={{ justifyContent: "center", color: "#F8FAFC", borderColor: "#334155" }}>
+
+              <Link
+                href="/auth/register?redirect=/book"
+                className="btn btn-md w-full"
+                style={{
+                  background: "#0F172A",
+                  color: "#38BDF8",
+                  border: "1.5px solid #0EA5E9",
+                  fontWeight: "bold",
+                  fontSize: 15,
+                  justifyContent: "center",
+                  borderRadius: 12,
+                  padding: "12px 16px",
+                  display: "flex",
+                  alignItems: "center",
+                  textDecoration: "none",
+                }}
+              >
                 Create Free Client Account
               </Link>
-              <button onClick={() => setShowAuthModal(false)} style={{ background: "none", border: "none", color: "#64748B", fontSize: 13, cursor: "pointer", marginTop: 8 }}>
+
+              <button
+                onClick={() => setShowAuthModal(false)}
+                style={{
+                  background: "none",
+                  border: "none",
+                  color: "#CBD5E1",
+                  fontSize: 14,
+                  fontWeight: "500",
+                  cursor: "pointer",
+                  marginTop: 8,
+                  textDecoration: "underline",
+                }}
+              >
                 Cancel and return to booking
               </button>
             </div>
