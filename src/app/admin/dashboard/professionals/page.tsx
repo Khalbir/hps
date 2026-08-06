@@ -23,27 +23,7 @@ export default function ProfessionalVerificationPage() {
       const res = await fetch("/api/admin/verification");
       const data = await res.json();
       if (res.ok && data.professionals) {
-        setPros(
-          data.professionals.map((p: any) => ({
-            id: p.id,
-            name: p.user ? `${p.user.firstName} ${p.user.lastName}` : "Artisan Partner",
-            email: p.user?.email || "N/A",
-            phone: p.user?.phone || "N/A",
-            field: p.skills ? JSON.parse(p.skills || "[]").join(", ") || "General Skilled Services" : "Skilled Services",
-            city: p.city || "Abuja",
-            experienceYears: p.yearsExperience || 0,
-            rating: p.rating || 0,
-            totalJobs: p.totalJobs || 0,
-            verificationStatus: p.verificationStatus || "PENDING",
-            idType: p.idType || "Govt ID",
-            idNumber: p.idNumber || "Not Provided",
-            idUrl: p.idUrl || "#",
-            addressProofUrl: p.addressProofUrl || "#",
-            bvn: p.bvn || "Unlinked",
-            addressVerified: Boolean(p.addressVerified),
-            notes: p.verificationNotes || "",
-          }))
-        );
+        setPros(data.professionals);
       }
     } catch (err) {
       console.warn("Failed to fetch professionals:", err);
