@@ -193,7 +193,7 @@ export default function ProEarningsPage() {
                 </label>
                 <input
                   type="number"
-                  placeholder="e.g. 50000"
+                  placeholder="Enter amount (e.g. 50000)"
                   value={amountInput}
                   onChange={(e) => setAmountInput(e.target.value)}
                   required
@@ -228,7 +228,7 @@ export default function ProEarningsPage() {
                 <input
                   type="text"
                   maxLength={10}
-                  placeholder="0123456789"
+                  placeholder="Enter 10-digit NUBAN account number"
                   value={accountNumber}
                   onChange={(e) => setAccountNumber(e.target.value)}
                   required

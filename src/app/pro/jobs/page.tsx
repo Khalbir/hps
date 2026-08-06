@@ -172,13 +172,13 @@ export default function ProJobsPage() {
       </div>
 
       {loading ? (
-        <div style={{ padding: "40px", textAlign: "center", color: "var(--text-tertiary)" }}>Loading real assigned database jobs...</div>
+        <div style={{ padding: "40px", textAlign: "center", color: "var(--text-tertiary)" }}>Loading assigned jobs...</div>
       ) : jobs.length === 0 ? (
         <div className="card" style={{ padding: "50px", textAlign: "center", background: "var(--bg-tertiary)", borderRadius: "var(--radius-2xl)", border: "1px solid var(--border-primary)" }}>
           <Inbox size={48} color="#0EA5E9" style={{ opacity: 0.6, marginBottom: 16 }} />
           <h3 className="h3" style={{ margin: "0 0 8px 0", color: "var(--text-primary)" }}>No Active Job Dispatches Assigned</h3>
           <p style={{ margin: 0, fontSize: "var(--fs-sm)", color: "var(--text-secondary)", maxWidth: "480px", marginLeft: "auto", marginRight: "auto" }}>
-            Zero demo jobs active. When customers book your category services in your region, new dispatch requests will assign to you here for execution proof & OTP payout verification.
+            When customers book your category services in your region, new dispatch requests will assign to you here for execution proof & OTP payout verification.
           </p>
         </div>
       ) : (
@@ -330,7 +330,7 @@ export default function ProJobsPage() {
                   <input
                     type="text"
                     maxLength={4}
-                    placeholder="e.g. 4819"
+                    placeholder="Enter 4-digit OTP"
                     value={inputOtp}
                     onChange={(e) => setInputOtp(e.target.value)}
                     style={{

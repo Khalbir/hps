@@ -55,13 +55,13 @@ export default function ProNotificationsPage() {
 
       <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
         {loading ? (
-          <div style={{ padding: 30, textAlign: "center", color: "var(--text-tertiary)" }}>Loading real notifications...</div>
+          <div style={{ padding: 30, textAlign: "center", color: "var(--text-tertiary)" }}>Loading notifications...</div>
         ) : notifications.length === 0 ? (
           <div className="card" style={{ padding: "40px", textAlign: "center", background: "var(--bg-tertiary)", borderRadius: "var(--radius-xl)", border: "1px solid var(--border-primary)" }}>
             <Inbox size={40} color="#0EA5E9" style={{ opacity: 0.6, marginBottom: 12 }} />
             <h4 className="h4" style={{ margin: "0 0 6px 0", color: "var(--text-primary)" }}>No Notifications Yet</h4>
             <p style={{ margin: 0, fontSize: "var(--fs-sm)", color: "var(--text-secondary)", maxWidth: "420px", marginLeft: "auto", marginRight: "auto" }}>
-              Zero mock alerts active. Live booking updates, verification approvals, and wallet payout alerts will log here automatically.
+              Live booking updates, verification approvals, and wallet payout alerts will log here automatically.
             </p>
           </div>
         ) : (

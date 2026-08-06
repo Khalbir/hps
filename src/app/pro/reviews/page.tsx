@@ -99,13 +99,13 @@ export default function ProReviewsPage() {
       {/* Review List */}
       <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
         {loading ? (
-          <div style={{ padding: 30, textAlign: "center", color: "var(--text-tertiary)" }}>Loading real customer reviews...</div>
+          <div style={{ padding: 30, textAlign: "center", color: "var(--text-tertiary)" }}>Loading customer reviews...</div>
         ) : reviews.length === 0 ? (
           <div className="card" style={{ padding: "40px", textAlign: "center", background: "var(--bg-tertiary)", borderRadius: "var(--radius-xl)", border: "1px solid var(--border-primary)" }}>
             <Inbox size={40} color="#F59E0B" style={{ opacity: 0.6, marginBottom: 12 }} />
             <h4 className="h4" style={{ margin: "0 0 6px 0", color: "var(--text-primary)" }}>No Customer Reviews Yet</h4>
             <p style={{ margin: 0, fontSize: "var(--fs-sm)", color: "var(--text-secondary)", maxWidth: "420px", marginLeft: "auto", marginRight: "auto" }}>
-              Zero mock reviews active. When customers complete jobs with you, their ratings and reviews will display here.
+              When clients complete service bookings with you, their ratings and reviews will display here.
             </p>
           </div>
         ) : (

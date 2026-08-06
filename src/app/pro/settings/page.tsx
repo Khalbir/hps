@@ -78,7 +78,7 @@ export default function ProSettingsPage() {
             <input
               type="text"
               maxLength={10}
-              placeholder="e.g. 0123456789"
+              placeholder="Enter 10-digit NUBAN account number"
               value={accountNumber}
               onChange={(e) => setAccountNumber(e.target.value)}
               style={{ width: "100%", height: 44, padding: "0 12px", background: "var(--bg-tertiary)", border: "1px solid var(--border-primary)", borderRadius: "var(--radius-md)", color: "var(--text-primary)", letterSpacing: 2 }}
@@ -91,7 +91,7 @@ export default function ProSettingsPage() {
             </label>
             <input
               type="text"
-              placeholder="Account holder full name"
+              placeholder="Enter bank account full name"
               value={accountName}
               onChange={(e) => setAccountName(e.target.value)}
               style={{ width: "100%", height: 44, padding: "0 12px", background: "var(--bg-tertiary)", border: "1px solid var(--border-primary)", borderRadius: "var(--radius-md)", color: "var(--text-primary)" }}
