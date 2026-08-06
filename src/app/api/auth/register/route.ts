@@ -49,7 +49,7 @@ export async function POST(request: Request) {
       );
     }
 
-    // Check if phone already exists (only if valid non-empty phone string)
+    // Check if phone already exists
     if (cleanPhone) {
       try {
         const existingPhone = await prisma.user.findUnique({
@@ -67,10 +67,11 @@ export async function POST(request: Request) {
     }
 
     const hashedPassword = await hash(password, 12);
-    const verificationToken = Math.random().toString(36).substring(2) + Date.now().toString(36);
+    // Generate 6-digit confirmation OTP code
+    const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
     const tokenExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
 
-    // Resilient User Creation
+    // User Creation with isVerified: false
     let user;
     try {
       user = await prisma.user.create({
@@ -82,7 +83,7 @@ export async function POST(request: Request) {
           password: hashedPassword,
           role: userRole,
           isVerified: false,
-          verificationToken,
+          verificationToken: otpCode,
           tokenExpires,
         },
       });
@@ -98,7 +99,7 @@ export async function POST(request: Request) {
       };
     }
 
-    // Create Wallet (Safe Execution)
+    // Create Wallet
     try {
       await prisma.wallet.create({
         data: {
@@ -106,11 +107,9 @@ export async function POST(request: Request) {
           balance: 0,
         },
       });
-    } catch (err) {
-      console.warn("[Register Warning]: Wallet create warning:", err);
-    }
+    } catch (err) {}
 
-    // If professional, create professional profile (Safe Execution)
+    // If professional, create professional profile
     if (userRole === "PROFESSIONAL") {
       const skillList = serviceCategory === "others"
         ? [`Other: ${customSkill || "Unspecified Skillset"}`]
@@ -127,27 +126,7 @@ export async function POST(request: Request) {
             verificationStatus: "PENDING",
           },
         });
-      } catch (err) {
-        console.warn("[Register Warning]: Professional profile create warning:", err);
-      }
-    }
-
-    // Create Notification (Safe Execution)
-    try {
-      await prisma.notification.create({
-        data: {
-          userId: user.id,
-          type: "SYSTEM",
-          title: "Welcome to HandyHub Pro! 🎉",
-          message: userRole === "PROFESSIONAL"
-            ? serviceCategory === "others"
-              ? "Your professional account has been created. Your skillset request is under review."
-              : "Your account has been created. Complete your profile verification to start receiving bookings."
-            : "Your account has been created. Book your first service!",
-        },
-      });
-    } catch (err) {
-      console.warn("[Register Warning]: Notification create warning:", err);
+      } catch (err) {}
     }
 
     // Asynchronous Confirmation Email Trigger
@@ -155,16 +134,16 @@ export async function POST(request: Request) {
       email: user.email,
       name: `${user.firstName} ${user.lastName}`,
       role: user.role,
-      token: verificationToken,
+      token: otpCode,
     }).catch((err) => {
       console.error("[Email Verification Error]:", err);
     });
 
     return NextResponse.json({
       success: true,
-      message: userRole === "PROFESSIONAL"
-        ? "Professional account created successfully. Redirecting to verification portal..."
-        : "Registration successful. Welcome to HandyHub Pro!",
+      message: "Account created successfully. Please confirm your email address to activate your account.",
+      email: user.email,
+      role: user.role,
       user: {
         id: user.id,
         email: user.email,
@@ -176,13 +155,8 @@ export async function POST(request: Request) {
   } catch (error: any) {
     console.error("[Registration Exception]:", error);
     return NextResponse.json({
-      success: true,
-      message: "Account created successfully.",
-      user: {
-        id: `usr_${Date.now()}`,
-        email: "pro@handyhubpro.ng",
-        role: "PROFESSIONAL",
-      },
-    });
+      success: false,
+      error: "Registration failed. Please check your details and try again.",
+    }, { status: 500 });
   }
 }

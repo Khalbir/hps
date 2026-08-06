@@ -95,16 +95,8 @@ export default function RegisterPage() {
         return;
       }
 
-      if (form.role === "PROFESSIONAL") {
-        localStorage.setItem("handyhub_pro_session", JSON.stringify({
-          authenticated: true,
-          user: data.user || { email: form.email, firstName: form.firstName, role: "PROFESSIONAL" },
-        }));
-        document.cookie = "handyhub_pro_session=authenticated; path=/; max-age=86400; SameSite=Lax";
-        router.push("/pro/verification");
-      } else {
-        router.push("/auth/login?registered=true");
-      }
+      // Redirect to Email Confirmation Screen
+      router.push(`/auth/verify-email?email=${encodeURIComponent(form.email)}&role=${encodeURIComponent(form.role)}`);
     } catch {
       setError("Something went wrong. Please try again.");
       setLoading(false);

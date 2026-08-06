@@ -7,6 +7,13 @@ interface SendConfirmationEmailParams {
   token: string;
 }
 
+interface SendPasswordResetParams {
+  email: string;
+  name: string;
+  token: string;
+  resetUrl: string;
+}
+
 export async function sendConfirmationEmail({
   email,
   name,
@@ -15,6 +22,7 @@ export async function sendConfirmationEmail({
 }: SendConfirmationEmailParams) {
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
   const confirmUrl = `${baseUrl}/api/auth/verify?token=${token}`;
+  const otpFormatted = token.length === 6 ? `${token.substring(0, 3)} ${token.substring(3)}` : token;
 
   // SMTP Transporter configuration
   const transporter = nodemailer.createTransport({
@@ -28,8 +36,7 @@ export async function sendConfirmationEmail({
   });
 
   const isPro = role === "PROFESSIONAL";
-  const title = isPro ? "Verify Your Professional Account" : "Confirm Your HandyHub Pro Account";
-  const badgeText = isPro ? "Professional Partner Registration" : "Customer Welcome Offer";
+  const badgeText = isPro ? "Professional Partner Registration" : "Customer Welcome Verification";
 
   const htmlContent = `
     <!DOCTYPE html>
@@ -38,14 +45,16 @@ export async function sendConfirmationEmail({
         <meta charset="utf-8">
         <style>
           body { font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f4f7f6; margin: 0; padding: 20px; color: #333; }
-          .container { max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+          .container { max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
           .header { background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); padding: 35px 30px; text-align: center; color: #ffffff; }
           .badge { display: inline-block; background: rgba(59, 130, 246, 0.2); color: #60a5fa; font-size: 12px; font-weight: 600; padding: 4px 12px; border-radius: 20px; text-transform: uppercase; margin-bottom: 12px; }
           .title { font-size: 24px; font-weight: 700; margin: 0; }
           .content { padding: 35px 30px; }
           .greeting { font-size: 18px; font-weight: 600; color: #0f172a; margin-bottom: 15px; }
           .message { font-size: 15px; line-height: 1.6; color: #475569; margin-bottom: 25px; }
-          .cta-btn { display: inline-block; background: #2563eb; color: #ffffff !important; font-weight: 600; font-size: 16px; padding: 14px 32px; border-radius: 8px; text-decoration: none; margin: 15px 0 25px 0; text-align: center; }
+          .otp-box { background: #f8fafc; border: 2px dashed #0ea5e9; border-radius: 12px; padding: 20px; text-align: center; margin: 20px 0; }
+          .otp-code { font-size: 32px; font-weight: 800; letter-spacing: 8px; color: #0ea5e9; font-family: monospace; }
+          .cta-btn { display: inline-block; background: #0ea5e9; color: #ffffff !important; font-weight: 600; font-size: 16px; padding: 14px 32px; border-radius: 8px; text-decoration: none; margin: 15px 0; text-align: center; }
           .offer-box { background: #eff6ff; border-left: 4px solid #3b82f6; padding: 15px 20px; border-radius: 6px; margin-bottom: 25px; }
           .footer { background: #f8fafc; padding: 20px 30px; text-align: center; font-size: 12px; color: #94a3b8; border-top: 1px solid #e2e8f0; }
         </style>
@@ -54,25 +63,30 @@ export async function sendConfirmationEmail({
         <div class="container">
           <div class="header">
             <div class="badge">${badgeText}</div>
-            <h1 class="title">HandyHub Pro Solutions</h1>
+            <h1 class="title">HandyHub PRO Solutions</h1>
           </div>
           <div class="content">
             <div class="greeting">Hello ${name},</div>
             <p class="message">
-              Thank you for registering with <strong>HandyHub Pro</strong>! Please click the button below to confirm your email address and activate your ${isPro ? "Professional Partner Dashboard" : "Customer Account"}.
+              Thank you for registering with <strong>HandyHub PRO</strong>! Enter your 6-digit confirmation code below or click the verification button to activate your ${isPro ? "Professional Partner Dashboard" : "Customer Account"}.
             </p>
             
+            <div class="otp-box">
+              <div style="font-size: 12px; color: #64748b; font-weight: 600; text-transform: uppercase; margin-bottom: 6px;">Your Confirmation Code</div>
+              <div class="otp-code">${otpFormatted}</div>
+            </div>
+
             <div style="text-align: center;">
-              <a href="${confirmUrl}" class="cta-btn" target="_blank">Confirm Email & Activate Account</a>
+              <a href="${confirmUrl}" class="cta-btn" target="_blank">Click Here to Confirm & Activate ➔</a>
             </div>
 
             ${isPro ? `
               <div class="offer-box">
                 <strong>📋 Next Steps for Professionals:</strong>
                 <ul style="margin: 8px 0 0 0; padding-left: 20px; color: #1e3a8a;">
-                  <li>Confirm your email address using the button above</li>
+                  <li>Enter your confirmation code above</li>
                   <li>Log in to your Professional Dashboard</li>
-                  <li>Upload your verification documents to start accepting customer jobs</li>
+                  <li>Upload your trade verification documents to start accepting client dispatches</li>
                 </ul>
               </div>
             ` : `
@@ -83,12 +97,11 @@ export async function sendConfirmationEmail({
             `}
 
             <p class="message" style="font-size: 13px; color: #94a3b8;">
-              If the button above does not work, copy and paste this link into your browser:<br>
-              <a href="${confirmUrl}" style="color: #2563eb; word-break: break-all;">${confirmUrl}</a>
+              Verification Link: <a href="${confirmUrl}" style="color: #0ea5e9; word-break: break-all;">${confirmUrl}</a>
             </p>
           </div>
           <div class="footer">
-            © ${new Date().getFullYear()} HandyHub Pro Solutions. All rights reserved.<br>
+            © ${new Date().getFullYear()} HandyHub PRO Solutions. All rights reserved.<br>
             If you did not create an account, please ignore this email.
           </div>
         </div>
@@ -99,43 +112,31 @@ export async function sendConfirmationEmail({
   try {
     if (process.env.SMTP_USER && process.env.SMTP_PASS) {
       await transporter.sendMail({
-        from: process.env.SMTP_FROM || `"HandyHub Pro Solutions" <info@handyhubpro.ng>`,
+        from: `"HandyHub PRO Solutions" <${process.env.SMTP_USER}>`,
         to: email,
-        subject: title,
+        subject: `${token} is your HandyHub PRO Confirmation Code`,
         html: htmlContent,
       });
-      console.log(`✉️ Confirmation email sent to ${email}`);
+      console.log(`[Email Sent]: Real SMTP email delivered to ${email}`);
     } else {
-      console.log(`\n========================================`);
-      console.log(`📧 [EMAIL SIMULATION] Confirmation Email for ${name} (${role}):`);
-      console.log(`To: ${email}`);
-      console.log(`Subject: ${title}`);
-      console.log(`Confirm Link: ${confirmUrl}`);
-      console.log(`========================================\n`);
+      console.log(`\n=================================================`);
+      console.log(`✉️ [EMAIL SIMULATION TO ${email}]:`);
+      console.log(`SUBJECT: ${token} is your HandyHub PRO Confirmation Code`);
+      console.log(`CONFIRMATION CODE: ${token}`);
+      console.log(`DIRECT LINK: ${confirmUrl}`);
+      console.log(`=================================================\n`);
     }
-  } catch (error) {
-    console.error("Failed to send email:", error);
-    // Log fallback confirm link
-    console.log(`🔗 Fallback verification link for ${email}: ${confirmUrl}`);
+  } catch (err) {
+    console.error("[Nodemailer Error]: Failed to send verification email:", err);
   }
-}
-
-interface SendPasswordResetEmailParams {
-  email: string;
-  name: string;
-  token: string;
-  resetUrl?: string;
 }
 
 export async function sendPasswordResetEmail({
   email,
   name,
   token,
-  resetUrl: customResetUrl,
-}: SendPasswordResetEmailParams) {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://handyhubpro.ng";
-  const resetUrl = customResetUrl || `${baseUrl}/auth/reset-password?token=${token}`;
-
+  resetUrl,
+}: SendPasswordResetParams) {
   const transporter = nodemailer.createTransport({
     host: process.env.SMTP_HOST || "smtp.gmail.com",
     port: Number(process.env.SMTP_PORT) || 587,
@@ -153,45 +154,28 @@ export async function sendPasswordResetEmail({
         <meta charset="utf-8">
         <style>
           body { font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f4f7f6; margin: 0; padding: 20px; color: #333; }
-          .container { max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
-          .header { background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); padding: 35px 30px; text-align: center; color: #ffffff; }
-          .badge { display: inline-block; background: rgba(239, 68, 68, 0.2); color: #f87171; font-size: 12px; font-weight: 600; padding: 4px 12px; border-radius: 20px; text-transform: uppercase; margin-bottom: 12px; }
-          .title { font-size: 24px; font-weight: 700; margin: 0; }
+          .container { max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
+          .header { background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); padding: 30px; text-align: center; color: #ffffff; }
           .content { padding: 35px 30px; }
-          .greeting { font-size: 18px; font-weight: 600; color: #0f172a; margin-bottom: 15px; }
-          .message { font-size: 15px; line-height: 1.6; color: #475569; margin-bottom: 25px; }
-          .cta-btn { display: inline-block; background: #dc2626; color: #ffffff !important; font-weight: 600; font-size: 16px; padding: 14px 32px; border-radius: 8px; text-decoration: none; margin: 15px 0 25px 0; text-align: center; }
-          .warning-box { background: #fef2f2; border-left: 4px solid #ef4444; padding: 15px 20px; border-radius: 6px; margin-bottom: 25px; font-size: 14px; color: #991b1b; }
+          .cta-btn { display: inline-block; background: #0ea5e9; color: #ffffff !important; font-weight: 600; font-size: 16px; padding: 14px 32px; border-radius: 8px; text-decoration: none; margin: 20px 0; text-align: center; }
           .footer { background: #f8fafc; padding: 20px 30px; text-align: center; font-size: 12px; color: #94a3b8; border-top: 1px solid #e2e8f0; }
         </style>
       </head>
       <body>
         <div class="container">
           <div class="header">
-            <div class="badge">Security Notification</div>
-            <h1 class="title">HandyHub Pro Solutions</h1>
+            <h1 style="margin: 0; font-size: 24px;">Password Reset Request</h1>
           </div>
           <div class="content">
-            <div class="greeting">Hello ${name},</div>
-            <p class="message">
-              We received a request to reset your password for your <strong>HandyHub Pro</strong> account. Click the button below to set up a new password:
-            </p>
-            
+            <p>Hello ${name},</p>
+            <p>We received a request to reset your HandyHub PRO account password. Click the button below to set a new password:</p>
             <div style="text-align: center;">
-              <a href="${resetUrl}" class="cta-btn" target="_blank">Reset Account Password</a>
+              <a href="${resetUrl}" class="cta-btn" target="_blank">Reset My Password ➔</a>
             </div>
-
-            <div class="warning-box">
-              <strong>⏰ Expiration Notice:</strong> This password reset link is valid for <strong>1 hour</strong> only. If you did not request a password reset, you can safely ignore this message.
-            </div>
-
-            <p class="message" style="font-size: 13px; color: #94a3b8;">
-              If the button does not work, copy and paste this link into your browser:<br>
-              <a href="${resetUrl}" style="color: #dc2626; word-break: break-all;">${resetUrl}</a>
-            </p>
+            <p style="font-size: 13px; color: #94a3b8;">If you did not request a password reset, please ignore this email.</p>
           </div>
           <div class="footer">
-            © ${new Date().getFullYear()} HandyHub Pro Solutions. Security & Authentication Team.
+            © ${new Date().getFullYear()} HandyHub PRO Solutions. All rights reserved.
           </div>
         </div>
       </body>
@@ -201,21 +185,15 @@ export async function sendPasswordResetEmail({
   try {
     if (process.env.SMTP_USER && process.env.SMTP_PASS) {
       await transporter.sendMail({
-        from: process.env.SMTP_FROM || `"HandyHub Pro Solutions" <info@handyhubpro.ng>`,
+        from: `"HandyHub PRO Solutions" <${process.env.SMTP_USER}>`,
         to: email,
-        subject: "Reset Your HandyHub Pro Password",
+        subject: "Reset Your HandyHub PRO Password",
         html: htmlContent,
       });
-      console.log(`✉️ Password reset email sent to ${email}`);
     } else {
-      console.log(`\n========================================`);
-      console.log(`🔑 [EMAIL SIMULATION] Password Reset Link for ${name}:`);
-      console.log(`To: ${email}`);
-      console.log(`Reset Link: ${resetUrl}`);
-      console.log(`========================================\n`);
+      console.log(`✉️ [PASSWORD RESET EMAIL TO ${email}]: ${resetUrl}`);
     }
-  } catch (error) {
-    console.error("Failed to send password reset email:", error);
-    console.log(`🔗 Fallback password reset link for ${email}: ${resetUrl}`);
+  } catch (err) {
+    console.error("[Nodemailer Error]: Failed to send reset email:", err);
   }
 }

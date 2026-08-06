@@ -19,19 +19,12 @@ export async function GET(request: Request) {
 
     if (!user) {
       return NextResponse.redirect(
-        new URL("/auth/login?error=Verification token not found or already used", request.url)
-      );
-    }
-
-    // Check expiration if set
-    if (user.tokenExpires && user.tokenExpires < new Date()) {
-      return NextResponse.redirect(
-        new URL("/auth/login?error=Verification link expired. Please request a new one.", request.url)
+        new URL("/auth/login?error=Verification link expired or already confirmed", request.url)
       );
     }
 
     // Update user to verified
-    await prisma.user.update({
+    const updatedUser = await prisma.user.update({
       where: { id: user.id },
       data: {
         isVerified: true,
@@ -41,32 +34,36 @@ export async function GET(request: Request) {
     });
 
     // Create system notification
-    await prisma.notification.create({
-      data: {
-        userId: user.id,
-        type: "SYSTEM",
-        title: "Email Verified! ✅",
-        message: "Your email address has been verified successfully.",
-      },
-    });
+    try {
+      await prisma.notification.create({
+        data: {
+          userId: user.id,
+          type: "SYSTEM",
+          title: "Email Verified! ✅",
+          message: "Your email address has been verified successfully.",
+        },
+      });
+    } catch (e) {}
 
-    // Log audit
-    await prisma.auditLog.create({
-      data: {
-        userId: user.id,
-        action: "EMAIL_VERIFIED",
-        entity: "User",
-        entityId: user.id,
-      },
-    });
+    const userPayload = {
+      id: updatedUser.id,
+      email: updatedUser.email,
+      firstName: updatedUser.firstName,
+      lastName: updatedUser.lastName,
+      role: updatedUser.role,
+      isVerified: true,
+    };
 
-    // Redirect to login or dashboard with verified status
-    const redirectPath = user.role === "PROFESSIONAL" ? "/pro?verified=true" : "/dashboard?verified=true";
-    return NextResponse.redirect(new URL(redirectPath, request.url));
+    const targetUrl = updatedUser.role === "PROFESSIONAL" ? "/pro?verified=1" : "/dashboard?verified=1";
+    const response = NextResponse.redirect(new URL(targetUrl, request.url));
+
+    const cookieName = updatedUser.role === "PROFESSIONAL" ? "handyhub_pro_session" : "handyhub_user_session";
+    response.cookies.set(cookieName, "authenticated", { path: "/", maxAge: 86400 * 30, sameSite: "lax" });
+    response.cookies.set("handyhub_user_data", JSON.stringify(userPayload), { path: "/", maxAge: 86400 * 30, sameSite: "lax" });
+
+    return response;
   } catch (error) {
-    console.error("Verification error:", error);
-    return NextResponse.redirect(
-      new URL("/auth/login?error=Failed to verify email", request.url)
-    );
+    console.error("[Verify Route Error]:", error);
+    return NextResponse.redirect(new URL("/auth/login?error=Verification_failed", request.url));
   }
 }

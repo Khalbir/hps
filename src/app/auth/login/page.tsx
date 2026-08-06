@@ -36,6 +36,10 @@ export default function LoginPage() {
       const data = await res.json();
 
       if (!res.ok) {
+        if (data.unverified && data.email) {
+          router.push(`/auth/verify-email?email=${encodeURIComponent(data.email)}&role=${encodeURIComponent(data.role || "CUSTOMER")}`);
+          return;
+        }
         setError(data.error || "Invalid email or password");
         setLoading(false);
         return;

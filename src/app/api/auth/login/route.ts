@@ -171,6 +171,18 @@ export async function POST(request: Request) {
           );
         }
 
+        if (dbUser.isVerified === false) {
+          return NextResponse.json(
+            {
+              error: "Email confirmation required. Please enter the 6-digit code sent to your email inbox.",
+              unverified: true,
+              email: dbUser.email,
+              role: dbUser.role,
+            },
+            { status: 403 }
+          );
+        }
+
         const { password: _, ...userWithoutPassword } = dbUser;
         return NextResponse.json({
           success: true,
