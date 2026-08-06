@@ -15,9 +15,31 @@ export function middleware(request: NextRequest) {
     }
   }
 
+  // Protect Customer Dashboard routes
+  if (pathname.startsWith("/dashboard")) {
+    const userCookie = request.cookies.get("handyhub_user_session")?.value || request.cookies.get("handyhub_user_data")?.value;
+
+    if (!userCookie) {
+      const loginUrl = new URL("/auth/login", request.url);
+      loginUrl.searchParams.set("redirect", pathname);
+      return NextResponse.redirect(loginUrl);
+    }
+  }
+
+  // Protect Professional Portal routes
+  if (pathname.startsWith("/pro")) {
+    const proCookie = request.cookies.get("handyhub_pro_session")?.value || request.cookies.get("handyhub_user_data")?.value;
+
+    if (!proCookie) {
+      const loginUrl = new URL("/auth/login", request.url);
+      loginUrl.searchParams.set("redirect", pathname);
+      return NextResponse.redirect(loginUrl);
+    }
+  }
+
   return NextResponse.next();
 }
 
 export const config = {
-  matcher: ["/admin/dashboard/:path*"],
+  matcher: ["/admin/dashboard/:path*", "/dashboard/:path*", "/pro/:path*"],
 };

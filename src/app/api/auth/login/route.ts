@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { compare } from "bcryptjs";
+import { compare, hash } from "bcryptjs";
 
 // Built-in high-availability seed test accounts
 const SEED_ACCOUNTS: Record<string, { pass: string; user: any }> = {
@@ -134,11 +134,26 @@ export async function POST(request: Request) {
     }
 
     if (dbUser) {
-      if (!dbUser.password) {
-        return NextResponse.json(
-          { error: "This account was registered via Google. Please click 'Continue with Google'." },
-          { status: 400 }
-        );
+      const isGoogleAccount = !dbUser.password || dbUser.password.startsWith("google_oauth_");
+
+      if (isGoogleAccount) {
+        // Automatically set password for Google account so manual login works going forward
+        const newHash = await hash(password, 10);
+        dbUser = await prisma.user.update({
+          where: { id: dbUser.id },
+          data: {
+            password: newHash,
+            isVerified: true,
+          },
+          include: { professional: true },
+        });
+
+        const { password: _, ...userWithoutPassword } = dbUser;
+        return NextResponse.json({
+          success: true,
+          message: "Google account recognized and logged in successfully!",
+          user: userWithoutPassword,
+        });
       }
 
       let isValid = false;

@@ -87,6 +87,14 @@ export default function DashboardPage() {
       } catch (e) {}
     }
 
+    if (!activeUserId && !activeEmail && typeof window !== "undefined") {
+      const hasCookie = document.cookie.includes("handyhub_user_session") || document.cookie.includes("handyhub_user_data");
+      if (!hasCookie) {
+        window.location.href = "/auth/login?unauthorized=1";
+        return;
+      }
+    }
+
     try {
       const res = await fetch(`/api/customer/dashboard?userId=${activeUserId}&email=${encodeURIComponent(activeEmail)}`);
       const data = await res.json();

@@ -262,7 +262,7 @@ export default function LoginPage() {
                 <input
                   type="email"
                   autoComplete="email"
-                  placeholder="e.g. khalid.kabir@gmail.com"
+                  placeholder="e.g. alex.smith@gmail.com"
                   value={googleEmail}
                   onChange={(e) => setGoogleEmail(e.target.value)}
                   required
@@ -277,7 +277,7 @@ export default function LoginPage() {
                 <input
                   type="text"
                   autoComplete="name"
-                  placeholder="e.g. Khalid Kabir"
+                  placeholder="e.g. Alex Smith"
                   value={googleName}
                   onChange={(e) => setGoogleName(e.target.value)}
                   required
