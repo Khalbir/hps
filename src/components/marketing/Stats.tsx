@@ -5,47 +5,43 @@ import { motion, useInView } from "framer-motion";
 import { Users, CheckCircle, Star, Zap } from "lucide-react";
 import styles from "./Stats.module.css";
 
-const stats = [
-  { icon: CheckCircle, value: 5000, suffix: "+", label: "Jobs Completed" },
-  { icon: Users, value: 500, suffix: "+", label: "Verified Professionals" },
-  { icon: Star, value: 4.9, suffix: "★", label: "Average Rating", isDecimal: true },
-  { icon: Zap, value: 30, suffix: "min", label: "Avg. Response Time" },
-];
-
-function AnimatedNumber({ target, isDecimal, suffix }: { target: number; isDecimal?: boolean; suffix: string }) {
-  const [count, setCount] = useState(0);
-  const ref = useRef(null);
-  const isInView = useInView(ref, { once: true });
-
-  useEffect(() => {
-    if (!isInView) return;
-    const duration = 2000;
-    const steps = 60;
-    const increment = target / steps;
-    let current = 0;
-    const timer = setInterval(() => {
-      current += increment;
-      if (current >= target) {
-        setCount(target);
-        clearInterval(timer);
-      } else {
-        setCount(current);
-      }
-    }, duration / steps);
-    return () => clearInterval(timer);
-  }, [isInView, target]);
-
-  return (
-    <span ref={ref} className={styles.value}>
-      {isDecimal ? count.toFixed(1) : Math.floor(count).toLocaleString()}
-      <span className={styles.suffix}>{suffix}</span>
-    </span>
-  );
-}
-
 export function Stats() {
   const ref = useRef(null);
   const isInView = useInView(ref, { once: true, margin: "-100px" });
+
+  const [liveStats, setLiveStats] = useState({
+    jobsCount: 0,
+    verifiedProsCount: 0,
+    rating: 5.0,
+    responseTime: 15,
+  });
+
+  useEffect(() => {
+    async function fetchLiveStats() {
+      try {
+        const res = await fetch("/api/stats");
+        const data = await res.json();
+        if (res.ok) {
+          setLiveStats({
+            jobsCount: data.jobsCount || 0,
+            verifiedProsCount: data.verifiedProsCount || 0,
+            rating: data.rating || 5.0,
+            responseTime: data.responseTime || 15,
+          });
+        }
+      } catch (err) {
+        console.warn("Failed to fetch live stats:", err);
+      }
+    }
+    fetchLiveStats();
+  }, []);
+
+  const stats = [
+    { icon: CheckCircle, value: liveStats.jobsCount, suffix: "", label: "Completed Dispatches" },
+    { icon: Users, value: liveStats.verifiedProsCount, suffix: "", label: "Verified Professionals" },
+    { icon: Star, value: liveStats.rating, suffix: "★", label: "Satisfaction Rating", isDecimal: true },
+    { icon: Zap, value: liveStats.responseTime, suffix: "min", label: "Dispatch SLA" },
+  ];
 
   return (
     <section className={styles.stats} ref={ref}>
@@ -59,10 +55,15 @@ export function Stats() {
             transition={{ duration: 0.5, delay: i * 0.1 }}
           >
             <div className={styles.iconWrap}>
-              <stat.icon size={22} />
+              <stat.icon size={24} />
             </div>
-            <AnimatedNumber target={stat.value} isDecimal={stat.isDecimal} suffix={stat.suffix} />
-            <span className={styles.label}>{stat.label}</span>
+            <div className={styles.info}>
+              <span className={styles.value}>
+                {stat.isDecimal ? stat.value.toFixed(1) : stat.value.toLocaleString()}
+                <span className={styles.suffix}>{stat.suffix}</span>
+              </span>
+              <span className={styles.label}>{stat.label}</span>
+            </div>
           </motion.div>
         ))}
       </div>

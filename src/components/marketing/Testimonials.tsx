@@ -1,75 +1,42 @@
 "use client";
 
-import { useRef, useState } from "react";
-import { motion, useInView, AnimatePresence } from "framer-motion";
-import { Star, ChevronLeft, ChevronRight, Quote } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { motion, useInView } from "framer-motion";
+import { Star, Quote, MessageSquare } from "lucide-react";
 import styles from "./Testimonials.module.css";
 
-const testimonials = [
-  {
-    name: "Amina Ibrahim",
-    location: "Maitama, Abuja",
-    avatar: "AI",
-    rating: 5,
-    service: "Deep Cleaning",
-    text: "I was skeptical at first, but HandyHub completely exceeded my expectations. The cleaning team was professional, thorough, and punctual. My 4-bedroom apartment has never looked this good. Booking was incredibly easy — literally took me 30 seconds!",
-  },
-  {
-    name: "Chidi Okonkwo",
-    location: "Wuse 2, Abuja",
-    avatar: "CO",
-    rating: 5,
-    service: "Electrical Repairs",
-    text: "Had a critical electrical fault on a Sunday evening. Used HandyHub's emergency service and an electrician arrived within 45 minutes. The pricing was transparent and fair. This is how services should work in Nigeria. Truly impressive.",
-  },
-  {
-    name: "Fatima Yusuf",
-    location: "Gwarinpa, Abuja",
-    avatar: "FY",
-    rating: 5,
-    service: "AC Installation",
-    text: "HandyHub installed 3 split AC units in my new apartment. The technician was knowledgeable, clean, and explained everything clearly. The best part? The price I saw during booking was exactly what I paid. No hidden charges!",
-  },
-  {
-    name: "David Adekunle",
-    location: "Jabi, Abuja",
-    avatar: "DA",
-    rating: 5,
-    service: "Plumbing",
-    text: "Managing 8 rental properties used to be a nightmare. Since discovering HandyHub, I can schedule maintenance for all my properties from one dashboard. The quality is consistent, and my tenants are happier than ever.",
-  },
-  {
-    name: "Grace Nwosu",
-    location: "Asokoro, Abuja",
-    avatar: "GN",
-    rating: 5,
-    service: "Home Renovation",
-    text: "Our kitchen renovation was handled flawlessly. From the initial estimate to the final touch-up, HandyHub's team was professional and communicative. The before-and-after difference is stunning. Worth every naira!",
-  },
-  {
-    name: "Mohammed Bello",
-    location: "Garki, Abuja",
-    avatar: "MB",
-    rating: 5,
-    service: "CCTV Installation",
-    text: "Security is paramount for my business. HandyHub's CCTV team installed an 8-camera system with remote monitoring. Setup was clean, wiring was hidden, and they configured everything on my phone. Top-notch service.",
-  },
-];
+interface ReviewItem {
+  id: string;
+  name: string;
+  location: string;
+  rating: number;
+  service: string;
+  text: string;
+}
 
 export function Testimonials() {
   const ref = useRef(null);
   const isInView = useInView(ref, { once: true, margin: "-100px" });
-  const [current, setCurrent] = useState(0);
-  const itemsPerPage = 3;
-  const totalPages = Math.ceil(testimonials.length / itemsPerPage);
+  const [reviews, setReviews] = useState<ReviewItem[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const next = () => setCurrent((p) => (p + 1) % totalPages);
-  const prev = () => setCurrent((p) => (p - 1 + totalPages) % totalPages);
-
-  const visibleTestimonials = testimonials.slice(
-    current * itemsPerPage,
-    current * itemsPerPage + itemsPerPage
-  );
+  useEffect(() => {
+    async function fetchRealReviews() {
+      setLoading(true);
+      try {
+        const res = await fetch("/api/reviews");
+        const data = await res.json();
+        if (res.ok && data.reviews) {
+          setReviews(data.reviews);
+        }
+      } catch (err) {
+        console.warn("Failed to fetch client reviews:", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchRealReviews();
+  }, []);
 
   return (
     <section className={`section ${styles.section}`} ref={ref}>
@@ -80,69 +47,59 @@ export function Testimonials() {
           animate={isInView ? { opacity: 1, y: 0 } : {}}
           transition={{ duration: 0.5 }}
         >
-          <span className={styles.eyebrow}>Testimonials</span>
-          <h2 className="h2">Loved by homeowners across Abuja</h2>
-          <p className={styles.subtitle}>
-            Don&apos;t take our word for it. Here&apos;s what our customers are saying.
-          </p>
+          <span className="badge badge-primary">Client Feedback</span>
+          <h2 className="h2">What Our Clients Say</h2>
+          <p className="subtitle">Real experiences from property owners who used HandyHub PRO</p>
         </motion.div>
 
-        {/* Carousel */}
-        <div className={styles.carousel}>
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={current}
-              className={styles.grid}
-              initial={{ opacity: 0, x: 30 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -30 }}
-              transition={{ duration: 0.3 }}
-            >
-              {visibleTestimonials.map((t) => (
-                <div key={t.name} className={`card ${styles.testimonialCard}`}>
-                  <Quote size={32} className={styles.quoteIcon} />
-                  <div className={styles.stars}>
-                    {Array.from({ length: t.rating }).map((_, i) => (
-                      <Star key={i} size={16} fill="#F59E0B" stroke="#F59E0B" />
-                    ))}
-                  </div>
-                  <p className={styles.text}>{t.text}</p>
-                  <div className={styles.author}>
-                    <div className={styles.avatar}>
-                      <span>{t.avatar}</span>
-                    </div>
-                    <div>
-                      <div className={styles.name}>{t.name}</div>
-                      <div className={styles.meta}>
-                        {t.service} · {t.location}
-                      </div>
-                    </div>
+        {loading ? (
+          <div style={{ textAlign: "center", padding: "40px", color: "var(--text-tertiary)" }}>
+            Loading verified reviews...
+          </div>
+        ) : reviews.length === 0 ? (
+          <div
+            className="card"
+            style={{
+              padding: "48px 24px",
+              textAlign: "center",
+              maxWidth: 600,
+              margin: "0 auto",
+              background: "var(--bg-tertiary)",
+              border: "1px solid var(--border-primary)",
+            }}
+          >
+            <MessageSquare size={40} color="#0EA5E9" style={{ opacity: 0.6, marginBottom: 12 }} />
+            <h3 className="h4" style={{ marginBottom: 6, color: "var(--text-primary)" }}>No Client Reviews Yet</h3>
+            <p style={{ fontSize: "14px", color: "var(--text-secondary)", margin: 0 }}>
+              Be the first client to schedule a service and share your experience with our verified artisans.
+            </p>
+          </div>
+        ) : (
+          <div className={styles.grid}>
+            {reviews.map((r) => (
+              <motion.div key={r.id} className={`card ${styles.card}`}>
+                <Quote size={32} className={styles.quoteIcon} />
+                <div className={styles.rating}>
+                  {[...Array(5)].map((_, i) => (
+                    <Star
+                      key={i}
+                      size={16}
+                      fill={i < r.rating ? "#F59E0B" : "none"}
+                      stroke={i < r.rating ? "#F59E0B" : "var(--text-tertiary)"}
+                    />
+                  ))}
+                </div>
+                <p className={styles.text}>&ldquo;{r.text}&rdquo;</p>
+                <div className={styles.author}>
+                  <div>
+                    <strong className={styles.authorName}>{r.name}</strong>
+                    <span className={styles.authorMeta}>{r.service} • {r.location}</span>
                   </div>
                 </div>
-              ))}
-            </motion.div>
-          </AnimatePresence>
-
-          {/* Navigation */}
-          <div className={styles.nav}>
-            <button onClick={prev} className={styles.navBtn} aria-label="Previous testimonials">
-              <ChevronLeft size={20} />
-            </button>
-            <div className={styles.dots}>
-              {Array.from({ length: totalPages }).map((_, i) => (
-                <button
-                  key={i}
-                  className={`${styles.dot} ${i === current ? styles.dotActive : ""}`}
-                  onClick={() => setCurrent(i)}
-                  aria-label={`Go to page ${i + 1}`}
-                />
-              ))}
-            </div>
-            <button onClick={next} className={styles.navBtn} aria-label="Next testimonials">
-              <ChevronRight size={20} />
-            </button>
+              </motion.div>
+            ))}
           </div>
-        </div>
+        )}
       </div>
     </section>
   );

@@ -20,9 +20,11 @@ function TrackContent() {
 
   useEffect(() => {
     const savedRef = typeof window !== "undefined" ? localStorage.getItem("handyhub_last_booking_ref") : "";
-    const targetRef = initialRef || savedRef || "HHP-M1K9X";
-    setQuery(targetRef);
-    fetchBookingTrack(targetRef);
+    const targetRef = initialRef || savedRef || "";
+    if (targetRef) {
+      setQuery(targetRef);
+      fetchBookingTrack(targetRef);
+    }
   }, [initialRef]);
 
   const fetchBookingTrack = async (searchQuery: string) => {
@@ -74,7 +76,7 @@ function TrackContent() {
               <Search size={20} color="var(--text-tertiary)" style={{ position: "absolute", left: 16, top: 14 }} />
               <input
                 type="text"
-                placeholder="Enter Reference (e.g. HHP-M1K9X) or Phone Number..."
+                placeholder="Enter Booking Reference Code (e.g., HHP-XXXXX) or Phone Number..."
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 style={{
@@ -90,28 +92,10 @@ function TrackContent() {
                 }}
               />
             </div>
-            <button type="submit" className="btn btn-primary btn-lg" disabled={loading} style={{ minWidth: 160 }}>
+            <button type="submit" className="btn btn-primary btn-lg" disabled={loading} style={{ minWidth: 160, background: "#0EA5E9" }}>
               {loading ? "Locating..." : "Track Order"}
             </button>
           </form>
-
-          {/* Quick Demo Reference Suggestions */}
-          <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: "var(--space-3)", fontSize: "var(--fs-xs)", color: "var(--text-tertiary)", flexWrap: "wrap" }}>
-            <span>Quick Sample Tracks:</span>
-            {["HHP-M1K9X", "HHP-N2L0Y", "HHP-O3M1Z"].map((sample) => (
-              <button
-                key={sample}
-                type="button"
-                onClick={() => {
-                  setQuery(sample);
-                  fetchBookingTrack(sample);
-                }}
-                style={{ background: "var(--bg-tertiary)", border: "1px solid var(--border-primary)", padding: "3px 10px", borderRadius: 99, color: "#0EA5E9", cursor: "pointer" }}
-              >
-                {sample}
-              </button>
-            ))}
-          </div>
         </div>
 
         {/* Error Alert */}
