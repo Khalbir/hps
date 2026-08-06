@@ -7,7 +7,7 @@ import {
   Home, Calendar, ClipboardList, User, Bell, Wallet,
   MapPin, Settings, LogOut, Menu, X, Plus, Search,
   ArrowRight, Star, Clock, CheckCircle, ShieldCheck,
-  CreditCard, Edit3, Trash2, Check, RefreshCw, UserCheck
+  CreditCard, Edit3, Trash2, Check, RefreshCw, UserCheck, Inbox
 } from "lucide-react";
 import styles from "./dashboard.module.css";
 
@@ -26,34 +26,28 @@ export default function DashboardPage() {
 
   // User state
   const [user, setUser] = useState({
-    firstName: "Valued",
-    lastName: "Customer",
-    email: "customer@test.com",
-    phone: "+234 812 222 2936",
+    firstName: "Valued Client",
+    lastName: "",
+    email: "",
+    phone: "",
     role: "CUSTOMER",
   });
 
-  const [walletBalance, setWalletBalance] = useState(50000);
+  const [walletBalance, setWalletBalance] = useState(0);
+  const [activeDispatchesCount, setActiveDispatchesCount] = useState(0);
+  const [totalBookingsCount, setTotalBookingsCount] = useState(0);
+  const [bookings, setBookings] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
   const [topUpAmount, setTopUpAmount] = useState(5000);
   const [showTopUpModal, setShowTopUpModal] = useState(false);
   const [topUpLoading, setTopUpLoading] = useState(false);
 
   // Address state
-  const [addresses, setAddresses] = useState<Address[]>([
-    { id: "addr_1", title: "Home", street: "12 Aminu Kano Crescent", city: "Maitama", state: "Abuja", isDefault: true },
-    { id: "addr_2", title: "Office", street: "Plot 5 Alex Ekwueme Way", city: "Jabi", state: "Abuja", isDefault: false },
-  ]);
+  const [addresses, setAddresses] = useState<Address[]>([]);
   const [showAddressModal, setShowAddressModal] = useState(false);
   const [newAddrTitle, setNewAddrTitle] = useState("");
   const [newAddrStreet, setNewAddrStreet] = useState("");
-
-  // Booking list state
-  const [bookings, setBookings] = useState([
-    { id: "HHP-M1K9X", service: "Deep Cleaning", status: "IN_PROGRESS", date: "Today, 2:00 PM", price: "₦25,000", pro: "Blessing O." },
-    { id: "HHP-N2L0Y", service: "Electrical Repairs", status: "CONFIRMED", date: "Tomorrow, 9:00 AM", price: "₦15,000", pro: "Abubakar T." },
-    { id: "HHP-O3M1Z", service: "Plumbing Repair", status: "PENDING", date: "Aug 5, 2026", price: "₦10,000", pro: "Ibrahim M." },
-    { id: "HHP-P4N2A", service: "AC Servicing", status: "COMPLETED", date: "Aug 2, 2026", price: "₦18,500", pro: "Yusuf A." },
-  ]);
 
   // Profile Edit State
   const [editFirstName, setEditFirstName] = useState("");
@@ -62,22 +56,45 @@ export default function DashboardPage() {
   const [profileSaving, setProfileSaving] = useState(false);
   const [profileSuccess, setProfileSuccess] = useState("");
 
-  // Load user session from localStorage / API on mount
-  useEffect(() => {
+  const fetchCustomerDashboardData = async () => {
+    setLoading(true);
+    let activeUserId = "";
+    let activeEmail = "";
+
     if (typeof window !== "undefined") {
-      const stored = localStorage.getItem("handyhub_user");
-      if (stored) {
-        try {
+      try {
+        const stored = localStorage.getItem("handyhub_user");
+        if (stored) {
           const parsed = JSON.parse(stored);
-          setUser(parsed);
-          setEditFirstName(parsed.firstName || "");
-          setEditLastName(parsed.lastName || "");
-          setEditPhone(parsed.phone || "");
-        } catch (e) {
-          console.warn("Session parse error:", e);
+          if (parsed.id) activeUserId = parsed.id;
+          if (parsed.email) activeEmail = parsed.email;
+          if (parsed.firstName) setUser(parsed);
         }
-      }
+      } catch (e) {}
     }
+
+    try {
+      const res = await fetch(`/api/customer/dashboard?userId=${activeUserId}&email=${encodeURIComponent(activeEmail)}`);
+      const data = await res.json();
+      if (res.ok && data.user) {
+        setUser(data.user);
+        setEditFirstName(data.user.firstName || "");
+        setEditLastName(data.user.lastName || "");
+        setEditPhone(data.user.phone || "");
+        setWalletBalance(data.walletBalance || 0);
+        setActiveDispatchesCount(data.activeDispatchesCount || 0);
+        setTotalBookingsCount(data.totalBookingsCount || 0);
+        setBookings(data.bookings || []);
+      }
+    } catch (err) {
+      console.warn("Failed to fetch customer dashboard data:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchCustomerDashboardData();
   }, []);
 
   const handleTopUpSubmit = async (e: React.FormEvent) => {
@@ -176,12 +193,7 @@ export default function DashboardPage() {
       <aside className={`${styles.sidebar} ${sidebarOpen ? styles.sidebarOpen : ""}`}>
         <div className={styles.sidebarHeader}>
           <Link href="/" className={styles.sidebarLogo}>
-            <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
-              <rect width="32" height="32" rx="8" fill="url(#dash-logo)" />
-              <path d="M8 16C8 11.58 11.58 8 16 8C20.42 8 24 11.58 24 16C24 20.42 20.42 24 16 24" stroke="white" strokeWidth="2.5" strokeLinecap="round" />
-              <path d="M16 12V16L19 19" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-              <defs><linearGradient id="dash-logo" x1="0" y1="0" x2="32" y2="32"><stop stopColor="#0EA5E9" /><stop offset="1" stopColor="#0284C7" /></linearGradient></defs>
-            </svg>
+            <img src="/logo.png" alt="HandyHub Logo" style={{ width: 32, height: 32, borderRadius: 8, objectFit: "contain" }} />
             <span>HandyHub</span>
           </Link>
           <button className={styles.closeSidebar} onClick={() => setSidebarOpen(false)}>
@@ -195,7 +207,7 @@ export default function DashboardPage() {
             { id: "bookings", label: "My Bookings", icon: ClipboardList },
             { id: "addresses", label: "Addresses", icon: MapPin },
             { id: "wallet", label: "Wallet", icon: Wallet },
-            { id: "notifications", label: "Notifications", icon: Bell, badge: 3 },
+            { id: "notifications", label: "Notifications", icon: Bell },
             { id: "profile", label: "Profile", icon: User },
             { id: "settings", label: "Settings", icon: Settings },
           ].map((link) => (
@@ -210,7 +222,6 @@ export default function DashboardPage() {
             >
               <link.icon size={20} />
               <span>{link.label}</span>
-              {link.badge && <span className={styles.navBadge}>{link.badge}</span>}
             </button>
           ))}
         </nav>
@@ -232,11 +243,14 @@ export default function DashboardPage() {
               <Menu size={22} />
             </button>
             <div>
-              <h1 className={styles.greeting}>Welcome back, {user.firstName || "Valued"}! 👋</h1>
+              <h1 className={styles.greeting}>Welcome back, {user.firstName || "Valued Client"}! 👋</h1>
               <p className={styles.greetingSub}>Here&apos;s what&apos;s happening with your property</p>
             </div>
           </div>
           <div className={styles.topBarRight}>
+            <button onClick={fetchCustomerDashboardData} className="btn btn-secondary btn-sm" style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <RefreshCw size={14} /> Refresh
+            </button>
             <Link href="/book" className="btn btn-primary btn-md">
               <Plus size={18} />
               Book Service
@@ -254,7 +268,7 @@ export default function DashboardPage() {
                 <div className={`card ${styles.statCard}`}>
                   <div className={styles.statIcon}><ClipboardList size={20} /></div>
                   <div>
-                    <span className={styles.statValue}>{bookings.length}</span>
+                    <span className={styles.statValue}>{totalBookingsCount}</span>
                     <span className={styles.statLabel}>Total Bookings</span>
                     <span className={styles.statChange}>Active Account</span>
                   </div>
@@ -262,9 +276,9 @@ export default function DashboardPage() {
                 <div className={`card ${styles.statCard}`}>
                   <div className={styles.statIcon} style={{ background: "rgba(139,92,246,0.15)", color: "#8B5CF6" }}><Clock size={20} /></div>
                   <div>
-                    <span className={styles.statValue}>1</span>
+                    <span className={styles.statValue}>{activeDispatchesCount}</span>
                     <span className={styles.statLabel}>Active Dispatch</span>
-                    <span className={styles.statChange} style={{ color: "#8B5CF6" }}>In Progress</span>
+                    <span className={styles.statChange} style={{ color: "#8B5CF6" }}>{activeDispatchesCount > 0 ? "In Progress" : "No Active Dispatches"}</span>
                   </div>
                 </div>
                 <div className={`card ${styles.statCard}`}>
@@ -278,14 +292,14 @@ export default function DashboardPage() {
                 <div className={`card ${styles.statCard}`}>
                   <div className={styles.statIcon} style={{ background: "rgba(245,158,11,0.15)", color: "#F59E0B" }}><Star size={20} /></div>
                   <div>
-                    <span className={styles.statValue}>4.9★</span>
+                    <span className={styles.statValue}>5.0★</span>
                     <span className={styles.statLabel}>Satisfaction Rating</span>
                     <span className={styles.statChange}>Verified Client</span>
                   </div>
                 </div>
               </div>
 
-              {/* Recent Bookings */}
+              {/* Recent Bookings Table */}
               <div className={`card ${styles.tableCard}`}>
                 <div className={styles.tableHeader}>
                   <h2 className={styles.tableTitle}>Recent Service Bookings</h2>
@@ -294,42 +308,57 @@ export default function DashboardPage() {
                   </button>
                 </div>
 
-                <div className={styles.tableWrapper}>
-                  <table className={styles.table}>
-                    <thead>
-                      <tr>
-                        <th>Reference</th>
-                        <th>Service</th>
-                        <th>Professional</th>
-                        <th>Date</th>
-                        <th>Amount</th>
-                        <th>Status</th>
-                        <th>Live Tracking</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {bookings.map((b) => (
-                        <tr key={b.id}>
-                          <td><span className={styles.refCode}>{b.id}</span></td>
-                          <td className={styles.serviceCol}>{b.service}</td>
-                          <td>{b.pro}</td>
-                          <td>{b.date}</td>
-                          <td className={styles.priceCol}>{b.price}</td>
-                          <td>
-                            <span className={styles.statusBadge} style={{ color: statusColors[b.status], backgroundColor: `${statusColors[b.status]}15` }}>
-                              {b.status.replace(/_/g, " ")}
-                            </span>
-                          </td>
-                          <td>
-                            <Link href={`/track?ref=${b.id}`} className="btn btn-secondary btn-xs" style={{ display: "inline-flex", alignItems: "center", gap: 4, color: "#0EA5E9" }}>
-                              Track Live 📍
-                            </Link>
-                          </td>
+                {loading ? (
+                  <div style={{ padding: "30px", textAlign: "center", color: "var(--text-tertiary)" }}>Loading service bookings...</div>
+                ) : bookings.length === 0 ? (
+                  <div style={{ padding: "40px 20px", textAlign: "center" }}>
+                    <Inbox size={40} color="#0EA5E9" style={{ opacity: 0.6, marginBottom: 12 }} />
+                    <h4 className="h4" style={{ margin: "0 0 6px 0", color: "var(--text-primary)" }}>No Service Bookings Yet</h4>
+                    <p style={{ margin: "0 0 16px 0", fontSize: "var(--fs-sm)", color: "var(--text-secondary)" }}>
+                      When you book service categories, your live dispatches and artisan tracking will display here.
+                    </p>
+                    <Link href="/book" className="btn btn-primary btn-sm" style={{ background: "#0EA5E9" }}>
+                      Book Your First Service ➔
+                    </Link>
+                  </div>
+                ) : (
+                  <div className={styles.tableWrapper}>
+                    <table className={styles.table}>
+                      <thead>
+                        <tr>
+                          <th>Reference</th>
+                          <th>Service</th>
+                          <th>Professional</th>
+                          <th>Date</th>
+                          <th>Amount</th>
+                          <th>Status</th>
+                          <th>Live Tracking</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                      </thead>
+                      <tbody>
+                        {bookings.map((b) => (
+                          <tr key={b.id}>
+                            <td><span className={styles.refCode}>{b.id}</span></td>
+                            <td className={styles.serviceCol}>{b.service}</td>
+                            <td>{b.pro}</td>
+                            <td>{b.date}</td>
+                            <td className={styles.priceCol}>{b.price}</td>
+                            <td>
+                              <span className={styles.statusBadge} style={{ color: statusColors[b.status] || "#0EA5E9", backgroundColor: `${statusColors[b.status] || "#0EA5E9"}15` }}>
+                                {b.status.replace(/_/g, " ")}
+                              </span>
+                            </td>
+                            <td>
+                              <Link href={`/track?ref=${b.id}`} className="btn btn-secondary btn-xs" style={{ display: "inline-flex", alignItems: "center", gap: 4, color: "#0EA5E9" }}>
+                                Track Live 📍
+                              </Link>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
               </div>
 
               {/* Quick Action Cards */}
@@ -353,49 +382,60 @@ export default function DashboardPage() {
             </motion.div>
           )}
 
-          {/* TAB 2: MY BOOKINGS */}
+          {/* TAB 2: BOOKINGS */}
           {activeTab === "bookings" && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
-                <h2 className="h3">My Service Bookings</h2>
-                <Link href="/book" className="btn btn-primary btn-sm"><Plus size={16} /> New Booking</Link>
-              </div>
+              <div className={`card ${styles.tableCard}`}>
+                <div className={styles.tableHeader}>
+                  <h2 className={styles.tableTitle}>My Service Booking History</h2>
+                  <Link href="/book" className="btn btn-primary btn-sm"><Plus size={16} /> New Booking</Link>
+                </div>
 
-              <div className="card" style={{ padding: 0, overflow: "hidden" }}>
-                <table className={styles.table}>
-                  <thead>
-                    <tr>
-                      <th>Ref Code</th>
-                      <th>Service Category</th>
-                      <th>Assigned Professional</th>
-                      <th>Scheduled Date</th>
-                      <th>Amount</th>
-                      <th>Status</th>
-                      <th>Action</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {bookings.map((b) => (
-                      <tr key={b.id}>
-                        <td><span className={styles.refCode}>{b.id}</span></td>
-                        <td><strong>{b.service}</strong></td>
-                        <td>{b.pro}</td>
-                        <td>{b.date}</td>
-                        <td style={{ fontWeight: "bold", color: "#0EA5E9" }}>{b.price}</td>
-                        <td>
-                          <span className={styles.statusBadge} style={{ color: statusColors[b.status], backgroundColor: `${statusColors[b.status]}15` }}>
-                            {b.status}
-                          </span>
-                        </td>
-                        <td>
-                          <Link href={`/track?ref=${b.id}`} className="btn btn-primary btn-xs">
-                            Track Status 📍
-                          </Link>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                {bookings.length === 0 ? (
+                  <div style={{ padding: "50px 20px", textAlign: "center" }}>
+                    <Inbox size={48} color="#0EA5E9" style={{ opacity: 0.6, marginBottom: 12 }} />
+                    <h4 className="h4">No Bookings Found</h4>
+                    <p style={{ fontSize: "14px", color: "var(--text-secondary)", marginBottom: 16 }}>Click below to schedule your first verified artisan service.</p>
+                    <Link href="/book" className="btn btn-primary btn-sm">Book Service Now</Link>
+                  </div>
+                ) : (
+                  <div className={styles.tableWrapper}>
+                    <table className={styles.table}>
+                      <thead>
+                        <tr>
+                          <th>Ref Code</th>
+                          <th>Service Category</th>
+                          <th>Assigned Professional</th>
+                          <th>Scheduled Date</th>
+                          <th>Amount</th>
+                          <th>Status</th>
+                          <th>Action</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {bookings.map((b) => (
+                          <tr key={b.id}>
+                            <td><span className={styles.refCode}>{b.id}</span></td>
+                            <td className={styles.serviceCol}>{b.service}</td>
+                            <td>{b.pro}</td>
+                            <td>{b.date}</td>
+                            <td className={styles.priceCol}>{b.price}</td>
+                            <td>
+                              <span className={styles.statusBadge} style={{ color: statusColors[b.status] || "#0EA5E9", backgroundColor: `${statusColors[b.status] || "#0EA5E9"}15` }}>
+                                {b.status.replace(/_/g, " ")}
+                              </span>
+                            </td>
+                            <td>
+                              <Link href={`/track?ref=${b.id}`} className="btn btn-primary btn-xs">
+                                Track Status 📍
+                              </Link>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
               </div>
             </motion.div>
           )}
@@ -404,56 +444,43 @@ export default function DashboardPage() {
           {activeTab === "addresses" && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
-                <div>
-                  <h2 className="h3">Saved Service Addresses</h2>
-                  <p style={{ color: "var(--text-secondary)", fontSize: "14px" }}>Manage locations where professionals provide services.</p>
-                </div>
-                <button className="btn btn-primary btn-sm" onClick={() => setShowAddressModal(true)}>
-                  <Plus size={16} /> Add Address
-                </button>
+                <h2 className="h3">Service Addresses</h2>
+                <button onClick={() => setShowAddressModal(true)} className="btn btn-primary btn-sm"><Plus size={16} /> Add Address</button>
               </div>
 
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 16 }}>
-                {addresses.map((addr) => (
-                  <div key={addr.id} className="card" style={{ border: addr.isDefault ? "2px solid #0EA5E9" : "1px solid var(--border-primary)" }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
-                      <strong style={{ fontSize: "16px" }}>{addr.title}</strong>
-                      {addr.isDefault && <span className="badge" style={{ background: "rgba(14,165,233,0.15)", color: "#0EA5E9" }}>Default</span>}
+              {addresses.length === 0 ? (
+                <div className="card" style={{ padding: "40px", textAlign: "center" }}>
+                  <MapPin size={40} color="#F59E0B" style={{ opacity: 0.6, marginBottom: 12 }} />
+                  <h4 className="h4">No Saved Addresses</h4>
+                  <p style={{ fontSize: "14px", color: "var(--text-secondary)" }}>Add your home or office address for instant service dispatches.</p>
+                </div>
+              ) : (
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 16 }}>
+                  {addresses.map((a) => (
+                    <div key={a.id} className="card" style={{ borderLeft: a.isDefault ? "4px solid #0EA5E9" : "1px solid var(--border-primary)" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
+                        <strong style={{ fontSize: "16px" }}>{a.title}</strong>
+                        {a.isDefault && <span className="badge" style={{ background: "rgba(14,165,233,0.15)", color: "#0EA5E9" }}>Default</span>}
+                      </div>
+                      <p style={{ fontSize: "14px", color: "var(--text-secondary)", margin: 0 }}>{a.street}</p>
+                      <p style={{ fontSize: "12px", color: "var(--text-tertiary)", margin: "4px 0 0" }}>{a.city}, {a.state}</p>
                     </div>
-                    <p style={{ color: "var(--text-secondary)", fontSize: "14px", marginBottom: 16 }}>{addr.street}, {addr.city}, {addr.state}</p>
-                    <button
-                      onClick={() => setAddresses(addresses.filter((a) => a.id !== addr.id))}
-                      style={{ background: "none", border: "none", color: "#EF4444", fontSize: "13px", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 4 }}
-                    >
-                      <Trash2 size={14} /> Remove Address
-                    </button>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </motion.div>
           )}
 
           {/* TAB 4: WALLET */}
           {activeTab === "wallet" && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-              <h2 className="h3" style={{ marginBottom: 20 }}>HandyHub Escrow Wallet</h2>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, marginBottom: 24 }}>
-                <div className="card" style={{ background: "linear-gradient(135deg, #0F172A 0%, #1E293B 100%)", color: "white" }}>
-                  <span style={{ fontSize: "13px", color: "#94A3B8" }}>Available Wallet Balance</span>
-                  <h2 className="h1" style={{ color: "#10B981", margin: "8px 0 16px" }}>₦{walletBalance.toLocaleString()}</h2>
-                  <button className="btn btn-primary btn-md" onClick={() => setShowTopUpModal(true)}>
-                    + Top Up Funds
-                  </button>
-                </div>
-
-                <div className="card">
-                  <h3 className="h4" style={{ marginBottom: 12 }}>Instant Wallet Benefits</h3>
-                  <ul style={{ fontSize: "13px", color: "var(--text-secondary)", display: "flex", flexDirection: "column", gap: 8, paddingLeft: 20 }}>
-                    <li>Instant 1-click checkout without re-entering card details</li>
-                    <li>Automatic escrow protection until service completion</li>
-                    <li>Zero transaction processing fees</li>
-                  </ul>
-                </div>
+              <div className="card" style={{ maxWidth: 500, margin: "0 auto", textAlign: "center", padding: "40px" }}>
+                <Wallet size={48} color="#10B981" style={{ marginBottom: 16 }} />
+                <span style={{ fontSize: "14px", color: "var(--text-tertiary)" }}>Available Escrow Wallet Balance</span>
+                <h1 className="h1" style={{ color: "#10B981", margin: "8px 0 24px" }}>₦{walletBalance.toLocaleString()}</h1>
+                <button onClick={() => setShowTopUpModal(true)} className="btn btn-primary btn-md w-full" style={{ background: "#10B981" }}>
+                  + Top Up Funds (Paystack)
+                </button>
               </div>
             </motion.div>
           )}
@@ -461,170 +488,176 @@ export default function DashboardPage() {
           {/* TAB 5: NOTIFICATIONS */}
           {activeTab === "notifications" && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-              <h2 className="h3" style={{ marginBottom: 20 }}>Notifications & Alerts</h2>
-              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                {[
-                  { title: "Artisan Assigned", desc: "Blessing O. has been assigned to your Deep Cleaning booking #HHP-M1K9X.", time: "10 mins ago", icon: UserCheck, color: "#0EA5E9" },
-                  { title: "Escrow Payment Confirmed", desc: "Payment of ₦25,000 held safely in Escrow vault.", time: "1 hour ago", icon: ShieldCheck, color: "#10B981" },
-                  { title: "Service Completed", desc: "AC Servicing #HHP-P4N2A was marked completed.", time: "2 days ago", icon: CheckCircle, color: "#8B5CF6" },
-                ].map((notif, i) => (
-                  <div key={i} className="card" style={{ display: "flex", alignItems: "center", gap: 16, padding: 16 }}>
-                    <div style={{ width: 40, height: 40, borderRadius: "50%", background: `${notif.color}15`, color: notif.color, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                      <notif.icon size={20} />
-                    </div>
-                    <div style={{ flex: 1 }}>
-                      <strong style={{ display: "block", fontSize: "14px" }}>{notif.title}</strong>
-                      <span style={{ fontSize: "13px", color: "var(--text-secondary)" }}>{notif.desc}</span>
-                    </div>
-                    <span style={{ fontSize: "11px", color: "var(--text-tertiary)" }}>{notif.time}</span>
-                  </div>
-                ))}
+              <div className="card" style={{ padding: "40px", textAlign: "center" }}>
+                <Bell size={40} color="#0EA5E9" style={{ opacity: 0.6, marginBottom: 12 }} />
+                <h4 className="h4">No New Notifications</h4>
+                <p style={{ fontSize: "14px", color: "var(--text-secondary)" }}>Live service tracking alerts and payment receipts will appear here.</p>
               </div>
             </motion.div>
           )}
 
           {/* TAB 6: PROFILE */}
           {activeTab === "profile" && (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ maxWidth: 560 }}>
-              <h2 className="h3" style={{ marginBottom: 20 }}>Account Profile Settings</h2>
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+              <div className="card" style={{ maxWidth: 600 }}>
+                <h3 className="h4" style={{ marginBottom: 20 }}>Edit Personal Details</h3>
 
-              {profileSuccess && (
-                <div style={{ background: "rgba(16,185,129,0.15)", color: "#10B981", padding: 12, borderRadius: 8, marginBottom: 16, fontSize: "14px" }}>
-                  ✓ {profileSuccess}
-                </div>
-              )}
+                {profileSuccess && (
+                  <div style={{ padding: 12, background: "rgba(16,185,129,0.1)", color: "#10B981", borderRadius: 8, marginBottom: 16, fontSize: 14 }}>
+                    {profileSuccess}
+                  </div>
+                )}
 
-              <form onSubmit={handleProfileSave} className="card" style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-                <div>
-                  <label style={{ fontSize: "13px", fontWeight: "bold", display: "block", marginBottom: 6 }}>First Name</label>
-                  <input
-                    type="text"
-                    className={styles.input}
-                    value={editFirstName}
-                    onChange={(e) => setEditFirstName(e.target.value)}
-                    required
-                  />
-                </div>
-                <div>
-                  <label style={{ fontSize: "13px", fontWeight: "bold", display: "block", marginBottom: 6 }}>Last Name</label>
-                  <input
-                    type="text"
-                    className={styles.input}
-                    value={editLastName}
-                    onChange={(e) => setEditLastName(e.target.value)}
-                    required
-                  />
-                </div>
-                <div>
-                  <label style={{ fontSize: "13px", fontWeight: "bold", display: "block", marginBottom: 6 }}>Email Address</label>
-                  <input type="email" className={styles.input} value={user.email} disabled style={{ opacity: 0.6 }} />
-                </div>
-                <div>
-                  <label style={{ fontSize: "13px", fontWeight: "bold", display: "block", marginBottom: 6 }}>Phone Number</label>
-                  <input
-                    type="text"
-                    className={styles.input}
-                    value={editPhone}
-                    onChange={(e) => setEditPhone(e.target.value)}
-                  />
-                </div>
-
-                <button type="submit" className={`btn btn-primary btn-md ${profileSaving ? "btn-loading" : ""}`}>
-                  {profileSaving ? "Saving Changes..." : "Save Profile Updates"}
-                </button>
-              </form>
+                <form onSubmit={handleProfileSave} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                  <div>
+                    <label style={{ fontSize: 13, fontWeight: "bold", display: "block", marginBottom: 4 }}>First Name</label>
+                    <input
+                      type="text"
+                      value={editFirstName}
+                      onChange={(e) => setEditFirstName(e.target.value)}
+                      style={{ width: "100%", padding: 10, borderRadius: 8, border: "1px solid var(--border-primary)", background: "var(--bg-tertiary)", color: "var(--text-primary)" }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: 13, fontWeight: "bold", display: "block", marginBottom: 4 }}>Last Name</label>
+                    <input
+                      type="text"
+                      value={editLastName}
+                      onChange={(e) => setEditLastName(e.target.value)}
+                      style={{ width: "100%", padding: 10, borderRadius: 8, border: "1px solid var(--border-primary)", background: "var(--bg-tertiary)", color: "var(--text-primary)" }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: 13, fontWeight: "bold", display: "block", marginBottom: 4 }}>Phone Number</label>
+                    <input
+                      type="tel"
+                      value={editPhone}
+                      onChange={(e) => setEditPhone(e.target.value)}
+                      style={{ width: "100%", padding: 10, borderRadius: 8, border: "1px solid var(--border-primary)", background: "var(--bg-tertiary)", color: "var(--text-primary)" }}
+                    />
+                  </div>
+                  <button type="submit" disabled={profileSaving} className="btn btn-primary btn-sm" style={{ background: "#0EA5E9", marginTop: 8 }}>
+                    {profileSaving ? "Saving..." : "Save Profile Updates ➔"}
+                  </button>
+                </form>
+              </div>
             </motion.div>
           )}
 
           {/* TAB 7: SETTINGS */}
           {activeTab === "settings" && (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ maxWidth: 560 }}>
-              <h2 className="h3" style={{ marginBottom: 20 }}>Preferences & Security</h2>
-              <div className="card" style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <div>
-                    <strong>SMS Dispatch Notifications</strong>
-                    <p style={{ fontSize: "12px", color: "var(--text-secondary)" }}>Receive instant SMS when an artisan arrives</p>
-                  </div>
-                  <input type="checkbox" defaultChecked style={{ width: 18, height: 18 }} />
-                </div>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <div>
-                    <strong>Email Invoices & Receipts</strong>
-                    <p style={{ fontSize: "12px", color: "var(--text-secondary)" }}>Send payment receipts to {user.email}</p>
-                  </div>
-                  <input type="checkbox" defaultChecked style={{ width: 18, height: 18 }} />
-                </div>
-                <Link href="/auth/forgot-password" className="btn btn-secondary btn-sm" style={{ marginTop: 12 }}>
-                  Request Security Password Reset
-                </Link>
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+              <div className="card" style={{ maxWidth: 600 }}>
+                <h3 className="h4" style={{ marginBottom: 16 }}>Account Security & Preferences</h3>
+                <p style={{ fontSize: 14, color: "var(--text-secondary)" }}>Manage your password, login sessions, and service notification preferences.</p>
               </div>
             </motion.div>
           )}
         </div>
       </main>
 
-      {/* Wallet Top-Up Modal */}
+      {/* Top Up Modal */}
       {showTopUpModal && (
-        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.8)", zIndex: 999, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
-          <div className="card" style={{ width: "100%", maxWidth: 420, background: "#0F172A", border: "1px solid rgba(14,165,233,0.4)" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-              <h3 className="h4" style={{ color: "#0EA5E9" }}>Top Up Escrow Wallet</h3>
-              <button onClick={() => setShowTopUpModal(false)} style={{ background: "none", border: "none", color: "white", cursor: "pointer" }}><X size={20} /></button>
-            </div>
-            <form onSubmit={handleTopUpSubmit} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-              <div>
-                <label style={{ fontSize: "13px", fontWeight: "bold", display: "block", marginBottom: 6 }}>Amount (₦ NGN)</label>
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 9999,
+            background: "rgba(9, 13, 22, 0.85)",
+            backdropFilter: "blur(8px)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: 16,
+          }}
+          onClick={() => setShowTopUpModal(false)}
+        >
+          <div
+            className="card"
+            style={{ width: "100%", maxWidth: 450, background: "#1E293B", border: "1px solid #334155", borderRadius: 16, padding: 24 }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="h4" style={{ margin: "0 0 16px 0", color: "#F8FAFC" }}>Top Up Escrow Wallet</h3>
+            <form onSubmit={handleTopUpSubmit}>
+              <div style={{ marginBottom: 16 }}>
+                <label style={{ fontSize: 12, color: "#94A3B8", fontWeight: "bold", textTransform: "uppercase", display: "block", marginBottom: 6 }}>
+                  Amount to Top Up (NGN ₦)
+                </label>
                 <input
                   type="number"
                   min="1000"
                   step="1000"
-                  className={styles.input}
                   value={topUpAmount}
                   onChange={(e) => setTopUpAmount(Number(e.target.value))}
+                  style={{ width: "100%", padding: 12, borderRadius: 8, border: "1px solid #334155", background: "#0F172A", color: "#10B981", fontSize: 20, fontWeight: "bold" }}
                   required
                 />
               </div>
-              <button type="submit" disabled={topUpLoading} className={`btn btn-primary btn-md ${topUpLoading ? "btn-loading" : ""}`}>
-                {topUpLoading ? "Initializing Paystack..." : "Proceed to Paystack Checkout 💳"}
-              </button>
+              <div style={{ display: "flex", gap: 12, justifyContent: "flex-end" }}>
+                <button type="button" className="btn btn-secondary btn-sm" onClick={() => setShowTopUpModal(false)}>Cancel</button>
+                <button type="submit" disabled={topUpLoading} className="btn btn-primary btn-sm" style={{ background: "#10B981" }}>
+                  {topUpLoading ? "Initializing..." : "Proceed to Paystack ➔"}
+                </button>
+              </div>
             </form>
           </div>
         </div>
       )}
 
-      {/* Add Address Modal */}
+      {/* Address Modal */}
       {showAddressModal && (
-        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.8)", zIndex: 999, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
-          <div className="card" style={{ width: "100%", maxWidth: 420, background: "#0F172A", border: "1px solid rgba(14,165,233,0.4)" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-              <h3 className="h4" style={{ color: "#0EA5E9" }}>Add Service Address</h3>
-              <button onClick={() => setShowAddressModal(false)} style={{ background: "none", border: "none", color: "white", cursor: "pointer" }}><X size={20} /></button>
-            </div>
-            <form onSubmit={handleAddAddress} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-              <div>
-                <label style={{ fontSize: "13px", fontWeight: "bold", display: "block", marginBottom: 6 }}>Location Title (e.g. Home, Office)</label>
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 9999,
+            background: "rgba(9, 13, 22, 0.85)",
+            backdropFilter: "blur(8px)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: 16,
+          }}
+          onClick={() => setShowAddressModal(false)}
+        >
+          <div
+            className="card"
+            style={{ width: "100%", maxWidth: 450, background: "#1E293B", border: "1px solid #334155", borderRadius: 16, padding: 24 }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="h4" style={{ margin: "0 0 16px 0", color: "#F8FAFC" }}>Add New Service Address</h3>
+            <form onSubmit={handleAddAddress}>
+              <div style={{ marginBottom: 14 }}>
+                <label style={{ fontSize: 12, color: "#94A3B8", fontWeight: "bold", textTransform: "uppercase", display: "block", marginBottom: 4 }}>
+                  Address Label (e.g. Home, Office, Beach House)
+                </label>
                 <input
                   type="text"
-                  className={styles.input}
-                  placeholder="Home"
+                  placeholder="e.g. Home"
                   value={newAddrTitle}
                   onChange={(e) => setNewAddrTitle(e.target.value)}
-                  required
+                  style={{ width: "100%", padding: 10, borderRadius: 8, border: "1px solid #334155", background: "#0F172A", color: "#F8FAFC" }}
                 />
               </div>
-              <div>
-                <label style={{ fontSize: "13px", fontWeight: "bold", display: "block", marginBottom: 6 }}>Street Address & Area</label>
+              <div style={{ marginBottom: 20 }}>
+                <label style={{ fontSize: 12, color: "#94A3B8", fontWeight: "bold", textTransform: "uppercase", display: "block", marginBottom: 4 }}>
+                  Street Address & City
+                </label>
                 <input
                   type="text"
-                  className={styles.input}
-                  placeholder="e.g. 14 Aminu Kano Crescent, Maitama"
+                  placeholder="e.g. 14 Aminu Kano Crescent, Maitama, Abuja"
                   value={newAddrStreet}
                   onChange={(e) => setNewAddrStreet(e.target.value)}
                   required
+                  style={{ width: "100%", padding: 10, borderRadius: 8, border: "1px solid #334155", background: "#0F172A", color: "#F8FAFC" }}
                 />
               </div>
-              <button type="submit" className="btn btn-primary btn-md">Save Address</button>
+              <div style={{ display: "flex", gap: 12, justifyContent: "flex-end" }}>
+                <button type="button" className="btn btn-secondary btn-sm" onClick={() => setShowAddressModal(false)}>Cancel</button>
+                <button type="submit" className="btn btn-primary btn-sm" style={{ background: "#0EA5E9" }}>
+                  Save Address ➔
+                </button>
+              </div>
             </form>
           </div>
         </div>

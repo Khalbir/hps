@@ -1,13 +1,43 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
-import { ArrowLeft, Wallet, Plus, ShieldCheck } from "lucide-react";
+import { ArrowLeft, Wallet, Plus, ShieldCheck, RefreshCw } from "lucide-react";
 
 export default function CustomerWalletPage() {
-  const [balance, setBalance] = useState(50000);
+  const [balance, setBalance] = useState(0);
   const [topUpAmount, setTopUpAmount] = useState(5000);
   const [loading, setLoading] = useState(false);
+
+  const fetchRealWalletBalance = async () => {
+    let activeUserId = "";
+    let activeEmail = "";
+
+    if (typeof window !== "undefined") {
+      try {
+        const stored = localStorage.getItem("handyhub_user");
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (parsed.id) activeUserId = parsed.id;
+          if (parsed.email) activeEmail = parsed.email;
+        }
+      } catch (e) {}
+    }
+
+    try {
+      const res = await fetch(`/api/customer/dashboard?userId=${activeUserId}&email=${encodeURIComponent(activeEmail)}`);
+      const data = await res.json();
+      if (res.ok && data.walletBalance !== undefined) {
+        setBalance(data.walletBalance);
+      }
+    } catch (err) {
+      console.warn("Failed to fetch real wallet balance:", err);
+    }
+  };
+
+  useEffect(() => {
+    fetchRealWalletBalance();
+  }, []);
 
   const handleTopUp = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -46,14 +76,19 @@ export default function CustomerWalletPage() {
   return (
     <div style={{ background: "var(--bg-primary)", minHeight: "100vh", padding: "40px 20px" }}>
       <div className="container" style={{ maxWidth: 800 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 24 }}>
-          <Link href="/dashboard" className="btn btn-secondary btn-sm"><ArrowLeft size={16} /> Back to Dashboard</Link>
-          <h1 className="h3">HandyHub Escrow Wallet</h1>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24, flexWrap: "wrap", gap: 12 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <Link href="/dashboard" className="btn btn-secondary btn-sm"><ArrowLeft size={16} /> Back to Dashboard</Link>
+            <h1 className="h3">HandyHub Escrow Wallet</h1>
+          </div>
+          <button onClick={fetchRealWalletBalance} className="btn btn-secondary btn-sm" style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <RefreshCw size={14} /> Refresh Balance
+          </button>
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, marginBottom: 24 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 20, marginBottom: 24 }}>
           <div className="card" style={{ background: "linear-gradient(135deg, #0F172A 0%, #1E293B 100%)", color: "white" }}>
-            <span style={{ fontSize: "13px", color: "#94A3B8" }}>Available Balance</span>
+            <span style={{ fontSize: "13px", color: "#94A3B8" }}>Available Escrow Balance</span>
             <h2 className="h1" style={{ color: "#10B981", margin: "8px 0 16px" }}>₦{balance.toLocaleString()}</h2>
             <form onSubmit={handleTopUp} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
               <input
@@ -65,7 +100,7 @@ export default function CustomerWalletPage() {
                 style={{ padding: "10px", borderRadius: 6, border: "1px solid #334155", background: "#1E293B", color: "white" }}
                 required
               />
-              <button type="submit" disabled={loading} className="btn btn-primary btn-md">
+              <button type="submit" disabled={loading} className="btn btn-primary btn-md" style={{ background: "#10B981" }}>
                 {loading ? "Processing..." : "+ Top Up Funds (Paystack)"}
               </button>
             </form>
