@@ -137,17 +137,16 @@ export default function DashboardPage() {
       });
 
       const data = await res.json();
-      if (res.ok && data.authorizationUrl) {
-        window.location.href = data.authorizationUrl;
+      const redirectUrl = data.authorizationUrl || data.checkout?.authorizationUrl;
+
+      if (res.ok && redirectUrl) {
+        window.location.href = redirectUrl;
+        return;
       } else {
-        setWalletBalance((prev) => prev + Number(topUpAmount));
-        alert(`Wallet successfully topped up by ₦${Number(topUpAmount).toLocaleString()}! 🎉`);
-        setShowTopUpModal(false);
+        alert(data.error || "Failed to initialize Paystack payment checkout. Please check network connection.");
       }
     } catch {
-      setWalletBalance((prev) => prev + Number(topUpAmount));
-      alert(`Wallet topped up with ₦${Number(topUpAmount).toLocaleString()}! 🎉`);
-      setShowTopUpModal(false);
+      alert("Network error initializing Paystack payment gateway. Please try again.");
     } finally {
       setTopUpLoading(false);
     }

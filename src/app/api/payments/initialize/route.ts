@@ -31,9 +31,9 @@ export async function POST(request: Request) {
       );
     }
 
-    const reference = `HHP_${bookingId || "BKG"}_${Date.now()}`;
-    const origin = request.headers.get("origin") || request.headers.get("referer")?.replace(/\/$/, "") || "http://localhost:3000";
-    const callbackUrl = `${origin}/book?status=success`;
+    const reference = `HHP_${bookingId || "TOPUP"}_${Date.now()}`;
+    const origin = request.headers.get("origin") || request.headers.get("referer")?.replace(/\/$/, "") || process.env.NEXT_PUBLIC_APP_URL || "https://handyhubpro.ng";
+    const callbackUrl = `${origin}/dashboard/wallet?status=success&reference=${reference}`;
 
     // Dual-gateway checkout router (Paystack primary -> Flutterwave failover)
     const checkout = await initializeDualGatewayCheckout({
@@ -48,15 +48,17 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       success: true,
+      authorizationUrl: checkout.authorizationUrl,
       checkout,
+      reference: checkout.reference,
       message: checkout.isFallback
-        ? "Payment route initialized via Failover Gateway (Flutterwave)"
-        : "Payment route initialized via Primary Gateway (Paystack)",
+        ? "Payment route initialized via Failover Gateway"
+        : "Payment route initialized via Paystack Primary Gateway",
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error("[Payment Init REST API Error]:", error);
     return NextResponse.json(
-      { error: "Internal server error initializing payment gateway" },
+      { error: "Internal server error initializing payment gateway: " + (error.message || "") },
       { status: 500 }
     );
   }
