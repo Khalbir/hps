@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ProLayoutShell } from "@/components/layout/ProLayoutShell";
-import { Calendar, Clock, CheckCircle2, Plus, ArrowLeft, ArrowRight } from "lucide-react";
+import { Calendar, Clock, CheckCircle2, Plus, ArrowLeft, ArrowRight, Inbox, RefreshCw } from "lucide-react";
 import styles from "../dashboard/dashboard.module.css";
 
 export default function ProCalendarPage() {
@@ -16,6 +16,41 @@ export default function ProCalendarPage() {
     { day: "Sunday", active: false, hours: "Day Off" },
   ]);
 
+  const [upcomingBookings, setUpcomingBookings] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchRealCalendarBookings = async () => {
+    setLoading(true);
+    let activeUserId = "";
+    let activeEmail = "";
+
+    if (typeof window !== "undefined") {
+      try {
+        const storedPro = localStorage.getItem("handyhub_pro_session");
+        const storedUser = localStorage.getItem("handyhub_user");
+        const parsed = storedPro ? JSON.parse(storedPro) : storedUser ? JSON.parse(storedUser) : null;
+        if (parsed?.user?.id || parsed?.id) activeUserId = parsed.user?.id || parsed.id;
+        if (parsed?.user?.email || parsed?.email) activeEmail = parsed.user?.email || parsed.email;
+      } catch (err) {}
+    }
+
+    try {
+      const res = await fetch(`/api/pro/jobs?userId=${activeUserId}&email=${encodeURIComponent(activeEmail)}`);
+      const data = await res.json();
+      if (res.ok && data.jobs) {
+        setUpcomingBookings(data.jobs);
+      }
+    } catch (err) {
+      console.warn("Failed to fetch calendar bookings:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchRealCalendarBookings();
+  }, []);
+
   const toggleDay = (index: number) => {
     setWorkingDays((prev) =>
       prev.map((d, i) => (i === index ? { ...d, active: !d.active } : d))
@@ -24,11 +59,16 @@ export default function ProCalendarPage() {
 
   return (
     <ProLayoutShell>
-      <div style={{ marginBottom: "var(--space-6)" }}>
-        <h1 className="h2">Availability & Schedule Calendar</h1>
-        <p style={{ color: "var(--text-secondary)", fontSize: "var(--fs-md)" }}>
-          Set your weekly working hours and manage upcoming job appointments.
-        </p>
+      <div style={{ marginBottom: "var(--space-6)", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
+        <div>
+          <h1 className="h2">Availability & Schedule Calendar</h1>
+          <p style={{ color: "var(--text-secondary)", fontSize: "var(--fs-md)" }}>
+            Set your weekly working hours and manage upcoming job appointments.
+          </p>
+        </div>
+        <button onClick={fetchRealCalendarBookings} className="btn btn-secondary btn-sm" style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <RefreshCw size={14} /> Refresh Schedule
+        </button>
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: "var(--space-6)" }}>
@@ -58,19 +98,26 @@ export default function ProCalendarPage() {
         {/* Scheduled Appointments Summary */}
         <div className="card">
           <h3 className="h4" style={{ marginBottom: "var(--space-4)" }}>Upcoming Bookings</h3>
-          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
-            <div style={{ padding: "var(--space-3)", background: "rgba(14,165,233,0.1)", borderRadius: "var(--radius-lg)", border: "1px solid rgba(14,165,233,0.25)" }}>
-              <strong style={{ display: "block", fontSize: "var(--fs-sm)", color: "#0EA5E9" }}>Today, 2:00 PM</strong>
-              <span style={{ fontSize: "var(--fs-xs)", color: "var(--text-primary)" }}>Deep Cleaning — Amina I.</span>
-              <p style={{ fontSize: "11px", color: "var(--text-tertiary)", margin: "2px 0 0" }}>12 Aminu Kano, Maitama</p>
-            </div>
 
-            <div style={{ padding: "var(--space-3)", background: "var(--bg-tertiary)", borderRadius: "var(--radius-lg)" }}>
-              <strong style={{ display: "block", fontSize: "var(--fs-sm)" }}>Tomorrow, 9:00 AM</strong>
-              <span style={{ fontSize: "var(--fs-xs)", color: "var(--text-primary)" }}>Residential Cleaning — Chidi O.</span>
-              <p style={{ fontSize: "11px", color: "var(--text-tertiary)", margin: "2px 0 0" }}>Plot 5, Wuse 2</p>
+          {loading ? (
+            <div style={{ padding: 20, textAlign: "center", color: "var(--text-tertiary)", fontSize: "var(--fs-xs)" }}>Loading real bookings...</div>
+          ) : upcomingBookings.length === 0 ? (
+            <div style={{ padding: "30px 16px", textAlign: "center", background: "var(--bg-tertiary)", borderRadius: "var(--radius-lg)", border: "1px solid var(--border-primary)" }}>
+              <Inbox size={32} color="#0EA5E9" style={{ opacity: 0.6, marginBottom: 8 }} />
+              <strong style={{ display: "block", fontSize: "var(--fs-sm)", color: "var(--text-primary)" }}>No Scheduled Bookings</strong>
+              <p style={{ fontSize: "var(--fs-xs)", color: "var(--text-tertiary)", margin: "4px 0 0" }}>When clients book your services, appointment dates will display here.</p>
             </div>
-          </div>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
+              {upcomingBookings.map((b) => (
+                <div key={b.id} style={{ padding: "var(--space-3)", background: "rgba(14,165,233,0.1)", borderRadius: "var(--radius-lg)", border: "1px solid rgba(14,165,233,0.25)" }}>
+                  <strong style={{ display: "block", fontSize: "var(--fs-sm)", color: "#0EA5E9" }}>{b.date} • {b.time}</strong>
+                  <span style={{ fontSize: "var(--fs-xs)", color: "var(--text-primary)", fontWeight: "bold" }}>{b.service} — {b.customer}</span>
+                  <p style={{ fontSize: "11px", color: "var(--text-tertiary)", margin: "2px 0 0" }}>{b.address}</p>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </ProLayoutShell>
