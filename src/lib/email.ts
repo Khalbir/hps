@@ -19,21 +19,10 @@ export async function sendConfirmationEmail({
   name,
   role,
   token,
-}: SendConfirmationEmailParams) {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+}: SendConfirmationEmailParams): Promise<{ success: boolean; error?: string; message?: string }> {
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://handyhubpro.ng";
   const confirmUrl = `${baseUrl}/api/auth/verify?token=${token}`;
   const otpFormatted = token.length === 6 ? `${token.substring(0, 3)} ${token.substring(3)}` : token;
-
-  // SMTP Transporter configuration
-  const transporter = nodemailer.createTransport({
-    host: process.env.SMTP_HOST || "smtp.gmail.com",
-    port: Number(process.env.SMTP_PORT) || 587,
-    secure: process.env.SMTP_SECURE === "true",
-    auth: {
-      user: process.env.SMTP_USER || "",
-      pass: process.env.SMTP_PASS || "",
-    },
-  });
 
   const isPro = role === "PROFESSIONAL";
   const badgeText = isPro ? "Professional Partner Registration" : "Customer Welcome Verification";
@@ -80,22 +69,6 @@ export async function sendConfirmationEmail({
               <a href="${confirmUrl}" class="cta-btn" target="_blank">Click Here to Confirm & Activate ➔</a>
             </div>
 
-            ${isPro ? `
-              <div class="offer-box">
-                <strong>📋 Next Steps for Professionals:</strong>
-                <ul style="margin: 8px 0 0 0; padding-left: 20px; color: #1e3a8a;">
-                  <li>Enter your confirmation code above</li>
-                  <li>Log in to your Professional Dashboard</li>
-                  <li>Upload your trade verification documents to start accepting client dispatches</li>
-                </ul>
-              </div>
-            ` : `
-              <div class="offer-box">
-                <strong>🎁 Special Welcome Offer:</strong>
-                <p style="margin: 5px 0 0 0; color: #1e3a8a;">Use promo code <strong style="background:#dbeafe; padding:2px 6px; border-radius:4px;">WELCOME50</strong> on your first booking to get 50% off!</p>
-              </div>
-            `}
-
             <p class="message" style="font-size: 13px; color: #94a3b8;">
               Verification Link: <a href="${confirmUrl}" style="color: #0ea5e9; word-break: break-all;">${confirmUrl}</a>
             </p>
@@ -109,26 +82,88 @@ export async function sendConfirmationEmail({
     </html>
   `;
 
-  try {
-    if (process.env.SMTP_USER && process.env.SMTP_PASS) {
+  // 1. Check Resend API Integration first
+  if (process.env.RESEND_API_KEY) {
+    try {
+      const resendRes = await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${process.env.RESEND_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          from: process.env.RESEND_FROM || "HandyHub PRO <onboarding@resend.dev>",
+          to: [email],
+          subject: `${token} is your HandyHub PRO Confirmation Code`,
+          html: htmlContent,
+        }),
+      });
+
+      const resendData = await resendRes.json();
+      if (resendRes.ok) {
+        console.log(`[Resend API Success]: Real email delivered to ${email} (ID: ${resendData.id})`);
+        return { success: true, message: `Email delivered to ${email} via Resend` };
+      } else {
+        console.warn("[Resend API Error]:", resendData);
+      }
+    } catch (resendErr: any) {
+      console.warn("[Resend API Exception]:", resendErr);
+    }
+  }
+
+  // 2. SMTP Nodemailer Fallback
+  const smtpHost = process.env.SMTP_HOST || "smtp.gmail.com";
+  const smtpPort = Number(process.env.SMTP_PORT) || 465;
+  const smtpUser = process.env.SMTP_USER || "";
+  const smtpPass = process.env.SMTP_PASS || "";
+
+  if (smtpUser && smtpPass) {
+    try {
+      const isGmail = smtpHost.includes("gmail");
+      const transporter = nodemailer.createTransport(
+        isGmail
+          ? {
+              service: "gmail",
+              auth: { user: smtpUser, pass: smtpPass.replace(/\s+/g, "") },
+            }
+          : {
+              host: smtpHost,
+              port: smtpPort,
+              secure: smtpPort === 465,
+              auth: { user: smtpUser, pass: smtpPass },
+              tls: { rejectUnauthorized: false },
+            }
+      );
+
       await transporter.sendMail({
-        from: `"HandyHub PRO Solutions" <${process.env.SMTP_USER}>`,
+        from: `"HandyHub PRO Solutions" <${smtpUser}>`,
         to: email,
         subject: `${token} is your HandyHub PRO Confirmation Code`,
         html: htmlContent,
       });
-      console.log(`[Email Sent]: Real SMTP email delivered to ${email}`);
-    } else {
-      console.log(`\n=================================================`);
-      console.log(`✉️ [EMAIL SIMULATION TO ${email}]:`);
-      console.log(`SUBJECT: ${token} is your HandyHub PRO Confirmation Code`);
-      console.log(`CONFIRMATION CODE: ${token}`);
-      console.log(`DIRECT LINK: ${confirmUrl}`);
-      console.log(`=================================================\n`);
+
+      console.log(`[SMTP Email Delivered]: Real email sent to ${email} via ${smtpHost}`);
+      return { success: true, message: `Email sent to ${email} via SMTP` };
+    } catch (smtpErr: any) {
+      console.error("[SMTP Transport Error]: Failed to send mail:", smtpErr);
+      return {
+        success: false,
+        error: `SMTP Delivery Failed: ${smtpErr.message || "Invalid credentials or Gmail App Password required"}`,
+      };
     }
-  } catch (err) {
-    console.error("[Nodemailer Error]: Failed to send verification email:", err);
   }
+
+  // 3. Dev Mode Simulation
+  console.log(`\n=================================================`);
+  console.log(`✉️ [EMAIL SIMULATION TO ${email}]:`);
+  console.log(`SUBJECT: ${token} is your HandyHub PRO Confirmation Code`);
+  console.log(`CONFIRMATION CODE: ${token}`);
+  console.log(`=================================================\n`);
+
+  return {
+    success: true,
+    message: "Simulation mode: SMTP credentials missing in .env",
+  };
 }
 
 export async function sendPasswordResetEmail({
@@ -137,63 +172,39 @@ export async function sendPasswordResetEmail({
   token,
   resetUrl,
 }: SendPasswordResetParams) {
+  const smtpUser = process.env.SMTP_USER || "";
+  const smtpPass = process.env.SMTP_PASS || "";
+
+  if (!smtpUser || !smtpPass) {
+    console.log(`✉️ [PASSWORD RESET SIMULATION TO ${email}]: ${resetUrl}`);
+    return;
+  }
+
   const transporter = nodemailer.createTransport({
-    host: process.env.SMTP_HOST || "smtp.gmail.com",
-    port: Number(process.env.SMTP_PORT) || 587,
-    secure: process.env.SMTP_SECURE === "true",
-    auth: {
-      user: process.env.SMTP_USER || "",
-      pass: process.env.SMTP_PASS || "",
-    },
+    service: "gmail",
+    auth: { user: smtpUser, pass: smtpPass.replace(/\s+/g, "") },
   });
 
   const htmlContent = `
     <!DOCTYPE html>
     <html>
-      <head>
-        <meta charset="utf-8">
-        <style>
-          body { font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f4f7f6; margin: 0; padding: 20px; color: #333; }
-          .container { max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
-          .header { background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); padding: 30px; text-align: center; color: #ffffff; }
-          .content { padding: 35px 30px; }
-          .cta-btn { display: inline-block; background: #0ea5e9; color: #ffffff !important; font-weight: 600; font-size: 16px; padding: 14px 32px; border-radius: 8px; text-decoration: none; margin: 20px 0; text-align: center; }
-          .footer { background: #f8fafc; padding: 20px 30px; text-align: center; font-size: 12px; color: #94a3b8; border-top: 1px solid #e2e8f0; }
-        </style>
-      </head>
+      <head><meta charset="utf-8"></head>
       <body>
-        <div class="container">
-          <div class="header">
-            <h1 style="margin: 0; font-size: 24px;">Password Reset Request</h1>
-          </div>
-          <div class="content">
-            <p>Hello ${name},</p>
-            <p>We received a request to reset your HandyHub PRO account password. Click the button below to set a new password:</p>
-            <div style="text-align: center;">
-              <a href="${resetUrl}" class="cta-btn" target="_blank">Reset My Password ➔</a>
-            </div>
-            <p style="font-size: 13px; color: #94a3b8;">If you did not request a password reset, please ignore this email.</p>
-          </div>
-          <div class="footer">
-            © ${new Date().getFullYear()} HandyHub PRO Solutions. All rights reserved.
-          </div>
-        </div>
+        <h2>Password Reset Request</h2>
+        <p>Hello ${name}, click below to reset your password:</p>
+        <p><a href="${resetUrl}">${resetUrl}</a></p>
       </body>
     </html>
   `;
 
   try {
-    if (process.env.SMTP_USER && process.env.SMTP_PASS) {
-      await transporter.sendMail({
-        from: `"HandyHub PRO Solutions" <${process.env.SMTP_USER}>`,
-        to: email,
-        subject: "Reset Your HandyHub PRO Password",
-        html: htmlContent,
-      });
-    } else {
-      console.log(`✉️ [PASSWORD RESET EMAIL TO ${email}]: ${resetUrl}`);
-    }
+    await transporter.sendMail({
+      from: `"HandyHub PRO Solutions" <${smtpUser}>`,
+      to: email,
+      subject: "Reset Your HandyHub PRO Password",
+      html: htmlContent,
+    });
   } catch (err) {
-    console.error("[Nodemailer Error]: Failed to send reset email:", err);
+    console.error("[Password Reset Email Error]:", err);
   }
 }

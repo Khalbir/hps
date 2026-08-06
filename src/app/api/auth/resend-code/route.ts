@@ -31,21 +31,24 @@ export async function POST(request: Request) {
       });
     }
 
-    // Trigger confirmation email
-    sendConfirmationEmail({
+    // Trigger confirmation email and capture delivery status
+    const emailResult = await sendConfirmationEmail({
       email: dbUser.email,
       name: `${dbUser.firstName} ${dbUser.lastName}`,
       role: dbUser.role,
       token: code,
-    }).catch((err) => console.error("[Resend Email Warning]:", err));
+    });
 
     return NextResponse.json({
       success: true,
-      message: `Confirmation code processed for ${cleanEmail}.`,
-      code: code, // Returns active code for seamless dev & staging activation
+      message: emailResult.success
+        ? `Confirmation code sent to ${cleanEmail}.`
+        : `Email dispatch update: ${emailResult.error || emailResult.message}`,
+      emailStatus: emailResult,
+      code: code, // Returns active code for instant activation
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error("[Resend Code API Error]:", error);
-    return NextResponse.json({ error: "Failed to resend confirmation code" }, { status: 500 });
+    return NextResponse.json({ error: "Failed to resend confirmation code: " + (error.message || "") }, { status: 500 });
   }
 }
