@@ -51,10 +51,10 @@ export default function CustomerWalletPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          email: user.email,
+          email: user.email || "client@handyhubpro.ng",
           amountNgn: Number(topUpAmount),
           bookingId: `TOPUP-${Date.now()}`,
-          customerName: user.firstName,
+          customerName: user.firstName || "HandyHub Client",
         }),
       });
 

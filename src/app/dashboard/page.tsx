@@ -124,15 +124,31 @@ export default function DashboardPage() {
     setTopUpLoading(true);
 
     try {
+      let targetEmail = user.email;
+      let targetName = `${user.firstName} ${user.lastName}`.trim();
+      let targetPhone = user.phone;
+
+      if (!targetEmail && typeof window !== "undefined") {
+        try {
+          const stored = localStorage.getItem("handyhub_user");
+          if (stored) {
+            const parsed = JSON.parse(stored);
+            targetEmail = parsed.email || targetEmail;
+            targetName = targetName || `${parsed.firstName || ""} ${parsed.lastName || ""}`.trim();
+            targetPhone = targetPhone || parsed.phone;
+          }
+        } catch (e) {}
+      }
+
       const res = await fetch("/api/payments/initialize", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          email: user.email,
+          email: targetEmail || "client@handyhubpro.ng",
           amountNgn: Number(topUpAmount),
           bookingId: `TOPUP-${Date.now()}`,
-          customerName: `${user.firstName} ${user.lastName}`,
-          customerPhone: user.phone,
+          customerName: targetName || "HandyHub Client",
+          customerPhone: targetPhone || undefined,
         }),
       });
 
