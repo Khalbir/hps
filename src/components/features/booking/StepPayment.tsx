@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
-import { CreditCard, Building, Wallet, Tag, MapPin, CheckCircle, AlertCircle } from "lucide-react";
+import { useState, useEffect } from "react";
+import { CreditCard, Building, Wallet, Tag, MapPin, CheckCircle, AlertCircle, Lock, ArrowRight } from "lucide-react";
+import Link from "next/link";
 import type { BookingData } from "@/app/book/page";
 import styles from "./Steps.module.css";
 
@@ -26,6 +27,21 @@ export function StepPayment({ booking, updateBooking, onNext, onBack }: StepProp
   const [geocodedBadge, setGeocodedBadge] = useState(false);
   const [isPaying, setIsPaying] = useState(false);
   const [payError, setPayError] = useState("");
+  const [showAuthModal, setShowAuthModal] = useState(false);
+
+  // Active Client Session State
+  const [activeUser, setActiveUser] = useState<any>(null);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const stored = localStorage.getItem("handyhub_user");
+        if (stored) {
+          setActiveUser(JSON.parse(stored));
+        }
+      } catch (e) {}
+    }
+  }, []);
 
   const applyPromo = () => {
     setPromoError("");
@@ -53,10 +69,73 @@ export function StepPayment({ booking, updateBooking, onNext, onBack }: StepProp
 
   const finalPrice = (booking.totalPrice || booking.servicePrice) - booking.discountAmount;
 
+  const handlePaymentProceed = async () => {
+    // Check if user is logged in
+    if (!activeUser || !activeUser.email) {
+      // Save draft booking to localStorage and show Auth Modal
+      localStorage.setItem("handyhub_pending_booking", JSON.stringify({
+        ...booking,
+        totalPrice: Math.max(0, finalPrice || 15000),
+      }));
+      setShowAuthModal(true);
+      return;
+    }
+
+    setIsPaying(true);
+    setPayError("");
+    try {
+      localStorage.setItem("handyhub_pending_booking", JSON.stringify({
+        ...booking,
+        totalPrice: Math.max(0, finalPrice || 15000),
+      }));
+
+      const res = await fetch("/api/payments/initialize", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: activeUser.email,
+          amountNgn: Math.max(100, finalPrice || 15000),
+          bookingId: booking.serviceCategory || "BKG",
+          customerName: `${activeUser.firstName || "Client"} ${activeUser.lastName || ""}`.trim(),
+          customerPhone: activeUser.phone || "+2348122222936",
+          preferredGateway: booking.paymentMethod === "monnify" ? "MONNIFY" : "PAYSTACK",
+        }),
+      });
+
+      const data = await res.json();
+      if (res.ok && data.checkout?.authorizationUrl) {
+        window.location.href = data.checkout.authorizationUrl;
+      } else {
+        if (res.status === 401) {
+          setShowAuthModal(true);
+        } else {
+          setPayError(data.error || "Failed to initialize payment gateway.");
+        }
+        setIsPaying(false);
+      }
+    } catch (err: any) {
+      setPayError("Network error initializing Paystack gateway. Please try again.");
+      setIsPaying(false);
+    }
+  };
+
   return (
     <div className={styles.stepContainer}>
       <h2 className={styles.stepTitle}>Location & Payment</h2>
       <p className={styles.stepSubtitle}>Enter your address and choose your payment method</p>
+
+      {/* Account Login Notice if not signed in */}
+      {!activeUser && (
+        <div style={{ background: "rgba(14,165,233,0.1)", border: "1px solid #0EA5E9", color: "#0EA5E9", padding: "12px 16px", borderRadius: "12px", marginBottom: "20px", fontSize: "14px", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <Lock size={18} />
+            <span><strong>Registered Client Gating:</strong> Please sign in to complete booking and payment.</span>
+          </div>
+          <button onClick={() => setShowAuthModal(true)} className="btn btn-primary btn-xs" style={{ background: "#0EA5E9" }}>
+            Sign In / Register ➔
+          </button>
+        </div>
+      )}
 
       {payError && (
         <div style={{ background: "rgba(239,68,68,0.15)", border: "1px solid #EF4444", color: "#EF4444", padding: "12px 16px", borderRadius: "8px", marginBottom: "20px", fontSize: "14px", display: "flex", alignItems: "center", gap: "8px" }}>
@@ -211,40 +290,8 @@ export function StepPayment({ booking, updateBooking, onNext, onBack }: StepProp
         <button
           className="btn btn-primary btn-lg"
           disabled={isPaying}
-          onClick={async () => {
-            setIsPaying(true);
-            setPayError("");
-            try {
-              localStorage.setItem("handyhub_pending_booking", JSON.stringify({
-                ...booking,
-                totalPrice: Math.max(0, finalPrice || 15000),
-              }));
-
-              const res = await fetch("/api/payments/initialize", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                  email: "info@handyhubpro.ng",
-                  amountNgn: Math.max(100, finalPrice || 15000),
-                  bookingId: booking.serviceCategory || "BKG",
-                  customerName: "HandyHub Customer",
-                  customerPhone: "+2348122222936",
-                  preferredGateway: booking.paymentMethod === "monnify" ? "MONNIFY" : "PAYSTACK",
-                }),
-              });
-
-              const data = await res.json();
-              if (res.ok && data.checkout?.authorizationUrl) {
-                window.location.href = data.checkout.authorizationUrl;
-              } else {
-                setPayError(data.error || "Failed to initialize payment gateway.");
-                setIsPaying(false);
-              }
-            } catch (err: any) {
-              setPayError("Network error initializing Paystack gateway. Please try again.");
-              setIsPaying(false);
-            }
-          }}
+          onClick={handlePaymentProceed}
+          style={{ background: "#0EA5E9" }}
         >
           {isPaying ? (
             <>
@@ -256,6 +303,51 @@ export function StepPayment({ booking, updateBooking, onNext, onBack }: StepProp
           )}
         </button>
       </div>
+
+      {/* Auth Modal for Gated Clients */}
+      {showAuthModal && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 9999,
+            background: "rgba(9, 13, 22, 0.85)",
+            backdropFilter: "blur(8px)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: 16,
+          }}
+          onClick={() => setShowAuthModal(false)}
+        >
+          <div
+            className="card"
+            style={{ width: "100%", maxWidth: 450, background: "#1E293B", border: "1px solid #334155", borderRadius: 20, padding: 24, textAlign: "center" }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ width: 56, height: 56, borderRadius: "50%", background: "rgba(14,165,233,0.15)", color: "#0EA5E9", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
+              <Lock size={28} />
+            </div>
+
+            <h3 className="h4" style={{ margin: "0 0 8px 0", color: "#F8FAFC" }}>Client Sign-In Required</h3>
+            <p style={{ fontSize: 14, color: "#94A3B8", lineHeight: 1.5, marginBottom: 24 }}>
+              Only registered HandyHub clients can schedule dispatches and make payments. Please log in or create a free account to complete your booking.
+            </p>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              <Link href="/auth/login?redirect=/book" className="btn btn-primary btn-md w-full" style={{ background: "#0EA5E9", justifyContent: "center" }}>
+                Log In to Existing Account ➔
+              </Link>
+              <Link href="/auth/register?redirect=/book" className="btn btn-secondary btn-md w-full" style={{ justifyContent: "center", color: "#F8FAFC", borderColor: "#334155" }}>
+                Create Free Client Account
+              </Link>
+              <button onClick={() => setShowAuthModal(false)} style={{ background: "none", border: "none", color: "#64748B", fontSize: 13, cursor: "pointer", marginTop: 8 }}>
+                Cancel and return to booking
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { initializeDualGatewayCheckout } from "@/lib/fintech";
+import { prisma } from "@/lib/db";
 
 export async function POST(request: Request) {
   try {
@@ -8,8 +9,25 @@ export async function POST(request: Request) {
 
     if (!email || !amountNgn) {
       return NextResponse.json(
-        { error: "Email and amountNgn are required" },
+        { error: "Email and payment amount are required to initialize checkout" },
         { status: 400 }
+      );
+    }
+
+    const cleanEmail = email.toLowerCase().trim();
+
+    // STRICT ACCOUNT GATING: Verify customer exists in PostgreSQL database
+    let dbUser = null;
+    try {
+      dbUser = await prisma.user.findUnique({ where: { email: cleanEmail } });
+    } catch (dbErr) {
+      console.warn("[Payment Init DB Warning]:", dbErr);
+    }
+
+    if (!dbUser) {
+      return NextResponse.json(
+        { error: "Only signed up or registered clients can make payments. Please log in or create an account to complete your booking." },
+        { status: 401 }
       );
     }
 
@@ -19,13 +37,13 @@ export async function POST(request: Request) {
 
     // Dual-gateway checkout router (Paystack primary -> Flutterwave failover)
     const checkout = await initializeDualGatewayCheckout({
-      email,
+      email: cleanEmail,
       amountNgn: Number(amountNgn),
       reference,
       callbackUrl,
-      customerName,
-      customerPhone,
-      metadata: { bookingId, email },
+      customerName: customerName || `${dbUser.firstName} ${dbUser.lastName}`,
+      customerPhone: customerPhone || dbUser.phone || undefined,
+      metadata: { bookingId, email: cleanEmail, userId: dbUser.id },
     });
 
     return NextResponse.json({
@@ -38,7 +56,7 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error("[Payment Init REST API Error]:", error);
     return NextResponse.json(
-      { error: "Internal server error initializing payment" },
+      { error: "Internal server error initializing payment gateway" },
       { status: 500 }
     );
   }
