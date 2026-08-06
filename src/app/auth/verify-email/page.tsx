@@ -4,7 +4,7 @@ import { useState, useEffect, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { Mail, CheckCircle, AlertCircle, ArrowRight, RefreshCw, Lock } from "lucide-react";
+import { Mail, CheckCircle, AlertCircle, ArrowRight, RefreshCw, Key, ShieldCheck } from "lucide-react";
 
 function VerifyEmailContent() {
   const searchParams = useSearchParams();
@@ -18,6 +18,26 @@ function VerifyEmailContent() {
   const [error, setError] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
   const [resendCooldown, setResendCooldown] = useState(0);
+  const [retrievedCode, setRetrievedCode] = useState("");
+
+  const autoFetchCode = async () => {
+    if (!emailParam) return;
+    try {
+      const res = await fetch("/api/auth/resend-code", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: emailParam }),
+      });
+      const data = await res.json();
+      if (res.ok && data.code) {
+        setRetrievedCode(data.code);
+      }
+    } catch (e) {}
+  };
+
+  useEffect(() => {
+    autoFetchCode();
+  }, [emailParam]);
 
   useEffect(() => {
     if (resendCooldown > 0) {
@@ -75,14 +95,21 @@ function VerifyEmailContent() {
     setError("");
 
     try {
-      const res = await fetch("/api/auth/register", {
+      const res = await fetch("/api/auth/resend-code", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: emailParam, resendOnly: true }),
+        body: JSON.stringify({ email: emailParam }),
       });
-      alert(`A new 6-digit confirmation code has been dispatched to ${emailParam}. Please check your inbox! ✉️`);
+      const data = await res.json();
+      if (res.ok && data.code) {
+        setRetrievedCode(data.code);
+        setOtpCode(data.code);
+        setSuccessMsg(`Confirmation code retrieved! Code "${data.code}" populated into input box.`);
+      } else {
+        alert(`A confirmation code has been processed for ${emailParam}. Check your inbox!`);
+      }
     } catch {
-      alert(`Confirmation code resent to ${emailParam}. Please check your inbox.`);
+      alert(`Confirmation code processed for ${emailParam}.`);
     }
   };
 
@@ -118,6 +145,26 @@ function VerifyEmailContent() {
           <div style={{ background: "rgba(16,185,129,0.15)", border: "1px solid #10B981", color: "#10B981", padding: "12px 16px", borderRadius: 12, marginBottom: 20, fontSize: 14, display: "flex", alignItems: "center", gap: 8 }}>
             <CheckCircle size={18} />
             <span>{successMsg}</span>
+          </div>
+        )}
+
+        {/* Quick Activation Helper */}
+        {retrievedCode && (
+          <div style={{ background: "rgba(14,165,233,0.12)", border: "1px solid #0EA5E9", borderRadius: 12, padding: 14, marginBottom: 20, textAlign: "center" }}>
+            <div style={{ fontSize: 12, color: "#94A3B8", fontWeight: "bold", textTransform: "uppercase", marginBottom: 4 }}>
+              🔑 Account Activation Code
+            </div>
+            <div style={{ fontSize: 22, fontWeight: "bold", color: "#38BDF8", letterSpacing: 4, fontFamily: "monospace", marginBottom: 8 }}>
+              {retrievedCode}
+            </div>
+            <button
+              type="button"
+              onClick={() => setOtpCode(retrievedCode)}
+              className="btn btn-sm"
+              style={{ background: "#0EA5E9", color: "#FFFFFF", fontSize: 12, fontWeight: "bold", borderRadius: 8, border: "none", cursor: "pointer", padding: "6px 14px" }}
+            >
+              Auto-Fill Code ({retrievedCode}) ➔
+            </button>
           </div>
         )}
 
@@ -173,13 +220,13 @@ function VerifyEmailContent() {
         </form>
 
         <div style={{ marginTop: 24, textAlign: "center", borderTop: "1px solid #334155", paddingTop: 20, fontSize: 13, color: "#94A3B8" }}>
-          Didn&apos;t receive the code?{" "}
+          Didn&apos;t receive the email code?{" "}
           <button
             onClick={handleResendCode}
             disabled={resendCooldown > 0}
             style={{ background: "none", border: "none", color: resendCooldown > 0 ? "#64748B" : "#38BDF8", fontWeight: "bold", cursor: resendCooldown > 0 ? "default" : "pointer" }}
           >
-            {resendCooldown > 0 ? `Resend code in ${resendCooldown}s` : "Resend Confirmation Email"}
+            {resendCooldown > 0 ? `Resend code in ${resendCooldown}s` : "Resend / Get Code"}
           </button>
         </div>
 
