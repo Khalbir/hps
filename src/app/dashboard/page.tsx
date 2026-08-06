@@ -63,12 +63,26 @@ export default function DashboardPage() {
 
     if (typeof window !== "undefined") {
       try {
-        const stored = localStorage.getItem("handyhub_user");
-        if (stored) {
-          const parsed = JSON.parse(stored);
-          if (parsed.id) activeUserId = parsed.id;
-          if (parsed.email) activeEmail = parsed.email;
-          if (parsed.firstName) setUser(parsed);
+        const urlParams = new URLSearchParams(window.location.search);
+        const paramEmail = urlParams.get("email");
+        const paramName = urlParams.get("name");
+
+        if (paramEmail) {
+          activeEmail = paramEmail;
+          const nameParts = (paramName || "Google User").split(" ");
+          const firstName = nameParts[0] || "Valued";
+          const lastName = nameParts.slice(1).join(" ") || "Client";
+          const gUser = { firstName, lastName, email: paramEmail, phone: "", role: "CUSTOMER" };
+          setUser(gUser);
+          localStorage.setItem("handyhub_user", JSON.stringify(gUser));
+        } else {
+          const stored = localStorage.getItem("handyhub_user");
+          if (stored) {
+            const parsed = JSON.parse(stored);
+            if (parsed.id) activeUserId = parsed.id;
+            if (parsed.email) activeEmail = parsed.email;
+            if (parsed.firstName) setUser(parsed);
+          }
         }
       } catch (e) {}
     }
