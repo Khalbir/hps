@@ -95,8 +95,18 @@ export default function RegisterPage() {
         return;
       }
 
-      // Redirect to Email Confirmation Screen
-      router.push(`/auth/verify-email?email=${encodeURIComponent(form.email)}&role=${encodeURIComponent(form.role)}`);
+      const userPayload = data.user || { email: form.email, firstName: form.firstName, lastName: form.lastName, role: form.role };
+      localStorage.setItem("handyhub_user", JSON.stringify(userPayload));
+
+      if (form.role === "PROFESSIONAL") {
+        localStorage.setItem("handyhub_pro_session", JSON.stringify({ authenticated: true, user: userPayload }));
+        document.cookie = "handyhub_pro_session=authenticated; path=/; max-age=86400; SameSite=Lax";
+        router.push("/pro");
+      } else {
+        localStorage.setItem("handyhub_user_session", JSON.stringify({ authenticated: true, user: userPayload }));
+        document.cookie = "handyhub_user_session=authenticated; path=/; max-age=86400; SameSite=Lax";
+        router.push("/dashboard");
+      }
     } catch {
       setError("Something went wrong. Please try again.");
       setLoading(false);

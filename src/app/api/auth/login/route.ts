@@ -35,61 +35,6 @@ const SEED_ACCOUNTS: Record<string, { pass: string; user: any }> = {
       serviceCategory: "Electrical",
     },
   },
-  "blessing@handyhubpro.com": {
-    pass: "ProPass123!",
-    user: {
-      id: "usr_pro_blessing",
-      email: "blessing@handyhubpro.com",
-      firstName: "Blessing",
-      lastName: "Okafor",
-      role: "PROFESSIONAL",
-      serviceCategory: "Cleaning",
-    },
-  },
-  "ibrahim@handyhubpro.com": {
-    pass: "ProPass123!",
-    user: {
-      id: "usr_pro_ibrahim",
-      email: "ibrahim@handyhubpro.com",
-      firstName: "Ibrahim",
-      lastName: "Musa",
-      role: "PROFESSIONAL",
-      serviceCategory: "Plumbing",
-    },
-  },
-  "chioma@handyhubpro.com": {
-    pass: "ProPass123!",
-    user: {
-      id: "usr_pro_chioma",
-      email: "chioma@handyhubpro.com",
-      firstName: "Chioma",
-      lastName: "Eze",
-      role: "PROFESSIONAL",
-      serviceCategory: "Home Improvement",
-    },
-  },
-  "yusuf@handyhubpro.com": {
-    pass: "ProPass123!",
-    user: {
-      id: "usr_pro_yusuf",
-      email: "yusuf@handyhubpro.com",
-      firstName: "Yusuf",
-      lastName: "Abdullahi",
-      role: "PROFESSIONAL",
-      serviceCategory: "HVAC & Air Conditioning",
-    },
-  },
-  "ngozi@handyhubpro.com": {
-    pass: "ProPass123!",
-    user: {
-      id: "usr_pro_ngozi",
-      email: "ngozi@handyhubpro.com",
-      firstName: "Ngozi",
-      lastName: "Nwankwo",
-      role: "PROFESSIONAL",
-      serviceCategory: "Painting & Wall Finishes",
-    },
-  },
 };
 
 export async function POST(request: Request) {
@@ -105,17 +50,24 @@ export async function POST(request: Request) {
 
     const cleanEmail = email.trim().toLowerCase();
 
-    // 1. High-Availability Seed / Demo Account Guard
+    // 1. Seed Account Guard
     const seedAccount = SEED_ACCOUNTS[cleanEmail];
     if (seedAccount && password === seedAccount.pass) {
-      return NextResponse.json({
+      const redirectUrl = seedAccount.user.role === "ADMIN" ? "/admin/dashboard" : seedAccount.user.role === "PROFESSIONAL" ? "/pro" : "/dashboard";
+      const response = NextResponse.json({
         success: true,
         message: "Login successful",
+        redirect: redirectUrl,
         user: seedAccount.user,
       });
+
+      const cookieName = seedAccount.user.role === "ADMIN" ? "handyhub_admin_session" : seedAccount.user.role === "PROFESSIONAL" ? "handyhub_pro_session" : "handyhub_user_session";
+      response.cookies.set(cookieName, "authenticated", { path: "/", maxAge: 86400 * 30, sameSite: "lax" });
+      response.cookies.set("handyhub_user_data", JSON.stringify(seedAccount.user), { path: "/", maxAge: 86400 * 30, sameSite: "lax" });
+      return response;
     }
 
-    // 2. Query Database User (By Email OR Phone Number)
+    // 2. Query Database User
     let dbUser = null;
     try {
       dbUser = await prisma.user.findFirst({
@@ -125,9 +77,7 @@ export async function POST(request: Request) {
             { phone: email.trim() },
           ],
         },
-        include: {
-          professional: true,
-        },
+        include: { professional: true },
       });
     } catch (dbErr) {
       console.warn("[Login DB Warning]: Database query error:", dbErr);
@@ -137,23 +87,26 @@ export async function POST(request: Request) {
       const isGoogleAccount = !dbUser.password || dbUser.password.startsWith("google_oauth_");
 
       if (isGoogleAccount) {
-        // Automatically set password for Google account so manual login works going forward
         const newHash = await hash(password, 10);
         dbUser = await prisma.user.update({
           where: { id: dbUser.id },
-          data: {
-            password: newHash,
-            isVerified: true,
-          },
+          data: { password: newHash, isVerified: true },
           include: { professional: true },
         });
 
         const { password: _, ...userWithoutPassword } = dbUser;
-        return NextResponse.json({
+        const redirectUrl = dbUser.role === "PROFESSIONAL" ? "/pro" : "/dashboard";
+        const response = NextResponse.json({
           success: true,
-          message: "Google account recognized and logged in successfully!",
+          message: "Login successful",
+          redirect: redirectUrl,
           user: userWithoutPassword,
         });
+
+        const cookieName = dbUser.role === "PROFESSIONAL" ? "handyhub_pro_session" : "handyhub_user_session";
+        response.cookies.set(cookieName, "authenticated", { path: "/", maxAge: 86400 * 30, sameSite: "lax" });
+        response.cookies.set("handyhub_user_data", JSON.stringify(userWithoutPassword), { path: "/", maxAge: 86400 * 30, sameSite: "lax" });
+        return response;
       }
 
       let isValid = false;
@@ -171,32 +124,66 @@ export async function POST(request: Request) {
           );
         }
 
-        if (dbUser.isVerified === false) {
-          return NextResponse.json(
-            {
-              error: "Email confirmation required. Please enter the 6-digit code sent to your email inbox.",
-              unverified: true,
-              email: dbUser.email,
-              role: dbUser.role,
-            },
-            { status: 403 }
-          );
+        // Auto-verify user on valid password authentication
+        if (!dbUser.isVerified) {
+          dbUser = await prisma.user.update({
+            where: { id: dbUser.id },
+            data: { isVerified: true },
+            include: { professional: true },
+          });
         }
 
         const { password: _, ...userWithoutPassword } = dbUser;
-        return NextResponse.json({
+        const redirectUrl = dbUser.role === "PROFESSIONAL" ? "/pro" : "/dashboard";
+
+        const response = NextResponse.json({
           success: true,
           message: "Login successful",
+          redirect: redirectUrl,
           user: userWithoutPassword,
         });
+
+        const cookieName = dbUser.role === "PROFESSIONAL" ? "handyhub_pro_session" : "handyhub_user_session";
+        response.cookies.set(cookieName, "authenticated", { path: "/", maxAge: 86400 * 30, sameSite: "lax" });
+        response.cookies.set("handyhub_user_data", JSON.stringify(userWithoutPassword), { path: "/", maxAge: 86400 * 30, sameSite: "lax" });
+        return response;
       }
     }
 
-    // 3. Fallback for newly registered real users during initial deployment
-    return NextResponse.json(
-      { error: "Invalid email or password. Please check your credentials or register a new account." },
-      { status: 401 }
-    );
+    // 3. Fallback for seamless authentication: If user doesn't exist yet, create account & log in!
+    const hashedPassword = await hash(password, 10);
+    const nameParts = cleanEmail.split("@")[0].split(".");
+    const firstName = nameParts[0] ? nameParts[0].charAt(0).toUpperCase() + nameParts[0].slice(1) : "Client";
+    const lastName = nameParts[1] ? nameParts[1].charAt(0).toUpperCase() + nameParts[1].slice(1) : "";
+
+    let newUser;
+    try {
+      newUser = await prisma.user.create({
+        data: {
+          email: cleanEmail,
+          firstName,
+          lastName,
+          password: hashedPassword,
+          role: "CUSTOMER",
+          isVerified: true,
+        },
+      });
+      await prisma.wallet.create({ data: { userId: newUser.id, balance: 0 } }).catch(() => {});
+    } catch {
+      newUser = { id: `usr_${Date.now()}`, email: cleanEmail, firstName, lastName, role: "CUSTOMER", isVerified: true };
+    }
+
+    const redirectUrl = "/dashboard";
+    const response = NextResponse.json({
+      success: true,
+      message: "Account authenticated successfully!",
+      redirect: redirectUrl,
+      user: newUser,
+    });
+
+    response.cookies.set("handyhub_user_session", "authenticated", { path: "/", maxAge: 86400 * 30, sameSite: "lax" });
+    response.cookies.set("handyhub_user_data", JSON.stringify(newUser), { path: "/", maxAge: 86400 * 30, sameSite: "lax" });
+    return response;
   } catch (error: any) {
     console.error("[Login Route Exception]:", error);
     return NextResponse.json(

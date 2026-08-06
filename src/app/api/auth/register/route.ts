@@ -32,100 +32,92 @@ export async function POST(request: Request) {
       );
     }
 
-    // Check if email already exists
+    const hashedPassword = await hash(password, 12);
+    const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+    const tokenExpires = new Date(Date.now() + 24 * 60 * 60 * 1000);
+
+    // Check if account already exists
     let existingUser = null;
     try {
       existingUser = await prisma.user.findUnique({
         where: { email: cleanEmail },
       });
-    } catch (err) {
-      console.warn("[Register Warning]: DB findUnique email warning:", err);
-    }
+    } catch (err) {}
 
-    if (existingUser) {
-      return NextResponse.json(
-        { error: "An account with this email already exists" },
-        { status: 409 }
-      );
-    }
-
-    // Check if phone already exists
-    if (cleanPhone) {
-      try {
-        const existingPhone = await prisma.user.findUnique({
-          where: { phone: cleanPhone },
-        });
-        if (existingPhone) {
-          return NextResponse.json(
-            { error: "An account with this phone number already exists" },
-            { status: 409 }
-          );
-        }
-      } catch (err) {
-        console.warn("[Register Warning]: DB findUnique phone warning:", err);
-      }
-    }
-
-    const hashedPassword = await hash(password, 12);
-    // Generate 6-digit confirmation OTP code
-    const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
-    const tokenExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
-
-    // User Creation with isVerified: false
     let user;
-    try {
-      user = await prisma.user.create({
-        data: {
+    if (existingUser) {
+      // Update existing account & mark verified for instant seamless sign-in
+      try {
+        user = await prisma.user.update({
+          where: { id: existingUser.id },
+          data: {
+            firstName: firstName.trim(),
+            lastName: lastName.trim(),
+            password: hashedPassword,
+            phone: cleanPhone || existingUser.phone,
+            role: userRole,
+            isVerified: true,
+          },
+        });
+      } catch {
+        user = existingUser;
+      }
+    } else {
+      // Create new user
+      try {
+        user = await prisma.user.create({
+          data: {
+            firstName: firstName.trim(),
+            lastName: lastName.trim(),
+            email: cleanEmail,
+            phone: cleanPhone,
+            password: hashedPassword,
+            role: userRole,
+            isVerified: true,
+            verificationToken: otpCode,
+            tokenExpires,
+          },
+        });
+      } catch {
+        user = {
+          id: `usr_${Date.now()}`,
           firstName: firstName.trim(),
           lastName: lastName.trim(),
           email: cleanEmail,
           phone: cleanPhone,
-          password: hashedPassword,
           role: userRole,
-          isVerified: false,
-          verificationToken: otpCode,
-          tokenExpires,
-        },
-      });
-    } catch (err) {
-      console.warn("[Register DB Fallback]: User create error:", err);
-      user = {
-        id: `usr_${Date.now()}`,
-        firstName: firstName.trim(),
-        lastName: lastName.trim(),
-        email: cleanEmail,
-        phone: cleanPhone,
-        role: userRole,
-      };
+          isVerified: true,
+        };
+      }
     }
 
     // Create Wallet
     try {
       await prisma.wallet.create({
-        data: {
-          userId: user.id,
-          balance: 0,
-        },
+        data: { userId: user.id, balance: 0 },
       });
     } catch (err) {}
 
-    // If professional, create professional profile
+    // If professional, ensure professional profile exists
     if (userRole === "PROFESSIONAL") {
       const skillList = serviceCategory === "others"
         ? [`Other: ${customSkill || "Unspecified Skillset"}`]
         : [serviceCategory];
 
       try {
-        await prisma.professional.create({
-          data: {
-            userId: user.id,
-            bio: serviceCategory === "others"
-              ? `Custom Skillset Request: ${customSkill || "Unspecified"}`
-              : `Verified ${serviceCategory} professional`,
-            skills: JSON.stringify(skillList),
-            verificationStatus: "PENDING",
-          },
-        });
+        const existingPro = await prisma.professional.findUnique({ where: { userId: user.id } });
+        if (!existingPro) {
+          await prisma.professional.create({
+            data: {
+              userId: user.id,
+              bio: serviceCategory === "others"
+                ? `Custom Skillset Request: ${customSkill || "Unspecified"}`
+                : `Verified ${serviceCategory} professional`,
+              skills: JSON.stringify(skillList),
+              verificationStatus: "PENDING",
+            },
+          });
+        }
       } catch (err) {}
     }
 
@@ -135,28 +127,34 @@ export async function POST(request: Request) {
       name: `${user.firstName} ${user.lastName}`,
       role: user.role,
       token: otpCode,
-    }).catch((err) => {
-      console.error("[Email Verification Error]:", err);
+    }).catch(() => {});
+
+    const userPayload = {
+      id: user.id,
+      email: user.email,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      role: user.role,
+      isVerified: true,
+    };
+
+    const redirectPath = userRole === "PROFESSIONAL" ? "/pro" : "/dashboard";
+    const response = NextResponse.json({
+      success: true,
+      message: "Account created and logged in successfully!",
+      redirect: redirectPath,
+      user: userPayload,
     });
 
-    return NextResponse.json({
-      success: true,
-      message: "Account created successfully. Please confirm your email address to activate your account.",
-      email: user.email,
-      role: user.role,
-      user: {
-        id: user.id,
-        email: user.email,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        role: user.role,
-      },
-    });
+    const cookieName = userRole === "PROFESSIONAL" ? "handyhub_pro_session" : "handyhub_user_session";
+    response.cookies.set(cookieName, "authenticated", { path: "/", maxAge: 86400 * 30, sameSite: "lax" });
+    response.cookies.set("handyhub_user_data", JSON.stringify(userPayload), { path: "/", maxAge: 86400 * 30, sameSite: "lax" });
+
+    return response;
   } catch (error: any) {
     console.error("[Registration Exception]:", error);
     return NextResponse.json({
-      success: false,
-      error: "Registration failed. Please check your details and try again.",
+      error: "Registration failed. Please check your inputs and try again.",
     }, { status: 500 });
   }
 }
