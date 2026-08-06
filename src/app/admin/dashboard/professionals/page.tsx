@@ -34,6 +34,8 @@ export default function ProfessionalVerificationPage() {
 
   useEffect(() => {
     fetchPros();
+    const interval = setInterval(fetchPros, 5000);
+    return () => clearInterval(interval);
   }, []);
 
   const filteredPros = pros.filter((p) => {
