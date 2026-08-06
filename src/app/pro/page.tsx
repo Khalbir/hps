@@ -2,20 +2,19 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { motion } from "framer-motion";
 import { ProLayoutShell } from "@/components/layout/ProLayoutShell";
 import {
-  ClipboardList, Calendar, Star, Wallet, ShieldCheck,
-  TrendingUp, Clock, DollarSign, MapPin, ArrowRight,
-  Phone, CheckCircle2, Inbox, RefreshCw
+  ShieldCheck, Clock, AlertTriangle, ArrowRight,
+  RefreshCw, Inbox, CheckCircle2, XCircle
 } from "lucide-react";
-import styles from "../dashboard/dashboard.module.css";
 
 export default function ProDashboard() {
   const [loading, setLoading] = useState(true);
   const [proData, setProData] = useState<any>({
     proName: "Artisan Partner",
-    verificationStatus: "PENDING",
+    verificationStatus: "UNVERIFIED",
+    hasSubmittedDocs: false,
+    verificationNotes: "",
     walletBalance: 0,
     pendingEscrow: 0,
     completedJobs: 0,
@@ -27,6 +26,7 @@ export default function ProDashboard() {
     setLoading(true);
     let activeUserId = "";
     let activeEmail = "";
+    let localName = "";
 
     if (typeof window !== "undefined") {
       try {
@@ -35,16 +35,22 @@ export default function ProDashboard() {
         const parsed = storedPro ? JSON.parse(storedPro) : storedUser ? JSON.parse(storedUser) : null;
         if (parsed?.user?.id || parsed?.id) activeUserId = parsed.user?.id || parsed.id;
         if (parsed?.user?.email || parsed?.email) activeEmail = parsed.user?.email || parsed.email;
-      } catch (err) {
-        console.warn("Session read warning:", err);
-      }
+        if (parsed?.user?.firstName || parsed?.firstName) {
+          const fn = parsed?.user?.firstName || parsed?.firstName;
+          const ln = parsed?.user?.lastName || parsed?.lastName || "";
+          localName = `${fn} ${ln}`.trim();
+        }
+      } catch (err) {}
     }
 
     try {
       const res = await fetch(`/api/pro/dashboard?userId=${activeUserId}&email=${encodeURIComponent(activeEmail)}`);
       const data = await res.json();
-      if (res.ok) {
-        setProData(data);
+      if (res.ok && data.success) {
+        setProData({
+          ...data,
+          proName: localName || data.proName || "Artisan Partner",
+        });
       }
     } catch (err) {
       console.warn("Failed to fetch pro dashboard data:", err);
@@ -57,52 +63,113 @@ export default function ProDashboard() {
     fetchProDashboardTelemetry();
   }, []);
 
-  const isVerified = proData.verificationStatus === "VERIFIED";
+  const status = proData.verificationStatus; // VERIFIED | PENDING_REVIEW | REJECTED | UNVERIFIED
+  const isVerified = status === "VERIFIED";
+  const isPendingReview = status === "PENDING_REVIEW";
+  const isRejected = status === "REJECTED";
 
   return (
     <ProLayoutShell>
       {/* Header Banner */}
       <div style={{ marginBottom: "var(--space-6)" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)", marginBottom: "var(--space-2)" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)", marginBottom: "var(--space-2)", flexWrap: "wrap" }}>
           <h1 className="h2">Professional Dashboard</h1>
-          <span
-            className="badge"
-            style={{
-              background: isVerified ? "rgba(16,185,129,0.15)" : "rgba(245,158,11,0.15)",
-              color: isVerified ? "#10B981" : "#F59E0B",
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 4,
-              fontWeight: 700,
-            }}
-          >
-            <ShieldCheck size={14} /> {isVerified ? "Verified Partner" : "Pending Verification Audit"}
-          </span>
+          
+          {/* Dynamic Verification Badge */}
+          {isVerified ? (
+            <span className="badge" style={{ background: "rgba(16,185,129,0.15)", color: "#10B981", display: "inline-flex", alignItems: "center", gap: 4, fontWeight: 700 }}>
+              <ShieldCheck size={14} /> Account Fully Verified
+            </span>
+          ) : isPendingReview ? (
+            <span className="badge" style={{ background: "rgba(14,165,233,0.15)", color: "#0EA5E9", display: "inline-flex", alignItems: "center", gap: 4, fontWeight: 700 }}>
+              <Clock size={14} /> Audit Pending Admin Review
+            </span>
+          ) : isRejected ? (
+            <span className="badge" style={{ background: "rgba(239,68,68,0.15)", color: "#EF4444", display: "inline-flex", alignItems: "center", gap: 4, fontWeight: 700 }}>
+              <XCircle size={14} /> Audit Action Required
+            </span>
+          ) : (
+            <span className="badge" style={{ background: "rgba(245,158,11,0.15)", color: "#F59E0B", display: "inline-flex", alignItems: "center", gap: 4, fontWeight: 700 }}>
+              <AlertTriangle size={14} /> Verification Required
+            </span>
+          )}
         </div>
+
         <p style={{ color: "var(--text-secondary)", fontSize: "var(--fs-md)" }}>
           Welcome back, <strong style={{ color: "var(--text-primary)" }}>{proData.proName}</strong>! Here is your live job dispatch overview and earnings.
         </p>
       </div>
 
-      {/* Verification Checkmate Alert Banner */}
-      <div style={{ background: "linear-gradient(135deg, rgba(14,165,233,0.1) 0%, rgba(139,92,246,0.1) 100%)", border: "1.5px solid rgba(14,165,233,0.3)", padding: "var(--space-5)", borderRadius: "var(--radius-xl)", marginBottom: "var(--space-6)", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "var(--space-4)" }}>
+      {/* Dynamic Verification Alert Banner */}
+      <div style={{
+        background: isVerified
+          ? "linear-gradient(135deg, rgba(16,185,129,0.1) 0%, rgba(14,165,233,0.1) 100%)"
+          : isPendingReview
+          ? "linear-gradient(135deg, rgba(14,165,233,0.1) 0%, rgba(99,102,241,0.1) 100%)"
+          : isRejected
+          ? "linear-gradient(135deg, rgba(239,68,68,0.1) 0%, rgba(245,158,11,0.1) 100%)"
+          : "linear-gradient(135deg, rgba(245,158,11,0.1) 0%, rgba(14,165,233,0.1) 100%)",
+        border: `1.5px solid ${isVerified ? "rgba(16,185,129,0.4)" : isPendingReview ? "rgba(14,165,233,0.4)" : isRejected ? "rgba(239,68,68,0.4)" : "rgba(245,158,11,0.4)"}`,
+        padding: "var(--space-5)",
+        borderRadius: "var(--radius-xl)",
+        marginBottom: "var(--space-6)",
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "center",
+        flexWrap: "wrap",
+        gap: "var(--space-4)",
+      }}>
         <div style={{ display: "flex", alignItems: "center", gap: "var(--space-4)" }}>
-          <div style={{ width: 44, height: 44, borderRadius: "50%", background: isVerified ? "#10B981" : "#0EA5E9", color: "white", display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <ShieldCheck size={24} />
+          <div style={{
+            width: 44,
+            height: 44,
+            borderRadius: "50%",
+            background: isVerified ? "#10B981" : isPendingReview ? "#0EA5E9" : isRejected ? "#EF4444" : "#F59E0B",
+            color: "white",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            flexShrink: 0,
+          }}>
+            {isVerified ? <CheckCircle2 size={24} /> : isPendingReview ? <Clock size={24} /> : isRejected ? <XCircle size={24} /> : <ShieldCheck size={24} />}
           </div>
           <div>
             <strong style={{ fontSize: "var(--fs-base)", color: "var(--text-primary)", display: "block" }}>
-              {isVerified ? "Multi-Stage Verification Audit Complete ✅" : "Complete Your 4-Step Professional Verification"}
+              {isVerified
+                ? "Multi-Stage Verification Audit Complete ✅"
+                : isPendingReview
+                ? "📋 Verification Audit Pending Admin Approval"
+                : isRejected
+                ? "Verification Document Audit Flagged"
+                : "Complete Your 4-Step Professional Verification"}
             </strong>
             <span style={{ fontSize: "var(--fs-xs)", color: "var(--text-secondary)" }}>
               {isVerified
                 ? "Government NIN Verified • Trade Cert Audited • 2 Guarantors Approved • Trade Quiz Passed"
+                : isPendingReview
+                ? "Your NIN ID, selfie, trade certificate & guarantors have been submitted. Admin Compliance Officers are auditing your submission."
+                : isRejected
+                ? proData.verificationNotes || "Admin Notes: Documents were flagged during audit. Please update your government ID or trade certificate."
                 : "Submit your Govt NIN ID, facial selfie, trade certificate, 2 guarantors & trade quiz for Admin review."}
             </span>
           </div>
         </div>
-        <Link href="/pro/verification" className="btn btn-primary btn-sm" style={{ background: "#0EA5E9" }}>
-          {isVerified ? "View Verification Dossier" : "Start Verification Audit ➔"}
+
+        <Link
+          href="/pro/verification"
+          className="btn btn-primary btn-sm"
+          style={{
+            background: isVerified ? "#10B981" : isPendingReview ? "#0EA5E9" : isRejected ? "#EF4444" : "#0EA5E9",
+            fontWeight: "bold",
+          }}
+        >
+          {isVerified
+            ? "View Verification Dossier"
+            : isPendingReview
+            ? "View Submitted Dossier ➔"
+            : isRejected
+            ? "Re-submit Verification Credentials ➔"
+            : "Start Verification Audit ➔"}
         </Link>
       </div>
 
@@ -110,19 +177,19 @@ export default function ProDashboard() {
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "var(--space-4)", marginBottom: "var(--space-6)" }}>
         <div className="card" style={{ padding: "var(--space-4)", borderLeft: "4px solid #0EA5E9" }}>
           <span style={{ fontSize: "var(--fs-xs)", color: "var(--text-tertiary)" }}>Wallet Balance</span>
-          <h3 className="h3" style={{ margin: "4px 0 0", color: "#0EA5E9" }}>₦{proData.walletBalance.toLocaleString()}</h3>
+          <h3 className="h3" style={{ margin: "4px 0 0", color: "#0EA5E9" }}>₦{(proData.walletBalance || 0).toLocaleString()}</h3>
         </div>
         <div className="card" style={{ padding: "var(--space-4)", borderLeft: "4px solid #F59E0B" }}>
           <span style={{ fontSize: "var(--fs-xs)", color: "#F59E0B" }}>Pending Escrow Hold</span>
-          <h3 className="h3" style={{ margin: "4px 0 0", color: "#F59E0B" }}>₦{proData.pendingEscrow.toLocaleString()}</h3>
+          <h3 className="h3" style={{ margin: "4px 0 0", color: "#F59E0B" }}>₦{(proData.pendingEscrow || 0).toLocaleString()}</h3>
         </div>
         <div className="card" style={{ padding: "var(--space-4)", borderLeft: "4px solid #10B981" }}>
           <span style={{ fontSize: "var(--fs-xs)", color: "#10B981" }}>Completed Jobs</span>
-          <h3 className="h3" style={{ margin: "4px 0 0", color: "#10B981" }}>{proData.completedJobs}</h3>
+          <h3 className="h3" style={{ margin: "4px 0 0", color: "#10B981" }}>{proData.completedJobs || 0}</h3>
         </div>
         <div className="card" style={{ padding: "var(--space-4)", borderLeft: "4px solid #8B5CF6" }}>
           <span style={{ fontSize: "var(--fs-xs)", color: "#8B5CF6" }}>Customer Rating</span>
-          <h3 className="h3" style={{ margin: "4px 0 0", color: "#8B5CF6" }}>{proData.rating}★</h3>
+          <h3 className="h3" style={{ margin: "4px 0 0", color: "#8B5CF6" }}>{proData.rating || 5.0}★</h3>
         </div>
       </div>
 
@@ -142,7 +209,7 @@ export default function ProDashboard() {
 
         {loading ? (
           <div style={{ padding: "40px", textAlign: "center", color: "var(--text-tertiary)" }}>Loading real database job dispatches...</div>
-        ) : proData.activeJobs.length === 0 ? (
+        ) : !proData.activeJobs || proData.activeJobs.length === 0 ? (
           <div style={{ padding: "50px", textAlign: "center", background: "var(--bg-tertiary)", borderRadius: "var(--radius-xl)", border: "1px solid var(--border-primary)" }}>
             <Inbox size={40} color="#0EA5E9" style={{ opacity: 0.6, marginBottom: 12 }} />
             <h4 className="h4" style={{ margin: "0 0 6px 0", color: "var(--text-primary)" }}>No Active Job Dispatches</h4>
