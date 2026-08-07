@@ -247,7 +247,7 @@ export function AdminLayoutShell({ children }: { children: ReactNode }) {
       {/* Main Content Area */}
       <main className={styles.adminMain}>
         {/* Top Command Bar */}
-        <div style={{ padding: "0 0 20px 0", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "12px" }}>
+        <div style={{ padding: "20px 32px 0 32px", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "12px" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
             <button className={styles.adminMenuBtn} onClick={() => setSidebarOpen(true)}>
               <Menu size={22} />

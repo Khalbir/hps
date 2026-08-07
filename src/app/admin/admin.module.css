@@ -198,7 +198,10 @@
 .adminDashLayout {
   display: flex;
   min-height: 100vh;
+  width: 100vw;
+  max-width: 100vw;
   background: #0F172A;
+  overflow-x: hidden;
 }
 
 .adminSidebar {
@@ -310,19 +313,25 @@
 .adminMain {
   flex: 1;
   margin-left: 275px;
+  width: calc(100vw - 275px);
+  max-width: calc(100vw - 275px);
   min-height: 100vh;
+  box-sizing: border-box;
+  overflow-x: hidden;
 }
 
 .adminTopBar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: var(--space-5) var(--space-8);
+  padding: 20px 32px;
   background: #1E293B;
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
   position: sticky;
   top: 0;
   z-index: 10;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .adminTopLeft {

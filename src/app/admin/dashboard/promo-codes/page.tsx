@@ -120,7 +120,7 @@ export default function AdminPromoCodesPage() {
           <h3 className="h4" style={{ marginBottom: "16px", display: "flex", alignItems: "center", gap: 8 }}>
             <Tag size={20} color="#00A8B5" /> Create New Discount Promo Code
           </h3>
-          <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr auto", gap: "12px", alignItems: "center" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "12px", alignItems: "center" }}>
             <input
               type="text"
               placeholder="Promo Code e.g. ABUJA50"
@@ -150,14 +150,14 @@ export default function AdminPromoCodesPage() {
               onChange={(e) => setNewMaxUses(Number(e.target.value))}
               style={{ padding: "10px 12px", background: "var(--bg-tertiary)", border: "1px solid var(--border-primary)", borderRadius: "var(--radius-md)", color: "var(--text-primary)" }}
             />
-            <button className="btn btn-primary btn-md" onClick={handleCreate} disabled={!newCode}>
+            <button className="btn btn-primary btn-md" onClick={handleCreate} disabled={!newCode} style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "6px" }}>
               <Plus size={16} /> Create Code
             </button>
           </div>
         </div>
 
         {/* Promo Codes Table */}
-        <div className="card" style={{ padding: 0, overflow: "hidden" }}>
+        <div className="card" style={{ padding: 0, overflowX: "auto", width: "100%" }}>
           {loading ? (
             <div style={{ padding: 40, textAlign: "center", color: "var(--text-secondary)" }}>
               Loading promo codes & redemptions...
