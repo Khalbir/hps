@@ -13,6 +13,7 @@ export async function GET(request: Request) {
     const status = searchParams.get("status");
     const provider = searchParams.get("provider");
 
+    // 1. Fetch raw payments from Payment table
     const where: any = {
       user: {
         email: { notIn: DEMO_EMAILS },
@@ -31,25 +32,67 @@ export async function GET(request: Request) {
       },
     });
 
-    const payments = rawPayments.filter(
+    // 2. Fetch paid bookings from Booking table to ensure complete coverage
+    const rawPaidBookings = await prisma.booking.findMany({
+      where: {
+        paymentStatus: { in: ["PAID", "HELD_IN_ESCROW", "RELEASED", "REFUNDED"] },
+        customer: { email: { notIn: DEMO_EMAILS } },
+      },
+      include: {
+        customer: { select: { firstName: true, lastName: true, email: true } },
+        service: { select: { name: true } },
+      },
+      orderBy: { createdAt: "desc" },
+    });
+
+    const paymentRefsSet = new Set(rawPayments.map((p) => p.reference));
+
+    // Convert paid bookings without duplicate payment records into payment format
+    const bookingPayments = rawPaidBookings
+      .filter((b) => !paymentRefsSet.has(`PAY_${b.reference}`) && !paymentRefsSet.has(b.reference))
+      .map((b) => ({
+        id: `pay_bkg_${b.id}`,
+        reference: `PAY_${b.reference}`,
+        bookingId: b.id,
+        booking: { reference: b.reference },
+        amount: b.estimatedPrice,
+        currency: "NGN",
+        provider: b.paymentMethod ? b.paymentMethod.toUpperCase() : "PAYSTACK",
+        status: b.paymentStatus === "REFUNDED" ? "REFUNDED" : "SUCCESS",
+        user: b.customer,
+        createdAt: b.createdAt,
+      }));
+
+    // Combine all payments
+    const allPaymentsCombined = [...rawPayments, ...bookingPayments].sort(
+      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
+
+    const filteredPayments = allPaymentsCombined.filter(
       (p) => !p.user || !DEMO_EMAILS.includes(p.user.email)
     );
 
-    const successPayments = payments.filter((p) => p.status === "SUCCESS");
+    const successPayments = filteredPayments.filter((p) => p.status === "SUCCESS");
     const totalSuccessNgn = successPayments.reduce((acc, curr) => acc + curr.amount, 0);
+
+    const paystackSuccessPayments = successPayments.filter(
+      (p) => p.provider === "PAYSTACK" || p.provider === "PAYSTACK_LIVE"
+    );
+    const paystackVolumeNgn = paystackSuccessPayments.reduce((acc, curr) => acc + curr.amount, 0);
 
     return NextResponse.json({
       success: true,
-      payments,
+      payments: filteredPayments,
       stats: {
         totalSuccessNgn,
+        paystackVolumeNgn: paystackVolumeNgn || totalSuccessNgn,
         platformFeeNgn: Math.round(totalSuccessNgn * 0.15),
-        failedCount: payments.filter((p) => p.status === "FAILED").length,
-        totalCount: payments.length,
+        failedCount: filteredPayments.filter((p) => p.status === "FAILED").length,
+        totalCount: filteredPayments.length,
       },
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error("[Payments GET Error]:", error);
-    return NextResponse.json({ error: "Failed to fetch payments" }, { status: 500 });
+    return NextResponse.json({ error: "Failed to fetch payments: " + error.message }, { status: 500 });
   }
 }

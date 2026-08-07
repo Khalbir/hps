@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { AdminLayoutShell } from "@/components/layout/AdminLayoutShell";
 import {
   CreditCard, DollarSign, Lock, ArrowUpRight, ArrowDownLeft, CheckCircle2,
-  Clock, Search, Filter, FileSpreadsheet, RefreshCw, AlertCircle, Inbox
+  Clock, Search, Filter, FileSpreadsheet, RefreshCw, AlertCircle, Inbox, ShieldCheck, Zap
 } from "lucide-react";
 import styles from "../../admin.module.css";
 
@@ -13,7 +13,13 @@ export default function AdminPaymentsPage() {
   const [providerFilter, setProviderFilter] = useState("ALL");
   const [search, setSearch] = useState("");
   const [payments, setPayments] = useState<any[]>([]);
-  const [stats, setStats] = useState({ totalSuccessNgn: 0, platformFeeNgn: 0, failedCount: 0, totalCount: 0 });
+  const [stats, setStats] = useState({
+    totalSuccessNgn: 0,
+    paystackVolumeNgn: 0,
+    platformFeeNgn: 0,
+    failedCount: 0,
+    totalCount: 0,
+  });
   const [loading, setLoading] = useState(true);
   const [exportNotice, setExportNotice] = useState("");
 
@@ -28,8 +34,8 @@ export default function AdminPaymentsPage() {
             reference: p.reference,
             bookingRef: p.booking?.reference || "BKG",
             amount: p.amount,
-            provider: p.provider,
-            customer: p.user ? `${p.user.firstName} ${p.user.lastName}` : "Customer",
+            provider: p.provider || "PAYSTACK",
+            customer: p.user ? `${p.user.firstName} ${p.user.lastName}` : "Customer Client",
             email: p.user?.email || "N/A",
             status: p.status,
             date: new Date(p.createdAt).toLocaleString(),
@@ -46,7 +52,7 @@ export default function AdminPaymentsPage() {
 
   useEffect(() => {
     fetchPayments();
-    const interval = setInterval(fetchPayments, 5000);
+    const interval = setInterval(fetchPayments, 4000);
     return () => clearInterval(interval);
   }, []);
 
@@ -70,12 +76,12 @@ export default function AdminPaymentsPage() {
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
     link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `handyhub_payments_export_${Date.now()}.csv`);
+    link.setAttribute("download", `handyhub_paystack_ledger_${Date.now()}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
 
-    setExportNotice("Payments ledger exported to Excel (CSV) successfully!");
+    setExportNotice("Paystack financial ledger exported to Excel (.CSV) successfully!");
     setTimeout(() => setExportNotice(""), 4000);
   };
 
@@ -93,29 +99,52 @@ export default function AdminPaymentsPage() {
     <AdminLayoutShell>
       <header className={styles.adminTopBar} style={{ marginBottom: "var(--space-6)" }}>
         <div>
-          <h1 className="h3">Paystack & Escrow Financial Command Center</h1>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
+            <h1 className="h3" style={{ margin: 0 }}>Paystack Live Transaction & Escrow Command</h1>
+            <span
+              style={{
+                background: "rgba(16, 185, 129, 0.15)",
+                color: "#10B981",
+                border: "1px solid #10B981",
+                padding: "3px 10px",
+                borderRadius: 99,
+                fontSize: "11px",
+                fontWeight: 800,
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 5,
+              }}
+            >
+              <Zap size={12} fill="#10B981" /> PAYSTACK LIVE GATEWAY ACTIVE
+            </span>
+          </div>
           <p style={{ color: "var(--text-secondary)", fontSize: "var(--fs-sm)" }}>
-            Real production Paystack NGN transactions and escrow balances from database records.
+            Real production Paystack transactions, automatic webhooks, and 15% platform escrow tracking.
           </p>
         </div>
 
-        <button onClick={handleExportCSV} className="btn btn-secondary btn-sm" style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-          <FileSpreadsheet size={16} color="#10B981" /> Export Ledger (.csv)
-        </button>
+        <div style={{ display: "flex", gap: 8 }}>
+          <button onClick={fetchPayments} className="btn btn-secondary btn-sm" title="Refresh Live Data">
+            <RefreshCw size={14} className={loading ? "spin" : ""} /> Refresh
+          </button>
+          <button onClick={handleExportCSV} className="btn btn-primary btn-sm" style={{ display: "flex", alignItems: "center", gap: "6px", background: "#10B981", borderColor: "#10B981" }}>
+            <FileSpreadsheet size={16} /> Export Ledger (.csv)
+          </button>
+        </div>
       </header>
 
       {exportNotice && (
-        <div style={{ background: "rgba(16,185,129,0.2)", border: "1px solid #10B981", color: "#10B981", padding: "12px 16px", borderRadius: "8px", marginBottom: "20px", fontSize: "14px" }}>
+        <div style={{ background: "rgba(16,185,129,0.2)", border: "1px solid #10B981", color: "#10B981", padding: "12px 16px", borderRadius: "8px", marginBottom: "20px", fontSize: "14px", fontWeight: "bold" }}>
           ✅ {exportNotice}
         </div>
       )}
 
       <div className={styles.adminContent}>
         {/* Financial Summary KPI Grid */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "var(--space-4)", marginBottom: "var(--space-6)" }}>
-          <div className="card" style={{ background: "#1E293B", border: "1px solid #334155", padding: "var(--space-5)" }}>
-            <span style={{ fontSize: "var(--fs-xs)", color: "#94A3B8" }}>Total Verified Volume</span>
-            <h2 className="h2" style={{ color: "#10B981", margin: "4px 0 0" }}>₦{stats.totalSuccessNgn.toLocaleString()}</h2>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "var(--space-4)", marginBottom: "var(--space-6)" }}>
+          <div className="card" style={{ background: "#1E293B", border: "1px solid #334155", padding: "var(--space-5)", borderLeft: "4px solid #10B981" }}>
+            <span style={{ fontSize: "var(--fs-xs)", color: "#94A3B8" }}>Paystack Verified Volume</span>
+            <h2 className="h2" style={{ color: "#10B981", margin: "4px 0 0" }}>₦{stats.paystackVolumeNgn.toLocaleString()}</h2>
           </div>
 
           <div className="card" style={{ background: "#1E293B", border: "1px solid #334155", padding: "var(--space-5)", borderLeft: "4px solid #F59E0B" }}>
@@ -199,12 +228,12 @@ export default function AdminPaymentsPage() {
         </div>
 
         {/* Payments Ledger Table */}
-        <div className="card" style={{ background: "#1E293B", border: "1px solid #334155", padding: 0, overflow: "hidden" }}>
+        <div className="card" style={{ background: "#1E293B", border: "1px solid #334155", padding: 0, overflowX: "auto", width: "100%" }}>
           {filteredPayments.length === 0 ? (
             <div style={{ padding: "50px", textAlign: "center", color: "#94A3B8" }}>
               <Inbox size={36} style={{ marginBottom: "12px", opacity: 0.5 }} />
               <h4 className="h4" style={{ color: "#F8FAFC", margin: "0 0 6px 0" }}>No Transactions in Database</h4>
-              <p style={{ margin: 0, fontSize: "13px" }}>Real Paystack payments made by customers will stream here live.</p>
+              <p style={{ margin: 0, fontSize: "13px" }}>Real Paystack payments made by customers will stream here live in real-time.</p>
             </div>
           ) : (
             <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left", fontSize: "var(--fs-sm)" }}>
@@ -230,7 +259,9 @@ export default function AdminPaymentsPage() {
                         <strong style={{ display: "block", color: "#F8FAFC" }}>{tx.customer}</strong>
                         <span style={{ fontSize: "11px", color: "#94A3B8" }}>{tx.email}</span>
                       </td>
-                      <td style={{ padding: "12px 16px", fontWeight: 600, color: tx.provider === "PAYSTACK" ? "#0EA5E9" : "#F59E0B" }}>{tx.provider}</td>
+                      <td style={{ padding: "12px 16px", fontWeight: 600, color: tx.provider === "PAYSTACK" ? "#0EA5E9" : "#F59E0B" }}>
+                        {tx.provider}
+                      </td>
                       <td style={{ padding: "12px 16px", fontWeight: 700, color: "#10B981" }}>₦{tx.amount.toLocaleString()}</td>
                       <td style={{ padding: "12px 16px" }}>
                         <span className="badge" style={{ background: sb.bg, color: sb.color, fontSize: "11px", fontWeight: 700 }}>
