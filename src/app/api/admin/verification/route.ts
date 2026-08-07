@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { hash } from "bcryptjs";
+import { getValidMediaUrl, SAMPLE_PORTFOLIO_IMAGE } from "@/lib/sample-documents";
 
 const DEFAULT_SEED_ARTISANS = [
   {
@@ -158,6 +159,15 @@ export async function GET(request: Request) {
       const vStatus = p.verificationStatus || "PENDING";
       const fullName = `${u.firstName || ""} ${u.lastName || ""}`.trim() || p.name || "Artisan Partner";
 
+      const rawIdUrl = docs.idDocumentUrl || p.idUrl;
+      const rawSelfieUrl = docs.selfieUrl;
+      const rawTradeCertUrl = docs.tradeCertUrl || p.tradeCertUrl;
+      const rawPortfolioUrls: string[] = docs.portfolioUrls && docs.portfolioUrls.length > 0 ? docs.portfolioUrls : [];
+
+      const formattedPortfolio = rawPortfolioUrls.length > 0
+        ? rawPortfolioUrls.map((url) => getValidMediaUrl(url, "portfolio"))
+        : [SAMPLE_PORTFOLIO_IMAGE];
+
       return {
         id: p.id,
         userId: p.userId || u.id,
@@ -172,10 +182,10 @@ export async function GET(request: Request) {
         verificationStatus: vStatus,
         idType: docs.idType || p.idType || "NIN",
         idNumber: docs.idNumber || p.idNumber || "NIN-89302194812",
-        idUrl: docs.idDocumentUrl || p.idUrl || "https://handyhubpro.ng/docs/id_nin_sample.jpg",
-        selfieUrl: docs.selfieUrl || "https://handyhubpro.ng/docs/selfie_sample.jpg",
-        tradeCertUrl: docs.tradeCertUrl || p.tradeCertUrl || "https://handyhubpro.ng/docs/trade_cert.pdf",
-        portfolioUrls: docs.portfolioUrls || ["https://handyhubpro.ng/docs/portfolio_1.jpg"],
+        idUrl: getValidMediaUrl(rawIdUrl, "id"),
+        selfieUrl: getValidMediaUrl(rawSelfieUrl, "selfie"),
+        tradeCertUrl: getValidMediaUrl(rawTradeCertUrl, "cert"),
+        portfolioUrls: formattedPortfolio,
         guarantor1: docs.guarantor1 || { name: "Chief James Okon", phone: "+234 803 111 2222", relationship: "Landlord / Community Leader", nin: "NIN-1029384756" },
         guarantor2: docs.guarantor2 || { name: "Engr. Aliyu Hassan", phone: "+234 802 333 4444", relationship: "Master Craftsman / Employer", nin: "NIN-9876543210" },
         quizScore: docs.quizScore !== undefined ? docs.quizScore : 85,

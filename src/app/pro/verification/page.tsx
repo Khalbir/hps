@@ -9,6 +9,7 @@ import {
   HelpCircle, Check, X, ShieldAlert, Loader2, Image as ImageIcon
 } from "lucide-react";
 import { getQuizForCategory, QuizQuestion } from "@/lib/quiz";
+import { getValidMediaUrl } from "@/lib/sample-documents";
 import styles from "../pro.module.css";
 
 const steps = [
@@ -206,13 +207,10 @@ export default function ProVerificationPage() {
           email: activeEmail,
           idType,
           idNumber,
-          idDocumentUrl: idDocumentUrl || "https://handyhub.ng/docs/id_nin_sample.jpg",
-          selfieUrl: selfieUrl || "https://handyhub.ng/docs/selfie_sample.jpg",
-          tradeCertUrl: tradeCertUrl || "https://handyhub.ng/docs/trade_cert.pdf",
-          portfolioUrls: portfolioUrls.length > 0 ? portfolioUrls : [
-            "https://handyhub.ng/docs/portfolio_1.jpg",
-            "https://handyhub.ng/docs/portfolio_2.jpg",
-          ],
+          idDocumentUrl: getValidMediaUrl(idDocumentUrl, "id"),
+          selfieUrl: getValidMediaUrl(selfieUrl, "selfie"),
+          tradeCertUrl: getValidMediaUrl(tradeCertUrl, "cert"),
+          portfolioUrls: portfolioUrls.length > 0 ? portfolioUrls : [getValidMediaUrl(null, "portfolio")],
           guarantor1: g1,
           guarantor2: g2,
         }),

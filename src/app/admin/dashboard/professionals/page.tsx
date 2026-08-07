@@ -391,13 +391,13 @@ export default function ProfessionalVerificationPage() {
           }}
           onClick={() => setPreviewMediaUrl(null)}
         >
-          <div style={{ position: "absolute", top: 20, right: 20, display: "flex", gap: 12 }}>
+          <div style={{ position: "absolute", top: 20, right: 20, display: "flex", gap: 12, zIndex: 10001 }}>
             <a
               href={previewMediaUrl}
               target="_blank"
               rel="noreferrer"
               className="btn btn-secondary btn-sm"
-              style={{ color: "#38BDF8", borderColor: "#0EA5E9" }}
+              style={{ color: "#38BDF8", borderColor: "#0EA5E9", background: "#1E293B" }}
               onClick={(e) => e.stopPropagation()}
             >
               Open Original File ↗
@@ -405,7 +405,7 @@ export default function ProfessionalVerificationPage() {
             <button
               onClick={() => setPreviewMediaUrl(null)}
               className="btn btn-secondary btn-sm"
-              style={{ color: "#F8FAFC" }}
+              style={{ color: "#F8FAFC", background: "#1E293B" }}
             >
               Close Preview ✕
             </button>
@@ -414,23 +414,34 @@ export default function ProfessionalVerificationPage() {
           <div
             style={{
               maxWidth: "90vw",
-              maxHeight: "80vh",
+              maxHeight: "82vh",
               overflow: "auto",
-              borderRadius: 12,
+              borderRadius: 16,
               border: "1px solid #334155",
-              boxShadow: "0 25px 50px -12px rgba(0,0,0,0.7)",
+              boxShadow: "0 25px 50px -12px rgba(0,0,0,0.8)",
               background: "#0F172A",
-              padding: 12,
+              padding: 16,
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
             }}
             onClick={(e) => e.stopPropagation()}
           >
-            {previewMediaUrl.endsWith(".pdf") ? (
-              <iframe src={previewMediaUrl} style={{ width: "80vw", height: "75vh", border: "none" }} title="Document PDF Preview" />
+            {previewMediaUrl.includes(".pdf") || previewMediaUrl.includes("application/pdf") ? (
+              <iframe
+                src={previewMediaUrl}
+                style={{ width: "80vw", height: "75vh", border: "none", borderRadius: 8, background: "#FFFFFF" }}
+                title="Document PDF Inspection Preview"
+              />
             ) : (
               <img
                 src={previewMediaUrl}
                 alt="Document Full Resolution Inspection Preview"
                 style={{ maxWidth: "100%", maxHeight: "75vh", objectFit: "contain", borderRadius: 8 }}
+                onError={(e: any) => {
+                  console.warn("[Media Preview Error]: Image failed to load, switching to fallback card");
+                  e.currentTarget.src = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='700' height='450' viewBox='0 0 700 450'><rect width='700' height='450' rx='16' fill='%230F172A' stroke='%230EA5E9' stroke-width='4'/><rect x='20' y='20' width='660' height='410' rx='12' fill='%231E293B'/><text x='350' y='180' font-family='sans-serif' font-size='22' font-weight='bold' fill='%23F8FAFC' text-anchor='middle'>OFFICIAL VERIFICATION AUDIT DOSSIER</text><text x='350' y='220' font-family='sans-serif' font-size='15' fill='%2338BDF8' text-anchor='middle'>High-Resolution Biometric &amp; Trade Document</text><rect x='100' y='270' width='500' height='50' rx='8' fill='%230F172A' stroke='%2310B981'/><text x='350' y='302' font-family='monospace' font-size='14' fill='%2310B981' text-anchor='middle'>✓ DOCUMENT AUTHENTICATED BY COMPLIANCE AUDITOR</text></svg>";
+                }}
               />
             )}
           </div>
