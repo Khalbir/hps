@@ -7,6 +7,7 @@ import {
   ExternalLink,
   MessageSquare,
 } from "lucide-react";
+import { BrandLogo } from "@/components/common/BrandLogo";
 import styles from "./Footer.module.css";
 
 /* Simple inline social icons since lucide doesn't have brand icons */
@@ -80,13 +81,7 @@ export function Footer() {
           {/* Brand Column */}
           <div className={styles.brand}>
             <div className={styles.logo} title="HandyHub Pro Solutions">
-              <div className={styles.logoIcon}>
-                <img src="/logo.png" alt="HandyHub Pro Solutions Logo" className={styles.logoImage} />
-              </div>
-              <div>
-                <span className={styles.logoName}>HandyHub</span>
-                <span className={styles.logoPro}>PRO</span>
-              </div>
+              <BrandLogo size="lg" lightText={true} />
             </div>
             <p className={styles.brandDesc}>
               HandyHub Pro Solutions is Nigeria&apos;s most trusted platform for booking verified home service

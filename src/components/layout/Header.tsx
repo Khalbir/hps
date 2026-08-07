@@ -8,6 +8,7 @@ import {
   Menu, X, Sun, Moon, ChevronDown, Phone, MessageSquare, ArrowRight, Layers
 } from "lucide-react";
 import { useTheme } from "@/components/ThemeProvider";
+import { BrandLogo } from "@/components/common/BrandLogo";
 import styles from "./Header.module.css";
 
 const services = [
@@ -56,13 +57,7 @@ export function Header() {
         <div className={styles.container}>
           {/* Logo */}
           <Link href="/" className={styles.logo} aria-label="HandyHub Pro Solutions Home" title="HandyHub Pro Solutions">
-            <div className={styles.logoIcon}>
-              <img src="/logo.png" alt="HandyHub Pro Solutions Logo" className={styles.logoImage} />
-            </div>
-            <div className={styles.logoText}>
-              <span className={styles.logoName}>HandyHub</span>
-              <span className={styles.logoPro}>PRO</span>
-            </div>
+            <BrandLogo size="md" />
           </Link>
 
           {/* Desktop Nav */}

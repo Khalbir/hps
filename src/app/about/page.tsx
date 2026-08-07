@@ -6,6 +6,7 @@ import {
   Sparkles, ShieldCheck, HeartHandshake, ArrowRight, Award,
   Users, CheckCircle, Wrench, Building2, Quote, Lightbulb,
 } from "lucide-react";
+import { BrandLogo } from "@/components/common/BrandLogo";
 import styles from "./about.module.css";
 
 export default function AboutPage() {
@@ -56,8 +57,8 @@ export default function AboutPage() {
           >
             {/* Founder Bio Column */}
             <div className={styles.founderColumn}>
-              <div className={styles.founderAvatar} style={{ position: "relative", padding: 4 }}>
-                <img src="/logo.png" alt="HandyHub Pro Solutions Logo" style={{ width: "100%", height: "100%", borderRadius: "50%", objectFit: "cover" }} />
+              <div className={styles.founderAvatar} style={{ position: "relative", display: "flex", alignItems: "center", justifyContent: "center", background: "none", border: "none" }}>
+                <BrandLogo size="lg" showText={false} />
               </div>
               <h2 className={styles.founderName}>Khalid Kabir</h2>
               <span className={styles.founderTitle}>Founder & CEO, HandyHub Pro</span>

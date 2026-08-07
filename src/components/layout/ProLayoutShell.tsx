@@ -8,6 +8,7 @@ import {
   User, Settings, LogOut, Menu, X, Bell, ShieldCheck,
   ToggleLeft, ToggleRight, ArrowLeft,
 } from "lucide-react";
+import { BrandLogo } from "@/components/common/BrandLogo";
 import styles from "@/app/dashboard/dashboard.module.css";
 
 const proNav = [
@@ -62,9 +63,8 @@ export function ProLayoutShell({ children }: { children: ReactNode }) {
       {/* Sidebar */}
       <aside className={`${styles.sidebar} ${sidebarOpen ? styles.sidebarOpen : ""}`}>
         <div className={styles.sidebarHeader}>
-          <Link href="/pro" className={styles.sidebarLogo}>
-            <img src="/logo.png" alt="HandyHub Pro Logo" style={{ width: 32, height: 32, borderRadius: 8, objectFit: "contain" }} />
-            <span>HandyHub <strong style={{ fontSize: "var(--fs-xs)", color: "var(--color-accent-500)" }}>PRO</strong></span>
+          <Link href="/pro" className={styles.sidebarLogo} style={{ textDecoration: "none" }}>
+            <BrandLogo size="sm" lightText={true} />
           </Link>
           <button className={styles.closeSidebar} onClick={() => setSidebarOpen(false)}>
             <X size={20} />

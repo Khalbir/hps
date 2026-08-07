@@ -9,6 +9,7 @@ import {
   ArrowRight, Star, Clock, CheckCircle, ShieldCheck,
   CreditCard, Edit3, Trash2, Check, RefreshCw, UserCheck, Inbox
 } from "lucide-react";
+import { BrandLogo } from "@/components/common/BrandLogo";
 import styles from "./dashboard.module.css";
 
 interface Address {
@@ -229,9 +230,8 @@ export default function DashboardPage() {
       {/* Sidebar */}
       <aside className={`${styles.sidebar} ${sidebarOpen ? styles.sidebarOpen : ""}`}>
         <div className={styles.sidebarHeader}>
-          <Link href="/" className={styles.sidebarLogo}>
-            <img src="/logo.png" alt="HandyHub Logo" style={{ width: 32, height: 32, borderRadius: 8, objectFit: "contain" }} />
-            <span>HandyHub</span>
+          <Link href="/" className={styles.sidebarLogo} style={{ textDecoration: "none" }}>
+            <BrandLogo size="sm" lightText={true} />
           </Link>
           <button className={styles.closeSidebar} onClick={() => setSidebarOpen(false)}>
             <X size={20} />

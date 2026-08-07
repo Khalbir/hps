@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { Mail, Lock, Eye, EyeOff, User, Phone, ArrowRight, Wrench, Sparkles, HeartHandshake } from "lucide-react";
+import { BrandLogo } from "@/components/common/BrandLogo";
 import styles from "../auth.module.css";
 
 const PRO_SERVICE_OPTIONS = [
@@ -117,9 +118,8 @@ export default function RegisterPage() {
     <div className={styles.page}>
       <div className={styles.leftPanel}>
         <div className={styles.leftContent}>
-          <Link href="/" className={styles.logo}>
-            <img src="/logo.png" alt="HandyHub Logo" style={{ width: 36, height: 36, borderRadius: 8, objectFit: "contain" }} />
-            <span>HandyHub <strong>PRO</strong></span>
+          <Link href="/" className={styles.logo} style={{ textDecoration: "none" }}>
+            <BrandLogo size="md" lightText={true} />
           </Link>
           <h1 className={styles.leftTitle}>Join HandyHub</h1>
           <p className={styles.leftDesc}>
