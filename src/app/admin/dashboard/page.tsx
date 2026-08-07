@@ -30,7 +30,7 @@ export default function AdminDashboardPage() {
 
   const fetchTelemetry = async () => {
     try {
-      const res = await fetch("/api/admin/telemetry");
+      const res = await fetch(`/api/admin/telemetry?_t=${Date.now()}`);
       const data = await res.json();
       if (res.ok && data.success) {
         setTelemetry(data);

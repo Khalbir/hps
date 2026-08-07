@@ -34,7 +34,7 @@ export default function UsersRoleManagementPage() {
   const fetchUsers = async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/admin/users");
+      const res = await fetch(`/api/admin/users?_t=${Date.now()}`);
       const data = await res.json();
       if (res.ok && data.users) {
         setUsers(data.users);

@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { checkRateLimit, sanitizeInput } from "@/lib/security";
 
+export const dynamic = "force-dynamic";
+
 // POST: Create a new booking
 export async function POST(request: Request) {
   try {

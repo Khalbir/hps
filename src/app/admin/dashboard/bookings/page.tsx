@@ -30,7 +30,7 @@ export default function BookingsWorkflowPage() {
 
   const fetchBookings = async () => {
     try {
-      const res = await fetch("/api/bookings");
+      const res = await fetch(`/api/bookings?_t=${Date.now()}`);
       const data = await res.json();
       if (res.ok && data.bookings) {
         setBookings(
@@ -64,6 +64,8 @@ export default function BookingsWorkflowPage() {
 
   useEffect(() => {
     fetchBookings();
+    const interval = setInterval(fetchBookings, 5000);
+    return () => clearInterval(interval);
   }, []);
 
   const filteredBookings = bookings.filter((b) => {
