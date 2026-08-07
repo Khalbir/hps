@@ -168,6 +168,8 @@ export async function GET(request: Request) {
         ? rawPortfolioUrls.map((url) => getValidMediaUrl(url, "portfolio"))
         : [SAMPLE_PORTFOLIO_IMAGE];
 
+      const rawAddressProofUrl = docs.addressProofUrl || p.addressProofUrl;
+
       return {
         id: p.id,
         userId: p.userId || u.id,
@@ -175,7 +177,11 @@ export async function GET(request: Request) {
         email: u.email || p.email || "artisan@handyhubpro.ng",
         phone: u.phone || p.phone || "Not Provided",
         field: docs.serviceCategory || (skillArray.length > 0 ? skillArray.join(", ") : "Skilled Services"),
-        city: docs.city || p.city || "Abuja",
+        city: docs.operatingState || docs.city || p.city || "FCT Abuja",
+        operatingState: docs.operatingState || p.city || "FCT Abuja",
+        homeAddress: docs.homeAddress || "Plot 104, Aminu Kano Crescent, Wuse 2",
+        lga: docs.lga || "AMAC",
+        addressProofUrl: getValidMediaUrl(rawAddressProofUrl, "address"),
         experienceYears: p.yearsExperience || 5,
         rating: p.rating || 4.9,
         totalJobs: p.totalJobs || 0,
@@ -228,6 +234,7 @@ export async function POST(request: Request) {
           data: {
             verificationStatus: status || "VERIFIED",
             verificationNotes: verificationNotes || "Approved by Admin Compliance Team",
+            addressVerified: status === "VERIFIED",
             verifiedAt: status === "VERIFIED" ? new Date() : undefined,
           },
         });

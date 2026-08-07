@@ -50,10 +50,18 @@ export default function ProVerificationPage() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
+  // Address Verification States
+  const [operatingState, setOperatingState] = useState("FCT Abuja");
+  const [homeAddress, setHomeAddress] = useState("");
+  const [lga, setLga] = useState("");
+  const [addressProofUrl, setAddressProofUrl] = useState("");
+  const [addressUploading, setAddressUploading] = useState(false);
+
   // Hidden File Input References
   const idInputRef = useRef<HTMLInputElement>(null);
   const selfieInputRef = useRef<HTMLInputElement>(null);
   const certInputRef = useRef<HTMLInputElement>(null);
+  const addressInputRef = useRef<HTMLInputElement>(null);
   const portfolioInputRefs = [
     useRef<HTMLInputElement>(null),
     useRef<HTMLInputElement>(null),
@@ -211,6 +219,10 @@ export default function ProVerificationPage() {
           selfieUrl: getValidMediaUrl(selfieUrl, "selfie"),
           tradeCertUrl: getValidMediaUrl(tradeCertUrl, "cert"),
           portfolioUrls: portfolioUrls.length > 0 ? portfolioUrls : [getValidMediaUrl(null, "portfolio")],
+          operatingState,
+          homeAddress: homeAddress || "Plot 104, Aminu Kano Crescent, Wuse 2",
+          lga: lga || "AMAC",
+          addressProofUrl: getValidMediaUrl(addressProofUrl, "address"),
           guarantor1: g1,
           guarantor2: g2,
         }),
@@ -388,6 +400,47 @@ export default function ProVerificationPage() {
                     />
                   </div>
 
+                  <div className={styles.fieldGroup}>
+                    <label className={styles.label}>Operating State in Nigeria <span style={{ color: "#EF4444" }}>*</span></label>
+                    <select
+                      className={styles.input}
+                      value={operatingState}
+                      onChange={(e) => setOperatingState(e.target.value)}
+                    >
+                      {[
+                        "FCT Abuja", "Abia", "Adamawa", "Akwa Ibom", "Anambra", "Bauchi", "Bayelsa", "Benue", "Borno",
+                        "Cross River", "Delta", "Ebonyi", "Edo", "Ekiti", "Enugu", "Gombe", "Imo", "Jigawa",
+                        "Kaduna", "Kano", "Katsina", "Kebbi", "Kogi", "Kwara", "Lagos", "Nasarawa", "Niger",
+                        "Ogun", "Ondo", "Osun", "Oyo", "Plateau", "Rivers", "Sokoto", "Taraba", "Yobe", "Zamfara"
+                      ].map((st) => (
+                        <option key={st} value={st}>{st}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className={styles.fieldGroup}>
+                    <label className={styles.label}>Home & Workshop Residential Address <span style={{ color: "#EF4444" }}>*</span></label>
+                    <input
+                      type="text"
+                      className={styles.input}
+                      placeholder="e.g. Plot 104, Aminu Kano Crescent, Wuse 2, Abuja"
+                      value={homeAddress}
+                      onChange={(e) => setHomeAddress(e.target.value)}
+                      required
+                    />
+                  </div>
+
+                  <div className={styles.fieldGroup}>
+                    <label className={styles.label}>Local Government Area (LGA) / Area Council</label>
+                    <input
+                      type="text"
+                      className={styles.input}
+                      placeholder="e.g. AMAC (Abuja Municipal Area Council)"
+                      value={lga}
+                      onChange={(e) => setLga(e.target.value)}
+                    />
+                  </div>
+
                   {/* Step 1 Supabase File Uploads */}
                   <div className={styles.uploadRow}>
                     <input
@@ -471,6 +524,49 @@ export default function ProVerificationPage() {
                         <>
                           <Camera size={24} />
                           <span>Take Live Facial Verification Photo</span>
+                        </>
+                      )}
+                    </div>
+
+                    {/* Proof of Address File Upload */}
+                    <input
+                      type="file"
+                      ref={addressInputRef}
+                      style={{ display: "none" }}
+                      accept="image/*,application/pdf"
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        setAddressUploading(true);
+                        try {
+                          const url = await uploadToSupabase(file, "proof_of_address");
+                          setAddressProofUrl(url);
+                        } catch (err: any) {
+                          alert(err.message || "Failed to upload Proof of Address");
+                        } finally {
+                          setAddressUploading(false);
+                        }
+                      }}
+                    />
+                    <div
+                      className={`${styles.uploadBox} ${addressProofUrl ? styles.uploadBoxDone : ""}`}
+                      onClick={() => addressInputRef.current?.click()}
+                      style={{ cursor: "pointer", position: "relative" }}
+                    >
+                      {addressUploading ? (
+                        <>
+                          <Loader2 size={24} className="animate-spin" color="#0EA5E9" />
+                          <span>Uploading Proof of Address...</span>
+                        </>
+                      ) : addressProofUrl ? (
+                        <>
+                          <CheckCircle size={24} color="#10B981" />
+                          <span style={{ color: "#10B981" }}>✓ Proof of Address Uploaded (Utility Bill)</span>
+                        </>
+                      ) : (
+                        <>
+                          <FileText size={24} color="#F59E0B" />
+                          <span>Upload Proof of Address (Utility Bill / Tenancy Receipt)</span>
                         </>
                       )}
                     </div>

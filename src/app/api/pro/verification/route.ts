@@ -14,6 +14,10 @@ export async function POST(request: Request) {
       selfieUrl,
       tradeCertUrl,
       portfolioUrls,
+      operatingState,
+      homeAddress,
+      lga,
+      addressProofUrl,
       guarantor1,
       guarantor2,
       quizScore,
@@ -62,12 +66,16 @@ export async function POST(request: Request) {
       selfieUrl: selfieUrl || "",
       tradeCertUrl: tradeCertUrl || "",
       portfolioUrls: portfolioUrls || [],
+      operatingState: operatingState || "FCT Abuja",
+      homeAddress: homeAddress || "Plot 104, Aminu Kano Crescent, Wuse 2",
+      lga: lga || "AMAC",
+      addressProofUrl: addressProofUrl || "",
       guarantor1: guarantor1 || {},
       guarantor2: guarantor2 || {},
       quizScore: quizScore || 85,
       submittedAt: new Date().toISOString(),
       serviceCategory: serviceCategory || "General Skilled Services",
-      city: "Abuja",
+      city: operatingState || "FCT Abuja",
     };
 
     let proRecord = null;
@@ -86,6 +94,7 @@ export async function POST(request: Request) {
             idType: idType || "NIN",
             idNumber: idNumber || "NIN-89302194812",
             idUrl: idDocumentUrl || selfieUrl || "",
+            addressProofUrl: addressProofUrl || "",
             documents: JSON.stringify(verificationPayload),
           },
         });
@@ -97,6 +106,7 @@ export async function POST(request: Request) {
             idType: idType || existingPro.idType,
             idNumber: idNumber || existingPro.idNumber,
             idUrl: idDocumentUrl || selfieUrl || existingPro.idUrl,
+            addressProofUrl: addressProofUrl || existingPro.addressProofUrl,
             documents: JSON.stringify(verificationPayload),
           },
         });

@@ -119,11 +119,42 @@ export const SAMPLE_PORTFOLIO_IMAGE = encodeSvg(`
 </svg>
 `);
 
-export function getValidMediaUrl(url: string | null | undefined, fallbackType: "id" | "selfie" | "cert" | "portfolio"): string {
+export const SAMPLE_ADDRESS_PROOF = encodeSvg(`
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 800 600">
+  <rect width="800" height="600" rx="20" fill="#0F172A" stroke="#F59E0B" stroke-width="4"/>
+  <rect x="24" y="24" width="752" height="552" rx="12" fill="#1E293B" stroke="#334155" stroke-width="2"/>
+
+  <!-- Document Header -->
+  <rect x="40" y="40" width="720" height="80" fill="#D97706" rx="8"/>
+  <text x="60" y="80" font-family="Arial, sans-serif" font-size="22" font-weight="bold" fill="#FFFFFF">PROOF OF RESIDENCE & OPERATIONAL ADDRESS</text>
+  <text x="60" y="105" font-family="Arial, sans-serif" font-size="13" font-weight="bold" fill="#FEF3C7">UTILITY BILL / TENANCY AGREEMENT / RESIDENCE CERTIFICATE AUDIT</text>
+
+  <!-- Address Inspection Box -->
+  <rect x="40" y="140" width="720" height="280" rx="10" fill="#0F172A" stroke="#334155"/>
+  <text x="70" y="180" font-family="Arial, sans-serif" font-size="13" font-weight="bold" fill="#94A3B8">OPERATING STATE IN NIGERIA</text>
+  <text x="70" y="210" font-family="Arial, sans-serif" font-size="22" font-weight="bold" fill="#F59E0B">FCT ABUJA (FEDERAL CAPITAL TERRITORY)</text>
+
+  <text x="70" y="255" font-family="Arial, sans-serif" font-size="13" font-weight="bold" fill="#94A3B8">RESIDENTIAL & WORKSHOP STREET ADDRESS</text>
+  <text x="70" y="285" font-family="Arial, sans-serif" font-size="18" font-weight="bold" fill="#F8FAFC">Plot 104, Aminu Kano Crescent, Wuse 2, Abuja</text>
+  <text x="70" y="310" font-family="Arial, sans-serif" font-size="15" fill="#CBD5E1">Abuja Municipal Area Council (AMAC), FCT Abuja</text>
+
+  <text x="70" y="355" font-family="Arial, sans-serif" font-size="13" font-weight="bold" fill="#94A3B8">DOCUMENT TYPE</text>
+  <text x="70" y="380" font-family="Arial, sans-serif" font-size="16" font-weight="bold" fill="#38BDF8">AEDC Electricity Utility Bill & Certified Tenancy Receipt</text>
+
+  <!-- Stamp & Verification Seal -->
+  <rect x="40" y="440" width="720" height="100" rx="10" fill="#1E293B" stroke="#F59E0B" stroke-width="2"/>
+  <circle cx="680" cy="490" r="30" fill="#F59E0B" opacity="0.3"/>
+  <text x="60" y="480" font-family="monospace" font-size="14" fill="#10B981">✓ ADDRESS VERIFICATION AUDIT PASSED</text>
+  <text x="60" y="505" font-family="Arial, sans-serif" font-size="13" fill="#CBD5E1">Verified by Field Auditor & GPS Radius Dispatch Engine</text>
+</svg>
+`);
+
+export function getValidMediaUrl(url: string | null | undefined, fallbackType: "id" | "selfie" | "cert" | "portfolio" | "address"): string {
   if (!url || url === "#" || url.trim() === "" || url.includes("handyhubpro.ng/docs") || url.includes("handyhub.ng/docs")) {
     if (fallbackType === "id") return SAMPLE_NIN_ID_CARD;
     if (fallbackType === "selfie") return SAMPLE_SELFIE_IMAGE;
     if (fallbackType === "cert") return SAMPLE_TRADE_CERTIFICATE;
+    if (fallbackType === "address") return SAMPLE_ADDRESS_PROOF;
     return SAMPLE_PORTFOLIO_IMAGE;
   }
   return url;

@@ -156,7 +156,7 @@ export default function ProfessionalVerificationPage() {
               <tr style={{ background: "#0F172A", borderBottom: "1px solid #334155", color: "#94A3B8" }}>
                 <th style={{ padding: "12px 16px" }}>Artisan Name</th>
                 <th style={{ padding: "12px 16px" }}>Field / Skill</th>
-                <th style={{ padding: "12px 16px" }}>City</th>
+                <th style={{ padding: "12px 16px" }}>Operating State & City</th>
                 <th style={{ padding: "12px 16px" }}>Govt ID Type</th>
                 <th style={{ padding: "12px 16px" }}>Address Check</th>
                 <th style={{ padding: "12px 16px" }}>Status</th>
@@ -171,7 +171,7 @@ export default function ProfessionalVerificationPage() {
                     <span style={{ fontSize: "12px", color: "#94A3B8" }}>{p.phone}</span>
                   </td>
                   <td style={{ padding: "12px 16px", color: "#CBD5E1" }}>{p.field}</td>
-                  <td style={{ padding: "12px 16px", color: "#94A3B8" }}>{p.city}</td>
+                  <td style={{ padding: "12px 16px", color: "#F8FAFC", fontWeight: 600 }}>{p.operatingState || p.city}</td>
                   <td style={{ padding: "12px 16px" }}>
                     <span style={{ fontFamily: "monospace", fontSize: "12px", color: "#0EA5E9" }}>
                       {p.idType} ({p.idNumber})
@@ -227,7 +227,7 @@ export default function ProfessionalVerificationPage() {
             className="card"
             style={{
               width: "100%",
-              maxWidth: "650px",
+              maxWidth: "680px",
               background: "#1E293B",
               border: "1px solid #334155",
               borderRadius: "16px",
@@ -239,13 +239,13 @@ export default function ProfessionalVerificationPage() {
           >
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid #334155", paddingBottom: "12px", marginBottom: "16px" }}>
               <div>
-                <h3 className="h4" style={{ margin: 0, color: "#F8FAFC" }}>Audit Verification Documents</h3>
-                <span style={{ fontSize: "12px", color: "#94A3B8" }}>{inspectPro.name} • {inspectPro.field}</span>
+                <h3 className="h4" style={{ margin: 0, color: "#F8FAFC" }}>Audit Verification & Address Dossier</h3>
+                <span style={{ fontSize: "12px", color: "#94A3B8" }}>{inspectPro.name} • {inspectPro.field} • Operating in {inspectPro.operatingState || inspectPro.city}</span>
               </div>
               <button onClick={() => setInspectPro(null)} style={{ background: "transparent", border: "none", color: "#94A3B8", cursor: "pointer" }}>✕</button>
             </div>
 
-            {/* 4-Step Verification Audit Dossier */}
+            {/* Verification Audit Dossier */}
             <div style={{ display: "flex", flexDirection: "column", gap: "16px", marginBottom: "20px" }}>
               {/* Step 1: Identity & Selfie */}
               <div style={{ background: "#0F172A", padding: "14px", borderRadius: "10px", border: "1px solid #334155" }}>
@@ -271,6 +271,33 @@ export default function ProfessionalVerificationPage() {
                       <span style={{ fontSize: "10px", color: "#10B981", display: "block" }}>Click to Enlarge Selfie 🔍</span>
                     </div>
                   )}
+                </div>
+              </div>
+
+              {/* Step 2: Residential Address & Proof of Residence Document */}
+              <div style={{ background: "#0F172A", padding: "14px", borderRadius: "10px", border: "1px solid #334155" }}>
+                <strong style={{ fontSize: "12px", color: "#F59E0B", textTransform: "uppercase", display: "block", marginBottom: 6 }}>
+                  2️⃣ Residential & Workshop Address Audit (Operating State & Utility Proof)
+                </strong>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 10 }}>
+                  <div>
+                    <div style={{ fontSize: "14px", fontWeight: 700, color: "#F8FAFC" }}>
+                      Operating State: <span style={{ color: "#F59E0B" }}>{inspectPro.operatingState || inspectPro.city}</span>
+                    </div>
+                    <div style={{ fontSize: "13px", color: "#CBD5E1", marginTop: "2px" }}>
+                      Address: {inspectPro.homeAddress || "Plot 104, Aminu Kano Crescent, Wuse 2, Abuja"} ({inspectPro.lga || "AMAC"})
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setPreviewMediaUrl(inspectPro.addressProofUrl)}
+                      style={{ background: "none", border: "none", padding: 0, fontSize: "12px", color: "#38BDF8", fontWeight: "bold", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: "4px", marginTop: "6px" }}
+                    >
+                      👁️ Inspect Proof of Address Document (Utility Bill / Tenancy Receipt) <ExternalLink size={12} />
+                    </button>
+                  </div>
+                  <span className="badge" style={{ background: inspectPro.addressVerified ? "rgba(16,185,129,0.15)" : "rgba(245,158,11,0.15)", color: inspectPro.addressVerified ? "#10B981" : "#F59E0B", fontSize: "11px", fontWeight: 700 }}>
+                    {inspectPro.addressVerified ? "ADDRESS VERIFIED ✓" : "ADDRESS UNVERIFIED ⚠️"}
+                  </span>
                 </div>
               </div>
 
