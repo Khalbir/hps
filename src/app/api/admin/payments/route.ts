@@ -1,19 +1,28 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { purgeDemoRecordsFromDB, DEMO_EMAILS, DEMO_PAYMENT_REFS } from "@/lib/purge-demo-utility";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(request: Request) {
   try {
+    // Automatically purge pre-seeded demo records from database on fetch
+    await purgeDemoRecordsFromDB();
+
     const { searchParams } = new URL(request.url);
     const status = searchParams.get("status");
     const provider = searchParams.get("provider");
 
-    const where: any = {};
+    const where: any = {
+      user: {
+        email: { notIn: DEMO_EMAILS },
+      },
+      reference: { notIn: DEMO_PAYMENT_REFS },
+    };
     if (status && status !== "ALL") where.status = status;
     if (provider && provider !== "ALL") where.provider = provider;
 
-    const payments = await prisma.payment.findMany({
+    const rawPayments = await prisma.payment.findMany({
       where,
       orderBy: { createdAt: "desc" },
       include: {
@@ -21,6 +30,10 @@ export async function GET(request: Request) {
         booking: { select: { reference: true } },
       },
     });
+
+    const payments = rawPayments.filter(
+      (p) => !p.user || !DEMO_EMAILS.includes(p.user.email)
+    );
 
     const successPayments = payments.filter((p) => p.status === "SUCCESS");
     const totalSuccessNgn = successPayments.reduce((acc, curr) => acc + curr.amount, 0);

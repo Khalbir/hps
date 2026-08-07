@@ -1,9 +1,13 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getValidMediaUrl, SAMPLE_PORTFOLIO_IMAGE } from "@/lib/sample-documents";
+import { purgeDemoRecordsFromDB, DEMO_EMAILS } from "@/lib/purge-demo-utility";
 
 export async function GET(request: Request) {
   try {
+    // Automatically purge demo records from database
+    await purgeDemoRecordsFromDB();
+
     const { searchParams } = new URL(request.url);
     const status = searchParams.get("status");
 
@@ -11,7 +15,10 @@ export async function GET(request: Request) {
     let proUsers: any[] = [];
     try {
       proUsers = await prisma.user.findMany({
-        where: { role: "PROFESSIONAL" },
+        where: {
+          role: "PROFESSIONAL",
+          email: { notIn: DEMO_EMAILS },
+        },
         include: { professional: true },
         orderBy: { createdAt: "desc" },
       });
@@ -22,10 +29,11 @@ export async function GET(request: Request) {
     // 2. Fetch all entries in Professional table
     let dbPros: any[] = [];
     try {
-      dbPros = await prisma.professional.findMany({
+      const rawDbPros = await prisma.professional.findMany({
         include: { user: true },
         orderBy: { createdAt: "desc" },
       });
+      dbPros = rawDbPros.filter((p) => !p.user || !DEMO_EMAILS.includes(p.user.email));
     } catch (err) {}
 
     // Combine entries

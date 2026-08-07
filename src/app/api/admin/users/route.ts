@@ -1,12 +1,18 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { hash } from "bcryptjs";
+import { purgeDemoRecordsFromDB, DEMO_EMAILS } from "@/lib/purge-demo-utility";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(request: Request) {
   try {
+    await purgeDemoRecordsFromDB();
+
     const users = await prisma.user.findMany({
+      where: {
+        email: { notIn: DEMO_EMAILS },
+      },
       orderBy: { createdAt: "desc" },
       select: {
         id: true,
