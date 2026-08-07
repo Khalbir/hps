@@ -19,7 +19,7 @@ export default function AdminPaymentsPage() {
 
   const fetchPayments = async () => {
     try {
-      const res = await fetch("/api/admin/payments");
+      const res = await fetch(`/api/admin/payments?_t=${Date.now()}`);
       const data = await res.json();
       if (res.ok && data.payments) {
         setPayments(
@@ -46,6 +46,8 @@ export default function AdminPaymentsPage() {
 
   useEffect(() => {
     fetchPayments();
+    const interval = setInterval(fetchPayments, 5000);
+    return () => clearInterval(interval);
   }, []);
 
   const filteredPayments = payments.filter((p) => {
