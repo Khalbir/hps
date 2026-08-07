@@ -3,15 +3,37 @@
 import { useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { Phone, MessageSquare, Mail, MapPin, Clock, Send, CheckCircle2, ShieldCheck } from "lucide-react";
+import { Phone, MessageSquare, Mail, MapPin, Clock, Send, CheckCircle2, ShieldCheck, Loader2 } from "lucide-react";
 
 export default function ContactPage() {
   const [submitted, setSubmitted] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
   const [formData, setFormData] = useState({ name: "", email: "", phone: "", subject: "", message: "" });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSubmitted(true);
+    setLoading(true);
+    setError("");
+
+    try {
+      const res = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      });
+
+      const data = await res.json();
+      if (res.ok) {
+        setSubmitted(true);
+      } else {
+        setError(data.error || "Failed to send message. Please try again.");
+      }
+    } catch (err: any) {
+      setError("Network error sending message. Please try WhatsApp or email.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -85,12 +107,18 @@ export default function ContactPage() {
           <div className="card">
             <h3 className="h4" style={{ marginBottom: "var(--space-4)" }}>Send Us a Message</h3>
 
+            {error && (
+              <div style={{ padding: "12px", background: "rgba(239, 68, 68, 0.15)", border: "1px solid #EF4444", borderRadius: 8, color: "#EF4444", fontSize: 13, marginBottom: 16 }}>
+                {error}
+              </div>
+            )}
+
             {submitted ? (
               <div style={{ textAlign: "center", padding: "var(--space-8) 0" }}>
                 <CheckCircle2 size={48} color="#10B981" style={{ margin: "0 auto var(--space-3)" }} />
-                <h3 className="h4" style={{ color: "#10B981" }}>Message Delivered!</h3>
+                <h3 className="h4" style={{ color: "#10B981" }}>Message Delivered to Dispatch & Email!</h3>
                 <p style={{ fontSize: "var(--fs-sm)", color: "var(--text-secondary)", marginTop: 8 }}>
-                  Thank you for contacting HandyHub Pro Solutions. A support officer will reach out to you within 30 minutes.
+                  Thank you for contacting HandyHub Pro Solutions. Your inquiry has been sent directly to our support team and email inbox. An officer will reach out to you shortly.
                 </p>
               </div>
             ) : (
@@ -143,23 +171,27 @@ export default function ContactPage() {
                   />
                 </div>
 
-                <button type="submit" className="btn btn-primary btn-md w-full">
-                  <Send size={16} /> Send Message
+                <button type="submit" className="btn btn-primary btn-md w-full" disabled={loading}>
+                  {loading ? <Loader2 size={16} className="spin" /> : <Send size={16} />}
+                  {loading ? " Sending Message..." : " Send Message"}
                 </button>
               </form>
             )}
           </div>
 
-          {/* Operating Hours & HQ */}
+          {/* Operating Hours & Online Hub Notice */}
           <div className="card" style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
-            <h3 className="h4">Headquarters & Hours</h3>
+            <h3 className="h4">Operations & Hours</h3>
 
             <div style={{ display: "flex", gap: "var(--space-3)" }}>
               <MapPin size={20} color="#0EA5E9" style={{ flexShrink: 0, marginTop: 2 }} />
               <div>
-                <strong style={{ display: "block", fontSize: "var(--fs-sm)" }}>Abuja Office</strong>
-                <span style={{ fontSize: "var(--fs-xs)", color: "var(--text-secondary)" }}>
-                  Maitama & Wuse 2 Business Hub, Federal Capital Territory, Nigeria
+                <strong style={{ display: "block", fontSize: "var(--fs-sm)" }}>Digital Operations Hub</strong>
+                <span style={{ fontSize: "var(--fs-xs)", color: "var(--text-secondary)", lineHeight: 1.5 }}>
+                  Federal Capital Territory (Abuja), Nigeria<br />
+                  <span style={{ color: "#F59E0B", fontSize: "11px", fontWeight: 600, display: "block", marginTop: 4 }}>
+                    📌 Physical office walk-ins are currently suspended until further notice. All customer inquiries, artisan verifications, and booking dispatches are processed online 24/7.
+                  </span>
                 </span>
               </div>
             </div>
