@@ -56,7 +56,7 @@ const MONNIFY_SECRET_KEY = process.env.MONNIFY_SECRET_KEY || "MONNIFY_SEC_TEST_m
 const MONNIFY_CONTRACT_CODE = process.env.MONNIFY_CONTRACT_CODE || "1234567890";
 const FLUTTERWAVE_SECRET_KEY = process.env.FLW_SECRET_KEY || process.env.FLUTTERWAVE_SECRET_KEY || "FLWSECK_TEST_handyhub_flw_mock";
 
-const PLATFORM_COMMISSION_RATE = 0.15; // 15% Platform Escrow Commission
+const PLATFORM_COMMISSION_RATE = 0.20; // 20% Platform Escrow Commission
 
 /**
  * Strategy 1: Paystack Payment Provider
@@ -445,14 +445,14 @@ export async function verifyAndRecordPayment(reference: string, providerName?: s
 }
 
 /**
- * Escrow Commission Breakdown Calculator (15% Platform Fee / 85% Net to Pro)
+ * Escrow Commission Breakdown Calculator (20% Platform Fee / 80% Net to Pro)
  */
 export function calculateEscrowCommission(totalAmountNgn: number) {
   const commissionAmount = Math.round(totalAmountNgn * PLATFORM_COMMISSION_RATE);
   const proEarningsNet = totalAmountNgn - commissionAmount;
   return {
     totalAmountNgn,
-    commissionRatePercent: 15,
+    commissionRatePercent: 20,
     commissionAmount,
     proEarningsNet,
   };

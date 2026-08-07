@@ -52,7 +52,7 @@ export async function POST(request: Request) {
 
         if (artisanUser?.userId) {
           const jobPrice = booking.finalPrice || booking.estimatedPrice || 15000;
-          const artisanEarnings = Math.round(jobPrice * 0.85); // 85% payout after 15% platform commission
+          const artisanEarnings = Math.round(jobPrice * 0.80); // 80% payout after 20% platform commission
 
           await prisma.wallet.upsert({
             where: { userId: artisanUser.userId },

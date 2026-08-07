@@ -123,7 +123,7 @@ export default function AdminPaymentsPage() {
               </span>
             </div>
             <p style={{ color: "#94A3B8", fontSize: "14px", margin: 0 }}>
-              Real production Paystack NGN transactions, automatic webhooks, and 15% platform escrow tracking.
+              Real production Paystack NGN transactions, automatic webhooks, and 20% platform escrow tracking.
             </p>
           </div>
 
@@ -244,7 +244,7 @@ export default function AdminPaymentsPage() {
           >
             <div>
               <span style={{ fontSize: "12px", fontWeight: 700, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.5px" }}>
-                Platform Net Fee (15%)
+                Platform Net Fee (20%)
               </span>
               <h2 style={{ fontSize: "1.75rem", fontWeight: 800, color: "#0EA5E9", margin: "6px 0 0", letterSpacing: "-0.02em" }}>
                 ₦{stats.platformFeeNgn.toLocaleString()}

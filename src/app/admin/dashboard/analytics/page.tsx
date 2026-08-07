@@ -40,7 +40,7 @@ export default function AnalyticsReportsPage() {
   };
 
   const totalGrossNgn = stats.totalRevenueNgn || 0;
-  const totalNetCommissionNgn = Math.round(totalGrossNgn * 0.15);
+  const totalNetCommissionNgn = Math.round(totalGrossNgn * 0.20);
   const totalBookingsCount = stats.totalBookingsAll || 0;
 
   const revenueMonthly = telemetry?.revenueMonthly || [];
@@ -48,9 +48,9 @@ export default function AnalyticsReportsPage() {
 
   // Client-side Excel (CSV) Download Handler
   const handleExportCSV = () => {
-    const headers = ["Month,Gross Escrow (NGN),Net Commission 15% (NGN)\n"];
+    const headers = ["Month,Gross Escrow (NGN),Net Commission 20% (NGN)\n"];
     const rows = revenueMonthly.map(
-      (r: any) => `"${r.month}",${r.amount},${Math.round(r.amount * 0.15)}`
+      (r: any) => `"${r.month}",${r.amount},${Math.round(r.amount * 0.20)}`
     );
     const csvContent = "data:text/csv;charset=utf-8," + headers.concat(rows).join("\n");
     const encodedUri = encodeURI(csvContent);
@@ -77,7 +77,7 @@ export default function AnalyticsReportsPage() {
         <div>
           <h1 className="h3">Marketplace Analytics & Financial Reports</h1>
           <p style={{ color: "var(--text-secondary)", fontSize: "var(--fs-sm)" }}>
-            Real production revenue metrics, escrow commission totals, and Excel/PDF export. Zero generated figures.
+            Real production revenue metrics, 20% escrow commission totals, and Excel/PDF export. Zero generated figures.
           </p>
         </div>
 
@@ -108,7 +108,7 @@ export default function AnalyticsReportsPage() {
           </div>
 
           <div className="card" style={{ background: "#1E293B", border: "1px solid #334155", padding: "20px" }}>
-            <div style={{ fontSize: "12px", color: "#94A3B8", fontWeight: 600, textTransform: "uppercase" }}>Platform Net Commission (15%)</div>
+            <div style={{ fontSize: "12px", color: "#94A3B8", fontWeight: 600, textTransform: "uppercase" }}>Platform Net Commission (20%)</div>
             <h2 className="h2" style={{ color: "#0EA5E9", margin: "8px 0" }}>₦{totalNetCommissionNgn.toLocaleString()}</h2>
             <span style={{ fontSize: "12px", color: "#94A3B8" }}>Net HandyHub platform share</span>
           </div>
@@ -137,7 +137,7 @@ export default function AnalyticsReportsPage() {
                 <tr style={{ background: "#0F172A", borderBottom: "1px solid #334155", color: "#94A3B8" }}>
                   <th style={{ padding: "12px 16px" }}>Month</th>
                   <th style={{ padding: "12px 16px" }}>Gross Revenue (NGN)</th>
-                  <th style={{ padding: "12px 16px" }}>Net Commission (15%)</th>
+                  <th style={{ padding: "12px 16px" }}>Net Commission (20%)</th>
                 </tr>
               </thead>
               <tbody>
@@ -145,7 +145,7 @@ export default function AnalyticsReportsPage() {
                   <tr key={r.month} style={{ borderBottom: "1px solid #334155" }}>
                     <td style={{ padding: "12px 16px", fontWeight: 600, color: "#F8FAFC" }}>{r.month}</td>
                     <td style={{ padding: "12px 16px", fontWeight: 700, color: "#10B981" }}>₦{r.amount.toLocaleString()}</td>
-                    <td style={{ padding: "12px 16px", fontWeight: 700, color: "#0EA5E9" }}>₦{Math.round(r.amount * 0.15).toLocaleString()}</td>
+                    <td style={{ padding: "12px 16px", fontWeight: 700, color: "#0EA5E9" }}>₦{Math.round(r.amount * 0.20).toLocaleString()}</td>
                   </tr>
                 ))}
               </tbody>

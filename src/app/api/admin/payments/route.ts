@@ -86,7 +86,7 @@ export async function GET(request: Request) {
       stats: {
         totalSuccessNgn,
         paystackVolumeNgn: paystackVolumeNgn || totalSuccessNgn,
-        platformFeeNgn: Math.round(totalSuccessNgn * 0.15),
+        platformFeeNgn: Math.round(totalSuccessNgn * 0.20),
         failedCount: filteredPayments.filter((p) => p.status === "FAILED").length,
         totalCount: filteredPayments.length,
       },
