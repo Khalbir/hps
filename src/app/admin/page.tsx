@@ -35,8 +35,9 @@ export default function AdminLoginPage() {
         return;
       }
 
-      if (data.user.role !== "ADMIN") {
-        setError("Unauthorized access. Admin role required.");
+      const ADMIN_ROLES = ["SUPER_ADMIN", "ADMIN", "OPERATIONS_MANAGER", "VERIFICATION_OFFICER", "CUSTOMER_SUPPORT", "FINANCE"];
+      if (!ADMIN_ROLES.includes(data.user.role)) {
+        setError("Unauthorized access. Designated Admin/Staff role required.");
         setLoading(false);
         return;
       }
@@ -50,7 +51,7 @@ export default function AdminLoginPage() {
 
       document.cookie = "handyhub_admin_session=authenticated; path=/; max-age=86400; SameSite=Lax";
 
-      router.push("/admin/dashboard");
+      window.location.href = data.redirect || "/admin/dashboard";
     } catch {
       setError("Something went wrong. Please try again.");
       setLoading(false);

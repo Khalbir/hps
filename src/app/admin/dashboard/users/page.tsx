@@ -24,12 +24,14 @@ export default function UsersRoleManagementPage() {
     lastName: "",
     phone: "",
     role: "OPERATIONS_MANAGER",
+    password: "",
   });
   const [submittingStaff, setSubmittingStaff] = useState(false);
 
   // Edit Existing User Role Modal State
   const [editingUser, setEditingUser] = useState<any>(null);
   const [selectedRole, setSelectedRole] = useState("ADMIN");
+  const [editPassword, setEditPassword] = useState("");
 
   const fetchUsers = async () => {
     setLoading(true);
@@ -64,9 +66,10 @@ export default function UsersRoleManagementPage() {
 
       const data = await res.json();
       if (res.ok) {
-        setToast(`Staff member ${staffForm.email} assigned role: ${staffForm.role}! 🎉`);
+        const passNotice = data.initialPassword ? ` (Password: ${data.initialPassword})` : "";
+        setToast(`Staff member ${staffForm.email} assigned role: ${staffForm.role}${passNotice}! 🎉`);
         setShowAddStaffModal(false);
-        setStaffForm({ email: "", firstName: "", lastName: "", phone: "", role: "OPERATIONS_MANAGER" });
+        setStaffForm({ email: "", firstName: "", lastName: "", phone: "", role: "OPERATIONS_MANAGER", password: "" });
         fetchUsers();
       } else {
         setToast(`Error: ${data.error || "Failed to assign staff member"}`);
@@ -75,28 +78,35 @@ export default function UsersRoleManagementPage() {
       setToast("Failed to connect to server.");
     } finally {
       setSubmittingStaff(false);
-      setTimeout(() => setToast(""), 4000);
+      setTimeout(() => setToast(""), 6000);
     }
   };
 
   const handleRoleChange = async () => {
     if (!editingUser) return;
     try {
+      const payload: any = { userId: editingUser.id, role: selectedRole };
+      if (editPassword.trim()) {
+        payload.password = editPassword.trim();
+      }
+
       await fetch("/api/admin/users", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId: editingUser.id, role: selectedRole }),
+        body: JSON.stringify(payload),
       });
 
       setUsers((prev) =>
         prev.map((u) => (u.id === editingUser.id ? { ...u, role: selectedRole } : u))
       );
-      setToast(`Role for ${editingUser.name} updated to ${selectedRole}!`);
+      const passText = editPassword.trim() ? " and password updated" : "";
+      setToast(`Role for ${editingUser.name} updated to ${selectedRole}${passText}!`);
     } catch {
       setToast("Failed to update role on server.");
     } finally {
       setEditingUser(null);
-      setTimeout(() => setToast(""), 3000);
+      setEditPassword("");
+      setTimeout(() => setToast(""), 4000);
     }
   };
 
@@ -333,6 +343,19 @@ export default function UsersRoleManagementPage() {
                 </div>
               </div>
 
+              <div style={{ marginBottom: "14px" }}>
+                <label style={{ fontSize: "12px", color: "#64748B", fontWeight: 700, textTransform: "uppercase", display: "block", marginBottom: "4px" }}>
+                  Staff Login Password <span style={{ color: "#94A3B8", fontWeight: 400 }}>(Optional - Defaults to Staff123!)</span>
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g., Staff123! or custom password"
+                  value={staffForm.password}
+                  onChange={(e) => setStaffForm({ ...staffForm, password: e.target.value })}
+                  style={{ width: "100%", background: "#0F172A", border: "1px solid #334155", borderRadius: "8px", padding: "10px", color: "#F8FAFC", fontSize: "14px" }}
+                />
+              </div>
+
               <div style={{ marginBottom: "20px" }}>
                 <label style={{ fontSize: "12px", color: "#64748B", fontWeight: 700, textTransform: "uppercase", display: "block", marginBottom: "6px" }}>
                   Designated Staff Administrative Role <span style={{ color: "#EF4444" }}>*</span>
@@ -386,7 +409,7 @@ export default function UsersRoleManagementPage() {
             <h3 className="h4" style={{ margin: "0 0 4px 0", color: "#F8FAFC" }}>Update Staff Administrative Role</h3>
             <p style={{ fontSize: "13px", color: "#94A3B8", marginBottom: "16px" }}>Reassigning permissions for <strong>{editingUser.name} ({editingUser.email})</strong></p>
 
-            <div style={{ marginBottom: "20px" }}>
+            <div style={{ marginBottom: "16px" }}>
               <label style={{ fontSize: "12px", color: "#64748B", fontWeight: 700, textTransform: "uppercase", display: "block", marginBottom: "8px" }}>
                 Select Designated Role Level
               </label>
@@ -404,6 +427,19 @@ export default function UsersRoleManagementPage() {
                 <option value="PROFESSIONAL">Professional Partner</option>
                 <option value="CUSTOMER">Client / Customer</option>
               </select>
+            </div>
+
+            <div style={{ marginBottom: "20px" }}>
+              <label style={{ fontSize: "12px", color: "#64748B", fontWeight: 700, textTransform: "uppercase", display: "block", marginBottom: "4px" }}>
+                Reset / Update Login Password <span style={{ color: "#94A3B8", fontWeight: 400 }}>(Optional - leave blank to keep current)</span>
+              </label>
+              <input
+                type="text"
+                placeholder="Enter new password (e.g. AdminPass123!)"
+                value={editPassword}
+                onChange={(e) => setEditPassword(e.target.value)}
+                style={{ width: "100%", background: "#0F172A", border: "1px solid #334155", borderRadius: "8px", padding: "10px", color: "#F8FAFC", fontSize: "14px" }}
+              />
             </div>
 
             <div style={{ display: "flex", gap: "12px", justifyContent: "flex-end" }}>

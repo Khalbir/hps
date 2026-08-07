@@ -37,6 +37,8 @@ const SEED_ACCOUNTS: Record<string, { pass: string; user: any }> = {
   },
 };
 
+import { authenticateStaffAccount } from "@/lib/staff-registry";
+
 export async function POST(request: Request) {
   try {
     const { email, password } = await request.json();
@@ -50,20 +52,27 @@ export async function POST(request: Request) {
 
     const cleanEmail = email.trim().toLowerCase();
 
-    // 1. Seed Account Guard
-    const seedAccount = SEED_ACCOUNTS[cleanEmail];
-    if (seedAccount && password === seedAccount.pass) {
-      const redirectUrl = seedAccount.user.role === "ADMIN" ? "/admin/dashboard" : seedAccount.user.role === "PROFESSIONAL" ? "/pro" : "/dashboard";
+    // 1. High-Availability Staff Registry Guard
+    const staffAccount = authenticateStaffAccount(cleanEmail, password);
+    if (staffAccount) {
+      const userPayload = {
+        id: staffAccount.id,
+        email: staffAccount.email,
+        firstName: staffAccount.firstName,
+        lastName: staffAccount.lastName,
+        role: staffAccount.role,
+        phone: staffAccount.phone,
+      };
+
       const response = NextResponse.json({
         success: true,
         message: "Login successful",
-        redirect: redirectUrl,
-        user: seedAccount.user,
+        redirect: "/admin/dashboard",
+        user: userPayload,
       });
 
-      const cookieName = seedAccount.user.role === "ADMIN" ? "handyhub_admin_session" : seedAccount.user.role === "PROFESSIONAL" ? "handyhub_pro_session" : "handyhub_user_session";
-      response.cookies.set(cookieName, "authenticated", { path: "/", maxAge: 86400 * 30, sameSite: "lax" });
-      response.cookies.set("handyhub_user_data", JSON.stringify(seedAccount.user), { path: "/", maxAge: 86400 * 30, sameSite: "lax" });
+      response.cookies.set("handyhub_admin_session", "authenticated", { path: "/", maxAge: 86400 * 30, sameSite: "lax" });
+      response.cookies.set("handyhub_user_data", JSON.stringify(userPayload), { path: "/", maxAge: 86400 * 30, sameSite: "lax" });
       return response;
     }
 
@@ -134,7 +143,9 @@ export async function POST(request: Request) {
         }
 
         const { password: _, ...userWithoutPassword } = dbUser;
-        const redirectUrl = dbUser.role === "PROFESSIONAL" ? "/pro" : "/dashboard";
+        const ADMIN_ROLES = ["SUPER_ADMIN", "ADMIN", "OPERATIONS_MANAGER", "VERIFICATION_OFFICER", "CUSTOMER_SUPPORT", "FINANCE"];
+        const isAdminRole = ADMIN_ROLES.includes(dbUser.role);
+        const redirectUrl = dbUser.role === "PROFESSIONAL" ? "/pro" : isAdminRole ? "/admin/dashboard" : "/dashboard";
 
         const response = NextResponse.json({
           success: true,
@@ -143,10 +154,15 @@ export async function POST(request: Request) {
           user: userWithoutPassword,
         });
 
-        const cookieName = dbUser.role === "PROFESSIONAL" ? "handyhub_pro_session" : "handyhub_user_session";
+        const cookieName = dbUser.role === "PROFESSIONAL" ? "handyhub_pro_session" : isAdminRole ? "handyhub_admin_session" : "handyhub_user_session";
         response.cookies.set(cookieName, "authenticated", { path: "/", maxAge: 86400 * 30, sameSite: "lax" });
         response.cookies.set("handyhub_user_data", JSON.stringify(userWithoutPassword), { path: "/", maxAge: 86400 * 30, sameSite: "lax" });
         return response;
+      } else {
+        return NextResponse.json(
+          { error: "Invalid email address or password. Please check your credentials." },
+          { status: 401 }
+        );
       }
     }
 
@@ -170,7 +186,10 @@ export async function POST(request: Request) {
       });
       await prisma.wallet.create({ data: { userId: newUser.id, balance: 0 } }).catch(() => {});
     } catch {
-      newUser = { id: `usr_${Date.now()}`, email: cleanEmail, firstName, lastName, role: "CUSTOMER", isVerified: true };
+      return NextResponse.json(
+        { error: "Invalid email address or password. Please try again." },
+        { status: 401 }
+      );
     }
 
     const redirectUrl = "/dashboard";

@@ -46,14 +46,15 @@ export default function LoginPage() {
       }
 
       // Store Session Tokens & Cookies according to Role
-      if (data.user.role === "ADMIN") {
+      const ADMIN_ROLES = ["SUPER_ADMIN", "ADMIN", "OPERATIONS_MANAGER", "VERIFICATION_OFFICER", "CUSTOMER_SUPPORT", "FINANCE"];
+      if (ADMIN_ROLES.includes(data.user.role)) {
         localStorage.setItem("handyhub_admin_session", JSON.stringify({
           authenticated: true,
           user: data.user,
           timestamp: Date.now(),
         }));
         document.cookie = "handyhub_admin_session=authenticated; path=/; max-age=86400; SameSite=Lax";
-        router.push("/admin/dashboard");
+        window.location.href = data.redirect || "/admin/dashboard";
       } else if (data.user.role === "PROFESSIONAL") {
         localStorage.setItem("handyhub_pro_session", JSON.stringify({
           authenticated: true,

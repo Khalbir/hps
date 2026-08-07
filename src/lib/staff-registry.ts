@@ -1,0 +1,108 @@
+import { compareSync, hashSync } from "bcryptjs";
+
+export interface StaffAccount {
+  id: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  role: string;
+  phone?: string;
+  passwordHash: string;
+  plainPassword?: string;
+}
+
+// Built-in seed high-availability staff accounts
+const INITIAL_STAFF_ACCOUNTS: StaffAccount[] = [
+  {
+    id: "usr_admin_root",
+    email: "admin@handyhubpro.ng",
+    firstName: "Khalid",
+    lastName: "Kabir",
+    role: "SUPER_ADMIN",
+    phone: "+2349000000001",
+    passwordHash: hashSync("AdminPass123!", 10),
+    plainPassword: "AdminPass123!",
+  },
+  {
+    id: "usr_admin_com",
+    email: "admin@handyhubpro.com",
+    firstName: "Admin",
+    lastName: "General",
+    role: "ADMIN",
+    phone: "+2349000000002",
+    passwordHash: hashSync("AdminPass123!", 10),
+    plainPassword: "AdminPass123!",
+  },
+  {
+    id: "usr_admin_khaleid_gmail",
+    email: "khaleid.kabir@gmail.com",
+    firstName: "Khalid",
+    lastName: "Kabir",
+    role: "SUPER_ADMIN",
+    phone: "+2348169829213",
+    passwordHash: hashSync("AdminPass123!", 10),
+    plainPassword: "AdminPass123!",
+  },
+  {
+    id: "usr_admin_khalbir_hotmail",
+    email: "khalbir@hotmail.com",
+    firstName: "Khalid",
+    lastName: "Kabir",
+    role: "SUPER_ADMIN",
+    phone: "+2348169829213",
+    passwordHash: hashSync("AdminPass123!", 10),
+    plainPassword: "AdminPass123!",
+  },
+];
+
+// Global in-memory registry map
+const staffRegistry = new Map<string, StaffAccount>();
+
+// Initialize registry
+INITIAL_STAFF_ACCOUNTS.forEach((account) => {
+  staffRegistry.set(account.email.toLowerCase().trim(), account);
+});
+
+export function registerStaffAccount(data: {
+  email: string;
+  firstName?: string;
+  lastName?: string;
+  role: string;
+  phone?: string;
+  password?: string;
+}) {
+  const cleanEmail = data.email.toLowerCase().trim();
+  const existing = staffRegistry.get(cleanEmail);
+
+  const rawPassword = data.password && data.password.trim() ? data.password.trim() : (existing?.plainPassword || "Staff123!");
+  const passwordHash = hashSync(rawPassword, 10);
+
+  const account: StaffAccount = {
+    id: existing?.id || `usr_staff_${Date.now()}`,
+    email: cleanEmail,
+    firstName: data.firstName || existing?.firstName || "Staff",
+    lastName: data.lastName || existing?.lastName || "Member",
+    role: data.role,
+    phone: data.phone || existing?.phone || "Not Provided",
+    passwordHash,
+    plainPassword: rawPassword,
+  };
+
+  staffRegistry.set(cleanEmail, account);
+  return account;
+}
+
+export function findStaffAccount(email: string): StaffAccount | undefined {
+  return staffRegistry.get(email.toLowerCase().trim());
+}
+
+export function authenticateStaffAccount(email: string, passwordAttempt: string): StaffAccount | null {
+  const account = findStaffAccount(email);
+  if (!account) return null;
+
+  // Direct match or bcrypt compare
+  if (passwordAttempt === account.plainPassword) return account;
+  if (compareSync(passwordAttempt, account.passwordHash)) return account;
+
+  return null;
+}

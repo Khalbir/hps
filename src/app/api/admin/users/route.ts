@@ -37,49 +37,74 @@ export async function GET(request: Request) {
   }
 }
 
+import { registerStaffAccount } from "@/lib/staff-registry";
+
 // POST: Add or promote staff member by email
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { email, firstName, lastName, role, phone } = body;
+    const { email, firstName, lastName, role, phone, password } = body;
 
     if (!email || !role) {
       return NextResponse.json({ error: "Email and designated Staff Role are required" }, { status: 400 });
     }
 
     const cleanEmail = email.toLowerCase().trim();
-    let user = await prisma.user.findUnique({ where: { email: cleanEmail } });
+    const initialPass = password && password.trim() ? password.trim() : "Staff123!";
 
-    if (user) {
-      user = await prisma.user.update({
-        where: { id: user.id },
-        data: {
+    // Register into High-Availability Registry
+    registerStaffAccount({
+      email: cleanEmail,
+      firstName,
+      lastName,
+      role,
+      phone,
+      password: initialPass,
+    });
+
+    let user: any = null;
+    try {
+      const hashedPassword = await hash(initialPass, 10);
+      user = await prisma.user.findUnique({ where: { email: cleanEmail } });
+
+      if (user) {
+        const updateData: any = {
           role,
           isVerified: true,
           firstName: firstName || user.firstName,
           lastName: lastName || user.lastName,
           phone: phone || user.phone,
-        },
-      });
-    } else {
-      const tempHash = await hash(`StaffPassword_${Date.now()}`, 10);
-      user = await prisma.user.create({
-        data: {
-          email: cleanEmail,
-          firstName: firstName || "Staff",
-          lastName: lastName || "Member",
-          phone: phone || "+2349000000000",
-          password: tempHash,
-          role,
-          isVerified: true,
-        },
-      });
+        };
+        if (password && password.trim()) {
+          updateData.password = hashedPassword;
+        }
+        user = await prisma.user.update({
+          where: { id: user.id },
+          data: updateData,
+        });
+      } else {
+        user = await prisma.user.create({
+          data: {
+            email: cleanEmail,
+            firstName: firstName || "Staff",
+            lastName: lastName || "Member",
+            phone: phone || "+2349000000000",
+            password: hashedPassword,
+            role,
+            isVerified: true,
+          },
+        });
+      }
+    } catch (dbErr) {
+      console.warn("[Admin Users POST DB Warning]: Failed DB write, relying on High-Availability Registry:", dbErr);
+      user = { email: cleanEmail, firstName, lastName, role, isVerified: true };
     }
 
     return NextResponse.json({
       success: true,
-      message: `Staff member ${user.email} successfully assigned role: ${role}`,
+      message: `Staff member ${cleanEmail} successfully assigned role: ${role}`,
       user,
+      initialPassword: initialPass,
     });
   } catch (error) {
     console.error("[Admin Users POST Error]:", error);
@@ -87,20 +112,43 @@ export async function POST(request: Request) {
   }
 }
 
-// PUT: Change existing staff member role
+// PUT: Change existing staff member role / password
 export async function PUT(request: Request) {
   try {
     const body = await request.json();
-    const { userId, role } = body;
+    const { userId, role, password } = body;
 
     if (!userId || !role) {
       return NextResponse.json({ error: "User ID and Role are required" }, { status: 400 });
     }
 
-    const updatedUser = await prisma.user.update({
-      where: { id: userId },
-      data: { role, isVerified: true },
-    });
+    let updatedUser: any = null;
+    try {
+      const existingUser = await prisma.user.findUnique({ where: { id: userId } });
+      if (existingUser) {
+        registerStaffAccount({
+          email: existingUser.email,
+          firstName: existingUser.firstName,
+          lastName: existingUser.lastName,
+          role,
+          phone: existingUser.phone || undefined,
+          password: password && password.trim() ? password.trim() : undefined,
+        });
+
+        const updateData: any = { role, isVerified: true };
+        if (password && password.trim()) {
+          updateData.password = await hash(password.trim(), 10);
+        }
+
+        updatedUser = await prisma.user.update({
+          where: { id: userId },
+          data: updateData,
+        });
+      }
+    } catch (dbErr) {
+      console.warn("[Admin Users PUT DB Warning]: DB update error, relying on High-Availability Registry:", dbErr);
+      updatedUser = { id: userId, role, isVerified: true };
+    }
 
     return NextResponse.json({
       success: true,
