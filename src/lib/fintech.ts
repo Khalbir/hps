@@ -132,13 +132,24 @@ export class PaystackGatewayStrategy implements IPaymentGateway {
       console.warn("[Paystack Verification Error]:", err);
     }
 
-    // Dev mode / fallback return
+    // Secure Dev/Test fallback return
+    if (PAYSTACK_SECRET_KEY.startsWith("sk_test_handyhub_paystack_mock") || PAYSTACK_SECRET_KEY === "sk_test_") {
+      return {
+        gateway: "PAYSTACK",
+        status: "SUCCESS",
+        reference,
+        amountNgn: 15000,
+        channel: "card",
+        paidAt: new Date().toISOString(),
+      };
+    }
+
     return {
       gateway: "PAYSTACK",
-      status: "SUCCESS",
+      status: "FAILED",
       reference,
-      amountNgn: 15000,
-      channel: "card",
+      amountNgn: 0,
+      channel: "unknown",
       paidAt: new Date().toISOString(),
     };
   }
