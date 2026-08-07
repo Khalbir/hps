@@ -74,10 +74,10 @@ export default function SettingsAndBackupsPage() {
     if (!confirm("Are you sure you want to purge all demo mockup artisans, payments, reviews, and bookings from the database? This action cannot be undone.")) return;
     setPurgeLoading(true);
     try {
-      const res = await fetch("/api/admin/purge-demo", { method: "POST" });
+      const res = await fetch("/api/purge-all-demo-data-now", { method: "POST" });
       const data = await res.json();
       if (res.ok) {
-        setToast(`Database purged successfully! ${data.stats?.deletedPros || 0} demo pros & ${data.stats?.deletedPayments || 0} demo payments removed.`);
+        setToast(`Database purged successfully! ${data.purged?.deletedPros || 0} demo pros & ${data.purged?.deletedPayments || 0} demo payments removed.`);
         fetchRealCityMetrics();
       } else {
         alert(data.error || "Failed to purge demo data");
