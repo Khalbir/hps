@@ -4,13 +4,12 @@ import {
   Phone,
   MapPin,
   ArrowRight,
-  ExternalLink,
   MessageSquare,
 } from "lucide-react";
 import { BrandLogo } from "@/components/common/BrandLogo";
 import styles from "./Footer.module.css";
 
-/* Simple inline social icons since lucide doesn't have brand icons */
+/* Inline social icons */
 const FacebookIcon = () => (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
 );
@@ -26,26 +25,26 @@ const LinkedinIcon = () => (
 
 const serviceLinks = [
   { name: "Residential Cleaning", href: "/services/cleaning" },
-  { name: "Plumbing", href: "/services/plumbing" },
+  { name: "Plumbing Services", href: "/services/plumbing" },
   { name: "Electrical Repairs", href: "/services/electrical" },
-  { name: "AC Installation", href: "/services/ac-repair" },
-  { name: "Painting", href: "/services/painting" },
-  { name: "All Services", href: "/services" },
+  { name: "AC Installation & Service", href: "/services/ac-repair" },
+  { name: "Painting & Decorating", href: "/services/painting" },
+  { name: "Explore All Services →", href: "/services" },
 ];
 
 const companyLinks = [
   { name: "About Us", href: "/about" },
-  { name: "Careers", href: "/careers" },
-  { name: "Blog", href: "/blog" },
-  { name: "Contact", href: "/contact" },
-  { name: "FAQ", href: "/faq" },
+  { name: "Careers & Artisans", href: "/pro/onboarding" },
+  { name: "Track Active Booking", href: "/track" },
+  { name: "Contact Dispatch", href: "/contact" },
+  { name: "Frequently Asked Questions", href: "/faq" },
 ];
 
 const legalLinks = [
   { name: "Terms of Service", href: "/terms" },
   { name: "Privacy Policy", href: "/privacy" },
   { name: "Cookie Policy", href: "/cookies" },
-  { name: "Refund Policy", href: "/refund" },
+  { name: "Refund & Escrow Policy", href: "/refund" },
 ];
 
 export function Footer() {
@@ -55,19 +54,21 @@ export function Footer() {
       <div className={styles.newsletter}>
         <div className={`container ${styles.newsletterInner}`}>
           <div className={styles.newsletterContent}>
-            <h3 className="h4">Stay in the loop</h3>
+            <h3 className="h4" style={{ color: "#F8FAFC", margin: "0 0 6px 0", fontWeight: 800 }}>
+              Stay Ahead with Home Care Insights 🛠️
+            </h3>
             <p className={styles.newsletterText}>
-              Get tips on home maintenance, exclusive offers, and updates.
+              Get property maintenance guides, emergency artisan dispatch alerts, and exclusive seasonal vouchers.
             </p>
           </div>
           <form className={styles.newsletterForm} onSubmit={(e) => e.preventDefault()}>
             <input
               type="email"
-              placeholder="Enter your email"
+              placeholder="Enter your official email address"
               className={`input ${styles.newsletterInput}`}
               aria-label="Email address for newsletter"
             />
-            <button type="submit" className="btn btn-accent btn-md">
+            <button type="submit" className="btn btn-accent btn-md" style={{ display: "flex", alignItems: "center", gap: 8, fontWeight: 700 }}>
               Subscribe
               <ArrowRight size={16} />
             </button>
@@ -75,41 +76,40 @@ export function Footer() {
         </div>
       </div>
 
-      {/* Main Footer */}
+      {/* Main Footer Body */}
       <div className={`container ${styles.main}`}>
         <div className={styles.grid}>
           {/* Brand Column */}
           <div className={styles.brand}>
-            <div className={styles.logo} title="HandyHub Pro Solutions">
+            <Link href="/" className={styles.logoLink} title="HandyHub Pro Solutions Home">
               <BrandLogo size="lg" lightText={true} />
-            </div>
+            </Link>
             <p className={styles.brandDesc}>
-              HandyHub Pro Solutions is Nigeria&apos;s most trusted platform for booking verified home service
-              professionals. Your Property, Our Priority.
+              HandyHub Pro Solutions is Nigeria&apos;s leading tech platform for booking background-verified artisans & facility engineers. Transparent escrow payments, guaranteed quality work.
             </p>
             <div className={styles.contactInfo}>
-              <a href="tel:+2348122222936" className={styles.contactItem} title="Call Customer Support">
-                <Phone size={16} />
+              <a href="tel:+2348122222936" className={styles.contactItem} title="Call 24/7 Customer Support">
+                <Phone size={15} color="#00A8B5" />
                 <span>+234 812 222 2936</span>
               </a>
               <a href="https://wa.me/2348122222936?text=Hello%20HandyHub%20Support" target="_blank" rel="noopener noreferrer" className={styles.contactItem} style={{ color: "#25D366" }} title="Chat on WhatsApp">
-                <MessageSquare size={16} />
+                <MessageSquare size={15} color="#25D366" />
                 <span>WhatsApp: +234 812 222 2936</span>
               </a>
-              <a href="mailto:info@handyhubpro.ng" className={styles.contactItem}>
-                <Mail size={16} />
+              <a href="mailto:info@handyhubpro.ng" className={styles.contactItem} title="Email Dispatch Support">
+                <Mail size={15} color="#00A8B5" />
                 <span>info@handyhubpro.ng</span>
               </a>
               <div className={styles.contactItem}>
-                <MapPin size={16} />
-                <span>Abuja, Nigeria</span>
+                <MapPin size={15} color="#FF6B00" />
+                <span>Abuja (FCT) & Expanding States, Nigeria</span>
               </div>
             </div>
           </div>
 
           {/* Services */}
           <div className={styles.linkGroup}>
-            <h4 className={styles.linkGroupTitle}>Services</h4>
+            <h4 className={styles.linkGroupTitle}>Verified Services</h4>
             <ul className={styles.links}>
               {serviceLinks.map((link) => (
                 <li key={link.name}>
@@ -137,7 +137,7 @@ export function Footer() {
 
           {/* Legal */}
           <div className={styles.linkGroup}>
-            <h4 className={styles.linkGroupTitle}>Legal</h4>
+            <h4 className={styles.linkGroupTitle}>Legal & Escrow</h4>
             <ul className={styles.links}>
               {legalLinks.map((link) => (
                 <li key={link.name}>
@@ -155,7 +155,7 @@ export function Footer() {
       <div className={styles.bottom}>
         <div className={`container ${styles.bottomInner}`}>
           <p className={styles.copyright}>
-            © {new Date().getFullYear()} HandyHub Pro Solutions. All rights reserved.
+            © {new Date().getFullYear()} HandyHub Pro Solutions. All rights reserved. Registered in Nigeria.
           </p>
           <div className={styles.socials}>
             <a href="#" aria-label="Facebook" className={styles.socialLink}>

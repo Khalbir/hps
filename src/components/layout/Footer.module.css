@@ -1,12 +1,15 @@
 .footer {
-  background: var(--bg-secondary);
-  border-top: 1px solid var(--border-primary);
+  background: #0B132B;
+  color: #F8FAFC;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  font-family: var(--font-sans, inherit);
 }
 
 /* Newsletter */
 .newsletter {
-  background: linear-gradient(135deg, var(--color-primary-600), var(--color-primary-800));
-  padding: var(--space-16) 0;
+  background: linear-gradient(135deg, #00A8B5 0%, #0284C7 50%, #0F172A 100%);
+  padding: 40px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .newsletterInner {
@@ -17,13 +20,14 @@
 }
 
 .newsletterContent h3 {
-  color: white;
-  margin-bottom: var(--space-2);
+  color: #F8FAFC;
+  margin-bottom: var(--space-1);
 }
 
 .newsletterText {
-  color: rgba(255, 255, 255, 0.8);
-  font-size: var(--fs-base);
+  color: rgba(248, 250, 252, 0.85);
+  font-size: var(--fs-sm);
+  margin: 0;
 }
 
 .newsletterForm {
@@ -33,138 +37,126 @@
 }
 
 .newsletterInput {
-  width: 300px;
+  width: 320px;
   background: rgba(255, 255, 255, 0.15) !important;
-  border-color: rgba(255, 255, 255, 0.2) !important;
-  color: white !important;
+  border: 1px solid rgba(255, 255, 255, 0.3) !important;
+  color: #FFFFFF !important;
+  border-radius: 10px !important;
 }
 
 .newsletterInput::placeholder {
-  color: rgba(255, 255, 255, 0.6) !important;
+  color: rgba(255, 255, 255, 0.65) !important;
 }
 
 .newsletterInput:focus {
-  background: rgba(255, 255, 255, 0.2) !important;
-  border-color: rgba(255, 255, 255, 0.4) !important;
-  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.1) !important;
+  background: rgba(255, 255, 255, 0.25) !important;
+  border-color: #38BDF8 !important;
+  box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.25) !important;
 }
 
 /* Main Footer Grid */
 .main {
-  padding: var(--space-16) 0;
+  padding: 56px 0 40px 0;
 }
 
 .grid {
   display: grid;
-  grid-template-columns: 1.5fr 1fr 1fr 1fr;
-  gap: var(--space-12);
+  grid-template-columns: 1.4fr 1fr 1fr 1fr;
+  gap: 40px;
 }
 
-/* Brand */
-.logo {
+/* Brand Column */
+.brand {
   display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  margin-bottom: var(--space-4);
+  flex-direction: column;
 }
 
-.logoIcon {
-  width: 38px;
-  height: 38px;
-  overflow: hidden;
-  position: relative;
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-.logoImage {
-  position: absolute;
-  top: -2px;
-  width: 100%;
-  height: auto;
-  transform: scale(1.3);
-  transform-origin: top center;
-}
-
-.logoName {
-  font-family: var(--font-display);
-  font-size: 1.25rem;
-  font-weight: 700;
-  color: var(--text-primary);
-  letter-spacing: -0.02em;
-}
-
-.logoPro {
-  font-family: var(--font-display);
-  font-size: 0.6rem;
-  font-weight: 800;
-  color: var(--color-primary-500);
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  margin-left: var(--space-1);
+.logoLink {
+  display: inline-block;
+  margin-bottom: 16px;
+  text-decoration: none;
 }
 
 .brandDesc {
-  color: var(--text-secondary);
-  font-size: var(--fs-sm);
-  line-height: var(--lh-relaxed);
-  margin-bottom: var(--space-6);
-  max-width: 320px;
+  color: #94A3B8;
+  font-size: 13.5px;
+  line-height: 1.6;
+  margin-bottom: 20px;
+  max-width: 340px;
 }
 
 .contactInfo {
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
+  gap: 10px;
 }
 
 .contactItem {
   display: flex;
   align-items: center;
-  gap: var(--space-2);
-  font-size: var(--fs-sm);
-  color: var(--text-secondary);
-  transition: color var(--duration-short) var(--ease-default);
+  gap: 10px;
+  font-size: 13px;
+  color: #CBD5E1;
+  text-decoration: none;
+  transition: all 0.2s ease;
 }
 
 .contactItem:hover {
-  color: var(--color-primary-500);
+  color: #38BDF8;
+  transform: translateX(2px);
 }
 
 /* Link Groups */
 .linkGroupTitle {
-  font-family: var(--font-display);
-  font-size: var(--fs-sm);
-  font-weight: var(--fw-semibold);
-  color: var(--text-primary);
+  font-family: var(--font-display, inherit);
+  font-size: 13px;
+  font-weight: 800;
+  color: #F8FAFC;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-  margin-bottom: var(--space-5);
+  letter-spacing: 0.08em;
+  margin-bottom: 20px;
+  position: relative;
+  display: inline-block;
+}
+
+.linkGroupTitle::after {
+  content: "";
+  position: absolute;
+  bottom: -6px;
+  left: 0;
+  width: 24px;
+  height: 2px;
+  background: #00A8B5;
+  border-radius: 2px;
 }
 
 .links {
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
+  gap: 12px;
+  padding: 0;
+  margin: 0;
+  list-style: none;
 }
 
 .link {
-  font-size: var(--fs-sm);
-  color: var(--text-secondary);
-  transition: color var(--duration-short) var(--ease-default);
+  font-size: 13.5px;
+  color: #94A3B8;
+  text-decoration: none;
+  transition: all 0.2s ease;
+  display: inline-block;
 }
 
 .link:hover {
-  color: var(--color-primary-500);
+  color: #38BDF8;
+  transform: translateX(3px);
 }
 
 /* Bottom Bar */
 .bottom {
-  border-top: 1px solid var(--border-primary);
-  padding: var(--space-6) 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 24px 0;
+  background: #070D1E;
 }
 
 .bottomInner {
@@ -174,13 +166,14 @@
 }
 
 .copyright {
-  font-size: var(--fs-sm);
-  color: var(--text-tertiary);
+  font-size: 13px;
+  color: #64748B;
+  margin: 0;
 }
 
 .socials {
   display: flex;
-  gap: var(--space-2);
+  gap: 10px;
 }
 
 .socialLink {
@@ -189,21 +182,26 @@
   justify-content: center;
   width: 36px;
   height: 36px;
-  border-radius: var(--radius-md);
-  color: var(--text-tertiary);
-  transition: all var(--duration-short) var(--ease-default);
+  border-radius: 10px;
+  color: #94A3B8;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  transition: all 0.2s ease;
 }
 
 .socialLink:hover {
-  color: var(--color-primary-500);
-  background: var(--bg-tertiary);
+  color: #FFFFFF;
+  background: #00A8B5;
+  border-color: #00A8B5;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 168, 181, 0.3);
 }
 
 /* Responsive */
 @media (max-width: 1024px) {
   .grid {
     grid-template-columns: 1fr 1fr;
-    gap: var(--space-10);
+    gap: 36px;
   }
   .brand {
     grid-column: span 2;
@@ -224,14 +222,14 @@
   }
   .grid {
     grid-template-columns: 1fr;
-    gap: var(--space-8);
+    gap: 32px;
   }
   .brand {
     grid-column: span 1;
   }
   .bottomInner {
     flex-direction: column;
-    gap: var(--space-4);
+    gap: 16px;
     text-align: center;
   }
 }
