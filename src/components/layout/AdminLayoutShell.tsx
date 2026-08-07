@@ -125,11 +125,36 @@ export function AdminLayoutShell({ children }: { children: ReactNode }) {
       {/* Sidebar */}
       <aside className={`${styles.adminSidebar} ${sidebarOpen ? styles.adminSidebarOpen : ""}`}>
         <div className={styles.adminSidebarHeader}>
-          <Link href="/admin/dashboard" className={styles.adminLogo}>
-            <img src="/logo.png" alt="HandyHub Admin Logo" style={{ width: 32, height: 32, borderRadius: 8, objectFit: "contain" }} />
-            <div>
-              <span>HandyHub</span>
-              <span style={{ fontSize: "10px", color: "#0EA5E9" }}>COMMAND CENTER</span>
+          <Link href="/admin/dashboard" className={styles.adminLogo} style={{ gap: "12px", textDecoration: "none" }}>
+            <div style={{
+              width: 38,
+              height: 38,
+              borderRadius: 12,
+              background: "linear-gradient(135deg, #0EA5E9 0%, #2563EB 100%)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              boxShadow: "0 0 16px rgba(14, 165, 233, 0.4)",
+              flexShrink: 0,
+            }}>
+              <Shield size={20} color="#FFFFFF" />
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: "1px", minWidth: 0 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                <span style={{ fontSize: "16px", fontWeight: 800, color: "#F8FAFC", letterSpacing: "-0.4px" }}>HandyHub</span>
+                <span style={{
+                  fontSize: "10px",
+                  fontWeight: 800,
+                  background: "linear-gradient(135deg, #38BDF8, #818CF8)",
+                  WebkitBackgroundClip: "text",
+                  WebkitTextFillColor: "transparent",
+                  letterSpacing: "1px",
+                  textTransform: "uppercase",
+                }}>COMMAND</span>
+              </div>
+              <span style={{ fontSize: "9px", fontWeight: 700, color: "#64748B", letterSpacing: "1.5px", textTransform: "uppercase" }}>
+                EXECUTIVE SUITE
+              </span>
             </div>
           </Link>
           <button
@@ -142,12 +167,55 @@ export function AdminLayoutShell({ children }: { children: ReactNode }) {
         </div>
 
         {/* User Identity & Role Badge Card */}
-        <div style={{ padding: "12px 16px", margin: "0 12px 16px 12px", background: "rgba(15,23,42,0.6)", borderRadius: "10px", border: "1px solid rgba(255,255,255,0.08)" }}>
-          <div style={{ fontSize: "13px", fontWeight: 700, color: "#F8FAFC" }}>
-            {adminUser?.firstName} {adminUser?.lastName}
+        <div style={{
+          padding: "12px 14px",
+          margin: "12px 12px 16px 12px",
+          background: "linear-gradient(180deg, rgba(30, 41, 59, 0.8) 0%, rgba(15, 23, 42, 0.9) 100%)",
+          borderRadius: "14px",
+          border: "1px solid rgba(255, 255, 255, 0.08)",
+          display: "flex",
+          alignItems: "center",
+          gap: "12px",
+          boxShadow: "0 4px 12px rgba(0, 0, 0, 0.2)",
+        }}>
+          <div style={{
+            width: 36,
+            height: 36,
+            borderRadius: "50%",
+            background: "linear-gradient(135deg, #0EA5E9 0%, #6366F1 100%)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            color: "#FFFFFF",
+            fontWeight: 800,
+            fontSize: "13px",
+            flexShrink: 0,
+            border: "2px solid rgba(255, 255, 255, 0.15)",
+            boxShadow: "0 2px 8px rgba(0, 0, 0, 0.3)",
+          }}>
+            {adminUser?.firstName ? adminUser.firstName[0].toUpperCase() : "A"}{adminUser?.lastName ? adminUser.lastName[0].toUpperCase() : "A"}
           </div>
-          <div style={{ marginTop: "4px", display: "inline-block", padding: "2px 8px", borderRadius: "12px", background: badgeInfo.badgeColor + "25", color: badgeInfo.badgeColor, fontSize: "10px", fontWeight: 700 }}>
-            {badgeInfo.label}
+          <div style={{ display: "flex", flexDirection: "column", gap: "3px", minWidth: 0, flex: 1 }}>
+            <div style={{ fontSize: "13px", fontWeight: 700, color: "#F8FAFC", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+              {adminUser?.firstName} {adminUser?.lastName}
+            </div>
+            <div style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 5,
+              padding: "2px 8px",
+              borderRadius: "20px",
+              background: badgeInfo.badgeColor + "20",
+              color: badgeInfo.badgeColor,
+              border: `1px solid ${badgeInfo.badgeColor}40`,
+              fontSize: "10px",
+              fontWeight: 800,
+              letterSpacing: "0.4px",
+              width: "fit-content",
+            }}>
+              <span style={{ width: 6, height: 6, borderRadius: "50%", background: badgeInfo.badgeColor }} />
+              {badgeInfo.label}
+            </div>
           </div>
         </div>
 

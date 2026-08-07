@@ -202,9 +202,9 @@
 }
 
 .adminSidebar {
-  width: 260px;
-  background: #1E293B;
-  border-right: 1px solid rgba(255, 255, 255, 0.06);
+  width: 275px;
+  background: #0B132B;
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
   display: flex;
   flex-direction: column;
   position: fixed;
@@ -213,10 +213,11 @@
   bottom: 0;
   z-index: 50;
   transition: transform var(--duration-medium) var(--ease-default);
+  box-shadow: 4px 0 24px rgba(0, 0, 0, 0.3);
 }
 
 .adminSidebarHeader {
-  padding: var(--space-5);
+  padding: 20px 18px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
   display: flex;
   align-items: center;
@@ -234,19 +235,12 @@
   text-decoration: none;
 }
 
-.adminLogo span:last-child {
-  font-size: var(--fs-xs);
-  color: var(--color-primary-400);
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-}
-
 .adminNav {
   flex: 1;
-  padding: var(--space-4);
+  padding: 12px 14px;
   display: flex;
   flex-direction: column;
-  gap: var(--space-1);
+  gap: 4px;
   overflow-y: auto;
 }
 
@@ -268,24 +262,29 @@
 .adminNavLink {
   display: flex;
   align-items: center;
-  gap: var(--space-3);
-  padding: var(--space-3) var(--space-4);
-  border-radius: var(--radius-lg);
-  font-size: var(--fs-sm);
-  font-weight: var(--fw-medium);
-  color: rgba(255, 255, 255, 0.6);
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.65);
   text-decoration: none;
-  transition: all var(--duration-short) var(--ease-default);
+  transition: all 0.2s ease-in-out;
+  position: relative;
 }
 
 .adminNavLink:hover {
-  color: white;
+  color: #F8FAFC;
   background: rgba(255, 255, 255, 0.06);
+  transform: translateX(2px);
 }
 
 .adminNavLinkActive {
-  color: white !important;
-  background: rgba(14, 165, 233, 0.15) !important;
+  color: #38BDF8 !important;
+  background: linear-gradient(90deg, rgba(14, 165, 233, 0.15) 0%, rgba(14, 165, 233, 0.04) 100%) !important;
+  border-left: 3.5px solid #0EA5E9 !important;
+  font-weight: 700 !important;
+  box-shadow: 0 4px 12px rgba(14, 165, 233, 0.1);
 }
 
 .adminNavBadge {
@@ -303,13 +302,14 @@
 }
 
 .adminSidebarFooter {
-  padding: var(--space-4);
+  padding: 16px;
   border-top: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(11, 19, 43, 0.5);
 }
 
 .adminMain {
   flex: 1;
-  margin-left: 260px;
+  margin-left: 275px;
   min-height: 100vh;
 }
 
