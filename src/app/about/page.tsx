@@ -1,15 +1,40 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import {
   Sparkles, ShieldCheck, HeartHandshake, ArrowRight, Award,
-  Users, CheckCircle, Wrench, Building2, Quote, Lightbulb,
+  Users, CheckCircle, Wrench, Building2, Quote, Lightbulb, Briefcase,
 } from "lucide-react";
 import { BrandLogo } from "@/components/common/BrandLogo";
 import styles from "./about.module.css";
 
 export default function AboutPage() {
+  const [liveStats, setLiveStats] = useState({
+    jobsCount: 0,
+    verifiedProsCount: 0,
+    rating: 4.9,
+  });
+
+  useEffect(() => {
+    async function fetchStats() {
+      try {
+        const res = await fetch("/api/stats");
+        const data = await res.json();
+        if (res.ok) {
+          setLiveStats({
+            jobsCount: data.jobsCount || 0,
+            verifiedProsCount: data.verifiedProsCount || 0,
+            rating: data.rating || 4.9,
+          });
+        }
+      } catch (err) {
+        console.warn("Failed to fetch live stats:", err);
+      }
+    }
+    fetchStats();
+  }, []);
   return (
     <div className={styles.page}>
       {/* Hero Header */}
@@ -150,18 +175,18 @@ export default function AboutPage() {
       {/* Stats Section */}
       <section className={styles.statsSection}>
         <div className="container">
-          <h2 className="h2">Making a Real Impact in Nigeria</h2>
+          <h2 className="h2">Real Live Impact in Nigeria 🇳🇬</h2>
           <div className={styles.statsGrid}>
             <div className={styles.statCard}>
-              <div className={styles.statValue}>500+</div>
-              <div className={styles.statLabel}>Verified Artisans & Pros</div>
+              <div className={styles.statValue}>{liveStats.verifiedProsCount > 0 ? liveStats.verifiedProsCount : 0}+</div>
+              <div className={styles.statLabel}>Active Verified Artisans</div>
             </div>
             <div className={styles.statCard}>
-              <div className={styles.statValue}>10,000+</div>
-              <div className={styles.statLabel}>Successful Property Repairs</div>
+              <div className={styles.statValue}>{liveStats.jobsCount > 0 ? liveStats.jobsCount : 0}+</div>
+              <div className={styles.statLabel}>Completed Property Dispatches</div>
             </div>
             <div className={styles.statCard}>
-              <div className={styles.statValue}>4.9★</div>
+              <div className={styles.statValue}>{liveStats.rating}★</div>
               <div className={styles.statLabel}>Average Customer Satisfaction</div>
             </div>
             <div className={styles.statCard}>
@@ -177,26 +202,41 @@ export default function AboutPage() {
         <div
           className="card"
           style={{
-            background: "linear-gradient(135deg, #0C4A6E 0%, #0284C7 100%)",
+            background: "linear-gradient(135deg, #00A8B5 0%, #0284C7 50%, #0F172A 100%)",
             color: "white",
             padding: "var(--space-12)",
             textAlign: "center",
             borderRadius: "var(--radius-2xl)",
+            boxShadow: "0 12px 32px rgba(0, 168, 181, 0.2)",
           }}
         >
           <h2 className="h2" style={{ color: "white", marginBottom: "var(--space-3)" }}>
             Ready to experience reliable property maintenance?
           </h2>
-          <p style={{ color: "rgba(255,255,255,0.85)", fontSize: "var(--fs-lg)", maxWidth: 560, margin: "0 auto var(--space-8)" }}>
+          <p style={{ color: "rgba(255,255,255,0.9)", fontSize: "var(--fs-lg)", maxWidth: 560, margin: "0 auto var(--space-8)" }}>
             Join thousands of satisfied home & business owners in Abuja. Book verified professionals in under 60 seconds.
           </p>
-          <div style={{ display: "flex", justifyContent: "center", gap: "var(--space-4)", flexWrap: "wrap" }}>
-            <Link href="/book" className="btn btn-accent btn-xl">
+          <div style={{ display: "flex", justifyContent: "center", gap: "var(--space-4)", flexWrap: "wrap", alignItems: "center" }}>
+            <Link href="/book" className="btn btn-accent btn-xl" style={{ display: "inline-flex", alignItems: "center", gap: "8px", fontWeight: 800 }}>
               Book a Service Now
               <ArrowRight size={18} />
             </Link>
-            <Link href="/auth/register?role=PROFESSIONAL" className="btn btn-secondary btn-xl" style={{ color: "white", borderColor: "rgba(255,255,255,0.3)" }}>
-              Join as a Professional
+            <Link
+              href="/auth/register?role=PROFESSIONAL"
+              className="btn btn-xl"
+              style={{
+                background: "#0F172A",
+                color: "#FFFFFF",
+                border: "2px solid #38BDF8",
+                fontWeight: 800,
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "8px",
+                boxShadow: "0 4px 14px rgba(0, 0, 0, 0.3)",
+              }}
+            >
+              <Briefcase size={18} color="#FF6B00" />
+              <span>Join as a Professional</span>
             </Link>
           </div>
         </div>
