@@ -243,6 +243,7 @@ export async function GET(request: Request) {
       where: whereClause,
       orderBy: { createdAt: "desc" },
       include: {
+        customer: { select: { firstName: true, lastName: true, email: true, phone: true } },
         service: { select: { name: true } },
         professional: { include: { user: { select: { firstName: true, lastName: true } } } },
       },

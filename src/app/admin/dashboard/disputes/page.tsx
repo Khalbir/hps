@@ -19,7 +19,7 @@ export default function DisputesCenterPage() {
 
   const fetchDisputes = async () => {
     try {
-      const res = await fetch("/api/admin/disputes");
+      const res = await fetch(`/api/admin/disputes?_t=${Date.now()}`);
       const data = await res.json();
       if (res.ok && data.disputes) {
         setDisputes(
@@ -56,6 +56,8 @@ export default function DisputesCenterPage() {
 
   useEffect(() => {
     fetchDisputes();
+    const interval = setInterval(fetchDisputes, 5000);
+    return () => clearInterval(interval);
   }, []);
 
   const filtered = disputes.filter((d) => filterStatus === "ALL" || d.status === filterStatus);
