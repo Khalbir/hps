@@ -2,11 +2,16 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { Plus, ArrowLeft, ClipboardList, RefreshCw, Inbox } from "lucide-react";
+import { Plus, ArrowLeft, ClipboardList, RefreshCw, Inbox, Star } from "lucide-react";
+import { RateReviewModal } from "@/components/common/RateReviewModal";
 
 export default function CustomerBookingsPage() {
   const [bookings, setBookings] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Review Modal State
+  const [reviewModalOpen, setReviewModalOpen] = useState(false);
+  const [activeReviewBooking, setActiveReviewBooking] = useState<{ id: string; service: string; pro: string } | null>(null);
 
   const fetchRealCustomerBookings = async () => {
     setLoading(true);
@@ -40,6 +45,15 @@ export default function CustomerBookingsPage() {
   useEffect(() => {
     fetchRealCustomerBookings();
   }, []);
+
+  const openReviewModal = (booking: any) => {
+    setActiveReviewBooking({
+      id: booking.id,
+      service: booking.service || "Home Service",
+      pro: booking.pro || "Assigned Artisan",
+    });
+    setReviewModalOpen(true);
+  };
 
   const statusColors: Record<string, string> = {
     PENDING: "#F59E0B",
@@ -102,9 +116,20 @@ export default function CustomerBookingsPage() {
                       </span>
                     </td>
                     <td style={{ padding: "12px 16px" }}>
-                      <Link href={`/track?ref=${b.id}`} className="btn btn-primary btn-xs">
-                        Track Status 📍
-                      </Link>
+                      <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                        <Link href={`/track?ref=${b.id}`} className="btn btn-primary btn-xs">
+                          Track Status 📍
+                        </Link>
+                        {b.status === "COMPLETED" && (
+                          <button
+                            onClick={() => openReviewModal(b)}
+                            className="btn btn-xs"
+                            style={{ background: "rgba(245, 158, 11, 0.15)", color: "#F59E0B", border: "1px solid #F59E0B", fontWeight: 700 }}
+                          >
+                            Rate & Review ⭐
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -113,6 +138,18 @@ export default function CustomerBookingsPage() {
           )}
         </div>
       </div>
+
+      {/* Interactive Rate & Review Modal */}
+      {activeReviewBooking && (
+        <RateReviewModal
+          isOpen={reviewModalOpen}
+          onClose={() => setReviewModalOpen(false)}
+          bookingId={activeReviewBooking.id}
+          serviceName={activeReviewBooking.service}
+          artisanName={activeReviewBooking.pro}
+          onReviewSubmitted={fetchRealCustomerBookings}
+        />
+      )}
     </div>
   );
 }

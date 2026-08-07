@@ -6,8 +6,9 @@ import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Search, MapPin, Clock, ShieldCheck, Phone, MessageSquare, CheckCircle2,
-  Navigation, AlertTriangle, Key, Star, Car, ArrowRight, UserCheck, Shield
+  Navigation, AlertTriangle, Key, Star, Car, ArrowRight, UserCheck, Shield, Award
 } from "lucide-react";
+import { RateReviewModal } from "@/components/common/RateReviewModal";
 
 function TrackContent() {
   const searchParams = useSearchParams();
@@ -15,6 +16,7 @@ function TrackContent() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [booking, setBooking] = useState<any>(null);
+  const [reviewModalOpen, setReviewModalOpen] = useState(false);
 
   const initialRef = searchParams.get("reference") || searchParams.get("ref") || searchParams.get("id") || "";
 
@@ -164,6 +166,29 @@ function TrackContent() {
               </div>
             </div>
 
+            {/* Rate & Review Prompt for Completed Job */}
+            {booking.status === "COMPLETED" && (
+              <div className="card" style={{ background: "linear-gradient(135deg, rgba(245,158,11,0.15) 0%, rgba(14,165,233,0.15) 100%)", border: "2px solid #F59E0B" }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 16 }}>
+                  <div>
+                    <h3 className="h4" style={{ color: "#F59E0B", display: "flex", alignItems: "center", gap: 8, margin: "0 0 4px 0" }}>
+                      <Award size={22} /> Job Completed! How was your experience?
+                    </h3>
+                    <p style={{ fontSize: "13.5px", color: "var(--text-secondary)", margin: 0 }}>
+                      Rate your assigned professional and leave a verified client review.
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => setReviewModalOpen(true)}
+                    className="btn btn-primary btn-md"
+                    style={{ background: "#F59E0B", borderColor: "#F59E0B", color: "#0F172A", fontWeight: 800, display: "flex", alignItems: "center", gap: 8 }}
+                  >
+                    <Star size={18} fill="#0F172A" /> Rate & Review Artisan ⭐
+                  </button>
+                </div>
+              </div>
+            )}
+
             {/* OTP Security Verification Code Card */}
             <div className="card" style={{ background: "linear-gradient(135deg, rgba(14,165,233,0.12) 0%, rgba(249,115,22,0.12) 100%)", border: "1.5px solid rgba(14,165,233,0.3)" }}>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "var(--space-4)" }}>
@@ -293,6 +318,18 @@ function TrackContent() {
           </motion.div>
         )}
       </div>
+
+      {/* Rate & Review Modal */}
+      {booking && (
+        <RateReviewModal
+          isOpen={reviewModalOpen}
+          onClose={() => setReviewModalOpen(false)}
+          bookingId={booking.id}
+          serviceName={booking.serviceName}
+          artisanName={booking.artisan?.name || "HandyHub Professional"}
+          onReviewSubmitted={() => fetchBookingTrack(query)}
+        />
+      )}
     </div>
   );
 }
