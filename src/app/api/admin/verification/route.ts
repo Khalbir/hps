@@ -1,50 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { hash } from "bcryptjs";
 import { getValidMediaUrl, SAMPLE_PORTFOLIO_IMAGE } from "@/lib/sample-documents";
-
-const DEFAULT_SEED_ARTISANS = [
-  {
-    email: "abubakar@handyhubpro.com",
-    firstName: "Abubakar",
-    lastName: "Tanko",
-    phone: "+2348031234567",
-    skills: ["Electrical", "Wiring", "Solar Installation"],
-    city: "Abuja",
-    verificationStatus: "PENDING",
-    bio: "Senior Certified Electrical Specialist & Solar Installation Engineer with 8+ years experience in Abuja.",
-  },
-  {
-    email: "blessing@handyhubpro.com",
-    firstName: "Blessing",
-    lastName: "Okon",
-    phone: "+2348029876543",
-    skills: ["Plumbing", "Pipefitting", "Water Heater"],
-    city: "Abuja",
-    verificationStatus: "PENDING",
-    bio: "Licensed Master Plumber specializing in residential leak repairs, bathroom fittings, and pumps.",
-  },
-  {
-    email: "grace@handyhubpro.com",
-    firstName: "Grace",
-    lastName: "Egwu",
-    phone: "+2348055554433",
-    skills: ["HVAC", "AC Repair", "Refrigeration"],
-    city: "Abuja",
-    verificationStatus: "VERIFIED",
-    bio: "Certified HVAC Technician specializing in Inverter Air Conditioning maintenance and gas refills.",
-  },
-  {
-    email: "usman@handyhubpro.com",
-    firstName: "Usman",
-    lastName: "Bello",
-    phone: "+2348071112233",
-    skills: ["Carpentry", "Furniture Assembly", "Roofing"],
-    city: "Abuja",
-    verificationStatus: "PENDING",
-    bio: "Master Craftsman & Custom Woodwork Furniture Carpenter serving Maitama and Wuse 2.",
-  },
-];
 
 export async function GET(request: Request) {
   try {
@@ -105,43 +61,7 @@ export async function GET(request: Request) {
       }
     }
 
-    let allCombined = Array.from(proMap.values());
-
-    // 3. AUTO-SEED DB if no artisan records exist in PostgreSQL yet
-    if (allCombined.length === 0) {
-      const tempHash = await hash("ProPass123!", 10);
-      for (const seed of DEFAULT_SEED_ARTISANS) {
-        try {
-          const user = await prisma.user.create({
-            data: {
-              email: seed.email,
-              firstName: seed.firstName,
-              lastName: seed.lastName,
-              phone: seed.phone,
-              password: tempHash,
-              role: "PROFESSIONAL",
-              isVerified: seed.verificationStatus === "VERIFIED",
-            },
-          });
-
-          const pro = await prisma.professional.create({
-            data: {
-              userId: user.id,
-              bio: seed.bio,
-              skills: JSON.stringify(seed.skills),
-              documents: JSON.stringify({ city: seed.city }),
-              verificationStatus: seed.verificationStatus,
-              yearsExperience: 6,
-              rating: 4.9,
-              totalJobs: 14,
-            },
-          });
-
-          proMap.set(user.id, { ...pro, user });
-        } catch (e) {}
-      }
-      allCombined = Array.from(proMap.values());
-    }
+    const allCombined = Array.from(proMap.values());
 
     // Format all combined professionals
     const formattedPros = allCombined.map((p) => {

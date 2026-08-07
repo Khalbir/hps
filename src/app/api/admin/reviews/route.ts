@@ -1,29 +1,11 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 
-const DEFAULT_SEED_REVIEWS = [
-  {
-    rating: 5,
-    comment: "Blessing was super thorough with the deep plumbing repair. Spotless clean work!",
-    serviceName: "Plumbing leak audit",
-  },
-  {
-    rating: 5,
-    comment: "Fixed the burning wall socket quickly and explained safety tips. Excellent electrician.",
-    serviceName: "Electrical repairs",
-  },
-  {
-    rating: 4,
-    comment: "Good AC servicing. Arrived on time and resolved the cooling issue.",
-    serviceName: "AC split installation",
-  },
-];
-
 export const dynamic = "force-dynamic";
 
 export async function GET() {
   try {
-    let reviews = await prisma.review.findMany({
+    const reviews = await prisma.review.findMany({
       orderBy: { createdAt: "desc" },
       include: {
         booking: {
@@ -35,45 +17,6 @@ export async function GET() {
         },
       },
     });
-
-    // AUTO-SEED: If 0 reviews, seed sample database reviews
-    if (reviews.length === 0) {
-      // Find a customer and booking to attach the seed reviews
-      const customer = await prisma.user.findFirst({ where: { role: "CUSTOMER" } });
-      const booking = await prisma.booking.findFirst({
-        where: { status: "COMPLETED" },
-        include: { service: true },
-      });
-
-      if (customer && booking) {
-        for (const seed of DEFAULT_SEED_REVIEWS) {
-          try {
-            await prisma.review.create({
-              data: {
-                bookingId: booking.id,
-                customerId: customer.id,
-                professionalId: booking.professionalId || "pro_fallback",
-                rating: seed.rating,
-                comment: seed.comment,
-              },
-            });
-          } catch (e) {}
-        }
-
-        reviews = await prisma.review.findMany({
-          orderBy: { createdAt: "desc" },
-          include: {
-            booking: {
-              include: {
-                service: { select: { name: true } },
-                customer: { select: { firstName: true, lastName: true, email: true } },
-                professional: { include: { user: { select: { firstName: true, lastName: true } } } },
-              },
-            },
-          },
-        });
-      }
-    }
 
     const formattedReviews = reviews.map((r) => {
       const b = r.booking || {};

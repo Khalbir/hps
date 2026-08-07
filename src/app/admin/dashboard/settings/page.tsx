@@ -68,6 +68,27 @@ export default function SettingsAndBackupsPage() {
     setTimeout(() => setToast(""), 3000);
   };
 
+  const [purgeLoading, setPurgeLoading] = useState(false);
+
+  const handlePurgeDemo = async () => {
+    if (!confirm("Are you sure you want to purge all demo mockup artisans, payments, reviews, and bookings from the database? This action cannot be undone.")) return;
+    setPurgeLoading(true);
+    try {
+      const res = await fetch("/api/admin/purge-demo", { method: "POST" });
+      const data = await res.json();
+      if (res.ok) {
+        setToast(`Database purged successfully! ${data.stats?.deletedPros || 0} demo pros & ${data.stats?.deletedPayments || 0} demo payments removed.`);
+        fetchRealCityMetrics();
+      } else {
+        alert(data.error || "Failed to purge demo data");
+      }
+    } catch (err: any) {
+      alert("Error triggering purge: " + err.message);
+    } finally {
+      setPurgeLoading(false);
+    }
+  };
+
   const handleDownloadBackup = () => {
     setBackupLoading(true);
     window.open("/api/admin/backup?adminId=SUPER_ADMIN", "_blank");
@@ -82,9 +103,9 @@ export default function SettingsAndBackupsPage() {
     <AdminLayoutShell>
       <header className={styles.adminTopBar} style={{ marginBottom: "var(--space-6)" }}>
         <div>
-          <h1 className="h3">System Settings, Database Backups & Expansion</h1>
+          <h1 className="h3">System Settings, Database Backups & Purge Engine</h1>
           <p style={{ color: "var(--text-secondary)", fontSize: "var(--fs-sm)" }}>
-            Database backup snapshots, multi-city state expansion (Abuja & beyond), Paystack/Monnify gateway config, and notification switches.
+            Database snapshot backups, demo data purge control, multi-city state expansion (Abuja & beyond), and payment gateways.
           </p>
         </div>
       </header>
@@ -117,6 +138,26 @@ export default function SettingsAndBackupsPage() {
           <p style={{ fontSize: "13px", color: "#CBD5E1", background: "#0F172A", padding: "12px", borderRadius: "8px", border: "1px solid #334155" }}>
             🔒 <strong>Disaster Recovery Protocol:</strong> Backups are encrypted and contain complete system telemetry. Chief Commander or Admin General role credentials required.
           </p>
+        </div>
+
+        {/* Purge Demo Mockups Section */}
+        <div className="card" style={{ background: "#1E293B", border: "1px solid #EF4444", padding: "20px" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <div>
+              <h3 className="h4" style={{ margin: 0, color: "#EF4444", display: "flex", alignItems: "center", gap: "8px" }}>
+                <Shield size={18} color="#EF4444" /> Purge Demo Mockups & Seed Data
+              </h3>
+              <span style={{ fontSize: "12px", color: "#94A3B8" }}>Purge all test mockups, fake demo artisans, and simulated payment logs. Leave ONLY live registered artisans and real transactions.</span>
+            </div>
+            <button
+              onClick={handlePurgeDemo}
+              disabled={purgeLoading}
+              className="btn btn-secondary btn-sm"
+              style={{ color: "#EF4444", borderColor: "#EF4444", background: "rgba(239,68,68,0.1)", display: "flex", alignItems: "center", gap: "6px" }}
+            >
+              <RefreshCw size={14} className={purgeLoading ? "animate-spin" : ""} /> {purgeLoading ? "Purging Demo..." : "Purge All Demo Data 🗑️"}
+            </button>
+          </div>
         </div>
 
         {/* Multi-City Expansion Beyond Abuja Section */}
