@@ -9,26 +9,26 @@
    CSS CUSTOM PROPERTIES (Design Tokens)
    ============================================ */
 :root {
-  /* Brand Colors */
+  /* Brand Colors (Official Company Logo Palette: Teal Cyan #00A8B5 & Safety Orange #FF6B00) */
   --color-primary-50: #E0F7FA;
   --color-primary-100: #B2EBF2;
   --color-primary-200: #80DEEA;
   --color-primary-300: #4DD0E1;
-  --color-primary-400: #26C6DA;
-  --color-primary-500: #0EA5E9;
-  --color-primary-600: #0284C7;
-  --color-primary-700: #0369A1;
-  --color-primary-800: #075985;
-  --color-primary-900: #0C4A6E;
+  --color-primary-400: #00C4D4;
+  --color-primary-500: #00A8B5;
+  --color-primary-600: #008B97;
+  --color-primary-700: #006D77;
+  --color-primary-800: #004F57;
+  --color-primary-900: #003238;
 
   --color-accent-50: #FFF7ED;
   --color-accent-100: #FFEDD5;
   --color-accent-200: #FED7AA;
   --color-accent-300: #FDBA74;
-  --color-accent-400: #FB923C;
-  --color-accent-500: #F97316;
-  --color-accent-600: #EA580C;
-  --color-accent-700: #C2410C;
+  --color-accent-400: #FF8533;
+  --color-accent-500: #FF6B00;
+  --color-accent-600: #E05D00;
+  --color-accent-700: #B84C00;
 
   /* Neutrals */
   --color-neutral-0: #FFFFFF;
