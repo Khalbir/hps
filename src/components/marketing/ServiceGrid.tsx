@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, useState, useEffect } from "react";
 import Link from "next/link";
 import { motion, useInView } from "framer-motion";
 import {
@@ -20,6 +20,8 @@ import {
   Truck,
   Settings,
 } from "lucide-react";
+import { SERVICE_CATEGORIES } from "@/lib/services";
+import { PricingRulesConfig, getEffectiveServiceItem } from "@/lib/pricingEngine";
 import styles from "./ServiceGrid.module.css";
 
 const services = [
@@ -188,6 +190,44 @@ const services = [
 export function ServiceGrid() {
   const ref = useRef(null);
   const isInView = useInView(ref, { once: true, margin: "-100px" });
+  const [pricingRules, setPricingRules] = useState<PricingRulesConfig | undefined>(undefined);
+
+  useEffect(() => {
+    async function loadRules() {
+      try {
+        const res = await fetch("/api/admin/pricing-rules");
+        const data = await res.json();
+        if (res.ok && data.rules) {
+          setPricingRules(data.rules);
+        }
+      } catch (err) {}
+    }
+    loadRules();
+  }, []);
+
+  const getDynamicPriceDisplay = (serviceSlug: string, fallbackPriceStr: string) => {
+    let foundSvc: any = null;
+    for (const cat of SERVICE_CATEGORIES) {
+      const s = cat.services.find((svc) => svc.id === serviceSlug);
+      if (s) {
+        foundSvc = s;
+        break;
+      }
+    }
+
+    if (!foundSvc) return fallbackPriceStr;
+
+    const effective = getEffectiveServiceItem(foundSvc, pricingRules);
+    const pModel = effective.pricingModel || "FIXED";
+
+    if (pModel === "CUSTOM_QUOTE") {
+      return "FREE Quote";
+    }
+    if (pModel === "QUANTITY_BASED") {
+      return `₦${effective.price.toLocaleString()} ${effective.unitLabel || "per unit"}`;
+    }
+    return `₦${effective.price.toLocaleString()}`;
+  };
 
   return (
     <section className={`section ${styles.section}`} id="services" ref={ref}>
@@ -209,34 +249,45 @@ export function ServiceGrid() {
 
         {/* Grid */}
         <div className={styles.grid}>
-          {services.map((service, i) => (
-            <motion.div
-              key={service.name}
-              initial={{ opacity: 0, y: 20 }}
-              animate={isInView ? { opacity: 1, y: 0 } : {}}
-              transition={{ duration: 0.4, delay: Math.min(i * 0.05, 0.4) }}
-            >
-              <Link
-                href={`/book?category=${service.category}&service=${service.slug}`}
-                className={`card card-hover ${styles.serviceCard}`}
+          {services.map((service, i) => {
+            const dynamicPriceStr = getDynamicPriceDisplay(service.slug, service.price);
+            const isFreeQuote = dynamicPriceStr.includes("FREE Quote");
+
+            return (
+              <motion.div
+                key={service.name}
+                initial={{ opacity: 0, y: 20 }}
+                animate={isInView ? { opacity: 1, y: 0 } : {}}
+                transition={{ duration: 0.4, delay: Math.min(i * 0.05, 0.4) }}
               >
-                <div
-                  className={styles.iconWrap}
-                  style={{ backgroundColor: service.bgColor, color: service.color }}
+                <Link
+                  href={`/book?category=${service.category}&service=${service.slug}`}
+                  className={`card card-hover ${styles.serviceCard}`}
                 >
-                  <service.icon size={24} />
-                </div>
-                <h3 className={styles.serviceName}>{service.name}</h3>
-                <p className={styles.serviceDesc}>{service.description}</p>
-                <div className={styles.serviceBottom}>
-                  <span className={styles.servicePrice}>
-                    From <strong>{service.price}</strong>
-                  </span>
-                  <span className={styles.serviceArrow}>→</span>
-                </div>
-              </Link>
-            </motion.div>
-          ))}
+                  <div
+                    className={styles.iconWrap}
+                    style={{ backgroundColor: service.bgColor, color: service.color }}
+                  >
+                    <service.icon size={24} />
+                  </div>
+                  <h3 className={styles.serviceName}>{service.name}</h3>
+                  <p className={styles.serviceDesc}>{service.description}</p>
+                  <div className={styles.serviceBottom}>
+                    <span className={styles.servicePrice}>
+                      {isFreeQuote ? (
+                        <strong style={{ color: "#C084FC" }}>{dynamicPriceStr}</strong>
+                      ) : (
+                        <>
+                          From <strong>{dynamicPriceStr}</strong>
+                        </>
+                      )}
+                    </span>
+                    <span className={styles.serviceArrow}>→</span>
+                  </div>
+                </Link>
+              </motion.div>
+            );
+          })}
         </div>
       </div>
     </section>

@@ -1,11 +1,14 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import {
   Sparkles, Wrench, Zap, Snowflake, Paintbrush, Hammer, Camera, SunMedium,
   CheckCircle2, ArrowRight, ShieldCheck, Star, Clock, MapPin, Users
 } from "lucide-react";
+import { SERVICE_CATEGORIES } from "@/lib/services";
+import { PricingRulesConfig, getEffectiveServiceItem } from "@/lib/pricingEngine";
 
 const serviceCatalog = [
   {
@@ -83,6 +86,46 @@ const serviceCatalog = [
 ];
 
 export default function ServicesPage() {
+  const [pricingRules, setPricingRules] = useState<PricingRulesConfig | undefined>(undefined);
+
+  useEffect(() => {
+    async function loadRules() {
+      try {
+        const res = await fetch("/api/admin/pricing-rules");
+        const data = await res.json();
+        if (res.ok && data.rules) {
+          setPricingRules(data.rules);
+        }
+      } catch (err) {}
+    }
+    loadRules();
+  }, []);
+
+  const getCategoryStartingPrice = (catId: string, fallbackPrice: string) => {
+    const cat = SERVICE_CATEGORIES.find((c) => c.id === catId || c.id.includes(catId));
+    if (!cat || cat.services.length === 0) return fallbackPrice;
+
+    let minPrice = Infinity;
+    let hasCustomQuoteOnly = true;
+
+    for (const s of cat.services) {
+      const effective = getEffectiveServiceItem(s, pricingRules);
+      const pModel = effective.pricingModel || "FIXED";
+      if (pModel !== "CUSTOM_QUOTE" && effective.price > 0) {
+        hasCustomQuoteOnly = false;
+        if (effective.price < minPrice) {
+          minPrice = effective.price;
+        }
+      }
+    }
+
+    if (hasCustomQuoteOnly || minPrice === Infinity) {
+      return "FREE Quote";
+    }
+
+    return `From ₦${minPrice.toLocaleString()}`;
+  };
+
   return (
     <div style={{ background: "var(--bg-primary)", padding: "var(--space-12) 0" }}>
       <div className="container">
@@ -101,6 +144,8 @@ export default function ServicesPage() {
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: "var(--space-6)", marginBottom: "var(--space-16)" }}>
           {serviceCatalog.map((service) => {
             const IconComp = service.icon;
+            const startPriceDisplay = getCategoryStartingPrice(service.id, service.price);
+
             return (
               <div
                 key={service.id}
@@ -140,7 +185,9 @@ export default function ServicesPage() {
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", borderTop: "1px solid var(--border-primary)", paddingTop: "var(--space-4)", marginTop: "auto" }}>
                   <div>
                     <span style={{ fontSize: "11px", color: "var(--text-tertiary)", display: "block" }}>Starting Price</span>
-                    <strong style={{ fontSize: "var(--fs-base)", color: "#0EA5E9" }}>{service.price}</strong>
+                    <strong style={{ fontSize: "var(--fs-base)", color: startPriceDisplay.includes("FREE") ? "#C084FC" : "#0EA5E9" }}>
+                      {startPriceDisplay}
+                    </strong>
                   </div>
                   <Link href={`/book?category=${service.id}`} className="btn btn-primary btn-md">
                     Book Now <ArrowRight size={16} />
