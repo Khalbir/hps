@@ -70,7 +70,7 @@ export const SERVICE_CATEGORIES: ServiceCategory[] = [
   {
     id: "cleaning",
     name: "Cleaning",
-    color: "#0EA5E9",
+    color: "#00A8B5",
     keywords: ["clean", "cleaning", "maid", "housekeeper", "dust", "deep clean", "office clean", "janitor", "wash", "sweeping", "mopping"],
     services: [
       { id: "residential-cleaning", name: "Residential Cleaning", price: 15000, desc: "Standard cleaning for apartments and houses" },
