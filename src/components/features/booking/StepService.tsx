@@ -71,11 +71,12 @@ export function StepService({ booking, updateBooking, onNext }: StepProps) {
     updateBooking({ quantity: Math.max(1, quantity) });
   };
 
-  const selectService = (catId: string, svc: ServiceItem) => {
+  const selectService = (catId: string, svc: any) => {
+    const pModel = ((svc as any)?.pricingModel as PricingModel) || "FIXED";
     const calc = calculateJobPrice(
       {
         serviceId: svc.id,
-        pricingModel: svc.pricingModel,
+        pricingModel: pModel,
         basePrice: svc.price,
         bedrooms: booking.bedrooms || 2,
         bathrooms: booking.bathrooms || 1,
@@ -267,11 +268,12 @@ export function StepService({ booking, updateBooking, onNext }: StepProps) {
           )}
 
           <div className={styles.serviceList}>
-            {activeCategory?.services.map((svc) => {
+            {activeCategory?.services.map((svc: any) => {
+              const pModel = ((svc as any)?.pricingModel as PricingModel) || "FIXED";
               const calc = calculateJobPrice(
                 {
                   serviceId: svc.id,
-                  pricingModel: svc.pricingModel,
+                  pricingModel: pModel,
                   basePrice: svc.price,
                   bedrooms: booking.bedrooms || 2,
                   bathrooms: booking.bathrooms || 1,

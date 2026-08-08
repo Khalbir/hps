@@ -394,3 +394,15 @@ model AuditLog {
   createdAt DateTime @default(now())
 }
 
+// ============================================
+// SYSTEM SETTINGS & CONFIGURATION
+// ============================================
+
+model Setting {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     String
+  updatedAt DateTime @updatedAt
+}
+
+

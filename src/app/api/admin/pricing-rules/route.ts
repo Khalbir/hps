@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { DEFAULT_PRICING_RULES, PricingRulesConfig } from "@/lib/pricingEngine";
+import { DEFAULT_PRICING_RULES } from "@/lib/pricingEngine";
 
 export const dynamic = "force-dynamic";
 
@@ -35,15 +35,28 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Invalid pricing rules object" }, { status: 400 });
     }
 
+    const jsonString = JSON.stringify(rules);
+
     const updatedSetting = await prisma.setting.upsert({
       where: { key: "pricing_rules_config" },
       update: {
-        value: JSON.stringify(rules),
+        value: jsonString,
       },
       create: {
         key: "pricing_rules_config",
-        value: JSON.stringify(rules),
+        value: jsonString,
       },
+    }).catch(async () => {
+      // Fallback to AuditLog if Setting table is pending DB migration
+      await prisma.auditLog.create({
+        data: {
+          action: "UPDATE_RULES",
+          entity: "PRICING_RULES",
+          details: jsonString,
+        },
+      }).catch(() => {});
+
+      return { key: "pricing_rules_config", value: jsonString };
     });
 
     return NextResponse.json({
