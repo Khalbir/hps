@@ -1,9 +1,13 @@
+import { PricingModel } from "./pricingEngine";
+
 export interface ServiceItem {
   id: string;
   name: string;
   price: number;
   desc: string;
   keywords?: string[];
+  pricingModel?: PricingModel;
+  unitLabel?: string;
 }
 
 export interface ServiceCategory {
@@ -73,10 +77,10 @@ export const SERVICE_CATEGORIES: ServiceCategory[] = [
     color: "#00A8B5",
     keywords: ["clean", "cleaning", "maid", "housekeeper", "dust", "deep clean", "office clean", "janitor", "wash", "sweeping", "mopping"],
     services: [
-      { id: "residential-cleaning", name: "Residential Cleaning", price: 15000, desc: "Standard cleaning for apartments and houses" },
-      { id: "commercial-cleaning", name: "Commercial Cleaning", price: 35000, desc: "Office and business space cleaning" },
-      { id: "deep-cleaning", name: "Deep Cleaning", price: 25000, desc: "Thorough deep cleaning of every surface" },
-      { id: "post-construction", name: "Post Construction Cleaning", price: 40000, desc: "Cleanup after renovation" },
+      { id: "residential-cleaning", name: "Residential Cleaning", price: 15000, desc: "Standard cleaning for apartments and houses", pricingModel: "PROPERTY_BASED" },
+      { id: "commercial-cleaning", name: "Commercial Cleaning", price: 35000, desc: "Office and business space cleaning", pricingModel: "QUANTITY_BASED", unitLabel: "per office space" },
+      { id: "deep-cleaning", name: "Deep Cleaning", price: 25000, desc: "Thorough deep cleaning of every surface", pricingModel: "PROPERTY_BASED" },
+      { id: "post-construction", name: "Post Construction Cleaning", price: 0, desc: "Cleanup after renovation (Free site inspection & quote)", pricingModel: "CUSTOM_QUOTE" },
     ],
   },
   {
@@ -85,9 +89,9 @@ export const SERVICE_CATEGORIES: ServiceCategory[] = [
     color: "#3B82F6",
     keywords: ["plumb", "plumbing", "sink", "leak", "leaking", "pipe", "water", "drain", "drainage", "clog", "clogged", "sewage", "heater", "faucet", "tap", "toilet", "burst"],
     services: [
-      { id: "pipe-repairs", name: "Pipe Repairs", price: 15000, desc: "Fix leaking and burst pipes" },
-      { id: "drainage-sewage", name: "Drainage & Sewage", price: 15000, desc: "Drain unblocking and sewage maintenance" },
-      { id: "water-heater", name: "Water Heater Installation", price: 20000, desc: "Install or repair water heating" },
+      { id: "pipe-repairs", name: "Pipe Repairs", price: 15000, desc: "Fix leaking and burst pipes", pricingModel: "FIXED" },
+      { id: "drainage-sewage", name: "Drainage & Sewage", price: 15000, desc: "Drain unblocking and sewage maintenance", pricingModel: "FIXED" },
+      { id: "water-heater", name: "Water Heater Installation", price: 20000, desc: "Install or repair water heating unit", pricingModel: "QUANTITY_BASED", unitLabel: "per unit" },
     ],
   },
   {
@@ -96,9 +100,9 @@ export const SERVICE_CATEGORIES: ServiceCategory[] = [
     color: "#F59E0B",
     keywords: ["electric", "electrical", "wire", "wiring", "socket", "switch", "breaker", "light", "lighting", "chandelier", "power", "short circuit", "spark", "panel"],
     services: [
-      { id: "wiring-rewiring", name: "Wiring & Rewiring", price: 15000, desc: "Full or partial electrical wiring" },
-      { id: "socket-switch", name: "Socket & Switch Repair", price: 5000, desc: "Replace or install sockets" },
-      { id: "lighting", name: "Lighting Installation", price: 8000, desc: "Chandeliers, spotlights & more" },
+      { id: "wiring-rewiring", name: "Wiring & Rewiring", price: 0, desc: "Full or partial electrical wiring assessment", pricingModel: "CUSTOM_QUOTE" },
+      { id: "socket-switch", name: "Socket & Switch Repair", price: 5000, desc: "Replace or install sockets", pricingModel: "QUANTITY_BASED", unitLabel: "per socket/switch" },
+      { id: "lighting", name: "Lighting Installation", price: 8000, desc: "Chandeliers, spotlights & fixtures", pricingModel: "QUANTITY_BASED", unitLabel: "per light fixture" },
     ],
   },
   {
@@ -107,9 +111,9 @@ export const SERVICE_CATEGORIES: ServiceCategory[] = [
     color: "#06B6D4",
     keywords: ["ac", "air conditioner", "air conditioning", "hvac", "cool", "cooling", "refill", "gas refill", "split unit", "heat", "fan"],
     services: [
-      { id: "ac-installation", name: "AC Installation", price: 15000, desc: "Split unit AC installation" },
-      { id: "ac-servicing", name: "AC Servicing", price: 8000, desc: "AC cleaning and gas refill" },
-      { id: "ac-repair", name: "AC Repair", price: 12000, desc: "Diagnose and fix AC faults" },
+      { id: "ac-installation", name: "AC Installation", price: 15000, desc: "Split unit AC installation", pricingModel: "QUANTITY_BASED", unitLabel: "per AC unit" },
+      { id: "ac-servicing", name: "AC Servicing", price: 8000, desc: "AC cleaning and gas refill", pricingModel: "QUANTITY_BASED", unitLabel: "per AC unit" },
+      { id: "ac-repair", name: "AC Repair", price: 12000, desc: "Diagnose and fix AC faults", pricingModel: "FIXED" },
     ],
   },
   {
@@ -118,8 +122,8 @@ export const SERVICE_CATEGORIES: ServiceCategory[] = [
     color: "#EC4899",
     keywords: ["paint", "painting", "painter", "wall", "interior paint", "exterior paint", "color", "coat", "primer"],
     services: [
-      { id: "interior-painting", name: "Interior Painting", price: 20000, desc: "Full interior room painting" },
-      { id: "exterior-painting", name: "Exterior Painting", price: 35000, desc: "Building exterior painting" },
+      { id: "interior-painting", name: "Interior Painting", price: 20000, desc: "Full interior room painting", pricingModel: "PROPERTY_BASED" },
+      { id: "exterior-painting", name: "Exterior Painting", price: 0, desc: "Building exterior painting & scaffolding", pricingModel: "CUSTOM_QUOTE" },
     ],
   },
   {
@@ -128,8 +132,8 @@ export const SERVICE_CATEGORIES: ServiceCategory[] = [
     color: "#A16207",
     keywords: ["carpenter", "carpentry", "furniture", "wood", "cabinet", "shelf", "door", "table", "bed", "woodwork"],
     services: [
-      { id: "furniture-assembly", name: "Furniture Assembly", price: 8000, desc: "Assemble flat-pack furniture" },
-      { id: "custom-carpentry", name: "Custom Carpentry", price: 25000, desc: "Custom shelves, cabinets" },
+      { id: "furniture-assembly", name: "Furniture Assembly", price: 8000, desc: "Assemble flat-pack furniture", pricingModel: "QUANTITY_BASED", unitLabel: "per furniture piece" },
+      { id: "custom-carpentry", name: "Custom Carpentry", price: 0, desc: "Custom shelves, cabinets & woodwork", pricingModel: "CUSTOM_QUOTE" },
     ],
   },
   {
@@ -138,7 +142,7 @@ export const SERVICE_CATEGORIES: ServiceCategory[] = [
     color: "#6366F1",
     keywords: ["security", "cctv", "camera", "surveillance", "alarm", "monitor"],
     services: [
-      { id: "cctv-installation", name: "CCTV Installation", price: 25000, desc: "Camera setup & configuration" },
+      { id: "cctv-installation", name: "CCTV Installation", price: 25000, desc: "Camera setup & configuration", pricingModel: "QUANTITY_BASED", unitLabel: "per camera channel" },
     ],
   },
   {
@@ -147,9 +151,9 @@ export const SERVICE_CATEGORIES: ServiceCategory[] = [
     color: "#F97316",
     keywords: ["solar", "inverter", "panel", "battery", "generator", "power supply", "renewable"],
     services: [
-      { id: "solar-installation", name: "Solar Panel Installation", price: 50000, desc: "Solar panel and inverter" },
-      { id: "inverter-installation", name: "Inverter Installation", price: 30000, desc: "Inverter and battery setup" },
-      { id: "generator-repairs", name: "Generator Repairs", price: 8000, desc: "Generator servicing" },
+      { id: "solar-installation", name: "Solar Panel Installation", price: 0, desc: "Solar panel and inverter system sizing", pricingModel: "CUSTOM_QUOTE" },
+      { id: "inverter-installation", name: "Inverter Installation", price: 30000, desc: "Inverter and battery setup", pricingModel: "FIXED" },
+      { id: "generator-repairs", name: "Generator Repairs", price: 8000, desc: "Generator servicing & spark plug check", pricingModel: "FIXED" },
     ],
   },
   {
@@ -158,8 +162,8 @@ export const SERVICE_CATEGORIES: ServiceCategory[] = [
     color: "#059669",
     keywords: ["renovation", "remodel", "remodeling", "interior decoration", "home improvement", "design", "decor"],
     services: [
-      { id: "interior-decoration", name: "Interior Decoration", price: 30000, desc: "Space planning & design" },
-      { id: "home-renovation", name: "Home Renovation", price: 100000, desc: "Complete remodeling" },
+      { id: "interior-decoration", name: "Interior Decoration", price: 0, desc: "Space planning & design", pricingModel: "CUSTOM_QUOTE" },
+      { id: "home-renovation", name: "Home Renovation", price: 0, desc: "Complete home or office remodeling", pricingModel: "CUSTOM_QUOTE" },
     ],
   },
   {
@@ -168,7 +172,7 @@ export const SERVICE_CATEGORIES: ServiceCategory[] = [
     color: "#16A34A",
     keywords: ["garden", "gardening", "lawn", "grass", "landscaping", "plants", "trees", "outdoor"],
     services: [
-      { id: "gardening", name: "Gardening", price: 12000, desc: "Lawn care & landscaping" },
+      { id: "gardening", name: "Gardening", price: 12000, desc: "Lawn care & landscaping", pricingModel: "PROPERTY_BASED" },
     ],
   },
   {
@@ -177,7 +181,7 @@ export const SERVICE_CATEGORIES: ServiceCategory[] = [
     color: "#0891B2",
     keywords: ["laundry", "wash", "washing", "ironing", "dry clean", "dry cleaning", "clothes"],
     services: [
-      { id: "laundry-services", name: "Laundry Services", price: 5000, desc: "Washing, ironing & dry cleaning" },
+      { id: "laundry-services", name: "Laundry Services", price: 5000, desc: "Washing, ironing & dry cleaning", pricingModel: "QUANTITY_BASED", unitLabel: "per laundry bag" },
     ],
   },
   {
@@ -186,7 +190,7 @@ export const SERVICE_CATEGORIES: ServiceCategory[] = [
     color: "#CA8A04",
     keywords: ["moving", "relocate", "relocation", "mover", "haul", "truck", "packing"],
     services: [
-      { id: "moving-services", name: "Moving Services", price: 25000, desc: "Home & office relocation" },
+      { id: "moving-services", name: "Moving Services", price: 0, desc: "Home & office relocation", pricingModel: "CUSTOM_QUOTE" },
     ],
   },
   {
@@ -195,7 +199,7 @@ export const SERVICE_CATEGORIES: ServiceCategory[] = [
     color: "#64748B",
     keywords: ["handyman", "odd jobs", "repairs", "fixing", "maintenance", "fix"],
     services: [
-      { id: "general-handyman", name: "General Handyman", price: 8000, desc: "Odd jobs & minor repairs" },
+      { id: "general-handyman", name: "General Handyman", price: 8000, desc: "Odd jobs & minor repairs", pricingModel: "FIXED" },
     ],
   },
 ];
