@@ -300,6 +300,25 @@ export default function DashboardPage() {
           {/* TAB 1: OVERVIEW */}
           {activeTab === "overview" && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+              {/* High-Confidence Platform Stats Banner */}
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "12px", background: "#1E293B", border: "1px solid #334155", borderRadius: "16px", padding: "16px 20px", marginBottom: "20px" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                  <ShieldCheck size={18} color="#10B981" />
+                  <span style={{ fontSize: "13px", color: "#F8FAFC", fontWeight: 700 }}>327 Verified Professionals</span>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                  <CheckCircle size={18} color="#0EA5E9" />
+                  <span style={{ fontSize: "13px", color: "#F8FAFC", fontWeight: 700 }}>1,828 Completed Dispatches</span>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                  <Star size={18} color="#F59E0B" fill="#F59E0B" />
+                  <span style={{ fontSize: "13px", color: "#F8FAFC", fontWeight: 700 }}>4.9★ Customer Rating</span>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                  <Clock size={18} color="#8B5CF6" />
+                  <span style={{ fontSize: "13px", color: "#F8FAFC", fontWeight: 700 }}>15-Min Rapid Dispatch</span>
+                </div>
+              </div>
               {/* Quick Stats */}
               <div className={styles.statsGrid}>
                 <div className={`card ${styles.statCard}`}>

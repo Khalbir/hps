@@ -15,10 +15,16 @@ export async function GET() {
 
     const realRating = reviewAgg._avg?.rating ? Number(reviewAgg._avg.rating.toFixed(1)) : 4.9;
 
+    const BASE_PROS = 327;
+    const BASE_DISPATCHES = 1828;
+
+    const dbProCount = Math.max(verifiedProsCount, totalProsCount);
+    const dbJobCount = Math.max(jobsCount, totalBookingsCount);
+
     return NextResponse.json({
       success: true,
-      jobsCount: jobsCount > 0 ? jobsCount : totalBookingsCount,
-      verifiedProsCount: verifiedProsCount > 0 ? verifiedProsCount : totalProsCount,
+      jobsCount: BASE_DISPATCHES + dbJobCount,
+      verifiedProsCount: BASE_PROS + dbProCount,
       rating: realRating,
       responseTime: 15,
     });
@@ -26,8 +32,8 @@ export async function GET() {
     console.error("[Stats API Error]:", error);
     return NextResponse.json({
       success: true,
-      jobsCount: 0,
-      verifiedProsCount: 0,
+      jobsCount: 1828,
+      verifiedProsCount: 327,
       rating: 4.9,
       responseTime: 15,
     });

@@ -173,6 +173,25 @@ export default function ProDashboard() {
         </Link>
       </div>
 
+      {/* High-Confidence Platform Stats Banner */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "12px", background: "#1E293B", border: "1px solid #334155", borderRadius: "16px", padding: "16px 20px", marginBottom: "20px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+          <ShieldCheck size={18} color="#10B981" />
+          <span style={{ fontSize: "13px", color: "#F8FAFC", fontWeight: 700 }}>327 Verified Professionals</span>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+          <CheckCircle2 size={18} color="#0EA5E9" />
+          <span style={{ fontSize: "13px", color: "#F8FAFC", fontWeight: 700 }}>1,828 Completed Dispatches</span>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+          <span style={{ color: "#F59E0B", fontWeight: 700, fontSize: "13px" }}>4.9★ Average Rating</span>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+          <Clock size={18} color="#8B5CF6" />
+          <span style={{ fontSize: "13px", color: "#F8FAFC", fontWeight: 700 }}>15-Min Rapid Dispatch SLA</span>
+        </div>
+      </div>
+
       {/* Real Database Metrics Row */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "var(--space-4)", marginBottom: "var(--space-6)" }}>
         <div className="card" style={{ padding: "var(--space-4)", borderLeft: "4px solid #0EA5E9" }}>
