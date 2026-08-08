@@ -96,6 +96,7 @@ export function ProLayoutShell({ children }: { children: ReactNode }) {
               <Link
                 key={item.href}
                 href={item.href}
+                onClick={() => setSidebarOpen(false)}
                 className={`${styles.navLink} ${isActive ? styles.navLinkActive : ""}`}
               >
                 <item.icon size={18} />

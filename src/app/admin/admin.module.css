@@ -452,27 +452,68 @@
   display: none;
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.7);
-  z-index: 40;
+  background: rgba(15, 23, 42, 0.85);
+  backdrop-filter: blur(6px);
+  z-index: 998;
 }
 
 @media (max-width: 1024px) {
   .adminSidebar {
     transform: translateX(-100%);
+    width: 280px !important;
+    z-index: 999;
   }
+
   .adminSidebar.adminSidebarOpen {
     transform: translateX(0);
   }
+
   .adminMain {
-    margin-left: 0;
+    margin-left: 0 !important;
+    width: 100vw !important;
+    max-width: 100vw !important;
+    padding: 0 !important;
   }
+
+  .adminTopBar {
+    padding: 14px 16px !important;
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 12px !important;
+  }
+
+  .adminContent {
+    padding: 16px !important;
+    gap: 16px !important;
+  }
+
   .adminMenuBtn {
-    display: block;
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 12px;
+    background: rgba(14, 165, 233, 0.15);
+    border: 1px solid #0EA5E9;
+    border-radius: 8px;
+    color: #38BDF8;
+    cursor: pointer;
   }
+
   .adminOverlay {
     display: block;
   }
+
   .loginCard {
     margin: var(--space-5);
+  }
+}
+
+@media (max-width: 640px) {
+  .adminTopBar {
+    padding: 12px !important;
+  }
+
+  .adminContent {
+    padding: 12px !important;
   }
 }

@@ -424,6 +424,8 @@
 @media (max-width: 1024px) {
   .sidebar {
     transform: translateX(-100%);
+    width: 280px !important;
+    z-index: 999;
   }
   .sidebarOpen {
     transform: translateX(0);
@@ -432,13 +434,27 @@
     display: block;
   }
   .main {
-    margin-left: 0;
+    margin-left: 0 !important;
+    width: 100vw !important;
+    max-width: 100vw !important;
+  }
+  .topBar {
+    padding: var(--space-4) var(--space-4) !important;
+  }
+  .content {
+    padding: var(--space-4) !important;
+    gap: var(--space-4) !important;
   }
   .menuBtn {
     display: block;
   }
   .overlay {
     display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.8);
+    backdrop-filter: blur(4px);
+    z-index: 998;
   }
   .quickActionsGrid {
     grid-template-columns: repeat(2, 1fr);
@@ -447,10 +463,10 @@
 
 @media (max-width: 768px) {
   .topBar {
-    padding: var(--space-4) var(--space-5);
+    padding: var(--space-3) var(--space-4);
   }
   .content {
-    padding: var(--space-5);
+    padding: var(--space-3) var(--space-4);
   }
   .greeting {
     font-size: var(--fs-lg);
@@ -460,6 +476,9 @@
   }
   .adminStatsGrid {
     grid-template-columns: repeat(2, 1fr);
+  }
+  .statsGrid {
+    grid-template-columns: 1fr 1fr;
   }
 }
 

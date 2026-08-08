@@ -226,6 +226,7 @@ export function AdminLayoutShell({ children }: { children: ReactNode }) {
               <Link
                 key={link.href}
                 href={link.href}
+                onClick={() => setSidebarOpen(false)}
                 className={`${styles.adminNavLink} ${isActive ? styles.adminNavLinkActive : ""}`}
               >
                 <link.icon size={18} />
@@ -247,10 +248,10 @@ export function AdminLayoutShell({ children }: { children: ReactNode }) {
       {/* Main Content Area */}
       <main className={styles.adminMain}>
         {/* Top Command Bar */}
-        <div style={{ padding: "16px 32px", background: "#0B132B", borderBottom: "1px solid rgba(255, 255, 255, 0.08)", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "12px", position: "sticky", top: 0, zIndex: 40 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+        <div style={{ padding: "14px 20px", background: "#0B132B", borderBottom: "1px solid rgba(255, 255, 255, 0.08)", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "12px", position: "sticky", top: 0, zIndex: 40 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "12px", width: "100%", maxWidth: "500px" }}>
             <button className={styles.adminMenuBtn} onClick={() => setSidebarOpen(true)}>
-              <Menu size={22} />
+              <Menu size={20} />
             </button>
 
             {/* Quick Global Search Trigger Button */}
@@ -263,11 +264,11 @@ export function AdminLayoutShell({ children }: { children: ReactNode }) {
                 background: "#1E293B",
                 border: "1px solid #334155",
                 borderRadius: "20px",
-                padding: "8px 16px",
+                padding: "8px 14px",
                 color: "#94A3B8",
                 fontSize: "13px",
                 cursor: "pointer",
-                minWidth: "260px",
+                flex: 1,
               }}
             >
               <Search size={16} color="#0EA5E9" />

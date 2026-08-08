@@ -97,7 +97,7 @@ export default function AdminPaymentsPage() {
 
   return (
     <AdminLayoutShell>
-      <div style={{ padding: "32px" }}>
+      <div className={styles.adminContent}>
         {/* Page Top Header */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "20px", marginBottom: "32px" }}>
           <div>
