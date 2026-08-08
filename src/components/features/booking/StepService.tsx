@@ -8,7 +8,7 @@ import {
 import { useState, useEffect } from "react";
 import type { BookingData } from "@/app/book/page";
 import { SERVICE_CATEGORIES, ServiceCategory, ServiceItem } from "@/lib/services";
-import { calculateJobPrice, DEFAULT_PRICING_RULES, PricingModel } from "@/lib/pricingEngine";
+import { calculateJobPrice, DEFAULT_PRICING_RULES, PricingModel, getEffectiveServiceItem } from "@/lib/pricingEngine";
 import styles from "./Steps.module.css";
 
 interface StepProps {
@@ -71,8 +71,9 @@ export function StepService({ booking, updateBooking, onNext }: StepProps) {
     updateBooking({ quantity: Math.max(1, quantity) });
   };
 
-  const selectService = (catId: string, svc: any) => {
-    const pModel = ((svc as any)?.pricingModel as PricingModel) || "FIXED";
+  const selectService = (catId: string, rawSvc: any) => {
+    const svc = getEffectiveServiceItem(rawSvc, pricingRules);
+    const pModel = (svc.pricingModel as PricingModel) || "FIXED";
     const calc = calculateJobPrice(
       {
         serviceId: svc.id,
@@ -94,7 +95,7 @@ export function StepService({ booking, updateBooking, onNext }: StepProps) {
       serviceId: svc.id,
       serviceName: svc.name,
       servicePrice: svc.price,
-      pricingModel: svc.pricingModel,
+      pricingModel: pModel,
       totalPrice: calc.totalPriceNgn,
     });
     onNext();
@@ -268,8 +269,9 @@ export function StepService({ booking, updateBooking, onNext }: StepProps) {
           )}
 
           <div className={styles.serviceList}>
-            {activeCategory?.services.map((svc: any) => {
-              const pModel = ((svc as any)?.pricingModel as PricingModel) || "FIXED";
+            {activeCategory?.services.map((rawSvc: any) => {
+              const svc = getEffectiveServiceItem(rawSvc, pricingRules);
+              const pModel = (svc.pricingModel as PricingModel) || "FIXED";
               const calc = calculateJobPrice(
                 {
                   serviceId: svc.id,

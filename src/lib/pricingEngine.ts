@@ -38,6 +38,12 @@ export interface RegionalZone {
   modifierPercent: number; // e.g. 15 for +15%, 0 for baseline, 20 for +20%
 }
 
+export interface ServiceOverrideConfig {
+  basePrice?: number;
+  pricingModel?: PricingModel;
+  unitLabel?: string;
+}
+
 export interface PricingRulesConfig {
   bedroomAddonNgn: number;
   bathroomAddonNgn: number;
@@ -48,6 +54,7 @@ export interface PricingRulesConfig {
     HEAVY: number; // e.g. 1.35 (post-construction / heavy grime)
   };
   regionalZones: RegionalZone[];
+  serviceOverrides?: Record<string, ServiceOverrideConfig>;
 }
 
 export const DEFAULT_PRICING_RULES: PricingRulesConfig = {
@@ -66,7 +73,25 @@ export const DEFAULT_PRICING_RULES: PricingRulesConfig = {
     { id: "lagos-mainland", name: "Lagos Mainland (Ikeja, Yaba, Surulere, Gbagada)", state: "Lagos", modifierPercent: 5 },
     { id: "other-regions", name: "Other Regional Hubs (Port Harcourt, Ibadan, Kano)", state: "Other", modifierPercent: 0 },
   ],
+  serviceOverrides: {},
 };
+
+/**
+ * Helper to resolve effective service item values considering admin executive overrides
+ */
+export function getEffectiveServiceItem<T extends { id: string; price: number; pricingModel?: PricingModel; unitLabel?: string }>(
+  svc: T,
+  rulesConfig?: PricingRulesConfig
+): T {
+  if (!rulesConfig?.serviceOverrides?.[svc.id]) return svc;
+  const override = rulesConfig.serviceOverrides[svc.id];
+  return {
+    ...svc,
+    price: override.basePrice !== undefined ? override.basePrice : svc.price,
+    pricingModel: override.pricingModel !== undefined ? override.pricingModel : svc.pricingModel,
+    unitLabel: override.unitLabel !== undefined ? override.unitLabel : svc.unitLabel,
+  };
+}
 
 export interface PriceCalculationInput {
   serviceId: string;
@@ -103,9 +128,11 @@ export function calculateJobPrice(
   input: PriceCalculationInput,
   rulesConfig: PricingRulesConfig = DEFAULT_PRICING_RULES
 ): PriceCalculationResult {
+  const override = rulesConfig.serviceOverrides?.[input.serviceId];
+  const activePricingModel = override?.pricingModel !== undefined ? override.pricingModel : input.pricingModel;
+  const activeBasePrice = override?.basePrice !== undefined ? override.basePrice : input.basePrice;
+
   const {
-    pricingModel,
-    basePrice,
     bedrooms = 2,
     bathrooms = 1,
     isFurnished = false,
@@ -115,7 +142,7 @@ export function calculateJobPrice(
     isExpressSchedule = false,
   } = input;
 
-  if (pricingModel === "CUSTOM_QUOTE") {
+  if (activePricingModel === "CUSTOM_QUOTE") {
     return {
       baseServicePrice: 0,
       optionsSubtotalNgn: 0,
@@ -136,17 +163,17 @@ export function calculateJobPrice(
   const breakdown: PriceBreakdownItem[] = [];
   let currentSubtotal = 0;
 
-  if (pricingModel === "FIXED") {
-    currentSubtotal = basePrice;
-    breakdown.push({ label: "Base Service Rate", amountNgn: basePrice });
-  } else if (pricingModel === "QUANTITY_BASED") {
+  if (activePricingModel === "FIXED") {
+    currentSubtotal = activeBasePrice;
+    breakdown.push({ label: "Base Service Rate", amountNgn: activeBasePrice });
+  } else if (activePricingModel === "QUANTITY_BASED") {
     const qty = Math.max(1, quantity);
-    currentSubtotal = basePrice * qty;
-    breakdown.push({ label: `Base Unit Rate (₦${basePrice.toLocaleString()} × ${qty})`, amountNgn: currentSubtotal });
-  } else if (pricingModel === "PROPERTY_BASED") {
+    currentSubtotal = activeBasePrice * qty;
+    breakdown.push({ label: `Base Unit Rate (₦${activeBasePrice.toLocaleString()} × ${qty})`, amountNgn: currentSubtotal });
+  } else if (activePricingModel === "PROPERTY_BASED") {
     // Deep Cleaning / Property-based logic
-    currentSubtotal = basePrice;
-    breakdown.push({ label: "Base Property Service Rate", amountNgn: basePrice });
+    currentSubtotal = activeBasePrice;
+    breakdown.push({ label: "Base Property Service Rate", amountNgn: activeBasePrice });
 
     // Bedroom Add-on
     const extraBedrooms = Math.max(0, bedrooms - 1);
@@ -202,7 +229,7 @@ export function calculateJobPrice(
   const artisanNetPayoutNgn = totalPriceNgn - escrowPlatformCommissionNgn; // 80%
 
   return {
-    baseServicePrice: basePrice,
+    baseServicePrice: activeBasePrice,
     optionsSubtotalNgn: currentSubtotal,
     regionalModifierPercent,
     regionalSurchargeNgn,

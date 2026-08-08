@@ -4,9 +4,11 @@ import { useState, useEffect } from "react";
 import { AdminLayoutShell } from "@/components/layout/AdminLayoutShell";
 import {
   Settings, Download, Database, Shield, MapPin, CreditCard,
-  Bell, CheckCircle2, RefreshCw, Lock, Save, Inbox, Sliders, DollarSign
+  Bell, CheckCircle2, RefreshCw, Lock, Save, Inbox, Sliders, DollarSign,
+  Search, Tag, RotateCcw, Edit3
 } from "lucide-react";
-import { DEFAULT_PRICING_RULES, PricingRulesConfig } from "@/lib/pricingEngine";
+import { DEFAULT_PRICING_RULES, PricingRulesConfig, PricingModel } from "@/lib/pricingEngine";
+import { SERVICE_CATEGORIES } from "@/lib/services";
 import styles from "../../admin.module.css";
 
 interface CityControl {
@@ -36,6 +38,33 @@ export default function SettingsAndBackupsPage() {
   // Pricing Rules State
   const [rulesConfig, setRulesConfig] = useState<PricingRulesConfig>(DEFAULT_PRICING_RULES);
   const [savingRules, setSavingRules] = useState(false);
+
+  // Executive Service Pricing Filters & Overrides State
+  const [modelFilter, setModelFilter] = useState<string>("ALL");
+  const [serviceSearch, setServiceSearch] = useState<string>("");
+
+  const updateServiceOverride = (serviceId: string, field: "basePrice" | "pricingModel" | "unitLabel", value: any) => {
+    const currentOverrides = rulesConfig.serviceOverrides || {};
+    const existing = currentOverrides[serviceId] || {};
+    const updated = { ...existing, [field]: value };
+    setRulesConfig({
+      ...rulesConfig,
+      serviceOverrides: {
+        ...currentOverrides,
+        [serviceId]: updated,
+      },
+    });
+  };
+
+  const resetServiceOverride = (serviceId: string) => {
+    if (!rulesConfig.serviceOverrides?.[serviceId]) return;
+    const updated = { ...rulesConfig.serviceOverrides };
+    delete updated[serviceId];
+    setRulesConfig({
+      ...rulesConfig,
+      serviceOverrides: updated,
+    });
+  };
 
   const fetchPricingRules = async () => {
     try {
@@ -305,6 +334,248 @@ export default function SettingsAndBackupsPage() {
                 ))}
               </div>
             </div>
+          </div>
+        </div>
+
+        {/* Executive Service Price & Pricing Model Manager Card */}
+        <div className="card" style={{ background: "#1E293B", border: "1px solid #10B981", padding: "24px", borderRadius: "16px" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px", flexWrap: "wrap", gap: "12px" }}>
+            <div>
+              <h3 className="h4" style={{ margin: 0, color: "#F8FAFC", display: "flex", alignItems: "center", gap: "8px" }}>
+                <Edit3 size={20} color="#10B981" /> Executive Service Price & Model Manager
+              </h3>
+              <span style={{ fontSize: "12px", color: "#94A3B8" }}>
+                Adjust base prices, per-unit rates, unit labels, and pricing models (Fixed, Property-Based, Quantity-Based & Custom Quote) live without editing database code.
+              </span>
+            </div>
+
+            <button
+              onClick={handleSavePricingRules}
+              disabled={savingRules}
+              className="btn btn-primary btn-md"
+              style={{ background: "#10B981", display: "flex", alignItems: "center", gap: "8px", fontWeight: 700 }}
+            >
+              <Save size={16} /> {savingRules ? "Saving Adjustments..." : "Save Executive Adjustments Live 💾"}
+            </button>
+          </div>
+
+          {/* Controls Bar: Search & Model Filter Tabs */}
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "16px", marginBottom: "20px", flexWrap: "wrap", background: "#0F172A", padding: "12px 16px", borderRadius: "12px", border: "1px solid #334155" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "8px", background: "#1E293B", padding: "6px 12px", borderRadius: "8px", border: "1px solid #334155", flex: "1", maxWidth: "340px" }}>
+              <Search size={16} color="#94A3B8" />
+              <input
+                type="text"
+                placeholder="Search services (e.g. 'Pipe', 'AC', 'Cleaning')..."
+                value={serviceSearch}
+                onChange={(e) => setServiceSearch(e.target.value)}
+                style={{ background: "transparent", border: "none", color: "#F8FAFC", outline: "none", width: "100%", fontSize: "13px" }}
+              />
+            </div>
+
+            <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
+              {[
+                { id: "ALL", label: "All Models" },
+                { id: "FIXED", label: "Fixed Price" },
+                { id: "PROPERTY_BASED", label: "Property-Based" },
+                { id: "QUANTITY_BASED", label: "Quantity-Based" },
+                { id: "CUSTOM_QUOTE", label: "Custom Quote" },
+              ].map((f) => (
+                <button
+                  key={f.id}
+                  onClick={() => setModelFilter(f.id)}
+                  style={{
+                    padding: "6px 12px",
+                    borderRadius: "8px",
+                    border: "1px solid",
+                    borderColor: modelFilter === f.id ? "#10B981" : "#334155",
+                    background: modelFilter === f.id ? "rgba(16,185,129,0.15)" : "#1E293B",
+                    color: modelFilter === f.id ? "#10B981" : "#94A3B8",
+                    fontSize: "12px",
+                    fontWeight: 600,
+                    cursor: "pointer",
+                  }}
+                >
+                  {f.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Service Categories Accordion / List */}
+          <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+            {SERVICE_CATEGORIES.map((cat) => {
+              // Filter services in this category by search & model
+              const filteredServices = cat.services.filter((svc) => {
+                const override = rulesConfig.serviceOverrides?.[svc.id];
+                const activeModel = override?.pricingModel || svc.pricingModel || "FIXED";
+                const matchesModel = modelFilter === "ALL" || activeModel === modelFilter;
+                const matchesSearch = !serviceSearch || svc.name.toLowerCase().includes(serviceSearch.toLowerCase()) || svc.desc.toLowerCase().includes(serviceSearch.toLowerCase());
+                return matchesModel && matchesSearch;
+              });
+
+              if (filteredServices.length === 0) return null;
+
+              return (
+                <div key={cat.id} style={{ background: "#0F172A", border: "1px solid #334155", borderRadius: "12px", padding: "16px" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "14px", borderBottom: "1px solid #1E293B", paddingBottom: "10px" }}>
+                    <div style={{ width: 12, height: 12, borderRadius: "50%", background: cat.color }} />
+                    <h4 style={{ margin: 0, color: "#F8FAFC", fontSize: "15px", fontWeight: 700 }}>{cat.name}</h4>
+                    <span style={{ fontSize: "11px", color: "#94A3B8", background: "#1E293B", padding: "2px 8px", borderRadius: "10px" }}>
+                      {filteredServices.length} service{filteredServices.length > 1 ? "s" : ""}
+                    </span>
+                  </div>
+
+                  <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                    {filteredServices.map((svc) => {
+                      const override = rulesConfig.serviceOverrides?.[svc.id];
+                      const isOverridden = !!override && (override.basePrice !== undefined || override.pricingModel !== undefined || override.unitLabel !== undefined);
+                      const currentModel = override?.pricingModel || svc.pricingModel || "FIXED";
+                      const currentPrice = override?.basePrice !== undefined ? override.basePrice : svc.price;
+                      const currentUnitLabel = override?.unitLabel !== undefined ? override.unitLabel : (svc.unitLabel || "per unit");
+
+                      return (
+                        <div
+                          key={svc.id}
+                          style={{
+                            background: "#1E293B",
+                            border: isOverridden ? "1px solid #10B981" : "1px solid #334155",
+                            borderRadius: "10px",
+                            padding: "14px 16px",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "space-between",
+                            flexWrap: "wrap",
+                            gap: "14px",
+                          }}
+                        >
+                          {/* Service Info */}
+                          <div style={{ flex: 1, minWidth: "220px" }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px" }}>
+                              <strong style={{ color: "#F8FAFC", fontSize: "14px" }}>{svc.name}</strong>
+                              {isOverridden && (
+                                <span style={{ fontSize: "10px", fontWeight: 800, background: "rgba(16,185,129,0.2)", color: "#10B981", padding: "2px 6px", borderRadius: "4px" }}>
+                                  EXECUTIVE ADJUSTED
+                                </span>
+                              )}
+                            </div>
+                            <span style={{ fontSize: "12px", color: "#94A3B8", display: "block" }}>{svc.desc}</span>
+                          </div>
+
+                          {/* Controls: Model Dropdown & Price Input */}
+                          <div style={{ display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
+                            {/* Pricing Model Selector */}
+                            <div>
+                              <span style={{ fontSize: "10px", color: "#94A3B8", display: "block", marginBottom: 2 }}>Pricing Model</span>
+                              <select
+                                value={currentModel}
+                                onChange={(e) => updateServiceOverride(svc.id, "pricingModel", e.target.value as PricingModel)}
+                                style={{
+                                  padding: "6px 10px",
+                                  borderRadius: "6px",
+                                  border: "1px solid #334155",
+                                  background: "#0F172A",
+                                  color:
+                                    currentModel === "PROPERTY_BASED"
+                                      ? "#38BDF8"
+                                      : currentModel === "QUANTITY_BASED"
+                                      ? "#F59E0B"
+                                      : currentModel === "CUSTOM_QUOTE"
+                                      ? "#C084FC"
+                                      : "#10B981",
+                                  fontSize: "12px",
+                                  fontWeight: 700,
+                                  outline: "none",
+                                  cursor: "pointer",
+                                }}
+                              >
+                                <option value="FIXED">FIXED (Flat Rate)</option>
+                                <option value="PROPERTY_BASED">PROPERTY_BASED (Property Size)</option>
+                                <option value="QUANTITY_BASED">QUANTITY_BASED (Per Unit)</option>
+                                <option value="CUSTOM_QUOTE">CUSTOM_QUOTE (Inspection)</option>
+                              </select>
+                            </div>
+
+                            {/* Base Price / Unit Price Input */}
+                            <div>
+                              <span style={{ fontSize: "10px", color: "#94A3B8", display: "block", marginBottom: 2 }}>
+                                {currentModel === "QUANTITY_BASED" ? "Per-Unit Rate (₦)" : currentModel === "CUSTOM_QUOTE" ? "Quote Cost" : "Base Rate (₦)"}
+                              </span>
+                              <div style={{ display: "flex", alignItems: "center", background: "#0F172A", border: "1px solid #334155", borderRadius: "6px", padding: "0 8px" }}>
+                                <span style={{ fontSize: "12px", color: "#10B981", fontWeight: 700, marginRight: 4 }}>₦</span>
+                                <input
+                                  type="number"
+                                  disabled={currentModel === "CUSTOM_QUOTE"}
+                                  value={currentModel === "CUSTOM_QUOTE" ? 0 : currentPrice}
+                                  onChange={(e) => updateServiceOverride(svc.id, "basePrice", Number(e.target.value))}
+                                  style={{
+                                    width: "90px",
+                                    padding: "6px 0",
+                                    border: "none",
+                                    background: "transparent",
+                                    color: currentModel === "CUSTOM_QUOTE" ? "#94A3B8" : "#F8FAFC",
+                                    fontSize: "13px",
+                                    fontWeight: 700,
+                                    outline: "none",
+                                  }}
+                                />
+                              </div>
+                            </div>
+
+                            {/* Unit Label Input (shown for Quantity-based) */}
+                            {currentModel === "QUANTITY_BASED" && (
+                              <div>
+                                <span style={{ fontSize: "10px", color: "#94A3B8", display: "block", marginBottom: 2 }}>Unit Label</span>
+                                <input
+                                  type="text"
+                                  value={currentUnitLabel}
+                                  onChange={(e) => updateServiceOverride(svc.id, "unitLabel", e.target.value)}
+                                  placeholder="e.g. per socket"
+                                  style={{
+                                    width: "110px",
+                                    padding: "6px 8px",
+                                    borderRadius: "6px",
+                                    border: "1px solid #334155",
+                                    background: "#0F172A",
+                                    color: "#F8FAFC",
+                                    fontSize: "12px",
+                                    outline: "none",
+                                  }}
+                                />
+                              </div>
+                            )}
+
+                            {/* Reset Button */}
+                            {isOverridden && (
+                              <button
+                                type="button"
+                                onClick={() => resetServiceOverride(svc.id)}
+                                title="Reset to system default"
+                                style={{
+                                  background: "rgba(239,68,68,0.15)",
+                                  border: "1px solid #EF4444",
+                                  color: "#EF4444",
+                                  padding: "6px 10px",
+                                  borderRadius: "6px",
+                                  fontSize: "11px",
+                                  fontWeight: 600,
+                                  cursor: "pointer",
+                                  display: "flex",
+                                  alignItems: "center",
+                                  gap: "4px",
+                                  marginTop: "16px",
+                                }}
+                              >
+                                <RotateCcw size={12} /> Reset
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
 
