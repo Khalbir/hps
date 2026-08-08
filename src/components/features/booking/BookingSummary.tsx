@@ -17,7 +17,10 @@ export function BookingSummary({ booking, currentStep }: Props) {
   useEffect(() => {
     async function fetchRules() {
       try {
-        const res = await fetch("/api/admin/pricing-rules");
+        const res = await fetch("/api/admin/pricing-rules", {
+          cache: "no-store",
+          headers: { "Cache-Control": "no-cache, no-store, must-revalidate" },
+        });
         const data = await res.json();
         if (res.ok && data.rules) {
           setRulesConfig(data.rules);

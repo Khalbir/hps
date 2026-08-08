@@ -91,7 +91,10 @@ export default function ServicesPage() {
   useEffect(() => {
     async function loadRules() {
       try {
-        const res = await fetch("/api/admin/pricing-rules");
+        const res = await fetch("/api/admin/pricing-rules", {
+          cache: "no-store",
+          headers: { "Cache-Control": "no-cache, no-store, must-revalidate" },
+        });
         const data = await res.json();
         if (res.ok && data.rules) {
           setPricingRules(data.rules);

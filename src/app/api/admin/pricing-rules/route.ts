@@ -3,10 +3,25 @@ import { prisma } from "@/lib/db";
 import { DEFAULT_PRICING_RULES } from "@/lib/pricingEngine";
 
 export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
+let inMemoryRulesConfig: any = null;
+
+const NO_CACHE_HEADERS = {
+  "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0",
+  "Pragma": "no-cache",
+  "Expires": "0",
+};
 
 // GET /api/admin/pricing-rules
 export async function GET() {
   try {
+    // 1. Check in-memory cache first for instant updates
+    if (inMemoryRulesConfig) {
+      return NextResponse.json({ success: true, rules: inMemoryRulesConfig }, { headers: NO_CACHE_HEADERS });
+    }
+
+    // 2. Try DB Setting table
     const setting = await prisma.setting.findUnique({
       where: { key: "pricing_rules_config" },
     }).catch(() => null);
@@ -14,14 +29,29 @@ export async function GET() {
     if (setting?.value) {
       try {
         const parsed = JSON.parse(setting.value);
-        return NextResponse.json({ success: true, rules: parsed });
+        inMemoryRulesConfig = parsed;
+        return NextResponse.json({ success: true, rules: parsed }, { headers: NO_CACHE_HEADERS });
       } catch (e) {}
     }
 
-    return NextResponse.json({ success: true, rules: DEFAULT_PRICING_RULES });
+    // 3. Fallback: Check AuditLog table for latest UPDATE_RULES entry
+    const audit = await prisma.auditLog.findFirst({
+      where: { action: "UPDATE_RULES", entity: "PRICING_RULES" },
+      orderBy: { createdAt: "desc" },
+    }).catch(() => null);
+
+    if (audit?.details) {
+      try {
+        const parsed = JSON.parse(audit.details);
+        inMemoryRulesConfig = parsed;
+        return NextResponse.json({ success: true, rules: parsed }, { headers: NO_CACHE_HEADERS });
+      } catch (e) {}
+    }
+
+    return NextResponse.json({ success: true, rules: DEFAULT_PRICING_RULES }, { headers: NO_CACHE_HEADERS });
   } catch (error: any) {
     console.error("[Pricing Rules GET Error]:", error);
-    return NextResponse.json({ success: true, rules: DEFAULT_PRICING_RULES });
+    return NextResponse.json({ success: true, rules: inMemoryRulesConfig || DEFAULT_PRICING_RULES }, { headers: NO_CACHE_HEADERS });
   }
 }
 
@@ -35,19 +65,17 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Invalid pricing rules object" }, { status: 400 });
     }
 
+    // Update in-memory cache immediately
+    inMemoryRulesConfig = rules;
     const jsonString = JSON.stringify(rules);
 
-    const updatedSetting = await prisma.setting.upsert({
+    // Save to Setting table & AuditLog table
+    await prisma.setting.upsert({
       where: { key: "pricing_rules_config" },
-      update: {
-        value: jsonString,
-      },
-      create: {
-        key: "pricing_rules_config",
-        value: jsonString,
-      },
+      update: { value: jsonString },
+      create: { key: "pricing_rules_config", value: jsonString },
     }).catch(async () => {
-      // Fallback to AuditLog if Setting table is pending DB migration
+      // Fallback: save to AuditLog table
       await prisma.auditLog.create({
         data: {
           action: "UPDATE_RULES",
@@ -55,15 +83,16 @@ export async function POST(request: Request) {
           details: jsonString,
         },
       }).catch(() => {});
-
-      return { key: "pricing_rules_config", value: jsonString };
     });
 
-    return NextResponse.json({
-      success: true,
-      message: "Nigerian Pricing Rules & Regional Surcharge Matrix updated successfully!",
-      rules: JSON.parse(updatedSetting.value),
-    });
+    return NextResponse.json(
+      {
+        success: true,
+        message: "Executive pricing adjustments saved & published live!",
+        rules,
+      },
+      { headers: NO_CACHE_HEADERS }
+    );
   } catch (error: any) {
     console.error("[Pricing Rules POST Error]:", error);
     return NextResponse.json({ error: error.message || "Failed to save pricing rules" }, { status: 500 });
