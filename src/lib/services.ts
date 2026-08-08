@@ -85,7 +85,7 @@ export const SERVICE_CATEGORIES: ServiceCategory[] = [
     color: "#3B82F6",
     keywords: ["plumb", "plumbing", "sink", "leak", "leaking", "pipe", "water", "drain", "drainage", "clog", "clogged", "sewage", "heater", "faucet", "tap", "toilet", "burst"],
     services: [
-      { id: "pipe-repairs", name: "Pipe Repairs", price: 10000, desc: "Fix leaking and burst pipes" },
+      { id: "pipe-repairs", name: "Pipe Repairs", price: 15000, desc: "Fix leaking and burst pipes" },
       { id: "drainage-sewage", name: "Drainage & Sewage", price: 15000, desc: "Drain unblocking and sewage maintenance" },
       { id: "water-heater", name: "Water Heater Installation", price: 20000, desc: "Install or repair water heating" },
     ],

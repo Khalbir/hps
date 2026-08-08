@@ -3,79 +3,13 @@
 import {
   Sparkles, Droplets, Zap, Paintbrush, Wind, Camera, Sun,
   Hammer, Home, TreePine, Shirt, Truck, Settings, Search,
+  Building2, CheckCircle2, ShieldCheck, HelpCircle, Layers, Sliders
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import type { BookingData } from "@/app/book/page";
+import { SERVICE_CATEGORIES, ServiceCategory, ServiceItem } from "@/lib/services";
+import { calculateJobPrice, DEFAULT_PRICING_RULES, PricingModel } from "@/lib/pricingEngine";
 import styles from "./Steps.module.css";
-
-const categories = [
-  { id: "cleaning", name: "Cleaning", icon: Sparkles, color: "#0EA5E9",
-    services: [
-      { id: "residential-cleaning", name: "Residential Cleaning", price: 15000, desc: "Standard cleaning for apartments and houses" },
-      { id: "commercial-cleaning", name: "Commercial Cleaning", price: 35000, desc: "Office and business space cleaning" },
-      { id: "deep-cleaning", name: "Deep Cleaning", price: 25000, desc: "Thorough deep cleaning of every surface" },
-      { id: "post-construction", name: "Post Construction Cleaning", price: 40000, desc: "Cleanup after renovation" },
-    ] },
-  { id: "plumbing", name: "Plumbing", icon: Droplets, color: "#3B82F6",
-    services: [
-      { id: "pipe-repairs", name: "Pipe Repairs", price: 10000, desc: "Fix leaking and burst pipes" },
-      { id: "drainage-sewage", name: "Drainage & Sewage", price: 15000, desc: "Drain unblocking and sewage maintenance" },
-      { id: "water-heater", name: "Water Heater Installation", price: 20000, desc: "Install or repair water heating" },
-    ] },
-  { id: "electrical", name: "Electrical", icon: Zap, color: "#F59E0B",
-    services: [
-      { id: "wiring-rewiring", name: "Wiring & Rewiring", price: 15000, desc: "Full or partial electrical wiring" },
-      { id: "socket-switch", name: "Socket & Switch Repair", price: 5000, desc: "Replace or install sockets" },
-      { id: "lighting", name: "Lighting Installation", price: 8000, desc: "Chandeliers, spotlights & more" },
-    ] },
-  { id: "hvac", name: "AC & HVAC", icon: Wind, color: "#06B6D4",
-    services: [
-      { id: "ac-installation", name: "AC Installation", price: 15000, desc: "Split unit AC installation" },
-      { id: "ac-servicing", name: "AC Servicing", price: 8000, desc: "AC cleaning and gas refill" },
-      { id: "ac-repair", name: "AC Repair", price: 12000, desc: "Diagnose and fix AC faults" },
-    ] },
-  { id: "painting", name: "Painting", icon: Paintbrush, color: "#EC4899",
-    services: [
-      { id: "interior-painting", name: "Interior Painting", price: 20000, desc: "Full interior room painting" },
-      { id: "exterior-painting", name: "Exterior Painting", price: 35000, desc: "Building exterior painting" },
-    ] },
-  { id: "carpentry", name: "Carpentry", icon: Hammer, color: "#A16207",
-    services: [
-      { id: "furniture-assembly", name: "Furniture Assembly", price: 8000, desc: "Assemble flat-pack furniture" },
-      { id: "custom-carpentry", name: "Custom Carpentry", price: 25000, desc: "Custom shelves, cabinets" },
-    ] },
-  { id: "security", name: "Security", icon: Camera, color: "#6366F1",
-    services: [
-      { id: "cctv-installation", name: "CCTV Installation", price: 25000, desc: "Camera setup & configuration" },
-    ] },
-  { id: "solar", name: "Solar & Power", icon: Sun, color: "#F97316",
-    services: [
-      { id: "solar-installation", name: "Solar Panel Installation", price: 50000, desc: "Solar panel and inverter" },
-      { id: "inverter-installation", name: "Inverter Installation", price: 30000, desc: "Inverter and battery setup" },
-      { id: "generator-repairs", name: "Generator Repairs", price: 8000, desc: "Generator servicing" },
-    ] },
-  { id: "home-improvement", name: "Home Improvement", icon: Home, color: "#059669",
-    services: [
-      { id: "interior-decoration", name: "Interior Decoration", price: 30000, desc: "Space planning & design" },
-      { id: "home-renovation", name: "Home Renovation", price: 100000, desc: "Complete remodeling" },
-    ] },
-  { id: "outdoor", name: "Gardening", icon: TreePine, color: "#16A34A",
-    services: [
-      { id: "gardening", name: "Gardening", price: 12000, desc: "Lawn care & landscaping" },
-    ] },
-  { id: "laundry", name: "Laundry", icon: Shirt, color: "#0891B2",
-    services: [
-      { id: "laundry-services", name: "Laundry Services", price: 5000, desc: "Washing, ironing & dry cleaning" },
-    ] },
-  { id: "moving", name: "Moving", icon: Truck, color: "#CA8A04",
-    services: [
-      { id: "moving-services", name: "Moving Services", price: 25000, desc: "Home & office relocation" },
-    ] },
-  { id: "general", name: "Handyman", icon: Settings, color: "#64748B",
-    services: [
-      { id: "general-handyman", name: "General Handyman", price: 8000, desc: "Odd jobs & minor repairs" },
-    ] },
-];
 
 interface StepProps {
   booking: BookingData;
@@ -86,6 +20,20 @@ interface StepProps {
 export function StepService({ booking, updateBooking, onNext }: StepProps) {
   const [selectedCategory, setSelectedCategory] = useState(booking.serviceCategory || "");
   const [searchQuery, setSearchQuery] = useState(booking.initialQuery || "");
+  const [pricingRules, setPricingRules] = useState(DEFAULT_PRICING_RULES);
+
+  useEffect(() => {
+    async function loadPricingRules() {
+      try {
+        const res = await fetch("/api/admin/pricing-rules");
+        const data = await res.json();
+        if (res.ok && data.rules) {
+          setPricingRules(data.rules);
+        }
+      } catch (err) {}
+    }
+    loadPricingRules();
+  }, []);
 
   useEffect(() => {
     if (booking.serviceCategory) {
@@ -93,24 +41,15 @@ export function StepService({ booking, updateBooking, onNext }: StepProps) {
     }
   }, [booking.serviceCategory]);
 
-  const activeCategory = categories.find((c) => c.id === selectedCategory);
+  const activeCategory = SERVICE_CATEGORIES.find((c) => c.id === selectedCategory);
 
   const filteredCategories = searchQuery
-    ? categories.filter(
+    ? SERVICE_CATEGORIES.filter(
         (c) =>
           c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
           c.services.some((s) => s.name.toLowerCase().includes(searchQuery.toLowerCase()))
       )
-    : categories;
-
-  const isCleaning = selectedCategory === "cleaning";
-
-  const calculatePrice = (basePrice: number, bedrooms: number, bathrooms: number) => {
-    if (isCleaning) {
-      return basePrice + (bedrooms - 1) * 3000 + (bathrooms - 1) * 2000;
-    }
-    return basePrice;
-  };
+    : SERVICE_CATEGORIES;
 
   const handleBedroomsChange = (n: number) => {
     updateBooking({ bedrooms: n });
@@ -120,14 +59,42 @@ export function StepService({ booking, updateBooking, onNext }: StepProps) {
     updateBooking({ bathrooms: n });
   };
 
-  const selectService = (catId: string, svc: { id: string; name: string; price: number }) => {
-    const finalPrice = calculatePrice(svc.price, booking.bedrooms || 2, booking.bathrooms || 1);
+  const handleFurnishedToggle = (isFurnished: boolean) => {
+    updateBooking({ isFurnished });
+  };
+
+  const handleDirtLevelChange = (dirtLevel: "LIGHT" | "MODERATE" | "HEAVY") => {
+    updateBooking({ dirtLevel });
+  };
+
+  const handleQuantityChange = (quantity: number) => {
+    updateBooking({ quantity: Math.max(1, quantity) });
+  };
+
+  const selectService = (catId: string, svc: ServiceItem) => {
+    const calc = calculateJobPrice(
+      {
+        serviceId: svc.id,
+        pricingModel: svc.pricingModel,
+        basePrice: svc.price,
+        bedrooms: booking.bedrooms || 2,
+        bathrooms: booking.bathrooms || 1,
+        isFurnished: booking.isFurnished || false,
+        dirtLevel: booking.dirtLevel || "MODERATE",
+        quantity: booking.quantity || 1,
+        regionalZoneId: booking.regionalZoneId || "abuja-suburbs",
+        isExpressSchedule: booking.isEmergency || false,
+      },
+      pricingRules
+    );
+
     updateBooking({
       serviceCategory: catId,
       serviceId: svc.id,
       serviceName: svc.name,
       servicePrice: svc.price,
-      totalPrice: finalPrice,
+      pricingModel: svc.pricingModel,
+      totalPrice: calc.totalPriceNgn,
     });
     onNext();
   };
@@ -139,7 +106,7 @@ export function StepService({ booking, updateBooking, onNext }: StepProps) {
         <Search size={20} className={styles.searchIcon} />
         <input
           type="text"
-          placeholder="Search services... e.g. 'My sink is leaking'"
+          placeholder="Search services... e.g. 'AC not cooling' or 'Deep cleaning'"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           className={styles.searchInput}
@@ -148,7 +115,7 @@ export function StepService({ booking, updateBooking, onNext }: StepProps) {
 
       {!selectedCategory ? (
         <>
-          <h2 className={styles.stepTitle}>What service do you need?</h2>
+          <h2 className={styles.stepTitle}>Select Your Service Category</h2>
           <div className={styles.categoryGrid}>
             {filteredCategories.map((cat) => (
               <button
@@ -157,7 +124,7 @@ export function StepService({ booking, updateBooking, onNext }: StepProps) {
                 onClick={() => setSelectedCategory(cat.id)}
               >
                 <div className={styles.categoryIcon} style={{ backgroundColor: `${cat.color}15`, color: cat.color }}>
-                  <cat.icon size={24} />
+                  <Layers size={24} />
                 </div>
                 <span className={styles.categoryName}>{cat.name}</span>
                 <span className={styles.categoryCount}>{cat.services.length} service{cat.services.length > 1 ? "s" : ""}</span>
@@ -168,58 +135,132 @@ export function StepService({ booking, updateBooking, onNext }: StepProps) {
       ) : (
         <>
           <button className={styles.backToCategories} onClick={() => setSelectedCategory("")}>
-            ← All Categories
+            ← All Service Categories
           </button>
-          <h2 className={styles.stepTitle}>{activeCategory?.name} Services</h2>
+          <h2 className={styles.stepTitle}>{activeCategory?.name} Options</h2>
 
-          {selectedCategory === "cleaning" && (
-            <div className={styles.configCard}>
-              <div className={styles.configHeader}>
-                <h4 className={styles.configTitle}>Customize Property Size</h4>
-                <p className={styles.configSubtitle}>Specify rooms and bathrooms to get an accurate estimate instantly.</p>
+          {/* Property-Based Controls for Cleaning & Painting */}
+          {(selectedCategory === "cleaning" || selectedCategory === "painting") && (
+            <div className={styles.configCard} style={{ background: "#1E293B", border: "1px solid #334155", padding: "20px", borderRadius: "16px", marginBottom: "24px" }}>
+              <div className={styles.configHeader} style={{ marginBottom: "16px" }}>
+                <h4 className={styles.configTitle} style={{ margin: 0, color: "#F8FAFC", fontSize: "16px", display: "flex", alignItems: "center", gap: "8px" }}>
+                  <Building2 size={18} color="#0EA5E9" /> Property Size & Condition Configuration
+                </h4>
+                <p className={styles.configSubtitle} style={{ margin: "4px 0 0", color: "#94A3B8", fontSize: "13px" }}>
+                  Customize rooms, furnished fitting, and grime level for instant upfront pricing.
+                </p>
               </div>
-              <div className={styles.configControls}>
-                <div className={styles.configField}>
-                  <span className={styles.configLabel}>Bedrooms</span>
-                  <div className={styles.configCounter}>
+
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "16px" }}>
+                {/* Bedrooms Counter */}
+                <div style={{ background: "#0F172A", padding: "12px 16px", borderRadius: "12px", border: "1px solid #334155" }}>
+                  <span style={{ fontSize: "12px", color: "#94A3B8", fontWeight: 600 }}>Bedrooms</span>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: "8px" }}>
                     <button
                       type="button"
                       onClick={() => handleBedroomsChange(Math.max(1, (booking.bedrooms || 2) - 1))}
-                      className={styles.configBtn}
+                      style={{ background: "#1E293B", border: "1px solid #334155", color: "#F8FAFC", width: 32, height: 32, borderRadius: 8, cursor: "pointer", fontWeight: "bold" }}
                       disabled={(booking.bedrooms || 2) <= 1}
                     >
                       -
                     </button>
-                    <span className={styles.configValue}>{booking.bedrooms || 2}</span>
+                    <span style={{ fontSize: "16px", fontWeight: "bold", color: "#F8FAFC" }}>{booking.bedrooms || 2}</span>
                     <button
                       type="button"
                       onClick={() => handleBedroomsChange((booking.bedrooms || 2) + 1)}
-                      className={styles.configBtn}
+                      style={{ background: "#1E293B", border: "1px solid #334155", color: "#F8FAFC", width: 32, height: 32, borderRadius: 8, cursor: "pointer", fontWeight: "bold" }}
                     >
                       +
                     </button>
                   </div>
                 </div>
-                <div className={styles.configField}>
-                  <span className={styles.configLabel}>Bathrooms</span>
-                  <div className={styles.configCounter}>
+
+                {/* Bathrooms Counter */}
+                <div style={{ background: "#0F172A", padding: "12px 16px", borderRadius: "12px", border: "1px solid #334155" }}>
+                  <span style={{ fontSize: "12px", color: "#94A3B8", fontWeight: 600 }}>Bathrooms</span>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: "8px" }}>
                     <button
                       type="button"
                       onClick={() => handleBathroomsChange(Math.max(1, (booking.bathrooms || 1) - 1))}
-                      className={styles.configBtn}
+                      style={{ background: "#1E293B", border: "1px solid #334155", color: "#F8FAFC", width: 32, height: 32, borderRadius: 8, cursor: "pointer", fontWeight: "bold" }}
                       disabled={(booking.bathrooms || 1) <= 1}
                     >
                       -
                     </button>
-                    <span className={styles.configValue}>{booking.bathrooms || 1}</span>
+                    <span style={{ fontSize: "16px", fontWeight: "bold", color: "#F8FAFC" }}>{booking.bathrooms || 1}</span>
                     <button
                       type="button"
                       onClick={() => handleBathroomsChange((booking.bathrooms || 1) + 1)}
-                      className={styles.configBtn}
+                      style={{ background: "#1E293B", border: "1px solid #334155", color: "#F8FAFC", width: 32, height: 32, borderRadius: 8, cursor: "pointer", fontWeight: "bold" }}
                     >
                       +
                     </button>
                   </div>
+                </div>
+
+                {/* Furnished Toggle */}
+                <div style={{ background: "#0F172A", padding: "12px 16px", borderRadius: "12px", border: "1px solid #334155" }}>
+                  <span style={{ fontSize: "12px", color: "#94A3B8", fontWeight: 600 }}>Furnished Status</span>
+                  <div style={{ display: "flex", gap: "6px", marginTop: "8px" }}>
+                    <button
+                      type="button"
+                      onClick={() => handleFurnishedToggle(false)}
+                      style={{
+                        flex: 1,
+                        padding: "6px 8px",
+                        borderRadius: "6px",
+                        fontSize: "12px",
+                        fontWeight: 700,
+                        border: !booking.isFurnished ? "1px solid #0EA5E9" : "1px solid #334155",
+                        background: !booking.isFurnished ? "rgba(14,165,233,0.15)" : "#1E293B",
+                        color: !booking.isFurnished ? "#38BDF8" : "#94A3B8",
+                        cursor: "pointer",
+                      }}
+                    >
+                      Unfurnished
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleFurnishedToggle(true)}
+                      style={{
+                        flex: 1,
+                        padding: "6px 8px",
+                        borderRadius: "6px",
+                        fontSize: "12px",
+                        fontWeight: 700,
+                        border: booking.isFurnished ? "1px solid #0EA5E9" : "1px solid #334155",
+                        background: booking.isFurnished ? "rgba(14,165,233,0.15)" : "#1E293B",
+                        color: booking.isFurnished ? "#38BDF8" : "#94A3B8",
+                        cursor: "pointer",
+                      }}
+                    >
+                      Furnished (+₦5k)
+                    </button>
+                  </div>
+                </div>
+
+                {/* Dirt Level Selector */}
+                <div style={{ background: "#0F172A", padding: "12px 16px", borderRadius: "12px", border: "1px solid #334155" }}>
+                  <span style={{ fontSize: "12px", color: "#94A3B8", fontWeight: 600 }}>Condition / Dirt Level</span>
+                  <select
+                    value={booking.dirtLevel || "MODERATE"}
+                    onChange={(e: any) => handleDirtLevelChange(e.target.value)}
+                    style={{
+                      width: "100%",
+                      marginTop: "8px",
+                      background: "#1E293B",
+                      border: "1px solid #334155",
+                      color: "#F8FAFC",
+                      padding: "6px 10px",
+                      borderRadius: "6px",
+                      fontSize: "12px",
+                      fontWeight: 600,
+                    }}
+                  >
+                    <option value="LIGHT">Light Maintenance (1.0x)</option>
+                    <option value="MODERATE">Moderate Grime (1.15x)</option>
+                    <option value="HEAVY">Heavy / Post-Construction (1.35x)</option>
+                  </select>
                 </div>
               </div>
             </div>
@@ -227,24 +268,121 @@ export function StepService({ booking, updateBooking, onNext }: StepProps) {
 
           <div className={styles.serviceList}>
             {activeCategory?.services.map((svc) => {
-              const calculatedPrice = calculatePrice(svc.price, booking.bedrooms || 2, booking.bathrooms || 1);
+              const calc = calculateJobPrice(
+                {
+                  serviceId: svc.id,
+                  pricingModel: svc.pricingModel,
+                  basePrice: svc.price,
+                  bedrooms: booking.bedrooms || 2,
+                  bathrooms: booking.bathrooms || 1,
+                  isFurnished: booking.isFurnished || false,
+                  dirtLevel: booking.dirtLevel || "MODERATE",
+                  quantity: booking.quantity || 1,
+                  regionalZoneId: booking.regionalZoneId || "abuja-suburbs",
+                  isExpressSchedule: booking.isEmergency || false,
+                },
+                pricingRules
+              );
+
               return (
-                <button
+                <div
                   key={svc.id}
-                  className={`card card-hover ${styles.serviceItem}`}
-                  onClick={() => selectService(selectedCategory, svc)}
+                  className="card card-hover"
+                  style={{
+                    background: "#1E293B",
+                    border: "1px solid #334155",
+                    borderRadius: "16px",
+                    padding: "20px",
+                    marginBottom: "16px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    flexWrap: "wrap",
+                    gap: "16px",
+                  }}
                 >
-                  <div className={styles.serviceInfo}>
-                    <h3 className={styles.serviceItemName}>{svc.name}</h3>
-                    <p className={styles.serviceItemDesc}>{svc.desc}</p>
+                  <div style={{ flex: 1, minWidth: "240px" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px" }}>
+                      <h3 style={{ margin: 0, color: "#F8FAFC", fontSize: "16px", fontWeight: 700 }}>{svc.name}</h3>
+                      <span
+                        style={{
+                          fontSize: "10px",
+                          fontWeight: 800,
+                          padding: "2px 8px",
+                          borderRadius: "10px",
+                          background:
+                            svc.pricingModel === "PROPERTY_BASED"
+                              ? "rgba(14,165,233,0.15)"
+                              : svc.pricingModel === "QUANTITY_BASED"
+                              ? "rgba(245,158,11,0.15)"
+                              : svc.pricingModel === "CUSTOM_QUOTE"
+                              ? "rgba(139,92,246,0.15)"
+                              : "rgba(16,185,129,0.15)",
+                          color:
+                            svc.pricingModel === "PROPERTY_BASED"
+                              ? "#38BDF8"
+                              : svc.pricingModel === "QUANTITY_BASED"
+                              ? "#F59E0B"
+                              : svc.pricingModel === "CUSTOM_QUOTE"
+                              ? "#C084FC"
+                              : "#10B981",
+                        }}
+                      >
+                        {svc.pricingModel === "PROPERTY_BASED"
+                          ? "PROPERTY SIZED"
+                          : svc.pricingModel === "QUANTITY_BASED"
+                          ? `UNIT (${svc.unitLabel || "per item"})`
+                          : svc.pricingModel === "CUSTOM_QUOTE"
+                          ? "FREE INSPECTION & QUOTE"
+                          : "FIXED RATE"}
+                      </span>
+                    </div>
+                    <p style={{ margin: 0, fontSize: "13px", color: "#94A3B8" }}>{svc.desc}</p>
                   </div>
-                  <div className={styles.serviceItemPrice}>
-                    <span className={styles.priceFrom}>
-                      {isCleaning ? `${booking.bedrooms || 2} Bed, ${booking.bathrooms || 1} Bath` : "From"}
-                    </span>
-                    <span className={styles.priceAmount}>₦{calculatedPrice.toLocaleString()}</span>
+
+                  {/* Quantity Counter for Quantity-Based Model */}
+                  {svc.pricingModel === "QUANTITY_BASED" && (
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px", background: "#0F172A", padding: "6px 12px", borderRadius: "10px", border: "1px solid #334155" }}>
+                      <span style={{ fontSize: "12px", color: "#94A3B8" }}>Qty:</span>
+                      <button
+                        type="button"
+                        onClick={() => handleQuantityChange((booking.quantity || 1) - 1)}
+                        style={{ background: "#1E293B", border: "none", color: "#F8FAFC", width: 26, height: 26, borderRadius: 4, cursor: "pointer", fontWeight: "bold" }}
+                      >
+                        -
+                      </button>
+                      <span style={{ fontSize: "14px", fontWeight: "bold", color: "#F8FAFC", minWidth: 20, textAlign: "center" }}>
+                        {booking.quantity || 1}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => handleQuantityChange((booking.quantity || 1) + 1)}
+                        style={{ background: "#1E293B", border: "none", color: "#F8FAFC", width: 26, height: 26, borderRadius: 4, cursor: "pointer", fontWeight: "bold" }}
+                      >
+                        +
+                      </button>
+                    </div>
+                  )}
+
+                  <div style={{ textAlign: "right", display: "flex", alignItems: "center", gap: "16px" }}>
+                    <div>
+                      <span style={{ fontSize: "11px", color: "#94A3B8", display: "block" }}>
+                        {svc.pricingModel === "CUSTOM_QUOTE" ? "Assessment Deposit" : "Calculated Amount"}
+                      </span>
+                      <strong style={{ fontSize: "1.25rem", color: svc.pricingModel === "CUSTOM_QUOTE" ? "#C084FC" : "#10B981", fontWeight: 800 }}>
+                        {svc.pricingModel === "CUSTOM_QUOTE" ? "FREE Quote" : `₦${calc.totalPriceNgn.toLocaleString()}`}
+                      </strong>
+                    </div>
+
+                    <button
+                      onClick={() => selectService(selectedCategory, svc)}
+                      className="btn btn-primary btn-md"
+                      style={{ background: svc.pricingModel === "CUSTOM_QUOTE" ? "#8B5CF6" : "#0EA5E9", fontWeight: 700 }}
+                    >
+                      {svc.pricingModel === "CUSTOM_QUOTE" ? "Request Free Inspection ➔" : "Select & Continue ➔"}
+                    </button>
                   </div>
-                </button>
+                </div>
               );
             })}
           </div>

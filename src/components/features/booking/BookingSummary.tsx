@@ -1,7 +1,9 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import type { BookingData } from "@/app/book/page";
-import { ShieldCheck } from "lucide-react";
+import { ShieldCheck, MapPin, Tag } from "lucide-react";
+import { calculateJobPrice, DEFAULT_PRICING_RULES, PricingRulesConfig } from "@/lib/pricingEngine";
 import styles from "./Steps.module.css";
 
 interface Props {
@@ -10,7 +12,38 @@ interface Props {
 }
 
 export function BookingSummary({ booking, currentStep }: Props) {
-  const finalPrice = (booking.totalPrice || booking.servicePrice) - booking.discountAmount;
+  const [rulesConfig, setRulesConfig] = useState<PricingRulesConfig>(DEFAULT_PRICING_RULES);
+
+  useEffect(() => {
+    async function fetchRules() {
+      try {
+        const res = await fetch("/api/admin/pricing-rules");
+        const data = await res.json();
+        if (res.ok && data.rules) {
+          setRulesConfig(data.rules);
+        }
+      } catch (err) {}
+    }
+    fetchRules();
+  }, []);
+
+  const calc = calculateJobPrice(
+    {
+      serviceId: booking.serviceId,
+      pricingModel: (booking.pricingModel as any) || "FIXED",
+      basePrice: booking.servicePrice || 15000,
+      bedrooms: booking.bedrooms || 2,
+      bathrooms: booking.bathrooms || 1,
+      isFurnished: booking.isFurnished || false,
+      dirtLevel: booking.dirtLevel || "MODERATE",
+      quantity: booking.quantity || 1,
+      regionalZoneId: booking.regionalZoneId || "abuja-suburbs",
+      isExpressSchedule: booking.isEmergency || false,
+    },
+    rulesConfig
+  );
+
+  const finalPrice = Math.max(0, calc.totalPriceNgn - (booking.discountAmount || 0));
 
   return (
     <div className={`card ${styles.summaryCard}`}>
@@ -25,11 +58,12 @@ export function BookingSummary({ booking, currentStep }: Props) {
 
           {currentStep >= 2 && (
             <div className={styles.summarySection}>
-              <span className={styles.summaryLabel}>Property</span>
+              <span className={styles.summaryLabel}>Property / Options</span>
               <span className={styles.summaryValue}>
-                {booking.propertyType}
-                {booking.bedrooms > 0 ? ` · ${booking.bedrooms} Bed` : ""}
+                {booking.bedrooms > 0 ? `${booking.bedrooms} Bed` : ""}
                 {booking.bathrooms > 0 ? ` · ${booking.bathrooms} Bath` : ""}
+                {booking.isFurnished ? ` · Furnished` : ""}
+                {booking.quantity && booking.quantity > 1 ? ` · Qty: ${booking.quantity}` : ""}
               </span>
             </div>
           )}
@@ -55,28 +89,39 @@ export function BookingSummary({ booking, currentStep }: Props) {
 
           <div className={styles.summaryDivider} />
 
-          <div className={styles.summaryPriceRow}>
-            <span>Base Price</span>
-            <span>₦{(booking.totalPrice || booking.servicePrice).toLocaleString()}</span>
-          </div>
-
-          {booking.isEmergency && (
-            <div className={`${styles.summaryPriceRow} ${styles.surcharge}`}>
-              <span>Emergency</span>
-              <span>+50%</span>
+          {/* Detailed Itemized Price Breakdown */}
+          {calc.isCustomQuote ? (
+            <div style={{ background: "rgba(139,92,246,0.15)", padding: "12px", borderRadius: "8px", border: "1px solid #8B5CF6", marginBottom: "12px" }}>
+              <span style={{ fontSize: "12px", color: "#C084FC", fontWeight: "bold", display: "block" }}>
+                🔍 Inspection-First Custom Quote
+              </span>
+              <span style={{ fontSize: "11px", color: "#94A3B8" }}>
+                Free physical inspection dispatched. Written quote will be sent after site assessment.
+              </span>
+            </div>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: "6px", marginBottom: "12px" }}>
+              {calc.breakdown.map((b, idx) => (
+                <div key={idx} className={styles.summaryPriceRow} style={{ fontSize: "12px", color: "#94A3B8" }}>
+                  <span>{b.label}</span>
+                  <span style={{ fontWeight: 600, color: "#F8FAFC" }}>₦{b.amountNgn.toLocaleString()}</span>
+                </div>
+              ))}
             </div>
           )}
 
           {booking.discountAmount > 0 && (
             <div className={`${styles.summaryPriceRow} ${styles.discount}`}>
-              <span>Discount</span>
+              <span>Promo Voucher</span>
               <span>-₦{booking.discountAmount.toLocaleString()}</span>
             </div>
           )}
 
           <div className={`${styles.summaryPriceRow} ${styles.summaryTotal}`}>
-            <span>Total</span>
-            <span>₦{Math.max(0, finalPrice).toLocaleString()}</span>
+            <span>Total Payable</span>
+            <span style={{ color: calc.isCustomQuote ? "#C084FC" : "#10B981" }}>
+              {calc.isCustomQuote ? "FREE Quote" : `₦${finalPrice.toLocaleString()}`}
+            </span>
           </div>
         </>
       ) : (
@@ -88,7 +133,7 @@ export function BookingSummary({ booking, currentStep }: Props) {
       {/* Trust Badge */}
       <div className={styles.summaryTrust}>
         <ShieldCheck size={16} />
-        <span>Secure booking · 100% satisfaction guarantee</span>
+        <span>Escrow Escrow Protected · 100% Satisfaction Guarantee</span>
       </div>
     </div>
   );

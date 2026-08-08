@@ -4,8 +4,9 @@ import { useState, useEffect } from "react";
 import { AdminLayoutShell } from "@/components/layout/AdminLayoutShell";
 import {
   Settings, Download, Database, Shield, MapPin, CreditCard,
-  Bell, CheckCircle2, RefreshCw, Lock, Save, Inbox
+  Bell, CheckCircle2, RefreshCw, Lock, Save, Inbox, Sliders, DollarSign
 } from "lucide-react";
+import { DEFAULT_PRICING_RULES, PricingRulesConfig } from "@/lib/pricingEngine";
 import styles from "../../admin.module.css";
 
 interface CityControl {
@@ -31,6 +32,22 @@ export default function SettingsAndBackupsPage() {
   const [backupLoading, setBackupLoading] = useState(false);
   const [toast, setToast] = useState("");
   const [loadingCities, setLoadingCities] = useState(true);
+
+  // Pricing Rules State
+  const [rulesConfig, setRulesConfig] = useState<PricingRulesConfig>(DEFAULT_PRICING_RULES);
+  const [savingRules, setSavingRules] = useState(false);
+
+  const fetchPricingRules = async () => {
+    try {
+      const res = await fetch("/api/admin/pricing-rules");
+      const data = await res.json();
+      if (res.ok && data.rules) {
+        setRulesConfig(data.rules);
+      }
+    } catch (err) {
+      console.warn("Failed to fetch admin pricing rules:", err);
+    }
+  };
 
   const fetchRealCityMetrics = async () => {
     setLoadingCities(true);
@@ -58,6 +75,7 @@ export default function SettingsAndBackupsPage() {
 
   useEffect(() => {
     fetchRealCityMetrics();
+    fetchPricingRules();
   }, []);
 
   const toggleCity = (cityName: string) => {
@@ -78,34 +96,67 @@ export default function SettingsAndBackupsPage() {
       const data = await res.json();
       if (res.ok) {
         setToast(`Database purged successfully! ${data.purged?.deletedPros || 0} demo pros & ${data.purged?.deletedPayments || 0} demo payments removed.`);
-        fetchRealCityMetrics();
-      } else {
-        alert(data.error || "Failed to purge demo data");
       }
-    } catch (err: any) {
-      alert("Error triggering purge: " + err.message);
+    } catch (err) {
+      setToast("Purge failed. Check server logs.");
     } finally {
       setPurgeLoading(false);
+      setTimeout(() => setToast(""), 4000);
     }
   };
 
-  const handleDownloadBackup = () => {
+  const handleDownloadBackup = async () => {
     setBackupLoading(true);
-    window.open("/api/admin/backup?adminId=SUPER_ADMIN", "_blank");
-    setTimeout(() => {
+    try {
+      const res = await fetch("/api/admin/backup");
+      const data = await res.json();
+      if (res.ok) {
+        const jsonString = `data:text/json;charset=utf-8,${encodeURIComponent(JSON.stringify(data, null, 2))}`;
+        const downloadAnchor = document.createElement("a");
+        downloadAnchor.setAttribute("href", jsonString);
+        downloadAnchor.setAttribute("download", `handyhub_db_backup_${Date.now()}.json`);
+        document.body.appendChild(downloadAnchor);
+        downloadAnchor.click();
+        downloadAnchor.remove();
+        setToast("Full Database Snapshot downloaded successfully!");
+      }
+    } catch (err) {
+      setToast("Failed to generate database backup.");
+    } finally {
       setBackupLoading(false);
-      setToast("Database snapshot JSON generated and downloaded!");
       setTimeout(() => setToast(""), 4000);
-    }, 1200);
+    }
+  };
+
+  const handleSavePricingRules = async () => {
+    setSavingRules(true);
+    try {
+      const res = await fetch("/api/admin/pricing-rules", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ rules: rulesConfig }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setToast(data.message || "Pricing rules saved successfully!");
+      } else {
+        setToast(data.error || "Failed to save pricing rules.");
+      }
+    } catch (err: any) {
+      setToast("Error saving pricing rules.");
+    } finally {
+      setSavingRules(false);
+      setTimeout(() => setToast(""), 4000);
+    }
   };
 
   return (
     <AdminLayoutShell>
       <header className={styles.adminTopBar} style={{ marginBottom: "var(--space-6)" }}>
         <div>
-          <h1 className="h3">System Settings, Database Backups & Purge Engine</h1>
+          <h1 className="h3">System Settings, Pricing Rules & Disaster Recovery</h1>
           <p style={{ color: "var(--text-secondary)", fontSize: "var(--fs-sm)" }}>
-            Database snapshot backups, demo data purge control, multi-city state expansion (Abuja & beyond), and payment gateways.
+            Editable Nigerian pricing matrix, regional zone surcharges, multi-city state controls, and system database backups.
           </p>
         </div>
       </header>
@@ -117,6 +168,146 @@ export default function SettingsAndBackupsPage() {
       )}
 
       <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+        {/* Nigerian Pricing Rules & Regional Surcharge Matrix Editor */}
+        <div className="card" style={{ background: "#1E293B", border: "1px solid #0EA5E9", padding: "24px", borderRadius: "16px" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px", flexWrap: "wrap", gap: "12px" }}>
+            <div>
+              <h3 className="h4" style={{ margin: 0, color: "#F8FAFC", display: "flex", alignItems: "center", gap: "8px" }}>
+                <Sliders size={20} color="#0EA5E9" /> Nigerian Pricing Rules & Regional Surcharge Matrix
+              </h3>
+              <span style={{ fontSize: "12px", color: "#94A3B8" }}>
+                Configure property size add-ons, furnished surcharges, grime multipliers, and regional zone percentages live across all customer booking flows.
+              </span>
+            </div>
+
+            <button
+              onClick={handleSavePricingRules}
+              disabled={savingRules}
+              className="btn btn-primary btn-md"
+              style={{ background: "#0EA5E9", display: "flex", alignItems: "center", gap: "8px" }}
+            >
+              <Save size={16} /> {savingRules ? "Saving Rules..." : "Save Pricing Matrix Live 💾"}
+            </button>
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
+            {/* Column 1: Property Size & Condition Add-ons */}
+            <div style={{ background: "#0F172A", border: "1px solid #334155", borderRadius: "12px", padding: "16px" }}>
+              <h4 style={{ margin: "0 0 12px 0", color: "#38BDF8", fontSize: "14px", fontWeight: 700 }}>
+                🏠 Property Size & Condition Add-ons (Deep Cleaning & Residential)
+              </h4>
+
+              <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                <div>
+                  <label style={{ fontSize: "12px", color: "#94A3B8", fontWeight: 600, display: "block", marginBottom: 4 }}>
+                    Additional Bedroom Fee (NGN ₦ / room)
+                  </label>
+                  <input
+                    type="number"
+                    value={rulesConfig.bedroomAddonNgn}
+                    onChange={(e) => setRulesConfig({ ...rulesConfig, bedroomAddonNgn: Number(e.target.value) })}
+                    style={{ width: "100%", padding: "8px 12px", borderRadius: "8px", border: "1px solid #334155", background: "#1E293B", color: "#F8FAFC", fontSize: "14px", fontWeight: 600 }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ fontSize: "12px", color: "#94A3B8", fontWeight: 600, display: "block", marginBottom: 4 }}>
+                    Additional Bathroom Fee (NGN ₦ / bath)
+                  </label>
+                  <input
+                    type="number"
+                    value={rulesConfig.bathroomAddonNgn}
+                    onChange={(e) => setRulesConfig({ ...rulesConfig, bathroomAddonNgn: Number(e.target.value) })}
+                    style={{ width: "100%", padding: "8px 12px", borderRadius: "8px", border: "1px solid #334155", background: "#1E293B", color: "#F8FAFC", fontSize: "14px", fontWeight: 600 }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ fontSize: "12px", color: "#94A3B8", fontWeight: 600, display: "block", marginBottom: 4 }}>
+                    Furnished Property Surcharge (NGN ₦ flat)
+                  </label>
+                  <input
+                    type="number"
+                    value={rulesConfig.furnishedSurchargeNgn}
+                    onChange={(e) => setRulesConfig({ ...rulesConfig, furnishedSurchargeNgn: Number(e.target.value) })}
+                    style={{ width: "100%", padding: "8px 12px", borderRadius: "8px", border: "1px solid #334155", background: "#1E293B", color: "#F8FAFC", fontSize: "14px", fontWeight: 600 }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ fontSize: "12px", color: "#94A3B8", fontWeight: 600, display: "block", marginBottom: 4 }}>
+                    Condition Multipliers (Light / Moderate / Heavy)
+                  </label>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "8px" }}>
+                    <div>
+                      <span style={{ fontSize: "10px", color: "#94A3B8" }}>Light (1.0x)</span>
+                      <input
+                        type="number"
+                        step="0.05"
+                        value={rulesConfig.dirtLevelMultipliers.LIGHT}
+                        onChange={(e) => setRulesConfig({ ...rulesConfig, dirtLevelMultipliers: { ...rulesConfig.dirtLevelMultipliers, LIGHT: Number(e.target.value) } })}
+                        style={{ width: "100%", padding: "6px", borderRadius: "6px", border: "1px solid #334155", background: "#1E293B", color: "#F8FAFC", fontSize: "12px" }}
+                      />
+                    </div>
+                    <div>
+                      <span style={{ fontSize: "10px", color: "#F59E0B" }}>Moderate (1.15x)</span>
+                      <input
+                        type="number"
+                        step="0.05"
+                        value={rulesConfig.dirtLevelMultipliers.MODERATE}
+                        onChange={(e) => setRulesConfig({ ...rulesConfig, dirtLevelMultipliers: { ...rulesConfig.dirtLevelMultipliers, MODERATE: Number(e.target.value) } })}
+                        style={{ width: "100%", padding: "6px", borderRadius: "6px", border: "1px solid #334155", background: "#1E293B", color: "#F8FAFC", fontSize: "12px" }}
+                      />
+                    </div>
+                    <div>
+                      <span style={{ fontSize: "10px", color: "#EF4444" }}>Heavy/Post (1.35x)</span>
+                      <input
+                        type="number"
+                        step="0.05"
+                        value={rulesConfig.dirtLevelMultipliers.HEAVY}
+                        onChange={(e) => setRulesConfig({ ...rulesConfig, dirtLevelMultipliers: { ...rulesConfig.dirtLevelMultipliers, HEAVY: Number(e.target.value) } })}
+                        style={{ width: "100%", padding: "6px", borderRadius: "6px", border: "1px solid #334155", background: "#1E293B", color: "#F8FAFC", fontSize: "12px" }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Column 2: Regional Zone Surcharge Modifiers */}
+            <div style={{ background: "#0F172A", border: "1px solid #334155", borderRadius: "12px", padding: "16px" }}>
+              <h4 style={{ margin: "0 0 12px 0", color: "#F59E0B", fontSize: "14px", fontWeight: 700 }}>
+                📍 Regional Zone Modifiers (% Surcharge per Location Tier)
+              </h4>
+
+              <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                {rulesConfig.regionalZones.map((z, idx) => (
+                  <div key={z.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: "#1E293B", padding: "8px 12px", borderRadius: "8px", border: "1px solid #334155" }}>
+                    <div style={{ flex: 1, paddingRight: 8 }}>
+                      <span style={{ fontSize: "12px", color: "#F8FAFC", fontWeight: 600, display: "block" }}>{z.name}</span>
+                      <span style={{ fontSize: "10px", color: "#94A3B8" }}>State: {z.state}</span>
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                      <span style={{ fontSize: "12px", color: "#F59E0B", fontWeight: 700 }}>+</span>
+                      <input
+                        type="number"
+                        value={z.modifierPercent}
+                        onChange={(e) => {
+                          const updatedZones = [...rulesConfig.regionalZones];
+                          updatedZones[idx].modifierPercent = Number(e.target.value);
+                          setRulesConfig({ ...rulesConfig, regionalZones: updatedZones });
+                        }}
+                        style={{ width: 60, padding: "4px 6px", borderRadius: "6px", border: "1px solid #334155", background: "#0F172A", color: "#10B981", fontWeight: "bold", fontSize: "13px", textAlign: "center" }}
+                      />
+                      <span style={{ fontSize: "12px", color: "#94A3B8" }}>%</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* Database Snapshot & Disaster Recovery Section */}
         <div className="card" style={{ background: "#1E293B", border: "1px solid #334155", padding: "20px" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>

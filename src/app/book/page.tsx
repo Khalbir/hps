@@ -20,9 +20,14 @@ export interface BookingData {
   serviceId: string;
   serviceName: string;
   servicePrice: number;
+  pricingModel?: string;
   propertyType: string;
   bedrooms: number;
   bathrooms: number;
+  isFurnished?: boolean;
+  dirtLevel?: "LIGHT" | "MODERATE" | "HEAVY";
+  quantity?: number;
+  regionalZoneId?: string;
   specialNotes: string;
   scheduledDate: string;
   scheduledTime: string;
@@ -45,9 +50,14 @@ const initialBookingData: BookingData = {
   serviceId: "",
   serviceName: "",
   servicePrice: 0,
+  pricingModel: "FIXED",
   propertyType: "HOME",
   bedrooms: 2,
   bathrooms: 1,
+  isFurnished: false,
+  dirtLevel: "MODERATE",
+  quantity: 1,
+  regionalZoneId: "abuja-suburbs",
   specialNotes: "",
   scheduledDate: "",
   scheduledTime: "",
