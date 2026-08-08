@@ -146,7 +146,7 @@ export default function DisputesCenterPage() {
       </div>
 
       {/* Table & Drawer Layout */}
-      <div style={{ display: "grid", gridTemplateColumns: selectedDispute ? "1.5fr 1fr" : "1fr", gap: "20px" }}>
+      <div className={selectedDispute ? styles.gridMainDrawer : ""} style={{ gap: "20px" }}>
         <div className="card" style={{ background: "#1E293B", border: "1px solid #334155", padding: 0, overflow: "hidden" }}>
           {filtered.length === 0 ? (
             <div style={{ padding: "50px", textAlign: "center", color: "#94A3B8" }}>

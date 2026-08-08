@@ -56,7 +56,7 @@ export default function AdminLiveMapPage() {
 
       <div className={styles.adminContent}>
         {/* Controls Bar */}
-        <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: "var(--space-4)", marginBottom: "var(--space-6)" }}>
+        <div className={styles.gridTwoCol} style={{ marginBottom: "var(--space-6)" }}>
           {/* Radius Slider Card */}
           <div className="card" style={{ display: "flex", alignItems: "center", gap: "var(--space-6)" }}>
             <Sliders size={28} color="var(--color-primary-500)" />

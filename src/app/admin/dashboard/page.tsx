@@ -135,7 +135,7 @@ export default function AdminDashboardPage() {
         </div>
 
         {/* Analytics & Live Activity Stream Row */}
-        <div style={{ display: "grid", gridTemplateColumns: "1.8fr 1fr", gap: "var(--space-6)", marginBottom: "var(--space-6)" }}>
+        <div className={styles.gridTwoCol} style={{ marginBottom: "var(--space-6)" }}>
           {/* Revenue Trend Interactive SVG Chart */}
           <div className="card" style={{ background: "#1E293B", border: "1px solid #334155", padding: "var(--space-5)" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "var(--space-4)" }}>
@@ -195,7 +195,7 @@ export default function AdminDashboardPage() {
         </div>
 
         {/* 2-Column Section: Live Bookings Table & Live Audit Stream */}
-        <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: "var(--space-6)" }}>
+        <div className={styles.gridTwoCol}>
           {/* Active Live Bookings Table */}
           <div className="card" style={{ background: "#1E293B", border: "1px solid #334155", padding: 0, overflow: "hidden" }}>
             <div style={{ padding: "var(--space-4)", borderBottom: "1px solid #334155", display: "flex", justifyContent: "space-between", alignItems: "center" }}>

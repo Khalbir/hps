@@ -100,7 +100,7 @@ export default function AnalyticsReportsPage() {
 
       <div className={styles.adminContent}>
         {/* KPI Summary Tiles */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "20px", marginBottom: "24px" }}>
+        <div className={styles.gridThreeCol} style={{ marginBottom: "24px" }}>
           <div className="card" style={{ background: "#1E293B", border: "1px solid #334155", padding: "20px" }}>
             <div style={{ fontSize: "12px", color: "#94A3B8", fontWeight: 600, textTransform: "uppercase" }}>Gross Production Escrow</div>
             <h2 className="h2" style={{ color: "#10B981", margin: "8px 0" }}>₦{totalGrossNgn.toLocaleString()}</h2>

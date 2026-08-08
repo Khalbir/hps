@@ -238,7 +238,7 @@ export default function BookingsWorkflowPage() {
       </div>
 
       {/* Bookings Table & Drawer Grid */}
-      <div style={{ display: "grid", gridTemplateColumns: selectedBooking ? "1.6fr 1fr" : "1fr", gap: "20px" }}>
+      <div className={selectedBooking ? styles.gridMainDrawer : ""} style={{ gap: "20px" }}>
         <div className="card" style={{ background: "#1E293B", border: "1px solid #334155", padding: 0, overflow: "hidden" }}>
           {filteredBookings.length === 0 ? (
             <div style={{ padding: "50px", textAlign: "center", color: "#94A3B8" }}>
