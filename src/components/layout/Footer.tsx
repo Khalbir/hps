@@ -43,8 +43,8 @@ const companyLinks = [
 const legalLinks = [
   { name: "Terms of Service", href: "/terms" },
   { name: "Privacy Policy", href: "/privacy" },
-  { name: "Cookie Policy", href: "/cookies" },
   { name: "Refund & Escrow Policy", href: "/refund" },
+  { name: "Legal & Governance Hub", href: "/legal" },
 ];
 
 export function Footer() {
