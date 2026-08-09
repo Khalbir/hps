@@ -138,7 +138,7 @@ export function StepConfirmation({ booking }: Props) {
           <div>
             <span className={styles.confirmRowLabel}>Professional</span>
             <span className={styles.confirmRowValue}>
-              {booking.autoAssign || !booking.technicianName ? "Auto-assigned (Location Intelligence)" : booking.technicianName}
+              {booking.technicianName || "Auto-Assigned Verified Artisan"}
             </span>
           </div>
         </div>
@@ -155,6 +155,28 @@ export function StepConfirmation({ booking }: Props) {
           <span>Total Paid</span>
           <span className={styles.confirmTotalAmount}>₦{Math.max(0, finalPrice).toLocaleString()}</span>
         </div>
+      </motion.div>
+
+      {/* Prominent Off-Platform Safety Warning Card */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 1.3 }}
+        style={{
+          background: "rgba(245,158,11,0.12)",
+          border: "1.5px solid #F59E0B",
+          borderRadius: "16px",
+          padding: "16px 20px",
+          margin: "20px 0",
+          textAlign: "left",
+        }}
+      >
+        <h4 style={{ margin: "0 0 6px", color: "#F59E0B", fontSize: "14px", fontWeight: 700, display: "flex", alignItems: "center", gap: 8 }}>
+          🛡️ CRITICAL SAFETY MANDATE: Keep Payments On-Platform!
+        </h4>
+        <p style={{ margin: 0, color: "#CBD5E1", fontSize: "12px", lineHeight: 1.5 }}>
+          For your protection, <strong>never pay cash or transact off-platform with artisans</strong>. All escrow guarantees, 14-day workmanship warranties, and customer support apply ONLY to transactions completed within HandyHub Pro. Paying cash off-platform voids all protections under Nigerian Law.
+        </p>
       </motion.div>
 
       {/* Actions */}

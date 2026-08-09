@@ -295,6 +295,22 @@ export default function DashboardPage() {
           </div>
         </header>
 
+        {/* Prominent On-Platform Security Warning Banner */}
+        <div style={{ background: "rgba(245,158,11,0.12)", border: "1.5px solid #F59E0B", borderRadius: "14px", padding: "14px 20px", marginBottom: "20px", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "12px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+            <span style={{ fontSize: "20px" }}>🛡️</span>
+            <div>
+              <strong style={{ color: "#F8FAFC", fontSize: "14px", display: "block" }}>Safety & Escrow Mandate: Keep All Payments On-Platform!</strong>
+              <span style={{ color: "#CBD5E1", fontSize: "12px" }}>
+                Never pay cash off-platform to artisans. Off-platform cash payments void Escrow Security, 14-Day Warranty, and Dispute Conciliation under Nigerian Law.
+              </span>
+            </div>
+          </div>
+          <Link href="/terms#off-platform-policy" style={{ fontSize: "12px", color: "#F59E0B", fontWeight: 700, textDecoration: "none", background: "#0F172A", padding: "6px 12px", borderRadius: "8px", border: "1px solid #F59E0B", whiteSpace: "nowrap" }}>
+            Read Policy ➔
+          </Link>
+        </div>
+
         {/* Dashboard Content Tabs */}
         <div className={styles.content}>
           {/* TAB 1: OVERVIEW */}

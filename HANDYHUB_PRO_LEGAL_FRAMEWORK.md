@@ -182,7 +182,24 @@ Users agree to defend, indemnify, and hold harmless HandyHub Pro Solutions Limit
 
 ---
 
-## 9. GOVERNING LAW & JURISDICTION
+## 10. PROMINENT OFF-PLATFORM TRANSACTIONS & USER RESPONSIBILITY POLICY
+
+### 10.1 Platform Coverage Boundary
+**HANDYHUB’S ESCROW PROTECTIONS, 14-DAY WORKMANSHIP WARRANTIES, 24/7 DISPUTE CONCILIATION, QUALITY ASSURANCE AUDITS, AND PLATFORM INSURANCE COVERAGE APPLY ONLY AND EXCLUSIVELY TO BOOKINGS, COMMUNICATIONS, AND PAYMENTS CONDUCTED ENTIRELY ON-PLATFORM VIA THE HANDYHUB PRO DIGITAL SOFTWARE.**
+
+### 10.2 Total Assumption of Risk & Exclusion of Support
+If a Client or Service Professional engages in, solicits, or accepts any off-platform cash payment, private negotiation, or direct transaction outside the HandyHub software:
+1. **Total Assumption of Risk:** The Client and Professional assume all physical, financial, personal safety, legal, and operational risks associated with such off-platform transaction.
+2. **Zero Platform Support:** HandyHub provides **NO dispute resolution, NO mediation, NO escrow refunds, NO warranty enforcement, NO customer support, and NO liability coverage** for any off-platform transaction.
+3. **Voiding of Protections:** Off-platform arrangements immediately void all 14-day workmanship warranties, background check guarantees, and escrow protection protocols for the involved job.
+
+### 10.3 Anti-Circumvention Enforcement & Penalties
+1. **Service Professionals:** Soliciting or accepting off-platform cash payments constitutes a material breach of contract and trade fraud. Violations incur immediate permanent account termination, forfeiture of pending escrow balances, and liquidated damages of **₦250,000** recoverable under Nigerian Contract Law and Section 84 of the Evidence Act 2011.
+2. **Clients:** Soliciting off-platform arrangements constitutes a violation of platform terms resulting in immediate account termination and permanent blacklisting.
+
+---
+
+## 11. GOVERNING LAW & JURISDICTION
 This legal framework shall be governed by, construed, and enforced in accordance with the **Laws of the Federal Republic of Nigeria**. Subject to Section 6 (Arbitration), the Federal High Court and High Court of the Federal Capital Territory (FCT), Abuja, shall have jurisdiction over any legal proceedings.
 
 ---

@@ -100,6 +100,22 @@ export default function ProDashboard() {
         </p>
       </div>
 
+      {/* Anti-Circumvention Mandate Banner */}
+      <div style={{ background: "rgba(239,68,68,0.12)", border: "1.5px solid #EF4444", borderRadius: "14px", padding: "14px 20px", marginBottom: "var(--space-6)", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "12px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+          <span style={{ fontSize: "20px" }}>🚫</span>
+          <div>
+            <strong style={{ color: "#F8FAFC", fontSize: "14px", display: "block" }}>Anti-Circumvention Warning: All Job Payments Must Remain On-Platform!</strong>
+            <span style={{ color: "#CBD5E1", fontSize: "12px" }}>
+              Soliciting cash off-platform violates HandyHub Partner Terms. Violations result in instant account deactivation, escrow forfeiture, and ₦250,000 liquidated damages.
+            </span>
+          </div>
+        </div>
+        <Link href="/terms#off-platform-policy" style={{ fontSize: "12px", color: "#EF4444", fontWeight: 700, textDecoration: "none", background: "#0F172A", padding: "6px 12px", borderRadius: "8px", border: "1px solid #EF4444", whiteSpace: "nowrap" }}>
+          View Legal Terms ➔
+        </Link>
+      </div>
+
       {/* Dynamic Verification Alert Banner */}
       <div style={{
         background: isVerified

@@ -195,13 +195,36 @@ export default function TermsPage() {
           </div>
         </section>
 
+        {/* SECTION 7: PROMINENT OFF-PLATFORM TRANSACTIONS & USER RESPONSIBILITY POLICY */}
+        <section id="off-platform-policy" className="card" style={{ background: "#1E293B", border: "2px solid #F59E0B", padding: "32px", borderRadius: "20px", marginBottom: "var(--space-8)" }}>
+          <h2 className="h3" style={{ color: "#F59E0B", marginBottom: "16px", display: "flex", alignItems: "center", gap: 10 }}>
+            <AlertTriangle size={24} color="#F59E0B" /> 7. Prominent Off-Platform Transactions & User Responsibility Policy
+          </h2>
+          
+          <div style={{ color: "#CBD5E1", fontSize: "14px", lineHeight: 1.7, display: "flex", flexDirection: "column", gap: "14px" }}>
+            <div style={{ background: "rgba(245,158,11,0.12)", border: "1px solid #F59E0B", padding: "16px", borderRadius: "12px", color: "#F8FAFC", fontWeight: 700 }}>
+              ⚠️ MANDATORY PROTECTION BOUNDARY: HandyHub protections, escrow security, 14-day workmanship warranties, dispute conciliation under AMA 2023, and customer support apply ONLY AND EXCLUSIVELY to bookings and payments conducted entirely ON-PLATFORM.
+            </div>
+
+            <p>
+              If a Client or Service Professional engages in, solicits, or accepts any off-platform cash payment, private negotiation, or direct transaction outside the HandyHub software:
+            </p>
+            
+            <ul style={{ paddingLeft: "20px", display: "flex", flexDirection: "column", gap: "8px" }}>
+              <li><strong>Total Assumption of Risk:</strong> Users assume ALL physical, financial, personal safety, legal, and operational risks associated with off-platform transactions.</li>
+              <li><strong>Complete Exclusion of Support:</strong> HandyHub provides <strong>ZERO dispute resolution, ZERO mediation, ZERO refunds, ZERO warranty enforcement, and ZERO customer support</strong> for off-platform transactions.</li>
+              <li><strong>Anti-Circumvention Penalties:</strong> Professionals soliciting off-platform cash payments face immediate permanent account termination, forfeiture of pending escrow payouts, and liquidated damages of <strong>₦250,000</strong> under Nigerian Law. Clients soliciting off-platform arrangements face immediate account termination and permanent blacklisting.</li>
+            </ul>
+          </div>
+        </section>
+
         {/* Electronic Acceptance Confirmation Widget */}
         <div style={{ background: "#0F172A", border: "1px solid #10B981", padding: "24px", borderRadius: "16px", textAlign: "center" }}>
           <h3 style={{ margin: "0 0 8px 0", color: "#F8FAFC", fontSize: "16px", fontWeight: 700 }}>
             Electronic Acceptance Acknowledgment
           </h3>
           <p style={{ color: "#94A3B8", fontSize: "13px", marginBottom: "16px" }}>
-            By checking the box below and continuing to use HandyHub Pro, you acknowledge having read, understood, and agreed to all 6 legal framework documents above.
+            By checking the box below and continuing to use HandyHub Pro, you acknowledge having read, understood, and agreed to all legal framework documents and the mandatory Off-Platform Transaction Policy above.
           </p>
 
           <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "10px" }}>
@@ -213,7 +236,7 @@ export default function TermsPage() {
               style={{ width: 18, height: 18, cursor: "pointer", accentColor: "#10B981" }}
             />
             <label htmlFor="legalAcceptance" style={{ color: "#F8FAFC", fontSize: "14px", fontWeight: 600, cursor: "pointer" }}>
-              I agree to the HandyHub Pro Terms of Service, NDPA Privacy Policy & Escrow Rules.
+              I agree to the Terms of Service, NDPA Privacy Policy, Escrow Rules & Off-Platform Responsibility Policy.
             </label>
           </div>
 

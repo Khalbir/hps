@@ -28,6 +28,7 @@ export function StepPayment({ booking, updateBooking, onNext, onBack }: StepProp
   const [isPaying, setIsPaying] = useState(false);
   const [payError, setPayError] = useState("");
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [offPlatformAgreed, setOffPlatformAgreed] = useState(false);
 
   // Active Client Session State
   const [activeUser, setActiveUser] = useState<any>(null);
@@ -71,6 +72,11 @@ export function StepPayment({ booking, updateBooking, onNext, onBack }: StepProp
 
   const handlePaymentProceed = async () => {
     // Check if user is logged in
+    if (!offPlatformAgreed) {
+      setPayError("You must acknowledge and agree to keep all payments and bookings on HandyHub Pro before proceeding.");
+      return;
+    }
+
     if (!activeUser || !activeUser.email) {
       // Save draft booking to localStorage and show Auth Modal
       localStorage.setItem("handyhub_pending_booking", JSON.stringify({
@@ -277,6 +283,26 @@ export function StepPayment({ booking, updateBooking, onNext, onBack }: StepProp
           <span>Total</span>
           <span>₦{Math.max(0, finalPrice || 15000).toLocaleString()}</span>
         </div>
+      </div>
+
+      {/* Mandatory Safety Warning & Off-Platform Checkbox */}
+      <div style={{ background: "rgba(245,158,11,0.1)", border: "1px solid #F59E0B", borderRadius: "12px", padding: "14px 16px", margin: "20px 0 16px" }}>
+        <div style={{ color: "#F59E0B", fontWeight: 700, fontSize: "13px", display: "flex", alignItems: "center", gap: "6px", marginBottom: "6px" }}>
+          🛡️ SAFETY MANDATE: Keep All Payments & Bookings On-Platform!
+        </div>
+        <p style={{ margin: "0 0 10px", color: "#CBD5E1", fontSize: "12px", lineHeight: 1.5 }}>
+          Never pay artisans cash off-platform. Off-platform cash transactions void your Escrow Security, 14-Day Workmanship Warranty, and Dispute Resolution support under Nigerian Law.
+        </p>
+        <label style={{ display: "flex", alignItems: "center", gap: "10px", cursor: "pointer", fontSize: "12px", color: "#F8FAFC", fontWeight: 600 }}>
+          <input
+            type="checkbox"
+            checked={offPlatformAgreed}
+            onChange={(e) => setOffPlatformAgreed(e.target.checked)}
+            style={{ width: 16, height: 16, accentColor: "#0EA5E9", cursor: "pointer" }}
+            required
+          />
+          <span>I confirm I will keep all transactions on HandyHub Pro to retain Escrow & Warranty protection.</span>
+        </label>
       </div>
 
       <p className={styles.termsText}>

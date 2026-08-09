@@ -39,6 +39,7 @@ export default function RegisterPage() {
     customSkill: "",
   });
   const [showPassword, setShowPassword] = useState(false);
+  const [offPlatformAgreed, setOffPlatformAgreed] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -48,6 +49,11 @@ export default function RegisterPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+
+    if (!offPlatformAgreed) {
+      setError("You must acknowledge that all bookings and payments must remain on HandyHub Pro.");
+      return;
+    }
 
     if (form.password !== form.confirmPassword) {
       setError("Passwords do not match");
@@ -345,6 +351,22 @@ export default function RegisterPage() {
                   required
                 />
               </div>
+            </div>
+
+            {/* Mandatory Off-Platform Policy Acknowledgment */}
+            <div style={{ background: "rgba(245,158,11,0.08)", border: "1px solid #F59E0B", borderRadius: "12px", padding: "12px 14px", marginBottom: "20px" }}>
+              <label style={{ display: "flex", alignItems: "flex-start", gap: "10px", cursor: "pointer", fontSize: "12px", color: "#F8FAFC", lineHeight: 1.4 }}>
+                <input
+                  type="checkbox"
+                  checked={offPlatformAgreed}
+                  onChange={(e) => setOffPlatformAgreed(e.target.checked)}
+                  style={{ marginTop: 2, accentColor: "#0EA5E9", width: 16, height: 16, cursor: "pointer" }}
+                  required
+                />
+                <span>
+                  <strong>Mandatory On-Platform Policy:</strong> I agree that all bookings, payments, and messages must stay on HandyHub Pro. Cash payments off-platform void Escrow Security, 14-Day Warranties, and Dispute Support.
+                </span>
+              </label>
             </div>
 
             <button
