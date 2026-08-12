@@ -118,6 +118,14 @@ export default function DashboardPage() {
 
   useEffect(() => {
     fetchCustomerDashboardData();
+
+    if (typeof window !== "undefined") {
+      const urlParams = new URLSearchParams(window.location.search);
+      const tabParam = urlParams.get("tab");
+      if (tabParam) {
+        setActiveTab(tabParam);
+      }
+    }
   }, []);
 
   const handleTopUpSubmit = async (e: React.FormEvent) => {

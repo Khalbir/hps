@@ -190,7 +190,10 @@ export function StepConfirmation({ booking }: Props) {
           Track Your Booking Live 📍
           <ArrowRight size={18} />
         </Link>
-        <Link href="/dashboard" className="btn btn-secondary btn-lg">
+        <Link href="/dashboard?tab=profile" className="btn btn-secondary btn-lg">
+          Go to Profile Page 👤
+        </Link>
+        <Link href="/dashboard" className="btn btn-secondary btn-lg" style={{ border: "1.5px solid var(--border-primary)", background: "transparent" }}>
           Go to Dashboard
         </Link>
       </motion.div>
