@@ -29,6 +29,8 @@ export function Header() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [servicesOpen, setServicesOpen] = useState(false);
   const [mobileServicesOpen, setMobileServicesOpen] = useState(true);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [userRole, setUserRole] = useState<string | null>(null);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -37,6 +39,50 @@ export function Header() {
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
+
+  useEffect(() => {
+    // Check if user is logged in
+    const checkAuth = () => {
+      const hasUserSession = document.cookie.includes("handyhub_user_session=authenticated") ||
+                            document.cookie.includes("handyhub_pro_session=authenticated") ||
+                            document.cookie.includes("handyhub_admin_session=authenticated");
+      const storedUser = localStorage.getItem("handyhub_user");
+      
+      if (hasUserSession || storedUser) {
+        setIsLoggedIn(true);
+        if (storedUser) {
+          try {
+            const parsed = JSON.parse(storedUser);
+            setUserRole(parsed.role || null);
+          } catch {}
+        }
+      } else {
+        setIsLoggedIn(false);
+        setUserRole(null);
+      }
+    };
+    
+    checkAuth();
+    window.addEventListener("focus", checkAuth);
+    return () => window.removeEventListener("focus", checkAuth);
+  }, []);
+
+  const handleLogout = () => {
+    // Clear all cookies
+    document.cookie = "handyhub_user_session=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;";
+    document.cookie = "handyhub_pro_session=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;";
+    document.cookie = "handyhub_admin_session=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;";
+    document.cookie = "handyhub_user_data=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;";
+    
+    // Clear local storage
+    localStorage.removeItem("handyhub_user");
+    localStorage.removeItem("handyhub_admin_session");
+    
+    setIsLoggedIn(false);
+    setUserRole(null);
+    
+    window.location.href = "/";
+  };
 
   useEffect(() => {
     if (mobileOpen) {
@@ -149,9 +195,15 @@ export function Header() {
                 </motion.div>
               </AnimatePresence>
             </button>
-            <Link href="/auth/login" className={`${styles.loginBtn}`}>
-              Log In
-            </Link>
+            {isLoggedIn ? (
+              <button onClick={handleLogout} className={`${styles.loginBtn}`} style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "inherit" }}>
+                Log Out
+              </button>
+            ) : (
+              <Link href="/auth/login" className={`${styles.loginBtn}`}>
+                Log In
+              </Link>
+            )}
             <Link href="/book" className={`btn btn-primary btn-md ${styles.bookNowBtn}`}>
               Book Now
             </Link>
@@ -253,13 +305,26 @@ export function Header() {
                     Track My Booking
                   </Link>
                   <div className={styles.mobileDivider} />
-                  <Link
-                    href="/auth/login"
-                    className={styles.mobileLink}
-                    onClick={() => setMobileOpen(false)}
-                  >
-                    Log In
-                  </Link>
+                  {isLoggedIn ? (
+                    <button
+                      onClick={() => {
+                        setMobileOpen(false);
+                        handleLogout();
+                      }}
+                      className={styles.mobileLink}
+                      style={{ width: "100%", textAlign: "left", background: "none", border: "none", cursor: "pointer", fontFamily: "inherit" }}
+                    >
+                      Log Out
+                    </button>
+                  ) : (
+                    <Link
+                      href="/auth/login"
+                      className={styles.mobileLink}
+                      onClick={() => setMobileOpen(false)}
+                    >
+                      Log In
+                    </Link>
+                  )}
                 </div>
                 <div className={styles.mobileMenuFooter}>
                   <Link
