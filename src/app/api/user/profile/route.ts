@@ -85,8 +85,9 @@ export async function PUT(request: Request) {
     }
 
     const updateData: any = {};
-    if (firstName !== undefined) updateData.firstName = firstName.trim();
-    if (lastName !== undefined) updateData.lastName = lastName.trim();
+    // First name and last name are locked post-registration for identity verification & fraud prevention
+    if (!existingUser.firstName && firstName !== undefined) updateData.firstName = firstName.trim();
+    if (!existingUser.lastName && lastName !== undefined) updateData.lastName = lastName.trim();
     if (phone !== undefined) updateData.phone = phone.trim();
 
     // Check permanent address updates

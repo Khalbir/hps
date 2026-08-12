@@ -758,21 +758,29 @@ export default function DashboardPage() {
 
                 <form onSubmit={handleProfileSave} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
                   <div>
-                    <label style={{ fontSize: 13, fontWeight: "bold", display: "block", marginBottom: 4 }}>First Name</label>
+                    <label style={{ fontSize: 13, fontWeight: "bold", display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+                      <span>First Name</span>
+                      <span style={{ fontSize: 11, color: "#64748B", fontWeight: "normal" }}>🔒 Locked (Registered Identity Name)</span>
+                    </label>
                     <input
                       type="text"
                       value={editFirstName}
-                      onChange={(e) => setEditFirstName(e.target.value)}
-                      style={{ width: "100%", padding: 10, borderRadius: 8, border: "1px solid var(--border-primary)", background: "var(--bg-tertiary)", color: "var(--text-primary)" }}
+                      readOnly
+                      disabled
+                      style={{ width: "100%", padding: 10, borderRadius: 8, border: "1px solid var(--border-primary)", background: "rgba(148,163,184,0.12)", color: "var(--text-secondary)", cursor: "not-allowed" }}
                     />
                   </div>
                   <div>
-                    <label style={{ fontSize: 13, fontWeight: "bold", display: "block", marginBottom: 4 }}>Last Name</label>
+                    <label style={{ fontSize: 13, fontWeight: "bold", display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+                      <span>Last Name</span>
+                      <span style={{ fontSize: 11, color: "#64748B", fontWeight: "normal" }}>🔒 Locked (Registered Identity Name)</span>
+                    </label>
                     <input
                       type="text"
                       value={editLastName}
-                      onChange={(e) => setEditLastName(e.target.value)}
-                      style={{ width: "100%", padding: 10, borderRadius: 8, border: "1px solid var(--border-primary)", background: "var(--bg-tertiary)", color: "var(--text-primary)" }}
+                      readOnly
+                      disabled
+                      style={{ width: "100%", padding: 10, borderRadius: 8, border: "1px solid var(--border-primary)", background: "rgba(148,163,184,0.12)", color: "var(--text-secondary)", cursor: "not-allowed" }}
                     />
                   </div>
                   <div>
@@ -785,7 +793,7 @@ export default function DashboardPage() {
                     />
                   </div>
                   <button type="submit" disabled={profileSaving} className="btn btn-primary btn-sm" style={{ background: "#0EA5E9", marginTop: 8 }}>
-                    {profileSaving ? "Saving..." : "Save Profile Updates ➔"}
+                    {profileSaving ? "Saving..." : "Save Phone Number Updates ➔"}
                   </button>
                 </form>
               </div>
