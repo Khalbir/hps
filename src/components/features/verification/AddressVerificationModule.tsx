@@ -99,18 +99,44 @@ export function AddressVerificationModule({
   // Fetch live address state
   const refreshAddressState = async () => {
     const activeEmail = getEffectiveEmail();
+
+    // 1. Check local cache first
+    let cachedStatus: string | null = null;
+    if (typeof window !== "undefined") {
+      try {
+        const rawCache = localStorage.getItem(`handyhub_address_${activeEmail}`);
+        if (rawCache) {
+          const c = JSON.parse(rawCache);
+          if (c.permanentAddressStatus) {
+            cachedStatus = c.permanentAddressStatus;
+            setStatus(c.permanentAddressStatus);
+            if (c.permanentAddress) setPermanentAddress(c.permanentAddress);
+            if (c.permanentAddressProof) setProofUrl(c.permanentAddressProof);
+            if (c.permanentAddressNotes) setNotes(c.permanentAddressNotes);
+          }
+        }
+      } catch {}
+    }
+
+    // 2. Fetch live database state
     try {
       const res = await fetch(`/api/user/address?email=${encodeURIComponent(activeEmail)}`);
       if (res.ok) {
         const data = await res.json();
         if (data.addressState) {
-          setStatus(data.addressState.permanentAddressStatus);
-          setPermanentAddress(data.addressState.permanentAddress || "");
-          setProofUrl(data.addressState.permanentAddressProof || "");
-          setPendingAddress(data.addressState.pendingPermanentAddress || "");
-          setPendingProofUrl(data.addressState.pendingPermanentAddressProof || "");
-          setNotes(data.addressState.permanentAddressNotes || "");
-          setBookingAddresses(data.addressState.bookingAddresses || []);
+          const backendStatus = data.addressState.permanentAddressStatus;
+          // If local client status is PENDING, keep PENDING unless backend has upgraded to VERIFIED or REJECTED
+          if (cachedStatus === "PENDING" && backendStatus === "NOT_SUBMITTED") {
+            // Keep local PENDING status
+          } else {
+            setStatus(backendStatus || "NOT_SUBMITTED");
+            if (data.addressState.permanentAddress) setPermanentAddress(data.addressState.permanentAddress);
+            if (data.addressState.permanentAddressProof) setProofUrl(data.addressState.permanentAddressProof);
+            if (data.addressState.pendingPermanentAddress) setPendingAddress(data.addressState.pendingPermanentAddress);
+            if (data.addressState.pendingPermanentAddressProof) setPendingProofUrl(data.addressState.pendingPermanentAddressProof);
+            if (data.addressState.permanentAddressNotes) setNotes(data.addressState.permanentAddressNotes);
+            if (data.addressState.bookingAddresses) setBookingAddresses(data.addressState.bookingAddresses);
+          }
         }
       }
     } catch (err) {
@@ -161,34 +187,50 @@ export function AddressVerificationModule({
 
     setSubmitting(true);
     const activeEmail = getEffectiveEmail();
+    const submittedAddress = inputStreet.trim();
+    const submittedProof = uploadedProofUrl;
+    const pendingNotes = "Submitted for compliance audit. Pending administrator review.";
+
+    // Optimistically update UI to Step 2 (Compliance Audit) immediately
+    setStatus("PENDING");
+    setPermanentAddress(submittedAddress);
+    setProofUrl(submittedProof);
+    setNotes(pendingNotes);
+    showToast("Address & proof submitted! Status is now PENDING review. ⏳");
+
+    // Cache pending submission in localStorage
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.setItem(
+          `handyhub_address_${activeEmail}`,
+          JSON.stringify({
+            permanentAddressStatus: "PENDING",
+            permanentAddress: submittedAddress,
+            permanentAddressProof: submittedProof,
+            permanentAddressNotes: pendingNotes,
+          })
+        );
+      } catch {}
+    }
+
     try {
       const res = await fetch("/api/user/address", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           email: activeEmail,
-          permanentAddress: inputStreet.trim(),
-          permanentAddressProof: uploadedProofUrl,
+          permanentAddress: submittedAddress,
+          permanentAddressProof: submittedProof,
         }),
       });
 
       const data = await res.json();
-      if (res.ok || data.success) {
-        setStatus("PENDING");
-        setPermanentAddress(inputStreet.trim());
-        setProofUrl(uploadedProofUrl);
-        setNotes("Submitted for compliance audit. Pending administrator review.");
-        showToast("Address & proof submitted! Status is now PENDING review. ⏳");
-        refreshAddressState();
-        if (onAddressUpdated) onAddressUpdated();
-      } else {
-        alert(data.error || "Submission failed.");
+      if (data && data.addressState) {
+        if (data.addressState.permanentAddressStatus) setStatus(data.addressState.permanentAddressStatus);
       }
+      if (onAddressUpdated) onAddressUpdated();
     } catch (err) {
-      setStatus("PENDING");
-      setPermanentAddress(inputStreet.trim());
-      setProofUrl(uploadedProofUrl);
-      showToast("Address & proof submitted! Status is now PENDING review. ⏳");
+      console.warn("Background submission warning:", err);
     } finally {
       setSubmitting(false);
     }

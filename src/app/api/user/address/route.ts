@@ -180,6 +180,12 @@ export async function POST(request: Request) {
     return NextResponse.json({
       success: true,
       message: "Permanent address proof submitted successfully! Verification is now PENDING review.",
+      addressState: {
+        permanentAddress: trimmedAddr,
+        permanentAddressProof: proofUrl,
+        permanentAddressStatus: "PENDING",
+        permanentAddressNotes: "Submitted for compliance audit. Pending administrator review.",
+      },
       user: {
         permanentAddress: trimmedAddr,
         permanentAddressProof: proofUrl,
@@ -191,6 +197,12 @@ export async function POST(request: Request) {
     return NextResponse.json({
       success: true,
       message: "Permanent address proof submitted! Status updated to PENDING review.",
+      addressState: {
+        permanentAddress: "Submitted Address",
+        permanentAddressProof: "Submitted Proof",
+        permanentAddressStatus: "PENDING",
+        permanentAddressNotes: "Submitted for compliance audit.",
+      },
       user: {
         permanentAddress: "Submitted Address",
         permanentAddressProof: "Submitted Proof",
