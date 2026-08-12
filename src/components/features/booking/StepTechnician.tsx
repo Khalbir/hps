@@ -37,7 +37,7 @@ export function StepTechnician({ booking, updateBooking, onNext, onBack }: StepP
         const data = await res.json();
         if (res.ok && data.professionals) {
           const verified = data.professionals
-            .filter((p: any) => p.status === "VERIFIED" || p.status === "APPROVED")
+            .filter((p: any) => p.verificationStatus === "VERIFIED" || p.verificationStatus === "APPROVED")
             .map((p: any) => {
               const fullName = p.name || "Verified Partner";
               const parts = fullName.split(" ");
@@ -46,16 +46,39 @@ export function StepTechnician({ booking, updateBooking, onNext, onBack }: StepP
                 id: p.id,
                 name: fullName,
                 initials: initials.toUpperCase(),
-                rating: 5.0,
-                jobs: 0,
-                specialty: p.category || "Certified Service Partner",
-                categories: [p.category ? p.category.toLowerCase() : "general"],
+                rating: Number(p.rating || 4.9),
+                jobs: Number(p.totalJobs || 0),
+                specialty: p.field || "Certified Service Partner",
+                categories: [p.field ? p.field.toLowerCase() : "general"],
                 responseTime: 15,
                 available: true,
               };
             });
 
-          setRealTechnicians(verified);
+          // Sort by rating (descending) then jobs (descending)
+          verified.sort((a: any, b: any) => {
+            if (b.rating !== a.rating) {
+              return b.rating - a.rating;
+            }
+            return b.jobs - a.jobs;
+          });
+
+          // Filter by required field (booking.serviceCategory)
+          let filtered = verified;
+          if (booking.serviceCategory) {
+            const selectedCat = booking.serviceCategory.toLowerCase().trim();
+            filtered = verified.filter((tech: any) => {
+              const specialties = tech.categories.join(" ");
+              return specialties.includes(selectedCat) || selectedCat.includes(specialties) || specialties.includes("general");
+            });
+
+            // If no match in the specific field, fall back to all verified professionals so list is not empty
+            if (filtered.length === 0) {
+              filtered = verified;
+            }
+          }
+
+          setRealTechnicians(filtered);
         }
       } catch (err) {
         console.warn("Failed to fetch real database artisans:", err);
@@ -65,7 +88,7 @@ export function StepTechnician({ booking, updateBooking, onNext, onBack }: StepP
     }
 
     fetchRealArtisans();
-  }, []);
+  }, [booking.serviceCategory]);
 
   const selectTechnician = (tech: Technician) => {
     setAutoAssign(false);
@@ -158,7 +181,7 @@ export function StepTechnician({ booking, updateBooking, onNext, onBack }: StepP
                 <div className={styles.techStats}>
                   <span className={styles.techStat}>
                     <Star size={14} fill="#F59E0B" stroke="#F59E0B" />
-                    {tech.rating}
+                    {tech.rating} ({tech.jobs} {tech.jobs === 1 ? "job" : "jobs"})
                   </span>
                   <span className={styles.techStat}>
                     <CheckCircle size={14} />
