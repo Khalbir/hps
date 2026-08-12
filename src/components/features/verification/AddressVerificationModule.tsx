@@ -496,6 +496,43 @@ export function AddressVerificationModule({
           </div>
         )}
 
+        {/* Section 1B: PENDING Verification Card (Step 2: Compliance Audit) */}
+        {status === "PENDING" && (
+          <div style={{ background: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.3)", borderRadius: "12px", padding: "20px", marginBottom: "24px" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "12px" }}>
+              <div>
+                <span style={{ fontSize: "11px", color: "#F59E0B", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.5px", display: "flex", alignItems: "center", gap: 6, marginBottom: "4px" }}>
+                  <Clock size={14} /> Step 2: Compliance Audit & Verification Pending
+                </span>
+                <h3 style={{ fontSize: "16px", fontWeight: 700, color: "#F8FAFC", margin: "0 0 6px 0" }}>
+                  {permanentAddress || "Submitted Residence Address"}
+                </h3>
+                <p style={{ fontSize: "13px", color: "#CBD5E1", margin: 0 }}>
+                  {notes || "Your address proof document has been uploaded and is under active review by HandyHub Compliance (ETA: < 24 hours)."}
+                </p>
+              </div>
+              <span className="badge" style={{ background: "rgba(245,158,11,0.18)", color: "#F59E0B", border: "1px solid #F59E0B", padding: "6px 14px", borderRadius: "20px", fontWeight: "bold", fontSize: "12px" }}>
+                ⏳ Audit In Progress
+              </span>
+            </div>
+
+            {/* Proof document preview */}
+            {proofUrl && (
+              <div style={{ marginTop: "14px", paddingTop: "12px", borderTop: "1px solid rgba(245,158,11,0.2)", display: "flex", alignItems: "center", gap: "10px" }}>
+                <FileText size={16} color="#F59E0B" />
+                <span style={{ fontSize: "13px", color: "#CBD5E1" }}>Submitted Proof Document:</span>
+                <a href={proofUrl} target="_blank" rel="noopener noreferrer" style={{ color: "#0EA5E9", fontSize: "13px", textDecoration: "underline", fontWeight: 600 }}>
+                  View Uploaded Tenancy / Utility Proof 📄
+                </a>
+              </div>
+            )}
+
+            <div style={{ marginTop: "14px", background: "rgba(14,165,233,0.1)", borderLeft: "3px solid #0EA5E9", padding: "10px 14px", borderRadius: "4px", fontSize: "12px", color: "#CBD5E1" }}>
+              💡 <strong>Low-Risk Services Active:</strong> You don&apos;t need to wait! You can already book low-risk home services (cleaning, minor plumbing, AC servicing). High-risk services (electrical, solar, security) will automatically unlock once compliance approves this document.
+            </div>
+          </div>
+        )}
+
         {/* Section 2: Address Change Request Form Drawer */}
         {showChangeForm && status === "VERIFIED" && (
           <form onSubmit={handleChangeRequestSubmit} style={{ background: "#0F172A", border: "1px solid #334155", borderRadius: "12px", padding: "20px", marginBottom: "24px" }}>
