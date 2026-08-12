@@ -15,6 +15,7 @@ export default function UsersRoleManagementPage() {
   const [search, setSearch] = useState("");
   const [activeTab, setActiveTab] = useState("ALL");
   const [toast, setToast] = useState("");
+  const [currentUserRole, setCurrentUserRole] = useState<string>("ADMIN");
 
   // Add / Assign New Staff Modal State
   const [showAddStaffModal, setShowAddStaffModal] = useState(false);
@@ -50,6 +51,18 @@ export default function UsersRoleManagementPage() {
 
   useEffect(() => {
     fetchUsers();
+
+    if (typeof window !== "undefined") {
+      const sessionStr = localStorage.getItem("handyhub_admin_session");
+      if (sessionStr) {
+        try {
+          const sess = JSON.parse(sessionStr);
+          if (sess.user && sess.user.role) {
+            setCurrentUserRole(sess.user.role);
+          }
+        } catch {}
+      }
+    }
   }, []);
 
   const handleCreateStaff = async (e: React.FormEvent) => {
@@ -66,11 +79,15 @@ export default function UsersRoleManagementPage() {
 
       const data = await res.json();
       if (res.ok) {
-        const passNotice = data.initialPassword ? ` (Password: ${data.initialPassword})` : "";
-        setToast(`Staff member ${staffForm.email} assigned role: ${staffForm.role}${passNotice}! 🎉`);
+        if (data.isRequest) {
+          setToast(data.message);
+        } else {
+          const passNotice = data.initialPassword ? ` (Password: ${data.initialPassword})` : "";
+          setToast(`Staff member ${staffForm.email} assigned role: ${staffForm.role}${passNotice}! 🎉`);
+          fetchUsers();
+        }
         setShowAddStaffModal(false);
         setStaffForm({ email: "", firstName: "", lastName: "", phone: "", role: "OPERATIONS_MANAGER", password: "" });
-        fetchUsers();
       } else {
         setToast(`Error: ${data.error || "Failed to assign staff member"}`);
       }
@@ -90,23 +107,32 @@ export default function UsersRoleManagementPage() {
         payload.password = editPassword.trim();
       }
 
-      await fetch("/api/admin/users", {
+      const res = await fetch("/api/admin/users", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
 
-      setUsers((prev) =>
-        prev.map((u) => (u.id === editingUser.id ? { ...u, role: selectedRole } : u))
-      );
-      const passText = editPassword.trim() ? " and password updated" : "";
-      setToast(`Role for ${editingUser.name} updated to ${selectedRole}${passText}!`);
+      const data = await res.json();
+      if (res.ok) {
+        if (data.isRequest) {
+          setToast(data.message);
+        } else {
+          setUsers((prev) =>
+            prev.map((u) => (u.id === editingUser.id ? { ...u, role: selectedRole } : u))
+          );
+          const passText = editPassword.trim() ? " and password updated" : "";
+          setToast(`Role for ${editingUser.name} updated to ${selectedRole}${passText}!`);
+        }
+      } else {
+        setToast(`Error: ${data.error || "Failed to update role"}`);
+      }
     } catch {
       setToast("Failed to update role on server.");
     } finally {
       setEditingUser(null);
       setEditPassword("");
-      setTimeout(() => setToast(""), 4000);
+      setTimeout(() => setToast(""), 6000);
     }
   };
 
@@ -127,6 +153,8 @@ export default function UsersRoleManagementPage() {
     return true;
   });
 
+  const isChiefCommander = currentUserRole === "SUPER_ADMIN";
+
   return (
     <AdminLayoutShell>
       <header className={styles.adminTopBar} style={{ marginBottom: "var(--space-6)" }}>
@@ -134,7 +162,9 @@ export default function UsersRoleManagementPage() {
           <div>
             <h1 className="h3">Staff Role Assignment & Access Control (RBAC)</h1>
             <p style={{ color: "var(--text-secondary)", fontSize: "var(--fs-sm)" }}>
-              Chief Commander Control Panel: Assign designated administrative roles to staff members and restrict each account to its allowed operations.
+              {isChiefCommander
+                ? "Chief Commander Control Panel: Assign designated administrative roles to staff members and restrict each account to its allowed operations."
+                : "Staff Registry Control Panel: View live staff directories, check administrative roles, and request privilege reassignments."}
             </p>
           </div>
 
@@ -143,7 +173,7 @@ export default function UsersRoleManagementPage() {
             className="btn btn-primary btn-md"
             style={{ display: "flex", alignItems: "center", gap: "8px", background: "#0EA5E9", fontWeight: "bold" }}
           >
-            <UserPlus size={18} /> Assign / Promote New Staff Member
+            <UserPlus size={18} /> {isChiefCommander ? "Assign / Promote New Staff Member" : "Request New Staff Appointment"}
           </button>
         </div>
       </header>
@@ -240,7 +270,7 @@ export default function UsersRoleManagementPage() {
                 <th style={{ padding: "12px 16px" }}>Phone Number</th>
                 <th style={{ padding: "12px 16px" }}>Designated Role & Access Level</th>
                 <th style={{ padding: "12px 16px" }}>Date Joined</th>
-                <th style={{ padding: "12px 16px" }}>Chief Commander Action</th>
+                <th style={{ padding: "12px 16px" }}>{isChiefCommander ? "Chief Commander Action" : "Staff Action"}</th>
               </tr>
             </thead>
             <tbody>
@@ -268,7 +298,7 @@ export default function UsersRoleManagementPage() {
                           setSelectedRole(u.role);
                         }}
                       >
-                        <Edit size={12} /> Change Staff Role
+                        <Edit size={12} /> {isChiefCommander ? "Change Staff Role" : "Request Role Change"}
                       </button>
                     </td>
                   </tr>
@@ -301,7 +331,9 @@ export default function UsersRoleManagementPage() {
             onClick={(e) => e.stopPropagation()}
           >
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px", borderBottom: "1px solid #334155", paddingBottom: "12px" }}>
-              <h3 className="h4" style={{ margin: 0, color: "#F8FAFC" }}>Assign New Staff Member Role</h3>
+              <h3 className="h4" style={{ margin: 0, color: "#F8FAFC" }}>
+                {isChiefCommander ? "Assign New Staff Member Role" : "Request New Staff Member Appointment"}
+              </h3>
               <button onClick={() => setShowAddStaffModal(false)} style={{ background: "none", border: "none", color: "#94A3B8", cursor: "pointer" }}>✕</button>
             </div>
 
@@ -377,7 +409,7 @@ export default function UsersRoleManagementPage() {
               <div style={{ display: "flex", gap: "12px", justifyContent: "flex-end" }}>
                 <button type="button" className="btn btn-secondary btn-sm" onClick={() => setShowAddStaffModal(false)}>Cancel</button>
                 <button type="submit" className="btn btn-primary btn-sm" disabled={submittingStaff} style={{ background: "#0EA5E9" }}>
-                  {submittingStaff ? "Assigning..." : "Assign Staff Role Credentials ✅"}
+                  {submittingStaff ? "Submitting..." : (isChiefCommander ? "Assign Staff Role Credentials ✅" : "Submit Appointment Request 📩")}
                 </button>
               </div>
             </form>
@@ -406,8 +438,14 @@ export default function UsersRoleManagementPage() {
             style={{ width: "100%", maxWidth: "480px", background: "#1E293B", border: "1px solid #334155", borderRadius: "16px", padding: "24px" }}
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 className="h4" style={{ margin: "0 0 4px 0", color: "#F8FAFC" }}>Update Staff Administrative Role</h3>
-            <p style={{ fontSize: "13px", color: "#94A3B8", marginBottom: "16px" }}>Reassigning permissions for <strong>{editingUser.name} ({editingUser.email})</strong></p>
+            <h3 className="h4" style={{ margin: "0 0 4px 0", color: "#F8FAFC" }}>
+              {isChiefCommander ? "Update Staff Administrative Role" : "Request Staff Administrative Role Update"}
+            </h3>
+            <p style={{ fontSize: "13px", color: "#94A3B8", marginBottom: "16px" }}>
+              {isChiefCommander
+                ? `Reassigning permissions for ${editingUser.name} (${editingUser.email})`
+                : `Submitting a change of role request for ${editingUser.name} (${editingUser.email})`}
+            </p>
 
             <div style={{ marginBottom: "16px" }}>
               <label style={{ fontSize: "12px", color: "#64748B", fontWeight: 700, textTransform: "uppercase", display: "block", marginBottom: "8px" }}>
@@ -444,7 +482,9 @@ export default function UsersRoleManagementPage() {
 
             <div style={{ display: "flex", gap: "12px", justifyContent: "flex-end" }}>
               <button className="btn btn-secondary btn-sm" onClick={() => setEditingUser(null)}>Cancel</button>
-              <button className="btn btn-primary btn-sm" onClick={handleRoleChange} style={{ background: "#0EA5E9" }}>Save Role Update</button>
+              <button className="btn btn-primary btn-sm" onClick={handleRoleChange} style={{ background: "#0EA5E9" }}>
+                {isChiefCommander ? "Save Role Update" : "Submit Role Update Request"}
+              </button>
             </div>
           </div>
         </div>

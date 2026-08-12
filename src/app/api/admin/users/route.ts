@@ -2,8 +2,22 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { hash } from "bcryptjs";
 import { purgeDemoRecordsFromDB, DEMO_EMAILS } from "@/lib/purge-demo-utility";
+import { cookies } from "next/headers";
 
 export const dynamic = "force-dynamic";
+
+async function getRequestingUser() {
+  try {
+    const cookieStore = await cookies();
+    const userDataStr = cookieStore.get("handyhub_user_data")?.value;
+    if (userDataStr) {
+      return JSON.parse(userDataStr);
+    }
+  } catch (e) {
+    console.warn("Failed to get requesting user from cookies:", e);
+  }
+  return null;
+}
 
 export async function GET(request: Request) {
   try {
@@ -45,9 +59,16 @@ export async function GET(request: Request) {
 
 import { registerStaffAccount } from "@/lib/staff-registry";
 
-// POST: Add or promote staff member by email
+// POST: Add or promote staff member by email (restricted to Chief Commander, Admin General can request)
 export async function POST(request: Request) {
   try {
+    const requester = await getRequestingUser();
+    const requesterRole = requester?.role || "CUSTOMER";
+
+    if (requesterRole !== "SUPER_ADMIN" && requesterRole !== "ADMIN") {
+      return NextResponse.json({ error: "Access denied. Administrative role required." }, { status: 403 });
+    }
+
     const body = await request.json();
     const { email, firstName, lastName, role, phone, password } = body;
 
@@ -58,6 +79,42 @@ export async function POST(request: Request) {
     const cleanEmail = email.toLowerCase().trim();
     const initialPass = password && password.trim() ? password.trim() : "Staff123!";
 
+    // If Admin General, seek request instead of executing
+    if (requesterRole === "ADMIN") {
+      // Find Chief Commanders (SUPER_ADMIN)
+      const superAdmins = await prisma.user.findMany({
+        where: { role: "SUPER_ADMIN" },
+      });
+
+      for (const sa of superAdmins) {
+        await prisma.notification.create({
+          data: {
+            userId: sa.id,
+            type: "SYSTEM",
+            title: "Staff Appointment Request 👤",
+            message: `Admin General (${requester.email}) has requested to appoint ${firstName || ""} ${lastName || ""} (${cleanEmail}) as ${role}.`,
+            data: JSON.stringify({ email: cleanEmail, firstName, lastName, role, phone }),
+          },
+        }).catch(() => {});
+      }
+
+      await prisma.auditLog.create({
+        data: {
+          userId: requester.id,
+          action: "REQUEST_STAFF_APPOINTMENT",
+          entity: "User",
+          details: JSON.stringify({ email: cleanEmail, firstName, lastName, role, phone }),
+        },
+      }).catch(() => {});
+
+      return NextResponse.json({
+        success: true,
+        isRequest: true,
+        message: `Appointment request for ${cleanEmail} as ${role} has been submitted to the Chief Commander for approval.`,
+      });
+    }
+
+    // Chief Commander executes directly
     // Register into High-Availability Registry
     registerStaffAccount({
       email: cleanEmail,
@@ -106,6 +163,16 @@ export async function POST(request: Request) {
       user = { email: cleanEmail, firstName, lastName, role, isVerified: true };
     }
 
+    await prisma.auditLog.create({
+      data: {
+        userId: requester.id,
+        action: "APPOINT_STAFF",
+        entity: "User",
+        entityId: user.id,
+        details: JSON.stringify({ email: cleanEmail, role }),
+      },
+    }).catch(() => {});
+
     return NextResponse.json({
       success: true,
       message: `Staff member ${cleanEmail} successfully assigned role: ${role}`,
@@ -118,9 +185,16 @@ export async function POST(request: Request) {
   }
 }
 
-// PUT: Change existing staff member role / password
+// PUT: Change existing staff member role / password (restricted to Chief Commander, Admin General can request)
 export async function PUT(request: Request) {
   try {
+    const requester = await getRequestingUser();
+    const requesterRole = requester?.role || "CUSTOMER";
+
+    if (requesterRole !== "SUPER_ADMIN" && requesterRole !== "ADMIN") {
+      return NextResponse.json({ error: "Access denied. Administrative role required." }, { status: 403 });
+    }
+
     const body = await request.json();
     const { userId, role, password } = body;
 
@@ -128,6 +202,46 @@ export async function PUT(request: Request) {
       return NextResponse.json({ error: "User ID and Role are required" }, { status: 400 });
     }
 
+    // If Admin General, seek request instead of executing
+    if (requesterRole === "ADMIN") {
+      const targetUser = await prisma.user.findUnique({ where: { id: userId } });
+      const targetName = targetUser ? `${targetUser.firstName} ${targetUser.lastName}`.trim() : "Staff Member";
+      const targetEmail = targetUser ? targetUser.email : `ID: ${userId}`;
+
+      const superAdmins = await prisma.user.findMany({
+        where: { role: "SUPER_ADMIN" },
+      });
+
+      for (const sa of superAdmins) {
+        await prisma.notification.create({
+          data: {
+            userId: sa.id,
+            type: "SYSTEM",
+            title: "Role Change Request 🔑",
+            message: `Admin General (${requester.email}) has requested to change the role of ${targetName} (${targetEmail}) to ${role}.`,
+            data: JSON.stringify({ userId, role, targetName, targetEmail }),
+          },
+        }).catch(() => {});
+      }
+
+      await prisma.auditLog.create({
+        data: {
+          userId: requester.id,
+          action: "REQUEST_ROLE_CHANGE",
+          entity: "User",
+          entityId: userId,
+          details: JSON.stringify({ role, targetEmail }),
+        },
+      }).catch(() => {});
+
+      return NextResponse.json({
+        success: true,
+        isRequest: true,
+        message: `Role change request to reassign ${targetName} to ${role} has been submitted to the Chief Commander for approval.`,
+      });
+    }
+
+    // Chief Commander executes directly
     let updatedUser: any = null;
     try {
       const existingUser = await prisma.user.findUnique({ where: { id: userId } });
@@ -155,6 +269,16 @@ export async function PUT(request: Request) {
       console.warn("[Admin Users PUT DB Warning]: DB update error, relying on High-Availability Registry:", dbErr);
       updatedUser = { id: userId, role, isVerified: true };
     }
+
+    await prisma.auditLog.create({
+      data: {
+        userId: requester.id,
+        action: "CHANGE_STAFF_ROLE",
+        entity: "User",
+        entityId: userId,
+        details: JSON.stringify({ role }),
+      },
+    }).catch(() => {});
 
     return NextResponse.json({
       success: true,

@@ -64,7 +64,7 @@ export const ROLE_PERMISSIONS: Record<string, RolePermissions> = {
     notifications: true,
     settings: true,
     backup: true,
-    manageRoles: true,
+    manageRoles: false,
   },
   OPERATIONS_MANAGER: {
     dashboard: true,
