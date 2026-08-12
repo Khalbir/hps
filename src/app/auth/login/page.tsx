@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
@@ -13,6 +13,7 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [staySignedIn, setStaySignedIn] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -21,6 +22,17 @@ export default function LoginPage() {
   const [googleEmail, setGoogleEmail] = useState("");
   const [googleName, setGoogleName] = useState("");
   const [googleLoading, setGoogleLoading] = useState(false);
+
+  // Check URL reasons (e.g. multi-window auto-logout)
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const urlParams = new URLSearchParams(window.location.search);
+      const reason = urlParams.get("reason");
+      if (reason === "multi_window_logout") {
+        setError("Signed out automatically for security: Opening HandyHub from a different window requires 'Stay signed in on this device' to be checked.");
+      }
+    }
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -46,32 +58,50 @@ export default function LoginPage() {
         return;
       }
 
-      // Store Session Tokens & Cookies according to Role
+      // Store Stay Signed In preference
+      if (staySignedIn) {
+        localStorage.setItem("handyhub_stay_signed_in", "true");
+      } else {
+        localStorage.removeItem("handyhub_stay_signed_in");
+      }
+
+      const sessionPayload = {
+        authenticated: true,
+        user: data.user,
+        timestamp: Date.now(),
+      };
+
+      // Always save active session to sessionStorage for single-window context scoping
+      sessionStorage.setItem("handyhub_active_session", JSON.stringify(sessionPayload));
+
       const ADMIN_ROLES = ["SUPER_ADMIN", "ADMIN", "OPERATIONS_MANAGER", "VERIFICATION_OFFICER", "CUSTOMER_SUPPORT", "FINANCE"];
       if (ADMIN_ROLES.includes(data.user.role)) {
-        localStorage.setItem("handyhub_admin_session", JSON.stringify({
-          authenticated: true,
-          user: data.user,
-          timestamp: Date.now(),
-        }));
-        document.cookie = "handyhub_admin_session=authenticated; path=/; max-age=86400; SameSite=Lax";
+        if (staySignedIn) {
+          localStorage.setItem("handyhub_admin_session", JSON.stringify(sessionPayload));
+          document.cookie = "handyhub_admin_session=authenticated; path=/; max-age=2592000; SameSite=Lax";
+        } else {
+          sessionStorage.setItem("handyhub_admin_session", JSON.stringify(sessionPayload));
+          document.cookie = "handyhub_admin_session=authenticated; path=/; SameSite=Lax";
+        }
         window.location.href = data.redirect || "/admin/dashboard";
       } else if (data.user.role === "PROFESSIONAL") {
-        localStorage.setItem("handyhub_pro_session", JSON.stringify({
-          authenticated: true,
-          user: data.user,
-          timestamp: Date.now(),
-        }));
-        document.cookie = "handyhub_pro_session=authenticated; path=/; max-age=86400; SameSite=Lax";
+        if (staySignedIn) {
+          localStorage.setItem("handyhub_pro_session", JSON.stringify(sessionPayload));
+          document.cookie = "handyhub_pro_session=authenticated; path=/; max-age=2592000; SameSite=Lax";
+        } else {
+          sessionStorage.setItem("handyhub_pro_session", JSON.stringify(sessionPayload));
+          document.cookie = "handyhub_pro_session=authenticated; path=/; SameSite=Lax";
+        }
         router.push("/pro");
       } else {
         localStorage.setItem("handyhub_user", JSON.stringify(data.user));
-        localStorage.setItem("handyhub_user_session", JSON.stringify({
-          authenticated: true,
-          user: data.user,
-          timestamp: Date.now(),
-        }));
-        document.cookie = "handyhub_user_session=authenticated; path=/; max-age=86400; SameSite=Lax";
+        if (staySignedIn) {
+          localStorage.setItem("handyhub_user_session", JSON.stringify(sessionPayload));
+          document.cookie = "handyhub_user_session=authenticated; path=/; max-age=2592000; SameSite=Lax";
+        } else {
+          sessionStorage.setItem("handyhub_user_session", JSON.stringify(sessionPayload));
+          document.cookie = "handyhub_user_session=authenticated; path=/; SameSite=Lax";
+        }
         router.push("/dashboard");
       }
     } catch {
@@ -196,6 +226,18 @@ export default function LoginPage() {
                   {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
               </div>
+            </div>
+
+            <div style={{ display: "flex", alignItems: "center", margin: "4px 0 16px" }}>
+              <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "var(--text-primary)", cursor: "pointer", userSelect: "none" }}>
+                <input
+                  type="checkbox"
+                  checked={staySignedIn}
+                  onChange={(e) => setStaySignedIn(e.target.checked)}
+                  style={{ accentColor: "#0EA5E9", width: 16, height: 16, cursor: "pointer" }}
+                />
+                <span>Stay signed in on this device</span>
+              </label>
             </div>
 
             <button

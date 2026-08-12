@@ -234,6 +234,20 @@ export default function DashboardPage() {
       } catch (e) { }
     }
 
+    // Multi-Window Auto-Logout Security Guard
+    if (typeof window !== "undefined") {
+      const staySignedIn = localStorage.getItem("handyhub_stay_signed_in") === "true";
+      const activeWindowSession = sessionStorage.getItem("handyhub_active_session") || sessionStorage.getItem("handyhub_user_session");
+
+      // If user did NOT check "Stay signed in on this device" and opened HandyHub from another window or tab
+      if (!staySignedIn && !activeWindowSession) {
+        document.cookie = "handyhub_user_session=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+        localStorage.removeItem("handyhub_user_session");
+        window.location.href = "/auth/login?reason=multi_window_logout";
+        return;
+      }
+    }
+
     if (!activeUserId && !activeEmail && typeof window !== "undefined") {
       const hasCookie = document.cookie.includes("handyhub_user_session") || document.cookie.includes("handyhub_user_data");
       if (!hasCookie) {

@@ -40,6 +40,7 @@ export default function RegisterPage() {
   });
   const [showPassword, setShowPassword] = useState(false);
   const [offPlatformAgreed, setOffPlatformAgreed] = useState(false);
+  const [staySignedIn, setStaySignedIn] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -102,16 +103,35 @@ export default function RegisterPage() {
         return;
       }
 
-      const userPayload = data.user || { email: form.email, firstName: form.firstName, lastName: form.lastName, role: form.role };
+      const userPayload = data.user || { email: form.email, firstName: form.firstName, lastName: form.lastName, phone: form.phone, role: form.role };
       localStorage.setItem("handyhub_user", JSON.stringify(userPayload));
 
+      if (staySignedIn) {
+        localStorage.setItem("handyhub_stay_signed_in", "true");
+      } else {
+        localStorage.removeItem("handyhub_stay_signed_in");
+      }
+
+      const sessionPayload = { authenticated: true, user: userPayload, timestamp: Date.now() };
+      sessionStorage.setItem("handyhub_active_session", JSON.stringify(sessionPayload));
+
       if (form.role === "PROFESSIONAL") {
-        localStorage.setItem("handyhub_pro_session", JSON.stringify({ authenticated: true, user: userPayload }));
-        document.cookie = "handyhub_pro_session=authenticated; path=/; max-age=86400; SameSite=Lax";
+        if (staySignedIn) {
+          localStorage.setItem("handyhub_pro_session", JSON.stringify(sessionPayload));
+          document.cookie = "handyhub_pro_session=authenticated; path=/; max-age=2592000; SameSite=Lax";
+        } else {
+          sessionStorage.setItem("handyhub_pro_session", JSON.stringify(sessionPayload));
+          document.cookie = "handyhub_pro_session=authenticated; path=/; SameSite=Lax";
+        }
         router.push("/pro");
       } else {
-        localStorage.setItem("handyhub_user_session", JSON.stringify({ authenticated: true, user: userPayload }));
-        document.cookie = "handyhub_user_session=authenticated; path=/; max-age=86400; SameSite=Lax";
+        if (staySignedIn) {
+          localStorage.setItem("handyhub_user_session", JSON.stringify(sessionPayload));
+          document.cookie = "handyhub_user_session=authenticated; path=/; max-age=2592000; SameSite=Lax";
+        } else {
+          sessionStorage.setItem("handyhub_user_session", JSON.stringify(sessionPayload));
+          document.cookie = "handyhub_user_session=authenticated; path=/; SameSite=Lax";
+        }
         router.push("/dashboard");
       }
     } catch {
@@ -354,7 +374,7 @@ export default function RegisterPage() {
             </div>
 
             {/* Mandatory Off-Platform Policy Acknowledgment */}
-            <div style={{ background: "rgba(245,158,11,0.08)", border: "1px solid #F59E0B", borderRadius: "12px", padding: "12px 14px", marginBottom: "20px" }}>
+            <div style={{ background: "rgba(245,158,11,0.08)", border: "1px solid #F59E0B", borderRadius: "12px", padding: "12px 14px", marginBottom: "16px" }}>
               <label style={{ display: "flex", alignItems: "flex-start", gap: "10px", cursor: "pointer", fontSize: "12px", color: "var(--text-primary)", lineHeight: 1.4 }}>
                 <input
                   type="checkbox"
@@ -366,6 +386,18 @@ export default function RegisterPage() {
                 <span>
                   <strong style={{ color: "#D97706" }}>Mandatory On-Platform Policy:</strong> I agree that all bookings, payments, and messages must stay on HandyHub Pro. Cash payments off-platform void Escrow Security, 14-Day Warranties, and Dispute Support.
                 </span>
+              </label>
+            </div>
+
+            <div style={{ display: "flex", alignItems: "center", marginBottom: "20px" }}>
+              <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "var(--text-primary)", cursor: "pointer", userSelect: "none" }}>
+                <input
+                  type="checkbox"
+                  checked={staySignedIn}
+                  onChange={(e) => setStaySignedIn(e.target.checked)}
+                  style={{ accentColor: "#0EA5E9", width: 16, height: 16, cursor: "pointer" }}
+                />
+                <span>Stay signed in on this device</span>
               </label>
             </div>
 

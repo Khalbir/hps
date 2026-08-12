@@ -30,6 +30,17 @@ export function ProLayoutShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
 
   useEffect(() => {
+    if (typeof window !== "undefined") {
+      const staySignedIn = localStorage.getItem("handyhub_stay_signed_in") === "true";
+      const activeWindowSession = sessionStorage.getItem("handyhub_active_session") || sessionStorage.getItem("handyhub_pro_session");
+      if (!staySignedIn && !activeWindowSession) {
+        document.cookie = "handyhub_pro_session=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+        localStorage.removeItem("handyhub_pro_session");
+        window.location.href = "/auth/login?reason=multi_window_logout";
+        return;
+      }
+    }
+
     let activeUserId = "";
     let activeEmail = "";
     if (typeof window !== "undefined") {
