@@ -300,8 +300,8 @@ export default function DashboardPage() {
           <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
             <span style={{ fontSize: "20px" }}>🛡️</span>
             <div>
-              <strong style={{ color: "#F8FAFC", fontSize: "14px", display: "block" }}>Safety & Escrow Mandate: Keep All Payments On-Platform!</strong>
-              <span style={{ color: "#CBD5E1", fontSize: "12px" }}>
+              <strong style={{ color: "var(--text-primary)", fontSize: "14px", display: "block" }}>Safety & Escrow Mandate: Keep All Payments On-Platform!</strong>
+              <span style={{ color: "var(--text-secondary)", fontSize: "12px" }}>
                 Never pay cash off-platform to artisans. Off-platform cash payments void Escrow Security, 14-Day Warranty, and Dispute Conciliation under Nigerian Law.
               </span>
             </div>

@@ -105,8 +105,8 @@ export default function ProDashboard() {
         <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
           <span style={{ fontSize: "20px" }}>🚫</span>
           <div>
-            <strong style={{ color: "#F8FAFC", fontSize: "14px", display: "block" }}>Anti-Circumvention Warning: All Job Payments Must Remain On-Platform!</strong>
-            <span style={{ color: "#CBD5E1", fontSize: "12px" }}>
+            <strong style={{ color: "var(--text-primary)", fontSize: "14px", display: "block" }}>Anti-Circumvention Warning: All Job Payments Must Remain On-Platform!</strong>
+            <span style={{ color: "var(--text-secondary)", fontSize: "12px" }}>
               Soliciting cash off-platform violates HandyHub Partner Terms. Violations result in instant account deactivation, escrow forfeiture, and ₦250,000 liquidated damages.
             </span>
           </div>

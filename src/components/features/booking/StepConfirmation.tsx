@@ -174,7 +174,7 @@ export function StepConfirmation({ booking }: Props) {
         <h4 style={{ margin: "0 0 6px", color: "#F59E0B", fontSize: "14px", fontWeight: 700, display: "flex", alignItems: "center", gap: 8 }}>
           🛡️ CRITICAL SAFETY MANDATE: Keep Payments On-Platform!
         </h4>
-        <p style={{ margin: 0, color: "#CBD5E1", fontSize: "12px", lineHeight: 1.5 }}>
+        <p style={{ margin: 0, color: "var(--text-secondary)", fontSize: "12px", lineHeight: 1.5 }}>
           For your protection, <strong>never pay cash or transact off-platform with artisans</strong>. All escrow guarantees, 14-day workmanship warranties, and customer support apply ONLY to transactions completed within HandyHub Pro. Paying cash off-platform voids all protections under Nigerian Law.
         </p>
       </motion.div>
