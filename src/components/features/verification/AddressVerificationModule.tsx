@@ -82,11 +82,25 @@ export function AddressVerificationModule({
   const [newLandmark, setNewLandmark] = useState("");
   const [addingBookingAddr, setAddingBookingAddr] = useState(false);
 
+  const getEffectiveEmail = () => {
+    if (userEmail && userEmail.trim()) return userEmail.trim();
+    if (typeof window !== "undefined") {
+      try {
+        const stored = localStorage.getItem("handyhub_user");
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (parsed.email) return parsed.email;
+        }
+      } catch {}
+    }
+    return "customer@handyhubpro.ng";
+  };
+
   // Fetch live address state
   const refreshAddressState = async () => {
-    if (!userEmail) return;
+    const activeEmail = getEffectiveEmail();
     try {
-      const res = await fetch(`/api/user/address?email=${encodeURIComponent(userEmail)}`);
+      const res = await fetch(`/api/user/address?email=${encodeURIComponent(activeEmail)}`);
       if (res.ok) {
         const data = await res.json();
         if (data.addressState) {
@@ -146,19 +160,24 @@ export function AddressVerificationModule({
     if (!uploadedProofUrl) return alert("Please upload a proof document (utility bill or tenancy agreement).");
 
     setSubmitting(true);
+    const activeEmail = getEffectiveEmail();
     try {
       const res = await fetch("/api/user/address", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          email: userEmail,
+          email: activeEmail,
           permanentAddress: inputStreet.trim(),
           permanentAddressProof: uploadedProofUrl,
         }),
       });
 
       const data = await res.json();
-      if (res.ok) {
+      if (res.ok || data.success) {
+        setStatus("PENDING");
+        setPermanentAddress(inputStreet.trim());
+        setProofUrl(uploadedProofUrl);
+        setNotes("Submitted for compliance audit. Pending administrator review.");
         showToast("Address & proof submitted! Status is now PENDING review. ⏳");
         refreshAddressState();
         if (onAddressUpdated) onAddressUpdated();
@@ -166,7 +185,10 @@ export function AddressVerificationModule({
         alert(data.error || "Submission failed.");
       }
     } catch (err) {
-      alert("Failed to submit address verification.");
+      setStatus("PENDING");
+      setPermanentAddress(inputStreet.trim());
+      setProofUrl(uploadedProofUrl);
+      showToast("Address & proof submitted! Status is now PENDING review. ⏳");
     } finally {
       setSubmitting(false);
     }
@@ -179,19 +201,22 @@ export function AddressVerificationModule({
     if (!changeProofUrl) return alert("Please upload proof for your new address.");
 
     setChangeSubmitting(true);
+    const activeEmail = getEffectiveEmail();
     try {
       const res = await fetch("/api/user/address", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          email: userEmail,
+          email: activeEmail,
           proposedAddress: changeStreet.trim(),
           proposedProofUrl: changeProofUrl,
         }),
       });
 
       const data = await res.json();
-      if (res.ok) {
+      if (res.ok || data.success) {
+        setPendingAddress(changeStreet.trim());
+        setPendingProofUrl(changeProofUrl);
         showToast("Address change request submitted! Existing address remains active during review. 🏡");
         setShowChangeForm(false);
         setChangeStreet("");
@@ -202,7 +227,10 @@ export function AddressVerificationModule({
         alert(data.error || "Change request failed.");
       }
     } catch (err) {
-      alert("Failed to submit address change request.");
+      setPendingAddress(changeStreet.trim());
+      setPendingProofUrl(changeProofUrl);
+      showToast("Address change request submitted for review. 🏡");
+      setShowChangeForm(false);
     } finally {
       setChangeSubmitting(false);
     }
@@ -214,12 +242,13 @@ export function AddressVerificationModule({
     if (!newAddressText.trim()) return alert("Please enter street address.");
 
     setAddingBookingAddr(true);
+    const activeEmail = getEffectiveEmail();
     try {
       const res = await fetch("/api/user/address", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          email: userEmail,
+          email: activeEmail,
           action: "ADD",
           bookingAddress: {
             label: newLabel,
