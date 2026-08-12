@@ -42,6 +42,9 @@ export async function GET(request: Request) {
         permanentAddressStatus: true,
         permanentAddressNotes: true,
         secondaryAddress: true,
+        pendingPermanentAddress: true,
+        pendingPermanentAddressProof: true,
+        bookingAddresses: true,
       },
     });
 
@@ -58,6 +61,9 @@ export async function GET(request: Request) {
       permanentAddressStatus: u.permanentAddressStatus || "NOT_SUBMITTED",
       permanentAddressNotes: u.permanentAddressNotes,
       secondaryAddress: u.secondaryAddress,
+      pendingPermanentAddress: u.pendingPermanentAddress,
+      pendingPermanentAddressProof: u.pendingPermanentAddressProof,
+      bookingAddresses: u.bookingAddresses || "[]",
     }));
 
     return NextResponse.json({ success: true, users: formattedUsers });

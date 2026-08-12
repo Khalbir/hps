@@ -355,7 +355,7 @@ export default function RegisterPage() {
 
             {/* Mandatory Off-Platform Policy Acknowledgment */}
             <div style={{ background: "rgba(245,158,11,0.08)", border: "1px solid #F59E0B", borderRadius: "12px", padding: "12px 14px", marginBottom: "20px" }}>
-              <label style={{ display: "flex", alignItems: "flex-start", gap: "10px", cursor: "pointer", fontSize: "12px", color: "#F8FAFC", lineHeight: 1.4 }}>
+              <label style={{ display: "flex", alignItems: "flex-start", gap: "10px", cursor: "pointer", fontSize: "12px", color: "var(--text-primary)", lineHeight: 1.4 }}>
                 <input
                   type="checkbox"
                   checked={offPlatformAgreed}
@@ -364,7 +364,7 @@ export default function RegisterPage() {
                   required
                 />
                 <span>
-                  <strong>Mandatory On-Platform Policy:</strong> I agree that all bookings, payments, and messages must stay on HandyHub Pro. Cash payments off-platform void Escrow Security, 14-Day Warranties, and Dispute Support.
+                  <strong style={{ color: "#D97706" }}>Mandatory On-Platform Policy:</strong> I agree that all bookings, payments, and messages must stay on HandyHub Pro. Cash payments off-platform void Escrow Security, 14-Day Warranties, and Dispute Support.
                 </span>
               </label>
             </div>

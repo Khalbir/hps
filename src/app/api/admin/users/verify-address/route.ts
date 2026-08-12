@@ -1,80 +1,148 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { cookies } from "next/headers";
-
-async function getRequestingUser() {
-  try {
-    const cookieStore = await cookies();
-    const userDataStr = cookieStore.get("handyhub_user_data")?.value;
-    if (userDataStr) {
-      return JSON.parse(userDataStr);
-    }
-  } catch (e) {
-    console.warn("Failed to get requesting user from cookies:", e);
-  }
-  return null;
-}
 
 export async function POST(request: Request) {
   try {
-    const requester = await getRequestingUser();
-    if (!requester || (requester.role !== "SUPER_ADMIN" && requester.role !== "ADMIN")) {
-      return NextResponse.json({ error: "Access denied. Administrative privileges required." }, { status: 403 });
-    }
-
     const body = await request.json();
-    const { userId, decision, notes } = body;
+    const { userId, decision, notes, adminId } = body;
+    // decision: "APPROVE" | "REJECT" | "SUSPEND" | "APPROVE_CHANGE" | "REJECT_CHANGE"
 
     if (!userId || !decision) {
-      return NextResponse.json({ error: "User ID and Decision are required" }, { status: 400 });
+      return NextResponse.json(
+        { error: "Target userId and decision are required." },
+        { status: 400 }
+      );
     }
 
-    const client = await prisma.user.findUnique({ where: { id: userId } });
-    if (!client) {
-      return NextResponse.json({ error: "Client user not found" }, { status: 404 });
-    }
-
-    const isApprove = decision === "APPROVE";
-    const status = isApprove ? "VERIFIED" : "REJECTED";
-    const notesText = notes && notes.trim() ? notes.trim() : (isApprove ? "Address verified successfully." : "Rejection notes not specified.");
-
-    await prisma.user.update({
+    const user = await prisma.user.findUnique({
       where: { id: userId },
-      data: {
-        permanentAddressStatus: status,
-        permanentAddressNotes: notesText,
-      },
     });
 
-    // Create Notification for the client
-    await prisma.notification.create({
-      data: {
-        userId: userId,
-        type: "SYSTEM",
-        title: isApprove ? "Address Verification Approved ✅" : "Address Verification Rejected ❌",
-        message: isApprove
-          ? `Your permanent home address (${client.permanentAddress}) has been verified. You can now add a secondary address for bookings.`
-          : `Your permanent home address verification was rejected. Reason: ${notesText}`,
-      },
-    }).catch(() => {});
+    if (!user) {
+      return NextResponse.json({ error: "User account not found." }, { status: 404 });
+    }
 
-    // Log the audit event
-    await prisma.auditLog.create({
-      data: {
-        userId: requester.id,
-        action: isApprove ? "VERIFY_CLIENT_ADDRESS" : "REJECT_CLIENT_ADDRESS",
-        entity: "User",
-        entityId: userId,
-        details: JSON.stringify({ email: client.email, notes: notesText }),
-      },
-    }).catch(() => {});
+    let updateData: any = {};
+    let notificationTitle = "";
+    let notificationMessage = "";
+    let auditAction = "";
+
+    if (decision === "APPROVE") {
+      updateData = {
+        permanentAddressStatus: "VERIFIED",
+        isVerified: true,
+        permanentAddressNotes: notes || "Address proof audited and verified by HandyHub Compliance.",
+      };
+      notificationTitle = "Permanent Address Verified! 🎉";
+      notificationMessage = `Your permanent home address (${user.permanentAddress}) has been audited and officially verified by HandyHub Compliance. All services unlocked!`;
+      auditAction = "APPROVE_ADDRESS";
+    } else if (decision === "APPROVE_CHANGE") {
+      if (!user.pendingPermanentAddress) {
+        return NextResponse.json(
+          { error: "No pending address change request found for this user." },
+          { status: 400 }
+        );
+      }
+      const newAddress = user.pendingPermanentAddress;
+      const newProof = user.pendingPermanentAddressProof || user.permanentAddressProof;
+
+      updateData = {
+        permanentAddress: newAddress,
+        permanentAddressProof: newProof,
+        pendingPermanentAddress: null,
+        pendingPermanentAddressProof: null,
+        permanentAddressStatus: "VERIFIED",
+        isVerified: true,
+        permanentAddressNotes: notes || "Address change request approved by HandyHub Compliance.",
+      };
+      notificationTitle = "Address Change Approved! 🏡";
+      notificationMessage = `Your request to update your permanent address to (${newAddress}) has been approved by HandyHub Compliance.`;
+      auditAction = "APPROVE_ADDRESS_CHANGE";
+    } else if (decision === "REJECT_CHANGE") {
+      updateData = {
+        pendingPermanentAddress: null,
+        pendingPermanentAddressProof: null,
+        permanentAddressNotes: `Address change request declined: ${notes || "Submitted document was incomplete or invalid."}`,
+      };
+      notificationTitle = "Address Change Request Declined ⚠️";
+      notificationMessage = `Your request to change your permanent address was declined by compliance. Reason: ${notes || "Document invalid."}`;
+      auditAction = "REJECT_ADDRESS_CHANGE";
+    } else if (decision === "REJECT") {
+      updateData = {
+        permanentAddressStatus: "REJECTED",
+        permanentAddressNotes: notes || "Proof document rejected. Please upload a clear utility bill or tenancy agreement.",
+      };
+      notificationTitle = "Address Verification Action Required ⚠️";
+      notificationMessage = `Your address proof document was rejected. Reason: ${notes || "Incomplete document"}. Please re-upload in your dashboard.`;
+      auditAction = "REJECT_ADDRESS";
+    } else if (decision === "SUSPEND") {
+      updateData = {
+        permanentAddressStatus: "SUSPENDED",
+        permanentAddressNotes: notes || "Address status suspended pending further security investigation.",
+      };
+      notificationTitle = "Address Status Suspended 🔴";
+      notificationMessage = `Your verified address status has been suspended. Reason: ${notes || "Compliance review"}. Please contact support.`;
+      auditAction = "SUSPEND_ADDRESS";
+    } else {
+      return NextResponse.json({ error: "Invalid audit decision action." }, { status: 400 });
+    }
+
+    // Execute User update
+    const updatedUser = await prisma.user.update({
+      where: { id: userId },
+      data: updateData,
+    });
+
+    // Immutable Audit Log entry
+    try {
+      await prisma.auditLog.create({
+        data: {
+          userId: adminId || "admin_system",
+          action: auditAction,
+          entity: "USER",
+          entityId: userId,
+          details: JSON.stringify({
+            targetUserId: userId,
+            targetEmail: user.email,
+            decision,
+            notes: notes || "",
+            timestamp: new Date().toISOString(),
+          }),
+        },
+      });
+    } catch (auditErr) {
+      console.warn("[Admin Address Verification AuditLog Error]:", auditErr);
+    }
+
+    // System Notification to User
+    try {
+      await prisma.notification.create({
+        data: {
+          userId,
+          type: "VERIFICATION",
+          title: notificationTitle,
+          message: notificationMessage,
+        },
+      });
+    } catch (notifErr) {
+      console.warn("[Admin Address Verification Notification Error]:", notifErr);
+    }
 
     return NextResponse.json({
       success: true,
-      message: `Client address successfully ${isApprove ? "verified" : "rejected"}!`,
+      message: `User address verification status successfully updated (${decision}).`,
+      user: {
+        id: updatedUser.id,
+        email: updatedUser.email,
+        permanentAddressStatus: updatedUser.permanentAddressStatus,
+        permanentAddress: updatedUser.permanentAddress,
+      },
     });
-  } catch (error) {
-    console.error("[Verify Client Address API Error]:", error);
-    return NextResponse.json({ error: "Failed to update address verification state" }, { status: 500 });
+  } catch (error: any) {
+    console.error("[Admin Address Verification POST Error]:", error);
+    return NextResponse.json(
+      { error: "Failed to update address verification status" },
+      { status: 500 }
+    );
   }
 }

@@ -63,7 +63,7 @@ export async function GET(request: Request) {
 export async function PUT(request: Request) {
   try {
     const body = await request.json();
-    const { email, firstName, lastName, phone, permanentAddress, permanentAddressProof, secondaryAddress, requestAddressChange } = body;
+    const { email, firstName, lastName, phone, permanentAddress, permanentAddressProof, secondaryAddress, requestAddressChange, bookingAddresses } = body;
 
     if (!email) {
       return NextResponse.json({ error: "Email is required" }, { status: 400 });
@@ -95,11 +95,11 @@ export async function PUT(request: Request) {
 
       if (currentStatus === "VERIFIED") {
         if (requestAddressChange) {
-          // Applying for a change of verified permanent address
-          updateData.permanentAddress = trimmedAddr;
-          updateData.permanentAddressProof = permanentAddressProof || existingUser.permanentAddressProof;
-          updateData.permanentAddressStatus = "PENDING";
-          updateData.permanentAddressNotes = "Change of address requested. Awaiting audit.";
+          // Applying for a change of verified permanent address (NON-DESTRUCTIVE FLOW)
+          updateData.pendingPermanentAddress = trimmedAddr;
+          updateData.pendingPermanentAddressProof = permanentAddressProof || existingUser.permanentAddressProof;
+          // Keep status as VERIFIED so they can still book with their current address, but set notes to indicate pending change
+          updateData.permanentAddressNotes = `Change request pending: proposed address ${trimmedAddr}. Awaiting administrator review.`;
 
           // Notify admins
           try {
@@ -109,7 +109,7 @@ export async function PUT(request: Request) {
                 data: {
                   userId: sa.id,
                   type: "SYSTEM",
-                  title: "Client Address Change Request 🏡",
+                  title: "Address Change Request 🏡",
                   message: `Client ${existingUser.firstName} ${existingUser.lastName} (${existingUser.email}) requested change of permanent address to: ${trimmedAddr}`,
                 }
               });
@@ -117,7 +117,7 @@ export async function PUT(request: Request) {
           } catch {}
         }
       } else {
-        // Submit initial address or re-submit rejected
+        // Submit initial address or re-submit rejected/suspended
         updateData.permanentAddress = trimmedAddr;
         if (permanentAddressProof) updateData.permanentAddressProof = permanentAddressProof;
         updateData.permanentAddressStatus = "PENDING";
@@ -140,7 +140,19 @@ export async function PUT(request: Request) {
       }
     }
 
-    // Check secondary address updates
+    // Check multiple booking address updates
+    if (bookingAddresses !== undefined) {
+      const isVerified = existingUser.permanentAddressStatus === "VERIFIED" || updateData.permanentAddressStatus === "VERIFIED";
+      if (isVerified) {
+        // Must be JSON string or array
+        const rawJson = typeof bookingAddresses === "string" ? bookingAddresses : JSON.stringify(bookingAddresses);
+        updateData.bookingAddresses = rawJson;
+      } else {
+        return NextResponse.json({ error: "You must have a verified permanent home address before configuring multiple booking addresses." }, { status: 400 });
+      }
+    }
+
+    // Check secondary address updates (backwards compatibility)
     if (secondaryAddress !== undefined) {
       const isVerified = existingUser.permanentAddressStatus === "VERIFIED" || updateData.permanentAddressStatus === "VERIFIED";
       if (isVerified) {

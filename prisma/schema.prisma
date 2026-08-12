@@ -32,12 +32,22 @@ model User {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
-  // Client Address Verification Fields
+  // Client Address & Extensible Verification Fields
   permanentAddress          String?
   permanentAddressProof     String?
-  permanentAddressStatus    String    @default("NOT_SUBMITTED") // NOT_SUBMITTED, PENDING, VERIFIED, REJECTED
+  permanentAddressStatus    String    @default("NOT_SUBMITTED") // NOT_SUBMITTED, PENDING, VERIFIED, REJECTED, SUSPENDED
   permanentAddressNotes     String?
   secondaryAddress          String?
+  pendingPermanentAddress   String?
+  pendingPermanentAddressProof String?
+  bookingAddresses          String?   @default("[]") // JSON stringified array of booking addresses
+
+  // Extensible Verification Framework Fields (NIN, Identity, Business)
+  idVerified                Boolean   @default(false)
+  ninNumber                 String?
+  ninStatus                 String    @default("NOT_SUBMITTED") // NOT_SUBMITTED, PENDING, VERIFIED, REJECTED
+  businessVerified          Boolean   @default(false)
+  cacNumber                 String?
 
   // Relations
   professional  Professional?
@@ -141,6 +151,8 @@ model Service {
   categoryId  String
   basePrice   Float
   priceUnit   String   @default("per service") // per service, per hour, per sqm
+  isHighRisk  Boolean  @default(false)
+  riskLevel   String   @default("LOW") // LOW, MEDIUM, HIGH
   isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt

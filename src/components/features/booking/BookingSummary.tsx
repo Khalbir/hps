@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import type { BookingData } from "@/app/book/page";
 import { ShieldCheck, MapPin, Tag } from "lucide-react";
 import { calculateJobPrice, DEFAULT_PRICING_RULES, PricingRulesConfig } from "@/lib/pricingEngine";
+import { TrustBadge } from "@/components/common/TrustBadge";
 import styles from "./Steps.module.css";
 
 interface Props {
@@ -134,9 +135,12 @@ export function BookingSummary({ booking, currentStep }: Props) {
       )}
 
       {/* Trust Badge */}
-      <div className={styles.summaryTrust}>
-        <ShieldCheck size={16} />
-        <span>Escrow Escrow Protected · 100% Satisfaction Guarantee</span>
+      <div className={styles.summaryTrust} style={{ display: "flex", flexDirection: "column", gap: "8px", alignItems: "flex-start" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+          <ShieldCheck size={16} color="#10B981" />
+          <span>Escrow Protected · 100% Satisfaction Guarantee</span>
+        </div>
+        <TrustBadge type="ADDRESS_VERIFIED" size="sm" />
       </div>
     </div>
   );

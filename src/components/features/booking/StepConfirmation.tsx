@@ -15,6 +15,19 @@ export function StepConfirmation({ booking }: Props) {
   const [showConfetti, setShowConfetti] = useState(true);
   const [bookingRef] = useState(() => `HHP-${Date.now().toString(36).toUpperCase()}`);
 
+  const [currentUser, setCurrentUser] = useState<any>(null);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const stored = localStorage.getItem("handyhub_user");
+        if (stored) {
+          setCurrentUser(JSON.parse(stored));
+        }
+      } catch {}
+    }
+  }, []);
+
   useEffect(() => {
     const timer = setTimeout(() => setShowConfetti(false), 3000);
 
@@ -155,6 +168,19 @@ export function StepConfirmation({ booking }: Props) {
           <span>Total Paid</span>
           <span className={styles.confirmTotalAmount}>₦{Math.max(0, finalPrice).toLocaleString()}</span>
         </div>
+
+        {currentUser && (
+          <div style={{ padding: "12px 16px", borderTop: "1px solid var(--border-primary)", display: "flex", gap: "8px", flexWrap: "wrap", justifyContent: "center" }}>
+            {currentUser.permanentAddressStatus === "VERIFIED" ? (
+              <>
+                <span style={{ fontSize: "11px", fontWeight: "bold", background: "rgba(16,185,129,0.12)", color: "#10B981", padding: "3px 8px", borderRadius: 4 }}>🏡 Verified Booking Location</span>
+                <span style={{ fontSize: "11px", fontWeight: "bold", background: "rgba(16,185,129,0.12)", color: "#10B981", padding: "3px 8px", borderRadius: 4 }}>🛡️ Identity Verified</span>
+              </>
+            ) : currentUser.permanentAddressStatus === "PENDING" ? (
+              <span style={{ fontSize: "11px", fontWeight: "bold", background: "rgba(245,158,11,0.12)", color: "#F59E0B", padding: "3px 8px", borderRadius: 4 }}>⏳ Location Verification Pending</span>
+            ) : null}
+          </div>
+        )}
       </motion.div>
 
       {/* Prominent Off-Platform Safety Warning Card */}
