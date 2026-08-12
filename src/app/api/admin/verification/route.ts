@@ -1,12 +1,10 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getValidMediaUrl, SAMPLE_PORTFOLIO_IMAGE } from "@/lib/sample-documents";
-import { purgeDemoRecordsFromDB, DEMO_EMAILS } from "@/lib/purge-demo-utility";
+import { DEMO_EMAILS } from "@/lib/purge-demo-utility";
 
 export async function GET(request: Request) {
   try {
-    // Automatically purge demo records from database
-    await purgeDemoRecordsFromDB();
 
     const { searchParams } = new URL(request.url);
     const status = searchParams.get("status");
@@ -33,7 +31,12 @@ export async function GET(request: Request) {
         include: { user: true },
         orderBy: { createdAt: "desc" },
       });
-      dbPros = rawDbPros.filter((p) => !p.user || !DEMO_EMAILS.includes(p.user.email));
+      dbPros = rawDbPros.filter((p) => {
+        // Keep professionals without a user record (they are real orphaned entries)
+        if (!p.user) return true;
+        // Exclude demo/test professionals by email
+        return !DEMO_EMAILS.includes(p.user.email);
+      });
     } catch (err) {}
 
     // Combine entries
@@ -102,7 +105,7 @@ export async function GET(request: Request) {
         id: p.id,
         userId: p.userId || u.id,
         name: fullName,
-        email: u.email || p.email || "artisan@handyhubpro.ng",
+        email: u.email || p.email || "no-email-provided",
         phone: u.phone || p.phone || "Not Provided",
         field: docs.serviceCategory || (skillArray.length > 0 ? skillArray.join(", ") : "Skilled Services"),
         city: docs.operatingState || docs.city || p.city || "FCT Abuja",

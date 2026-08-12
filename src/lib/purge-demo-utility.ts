@@ -9,7 +9,6 @@ export const DEMO_EMAILS = [
   "sarah@test.com",
   "ibrahim@test.com",
   "emeka@test.com",
-  "artisan@handyhubpro.ng",
 ];
 
 export const DEMO_BOOKING_REFS = [

@@ -132,21 +132,21 @@ export function StepPayment({ booking, updateBooking, onNext, onBack }: StepProp
 
       {/* Account Login Notice if not signed in */}
       {!activeUser && (
-        <div style={{ background: "rgba(14,165,233,0.1)", border: "1px solid #0EA5E9", color: "#0EA5E9", padding: "12px 16px", borderRadius: "12px", marginBottom: "20px", fontSize: "14px", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <Lock size={18} />
+        <div style={{ background: "rgba(14,165,233,0.1)", border: "1px solid #0EA5E9", color: "#0EA5E9", padding: "12px 16px", borderRadius: "12px", marginBottom: "20px", fontSize: "14px", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10, overflowWrap: "break-word" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+            <Lock size={18} style={{ flexShrink: 0 }} />
             <span><strong>Registered Client Gating:</strong> Please sign in to complete booking and payment.</span>
           </div>
-          <button onClick={() => setShowAuthModal(true)} className="btn btn-primary btn-xs" style={{ background: "#0EA5E9" }}>
+          <button onClick={() => setShowAuthModal(true)} className="btn btn-primary btn-xs" style={{ background: "#0EA5E9", flexShrink: 0 }}>
             Sign In / Register ➔
           </button>
         </div>
       )}
 
       {payError && (
-        <div style={{ background: "rgba(239,68,68,0.15)", border: "1px solid #EF4444", color: "#EF4444", padding: "12px 16px", borderRadius: "8px", marginBottom: "20px", fontSize: "14px", display: "flex", alignItems: "center", gap: "8px" }}>
-          <AlertCircle size={18} />
-          <span>{payError}</span>
+        <div style={{ background: "rgba(239,68,68,0.15)", border: "1px solid #EF4444", color: "#EF4444", padding: "12px 16px", borderRadius: "8px", marginBottom: "20px", fontSize: "14px", display: "flex", alignItems: "flex-start", gap: "8px", overflowWrap: "break-word" }}>
+          <AlertCircle size={18} style={{ flexShrink: 0, marginTop: 2 }} />
+          <span style={{ wordBreak: "break-word" }}>{payError}</span>
         </div>
       )}
 
@@ -290,18 +290,18 @@ export function StepPayment({ booking, updateBooking, onNext, onBack }: StepProp
         <div style={{ color: "#F59E0B", fontWeight: 700, fontSize: "13px", display: "flex", alignItems: "center", gap: "6px", marginBottom: "6px" }}>
           🛡️ SAFETY MANDATE: Keep All Payments & Bookings On-Platform!
         </div>
-        <p style={{ margin: "0 0 10px", color: "#CBD5E1", fontSize: "12px", lineHeight: 1.5 }}>
+        <p style={{ margin: "0 0 10px", color: "var(--text-secondary)", fontSize: "12px", lineHeight: 1.5, overflowWrap: "break-word" }}>
           Never pay artisans cash off-platform. Off-platform cash transactions void your Escrow Security, 14-Day Workmanship Warranty, and Dispute Resolution support under Nigerian Law.
         </p>
-        <label style={{ display: "flex", alignItems: "center", gap: "10px", cursor: "pointer", fontSize: "12px", color: "#F8FAFC", fontWeight: 600 }}>
+        <label style={{ display: "flex", alignItems: "flex-start", gap: "10px", cursor: "pointer", fontSize: "12px", color: "var(--text-primary)", fontWeight: 600 }}>
           <input
             type="checkbox"
             checked={offPlatformAgreed}
             onChange={(e) => setOffPlatformAgreed(e.target.checked)}
-            style={{ width: 16, height: 16, accentColor: "#0EA5E9", cursor: "pointer" }}
+            style={{ width: 18, height: 18, minWidth: 18, accentColor: "#0EA5E9", cursor: "pointer", marginTop: 1 }}
             required
           />
-          <span>I confirm I will keep all transactions on HandyHub Pro to retain Escrow & Warranty protection.</span>
+          <span style={{ overflowWrap: "break-word", wordBreak: "break-word" }}>I confirm I will keep all transactions on HandyHub Pro to retain Escrow & Warranty protection.</span>
         </label>
       </div>
 
