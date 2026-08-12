@@ -731,7 +731,7 @@ export default function DashboardPage() {
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
               <div className="card" style={{ maxWidth: 600 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20, flexWrap: "wrap", gap: 10 }}>
-                  <h3 className="h4" style={{ margin: 0 }}>Edit Personal Details</h3>
+                  <h3 className="h4" style={{ margin: 0 }}>Edit Profile?</h3>
                   <div style={{ display: "flex", gap: 6 }}>
                     {user?.permanentAddressStatus === "VERIFIED" ? (
                       <>
@@ -744,6 +744,10 @@ export default function DashboardPage() {
                       <span style={{ fontSize: "10px", fontWeight: "bold", background: "rgba(148,163,184,0.12)", color: "#94A3B8", padding: "2px 8px", borderRadius: 4 }}>Unverified Profile</span>
                     )}
                   </div>
+                </div>
+
+                <div style={{ padding: "10px 14px", background: "rgba(16,185,129,0.08)", border: "1px solid rgba(16,185,129,0.2)", color: "#10B981", borderRadius: 10, marginBottom: 18, fontSize: 13, display: "flex", alignItems: "center", gap: 8, fontWeight: 500 }}>
+                  <span>✓ Signup details automatically saved to your profile</span>
                 </div>
 
                 {profileSuccess && (
