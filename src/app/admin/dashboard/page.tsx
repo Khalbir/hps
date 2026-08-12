@@ -22,6 +22,47 @@ const statusColorMap: Record<string, string> = {
   REFUNDED: "#EF4444",
 };
 
+function AuditLogEntry({ event, time, shortDetails, fullDetails }: { event: string; time: string; shortDetails: string; fullDetails: string | null }) {
+  const [expanded, setExpanded] = useState(false);
+
+  return (
+    <div style={{ background: "#0F172A", padding: "10px 12px", borderRadius: "8px", border: "1px solid #334155", overflow: "hidden" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "12px", gap: "8px" }}>
+        <strong style={{ color: "#0EA5E9", whiteSpace: "nowrap" }}>{event}</strong>
+        <span style={{ color: "#64748B", fontSize: "10px", whiteSpace: "nowrap", flexShrink: 0 }}>{time}</span>
+      </div>
+      <span style={{
+        fontSize: "11px",
+        color: "#94A3B8",
+        display: "block",
+        marginTop: "4px",
+        overflowWrap: "break-word",
+        wordBreak: "break-word",
+        lineHeight: 1.5,
+      }}>
+        {expanded ? fullDetails || shortDetails : shortDetails}
+      </span>
+      {fullDetails && (
+        <button
+          onClick={() => setExpanded(!expanded)}
+          style={{
+            background: "none",
+            border: "none",
+            color: "#0EA5E9",
+            fontSize: "10px",
+            fontWeight: 600,
+            cursor: "pointer",
+            padding: "4px 0 0",
+            display: "inline-block",
+          }}
+        >
+          {expanded ? "Show less ▲" : "Show more ▼"}
+        </button>
+      )}
+    </div>
+  );
+}
+
 export default function AdminDashboardPage() {
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [lastUpdated, setLastUpdated] = useState<string>("");
@@ -247,7 +288,7 @@ export default function AdminDashboardPage() {
           </div>
 
           {/* Live Activity Feed from AuditLog */}
-          <div className="card" style={{ background: "#1E293B", border: "1px solid #334155", padding: "var(--space-5)" }}>
+          <div className="card" style={{ background: "#1E293B", border: "1px solid #334155", padding: "var(--space-5)", overflow: "hidden" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "var(--space-4)" }}>
               <div>
                 <h3 className="h4" style={{ margin: 0 }}>Live Audit Log Stream</h3>
@@ -262,15 +303,38 @@ export default function AdminDashboardPage() {
               </div>
             ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-                {liveActivityFeed.map((act: any) => (
-                  <div key={act.id} style={{ background: "#0F172A", padding: "10px", borderRadius: "6px", border: "1px solid #334155" }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: "12px" }}>
-                      <strong style={{ color: "#0EA5E9" }}>{act.event}</strong>
-                      <span style={{ color: "#64748B", fontSize: "10px" }}>{act.time}</span>
-                    </div>
-                    <span style={{ fontSize: "11px", color: "#94A3B8", display: "block", marginTop: "2px" }}>{act.details}</span>
-                  </div>
-                ))}
+                {liveActivityFeed.map((act: any) => {
+                  // Parse and summarize JSON details for readability
+                  let displayDetails = act.details || "";
+                  try {
+                    if (displayDetails.startsWith("{") || displayDetails.startsWith("[")) {
+                      const parsed = JSON.parse(displayDetails);
+                      const summaryParts: string[] = [];
+                      if (parsed.role) summaryParts.push(`Role: ${parsed.role}`);
+                      if (parsed.name) summaryParts.push(`Name: ${parsed.name}`);
+                      if (parsed.state) summaryParts.push(`State: ${parsed.state}`);
+                      if (parsed.email) summaryParts.push(`Email: ${parsed.email}`);
+                      if (parsed.serviceCategory) summaryParts.push(`Service: ${parsed.serviceCategory}`);
+                      if (summaryParts.length > 0) {
+                        displayDetails = summaryParts.join(" • ");
+                      } else {
+                        // Fallback: show first few key-value pairs
+                        const keys = Object.keys(parsed).slice(0, 3);
+                        displayDetails = keys.map((k) => `${k}: ${typeof parsed[k] === "object" ? "..." : String(parsed[k]).substring(0, 40)}`).join(" • ");
+                      }
+                    }
+                  } catch {
+                    // Not JSON, use as-is but truncate
+                  }
+
+                  const maxLen = 120;
+                  const isTruncated = displayDetails.length > maxLen;
+                  const shortDetails = isTruncated ? displayDetails.substring(0, maxLen) + "…" : displayDetails;
+
+                  return (
+                    <AuditLogEntry key={act.id} event={act.event} time={act.time} shortDetails={shortDetails} fullDetails={isTruncated ? displayDetails : null} />
+                  );
+                })}
               </div>
             )}
           </div>
