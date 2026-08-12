@@ -39,11 +39,12 @@ export default function ProfessionalVerificationPage() {
   }, []);
 
   const filteredPros = pros.filter((p) => {
-    const matchStatus = filterStatus === "ALL" || p.verificationStatus === filterStatus;
+    const statusVal = p.verificationStatus || p.status || "PENDING";
+    const matchStatus = filterStatus === "ALL" || statusVal === filterStatus;
     const matchSearch =
-      p.name.toLowerCase().includes(search.toLowerCase()) ||
-      p.email.toLowerCase().includes(search.toLowerCase()) ||
-      p.field.toLowerCase().includes(search.toLowerCase());
+      (p?.name || "").toLowerCase().includes(search.toLowerCase()) ||
+      (p?.email || "").toLowerCase().includes(search.toLowerCase()) ||
+      (p?.field || "").toLowerCase().includes(search.toLowerCase());
     return matchStatus && matchSearch;
   });
 

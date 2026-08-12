@@ -21,12 +21,7 @@ async function getRequestingUser() {
 
 export async function GET(request: Request) {
   try {
-    await purgeDemoRecordsFromDB();
-
     const users = await prisma.user.findMany({
-      where: {
-        email: { notIn: DEMO_EMAILS },
-      },
       orderBy: { createdAt: "desc" },
       select: {
         id: true,

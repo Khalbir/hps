@@ -15,7 +15,6 @@ export async function GET(request: Request) {
       proUsers = await prisma.user.findMany({
         where: {
           role: "PROFESSIONAL",
-          email: { notIn: DEMO_EMAILS },
         },
         include: { professional: true },
         orderBy: { createdAt: "desc" },
@@ -27,15 +26,9 @@ export async function GET(request: Request) {
     // 2. Fetch all entries in Professional table
     let dbPros: any[] = [];
     try {
-      const rawDbPros = await prisma.professional.findMany({
+      dbPros = await prisma.professional.findMany({
         include: { user: true },
         orderBy: { createdAt: "desc" },
-      });
-      dbPros = rawDbPros.filter((p) => {
-        // Keep professionals without a user record (they are real orphaned entries)
-        if (!p.user) return true;
-        // Exclude demo/test professionals by email
-        return !DEMO_EMAILS.includes(p.user.email);
       });
     } catch (err) {}
 

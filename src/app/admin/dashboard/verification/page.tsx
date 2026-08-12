@@ -157,21 +157,21 @@ export default function VerificationCenterPage() {
   // Filter lists based on search query
   const filteredClients = clients.filter(
     (c) =>
-      c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      c.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      c.permanentAddress.toLowerCase().includes(searchQuery.toLowerCase())
+      (c?.name || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (c?.email || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (c?.permanentAddress || "").toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const filteredArtisans = artisans.filter(
     (a) =>
-      a.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      a.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (a.field || "").toLowerCase().includes(searchQuery.toLowerCase())
+      (a?.name || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (a?.email || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (a?.field || "").toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   // Stats Counters
-  const pendingClientsCount = clients.filter((c) => c.permanentAddressStatus === "PENDING" || c.pendingPermanentAddress).length;
-  const pendingArtisansCount = artisans.filter((a) => a.status === "PENDING" || a.status === "SUBMITTED").length;
+  const pendingClientsCount = clients.filter((c) => c.permanentAddressStatus === "PENDING" || Boolean(c.pendingPermanentAddress)).length;
+  const pendingArtisansCount = artisans.filter((a) => (a.verificationStatus || a.status) === "PENDING" || (a.verificationStatus || a.status) === "SUBMITTED").length;
 
   return (
     <AdminLayoutShell>
