@@ -33,14 +33,37 @@ export function StepPayment({ booking, updateBooking, onNext, onBack }: StepProp
   // Active Client Session State
   const [activeUser, setActiveUser] = useState<any>(null);
 
+  const [profileFetched, setProfileFetched] = useState(false);
+
   useEffect(() => {
     if (typeof window !== "undefined") {
       try {
         const stored = localStorage.getItem("handyhub_user");
         if (stored) {
-          setActiveUser(JSON.parse(stored));
+          const parsed = JSON.parse(stored);
+          setActiveUser(parsed);
+          
+          fetch(`/api/user/profile?email=${encodeURIComponent(parsed.email)}`)
+            .then((r) => r.json())
+            .then((data) => {
+              if (data && data.user) {
+                setActiveUser((prev: any) => ({
+                  ...prev,
+                  ...data.user
+                }));
+                if (data.user.permanentAddressStatus === "VERIFIED" && data.user.permanentAddress) {
+                  updateBooking({ address: data.user.permanentAddress });
+                }
+              }
+            })
+            .catch((err) => console.error("Error fetching live user profile:", err))
+            .finally(() => setProfileFetched(true));
+        } else {
+          setProfileFetched(true);
         }
-      } catch (e) {}
+      } catch (e) {
+        setProfileFetched(true);
+      }
     }
   }, []);
 
@@ -150,67 +173,102 @@ export function StepPayment({ booking, updateBooking, onNext, onBack }: StepProp
         </div>
       )}
 
-      {/* Address & Autocomplete */}
+      {/* Address & Autocomplete Section */}
       <div className={styles.fieldGroup} style={{ position: "relative" }}>
         <label className={styles.fieldLabel}>
-          <MapPin size={16} /> Service Address (Autocomplete & Geocoded)
+          <MapPin size={16} /> Service Address
         </label>
-        <input
-          type="text"
-          className="input"
-          placeholder="Type address... e.g. Maitama, Wuse 2, Jabi, Ikeja"
-          value={booking.address}
-          onChange={(e) => {
-            updateBooking({ address: e.target.value });
-            if (e.target.value.length >= 2) {
-              fetch(`/api/location/autocomplete?q=${encodeURIComponent(e.target.value)}`)
-                .then((r) => r.json())
-                .then((data) => setSuggestions(data.suggestions || []))
-                .catch(() => {});
-            } else {
-              setSuggestions([]);
-            }
-          }}
-        />
-
-        {/* Suggestions Dropdown */}
-        {suggestions.length > 0 && (
-          <div style={{ position: "absolute", top: 80, left: 0, right: 0, background: "var(--bg-tertiary)", border: "1.5px solid var(--color-primary-500)", borderRadius: "var(--radius-lg)", zIndex: 30, boxShadow: "var(--shadow-xl)", overflow: "hidden" }}>
-            {suggestions.map((s) => (
-              <button
-                key={s.placeId}
-                type="button"
-                style={{ width: "100%", padding: "var(--space-3) var(--space-4)", display: "flex", alignItems: "center", gap: "var(--space-3)", background: "none", border: "none", color: "var(--text-primary)", textAlign: "left", cursor: "pointer", borderBottom: "1px solid var(--border-primary)", fontSize: "var(--fs-sm)" }}
-                onClick={() => {
-                  updateBooking({ address: s.description });
-                  setSuggestions([]);
-                  setGeocodedBadge(true);
-                }}
+        
+        {activeUser ? (
+          activeUser.permanentAddressStatus !== "VERIFIED" ? (
+            <div style={{ background: "rgba(239,68,68,0.12)", border: "1px solid #EF4444", padding: "16px", borderRadius: "12px", display: "flex", flexDirection: "column", gap: "10px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "8px", color: "#EF4444", fontWeight: 700 }}>
+                <AlertCircle size={18} />
+                <span>⚠️ Permanent Home Address Unverified</span>
+              </div>
+              <p style={{ color: "var(--text-secondary)", fontSize: "13px", margin: 0, lineHeight: 1.5 }}>
+                Under HandyHub security mandates, you must save and verify a permanent home address on your dashboard profile before you can book service dispatches.
+              </p>
+              <Link href="/dashboard?tab=profile" className="btn btn-secondary btn-xs" style={{ color: "#0EA5E9", borderColor: "#0EA5E9", alignSelf: "flex-start" }}>
+                Submit Address for Verification ➔
+              </Link>
+            </div>
+          ) : (
+            <div>
+              <select
+                value={booking.address}
+                onChange={(e) => updateBooking({ address: e.target.value })}
+                style={{ width: "100%", padding: "12px", borderRadius: "8px", background: "var(--bg-tertiary)", border: "1.5px solid var(--border-primary)", color: "var(--text-primary)", cursor: "pointer", fontSize: "14px", fontWeight: "600", outline: "none" }}
               >
-                <MapPin size={16} color="var(--color-primary-500)" />
-                <div>
-                  <strong style={{ display: "block" }}>{s.mainText}</strong>
-                  <span style={{ fontSize: "var(--fs-xs)", color: "var(--text-tertiary)" }}>{s.secondaryText}</span>
-                </div>
-              </button>
-            ))}
+                <option value={activeUser.permanentAddress}>🏡 Verified Permanent Address: {activeUser.permanentAddress}</option>
+                {activeUser.secondaryAddress && (
+                  <option value={activeUser.secondaryAddress}>🏢 Secondary Booking Address: {activeUser.secondaryAddress}</option>
+                )}
+              </select>
+            </div>
+          )
+        ) : (
+          <div>
+            <input
+              type="text"
+              className="input"
+              placeholder="Type address... e.g. Maitama, Wuse 2, Jabi, Ikeja"
+              value={booking.address}
+              onChange={(e) => {
+                updateBooking({ address: e.target.value });
+                if (e.target.value.length >= 2) {
+                  fetch(`/api/location/autocomplete?q=${encodeURIComponent(e.target.value)}`)
+                    .then((r) => r.json())
+                    .then((data) => setSuggestions(data.suggestions || []))
+                    .catch(() => {});
+                } else {
+                  setSuggestions([]);
+                }
+              }}
+            />
+
+            {/* Suggestions Dropdown */}
+            {suggestions.length > 0 && (
+              <div style={{ position: "absolute", top: 80, left: 0, right: 0, background: "var(--bg-tertiary)", border: "1.5px solid var(--color-primary-500)", borderRadius: "var(--radius-lg)", zIndex: 30, boxShadow: "var(--shadow-xl)", overflow: "hidden" }}>
+                {suggestions.map((s) => (
+                  <button
+                    key={s.placeId}
+                    type="button"
+                    style={{ width: "100%", padding: "var(--space-3) var(--space-4)", display: "flex", alignItems: "center", gap: "var(--space-3)", background: "none", border: "none", color: "var(--text-primary)", textAlign: "left", cursor: "pointer", borderBottom: "1px solid var(--border-primary)", fontSize: "var(--fs-sm)" }}
+                    onClick={() => {
+                      updateBooking({ address: s.description });
+                      setSuggestions([]);
+                      setGeocodedBadge(true);
+                    }}
+                  >
+                    <MapPin size={16} color="var(--color-primary-500)" />
+                    <div>
+                      <strong style={{ display: "block" }}>{s.mainText}</strong>
+                      <span style={{ fontSize: "var(--fs-xs)", color: "var(--text-tertiary)" }}>{s.secondaryText}</span>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
-        {geocodedBadge && (
+        {geocodedBadge && !activeUser && (
           <div style={{ display: "flex", alignItems: "center", gap: "var(--space-2)", marginTop: "var(--space-2)", fontSize: "var(--fs-xs)", color: "#10B981", fontWeight: "var(--fw-semibold)" }}>
             <CheckCircle size={14} /> Coordinates Matched & Cached (Nearest Verified Pros Found)
           </div>
         )}
 
-        <input
-          type="text"
-          className="input"
-          placeholder="Landmark (e.g., Opposite Transcorp Hilton)"
-          value={booking.landmark}
-          onChange={(e) => updateBooking({ landmark: e.target.value })}
-          style={{ marginTop: "var(--space-3)" }}
-        />
+        {(!activeUser || activeUser.permanentAddressStatus === "VERIFIED") && (
+          <input
+            type="text"
+            className="input"
+            placeholder="Landmark (e.g., Opposite Transcorp Hilton)"
+            value={booking.landmark}
+            onChange={(e) => updateBooking({ landmark: e.target.value })}
+            style={{ marginTop: "var(--space-3)" }}
+          />
+        )}
       </div>
 
       {/* Payment Method Selector */}
@@ -315,7 +373,7 @@ export function StepPayment({ booking, updateBooking, onNext, onBack }: StepProp
         <button className="btn btn-secondary btn-lg" onClick={onBack} disabled={isPaying}>Back</button>
         <button
           className="btn btn-primary btn-lg"
-          disabled={isPaying}
+          disabled={isPaying || (activeUser && activeUser.permanentAddressStatus !== "VERIFIED")}
           onClick={handlePaymentProceed}
           style={{ background: "#0EA5E9" }}
         >

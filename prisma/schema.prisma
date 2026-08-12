@@ -32,6 +32,13 @@ model User {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
+  // Client Address Verification Fields
+  permanentAddress          String?
+  permanentAddressProof     String?
+  permanentAddressStatus    String    @default("NOT_SUBMITTED") // NOT_SUBMITTED, PENDING, VERIFIED, REJECTED
+  permanentAddressNotes     String?
+  secondaryAddress          String?
+
   // Relations
   professional  Professional?
   bookings      Booking[]     @relation("CustomerBookings")

@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { AdminLayoutShell } from "@/components/layout/AdminLayoutShell";
 import {
   Users, Shield, Search, UserCheck, Key, Edit, CheckCircle2,
-  RefreshCw, Plus, UserPlus, Lock, Check, X, AlertTriangle, Filter
+  RefreshCw, Plus, UserPlus, Lock, Check, X, AlertTriangle, Filter, MapPin
 } from "lucide-react";
 import styles from "../../admin.module.css";
 import { ROLE_LABELS } from "@/lib/rbac";
@@ -33,6 +33,52 @@ export default function UsersRoleManagementPage() {
   const [editingUser, setEditingUser] = useState<any>(null);
   const [selectedRole, setSelectedRole] = useState("ADMIN");
   const [editPassword, setEditPassword] = useState("");
+
+  // Client Address Verification Audit Modal State
+  const [auditingUserAddress, setAuditingUserAddress] = useState<any | null>(null);
+  const [addressAuditNotes, setAddressAuditNotes] = useState("");
+  const [auditSubmitting, setAuditSubmitting] = useState(false);
+
+  const handleAddressAuditSubmit = async (decision: "APPROVE" | "REJECT") => {
+    if (!auditingUserAddress) return;
+    setAuditSubmitting(true);
+    try {
+      const res = await fetch("/api/admin/users/verify-address", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId: auditingUserAddress.id,
+          decision,
+          notes: addressAuditNotes,
+        }),
+      });
+
+      const data = await res.json();
+      if (res.ok) {
+        setUsers((prev) =>
+          prev.map((u) =>
+            u.id === auditingUserAddress.id
+              ? {
+                  ...u,
+                  permanentAddressStatus: decision === "APPROVE" ? "VERIFIED" : "REJECTED",
+                  permanentAddressNotes: addressAuditNotes || (decision === "APPROVE" ? "Address verified successfully." : "Rejection notes not specified."),
+                }
+              : u
+          )
+        );
+        setToast(`Client address successfully ${decision === "APPROVE" ? "verified" : "rejected"}!`);
+      } else {
+        setToast(`Error: ${data.error || "Failed to update address verification state"}`);
+      }
+    } catch {
+      setToast("Failed to connect to verification server.");
+    } finally {
+      setAuditSubmitting(false);
+      setAuditingUserAddress(null);
+      setAddressAuditNotes("");
+      setTimeout(() => setToast(""), 6000);
+    }
+  };
 
   const fetchUsers = async () => {
     setLoading(true);
@@ -269,6 +315,7 @@ export default function UsersRoleManagementPage() {
                 <th style={{ padding: "12px 16px" }}>Email Address</th>
                 <th style={{ padding: "12px 16px" }}>Phone Number</th>
                 <th style={{ padding: "12px 16px" }}>Designated Role & Access Level</th>
+                <th style={{ padding: "12px 16px" }}>Address Verification</th>
                 <th style={{ padding: "12px 16px" }}>Date Joined</th>
                 <th style={{ padding: "12px 16px" }}>{isChiefCommander ? "Chief Commander Action" : "Staff Action"}</th>
               </tr>
@@ -276,6 +323,16 @@ export default function UsersRoleManagementPage() {
             <tbody>
               {filteredUsers.map((u) => {
                 const labelInfo = ROLE_LABELS[u.role] || { label: u.role, badgeColor: "#0EA5E9" };
+                
+                // Get Address verification badge style
+                let addrBadge = { label: "Not Registered", color: "#94A3B8" };
+                if (u.role === "CUSTOMER") {
+                  const status = u.permanentAddressStatus || "NOT_SUBMITTED";
+                  if (status === "VERIFIED") addrBadge = { label: "Verified 🏡", color: "#10B981" };
+                  else if (status === "PENDING") addrBadge = { label: "Pending Audit ⏳", color: "#F59E0B" };
+                  else if (status === "REJECTED") addrBadge = { label: "Rejected ❌", color: "#EF4444" };
+                }
+
                 return (
                   <tr key={u.id} style={{ borderBottom: "1px solid #334155" }}>
                     <td style={{ padding: "12px 16px" }}>
@@ -288,18 +345,44 @@ export default function UsersRoleManagementPage() {
                         {labelInfo.label}
                       </span>
                     </td>
+                    <td style={{ padding: "12px 16px" }}>
+                      {u.role === "CUSTOMER" ? (
+                        <span className="badge" style={{ background: `${addrBadge.color}20`, color: addrBadge.color, fontSize: "11px", fontWeight: "bold", border: `1px solid ${addrBadge.color}40` }}>
+                          {addrBadge.label}
+                        </span>
+                      ) : (
+                        <span style={{ color: "#475569" }}>—</span>
+                      )}
+                    </td>
                     <td style={{ padding: "12px 16px", color: "#94A3B8", fontSize: "13px" }}>{u.createdAt}</td>
                     <td style={{ padding: "12px 16px" }}>
-                      <button
-                        className="btn btn-secondary btn-xs"
-                        style={{ color: "#0EA5E9", borderColor: "#0EA5E9" }}
-                        onClick={() => {
-                          setEditingUser(u);
-                          setSelectedRole(u.role);
-                        }}
-                      >
-                        <Edit size={12} /> {isChiefCommander ? "Change Staff Role" : "Request Role Change"}
-                      </button>
+                      {u.role === "CUSTOMER" ? (
+                        u.permanentAddressStatus === "PENDING" || u.permanentAddressStatus === "REJECTED" || u.permanentAddress ? (
+                          <button
+                            className="btn btn-secondary btn-xs"
+                            style={{ color: "#F59E0B", borderColor: "#F59E0B" }}
+                            onClick={() => {
+                              setAuditingUserAddress(u);
+                              setAddressAuditNotes(u.permanentAddressNotes || "");
+                            }}
+                          >
+                            <MapPin size={12} /> Audit Address
+                          </button>
+                        ) : (
+                          <span style={{ color: "#475569", fontSize: "12px" }}>No Address Submitted</span>
+                        )
+                      ) : (
+                        <button
+                          className="btn btn-secondary btn-xs"
+                          style={{ color: "#0EA5E9", borderColor: "#0EA5E9" }}
+                          onClick={() => {
+                            setEditingUser(u);
+                            setSelectedRole(u.role);
+                          }}
+                        >
+                          <Edit size={12} /> {isChiefCommander ? "Change Staff Role" : "Request Role Change"}
+                        </button>
+                      )}
                     </td>
                   </tr>
                 );
@@ -484,6 +567,99 @@ export default function UsersRoleManagementPage() {
               <button className="btn btn-secondary btn-sm" onClick={() => setEditingUser(null)}>Cancel</button>
               <button className="btn btn-primary btn-sm" onClick={handleRoleChange} style={{ background: "#0EA5E9" }}>
                 {isChiefCommander ? "Save Role Update" : "Submit Role Update Request"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Client Address Verification Audit Modal */}
+      {auditingUserAddress && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            backgroundColor: "rgba(15,23,42,0.85)",
+            backdropFilter: "blur(8px)",
+            zIndex: 9999,
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            padding: "20px",
+          }}
+          onClick={() => setAuditingUserAddress(null)}
+        >
+          <div
+            className="card"
+            style={{ width: "100%", maxWidth: "500px", background: "#1E293B", border: "1px solid #334155", borderRadius: "16px", padding: "24px" }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="h4" style={{ margin: "0 0 8px 0", color: "#F8FAFC", display: "flex", alignItems: "center", gap: "8px" }}>
+              <MapPin size={20} color="#0EA5E9" /> Audit Client Permanent Address
+            </h3>
+            
+            <div style={{ marginBottom: "16px", background: "#0F172A", padding: "12px", borderRadius: "8px", border: "1px solid #334155" }}>
+              <strong style={{ display: "block", color: "#F8FAFC", fontSize: "14px", marginBottom: "4px" }}>
+                {auditingUserAddress.name}
+              </strong>
+              <span style={{ display: "block", color: "#94A3B8", fontSize: "12px", marginBottom: "8px" }}>
+                {auditingUserAddress.email}
+              </span>
+              
+              <div style={{ borderTop: "1px solid #334155", paddingTop: "8px" }}>
+                <span style={{ fontSize: "11px", color: "#64748B", textTransform: "uppercase", fontWeight: "bold" }}>Submitted Address:</span>
+                <p style={{ margin: "4px 0 0 0", color: "#CBD5E1", fontSize: "13px", lineHeight: 1.4 }}>
+                  {auditingUserAddress.permanentAddress || "No address string provided"}
+                </p>
+              </div>
+            </div>
+
+            {auditingUserAddress.permanentAddressProof && (
+              <div style={{ marginBottom: "16px" }}>
+                <span style={{ fontSize: "12px", color: "#64748B", fontWeight: 700, textTransform: "uppercase", display: "block", marginBottom: "6px" }}>
+                  Proof Document
+                </span>
+                <a
+                  href={auditingUserAddress.permanentAddressProof}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="btn btn-secondary btn-xs"
+                  style={{ display: "inline-flex", alignItems: "center", gap: "6px", color: "#0EA5E9", borderColor: "#0EA5E9" }}
+                >
+                  View Client Proof Document (Utility Bill / Tenancy Contract) 📄
+                </a>
+              </div>
+            )}
+
+            <div style={{ marginBottom: "20px" }}>
+              <label style={{ fontSize: "12px", color: "#64748B", fontWeight: 700, textTransform: "uppercase", display: "block", marginBottom: "6px" }}>
+                Audit Feedback & Notes (Shared with client)
+              </label>
+              <textarea
+                rows={3}
+                placeholder="Enter approval details or reason for rejection..."
+                value={addressAuditNotes}
+                onChange={(e) => setAddressAuditNotes(e.target.value)}
+                style={{ width: "100%", background: "#0F172A", border: "1px solid #334155", borderRadius: "8px", padding: "10px", color: "#F8FAFC", fontSize: "13px", outline: "none", resize: "vertical" }}
+              />
+            </div>
+
+            <div style={{ display: "flex", gap: "12px", justifyContent: "flex-end" }}>
+              <button className="btn btn-secondary btn-sm" onClick={() => setAuditingUserAddress(null)}>Cancel</button>
+              <button
+                className="btn btn-secondary btn-sm"
+                disabled={auditSubmitting}
+                style={{ color: "#EF4444", borderColor: "#EF4444" }}
+                onClick={() => handleAddressAuditSubmit("REJECT")}
+              >
+                Reject Address ❌
+              </button>
+              <button
+                className="btn btn-primary btn-sm"
+                disabled={auditSubmitting}
+                style={{ background: "#10B981" }}
+                onClick={() => handleAddressAuditSubmit("APPROVE")}
+              >
+                {auditSubmitting ? "Processing..." : "Verify Address ✅"}
               </button>
             </div>
           </div>

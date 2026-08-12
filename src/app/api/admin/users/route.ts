@@ -37,6 +37,11 @@ export async function GET(request: Request) {
         role: true,
         isVerified: true,
         createdAt: true,
+        permanentAddress: true,
+        permanentAddressProof: true,
+        permanentAddressStatus: true,
+        permanentAddressNotes: true,
+        secondaryAddress: true,
       },
     });
 
@@ -48,6 +53,11 @@ export async function GET(request: Request) {
       role: u.role,
       isVerified: u.isVerified,
       createdAt: u.createdAt ? new Date(u.createdAt).toISOString().split("T")[0] : "Recent",
+      permanentAddress: u.permanentAddress,
+      permanentAddressProof: u.permanentAddressProof,
+      permanentAddressStatus: u.permanentAddressStatus || "NOT_SUBMITTED",
+      permanentAddressNotes: u.permanentAddressNotes,
+      secondaryAddress: u.secondaryAddress,
     }));
 
     return NextResponse.json({ success: true, users: formattedUsers });

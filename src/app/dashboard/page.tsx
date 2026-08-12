@@ -26,7 +26,7 @@ export default function DashboardPage() {
   const [activeTab, setActiveTab] = useState("overview");
 
   // User state
-  const [user, setUser] = useState({
+  const [user, setUser] = useState<any>({
     firstName: "Valued Client",
     lastName: "",
     email: "",
@@ -56,6 +56,140 @@ export default function DashboardPage() {
   const [editPhone, setEditPhone] = useState("");
   const [profileSaving, setProfileSaving] = useState(false);
   const [profileSuccess, setProfileSuccess] = useState("");
+
+  // Client Address Verification States
+  const [permAddrStreet, setPermAddrStreet] = useState("");
+  const [permAddrUploading, setPermAddrUploading] = useState(false);
+  const [permAddrUploadUrl, setPermAddrUploadUrl] = useState("");
+  const [permAddrSubmitting, setPermAddrSubmitting] = useState(false);
+
+  const [secondaryAddrStreet, setSecondaryAddrStreet] = useState("");
+  const [secondaryAddrSaving, setSecondaryAddrSaving] = useState(false);
+
+  const [showChangeAddressForm, setShowChangeAddressForm] = useState(false);
+  const [changeAddrStreet, setChangeAddrStreet] = useState("");
+  const [changeAddrUploading, setChangeAddrUploading] = useState(false);
+  const [changeAddrUploadUrl, setChangeAddrUploadUrl] = useState("");
+  const [changeAddrSubmitting, setChangeAddrSubmitting] = useState(false);
+
+  const handleFileUpload = async (file: File, type: "perm" | "change") => {
+    if (type === "perm") setPermAddrUploading(true);
+    else setChangeAddrUploading(true);
+    
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      
+      const res = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      });
+      const data = await res.json();
+      if (res.ok && data.url) {
+        if (type === "perm") setPermAddrUploadUrl(data.url);
+        else setChangeAddrUploadUrl(data.url);
+      } else {
+        alert(data.error || "Failed to upload file");
+      }
+    } catch (err) {
+      console.error("Upload error:", err);
+      alert("Failed to upload proof of address file.");
+    } finally {
+      if (type === "perm") setPermAddrUploading(false);
+      else setChangeAddrUploading(false);
+    }
+  };
+
+  const handlePermAddressSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!permAddrStreet.trim()) return alert("Address street is required.");
+    if (!permAddrUploadUrl) return alert("Proof of address document is required.");
+    
+    setPermAddrSubmitting(true);
+    try {
+      const res = await fetch("/api/user/profile", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: user?.email,
+          permanentAddress: permAddrStreet.trim(),
+          permanentAddressProof: permAddrUploadUrl,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        alert("Permanent address submitted for admin verification! 🏡");
+        fetchCustomerDashboardData();
+      } else {
+        alert(data.error || "Submission failed");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Submission error.");
+    } finally {
+      setPermAddrSubmitting(false);
+    }
+  };
+
+  const handleChangeAddressSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!changeAddrStreet.trim()) return alert("New address is required.");
+    if (!changeAddrUploadUrl) return alert("New proof of address is required.");
+    
+    setChangeAddrSubmitting(true);
+    try {
+      const res = await fetch("/api/user/profile", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: user?.email,
+          permanentAddress: changeAddrStreet.trim(),
+          permanentAddressProof: changeAddrUploadUrl,
+          requestAddressChange: true,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        alert("Change of address application submitted to admin! 📩");
+        setShowChangeAddressForm(false);
+        fetchCustomerDashboardData();
+      } else {
+        alert(data.error || "Change submission failed");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Change request error.");
+    } finally {
+      setChangeAddrSubmitting(false);
+    }
+  };
+
+  const handleSecondaryAddressSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSecondaryAddrSaving(true);
+    try {
+      const res = await fetch("/api/user/profile", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: user?.email,
+          secondaryAddress: secondaryAddrStreet.trim(),
+        }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        alert("Secondary booking address updated! 🏢");
+        fetchCustomerDashboardData();
+      } else {
+        alert(data.error || "Failed to update secondary address");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Failed to update secondary address.");
+    } finally {
+      setSecondaryAddrSaving(false);
+    }
+  };
 
   const fetchCustomerDashboardData = async () => {
     setLoading(true);
@@ -100,10 +234,25 @@ export default function DashboardPage() {
       const res = await fetch(`/api/customer/dashboard?userId=${activeUserId}&email=${encodeURIComponent(activeEmail)}`);
       const data = await res.json();
       if (res.ok && data.user) {
-        setUser(data.user);
-        setEditFirstName(data.user.firstName || "");
-        setEditLastName(data.user.lastName || "");
-        setEditPhone(data.user.phone || "");
+        let mergedUser = data.user;
+        try {
+          const profRes = await fetch(`/api/user/profile?email=${encodeURIComponent(data.user.email)}`);
+          const profData = await profRes.json();
+          if (profRes.ok && profData?.user) {
+            mergedUser = {
+              ...data.user,
+              ...profData.user
+            };
+          }
+        } catch (e) {
+          console.warn("Failed to merge profile fields:", e);
+        }
+
+        setUser(mergedUser);
+        setEditFirstName(mergedUser.firstName || "");
+        setEditLastName(mergedUser.lastName || "");
+        setEditPhone(mergedUser.phone || "");
+        setSecondaryAddrStreet(mergedUser.secondaryAddress || "");
         setWalletBalance(data.walletBalance || 0);
         setActiveDispatchesCount(data.activeDispatchesCount || 0);
         setTotalBookingsCount(data.totalBookingsCount || 0);
@@ -523,31 +672,271 @@ export default function DashboardPage() {
           {/* TAB 3: ADDRESSES */}
           {activeTab === "addresses" && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+              <div style={{ marginBottom: 24 }}>
                 <h2 className="h3">Service Addresses</h2>
-                <button onClick={() => setShowAddressModal(true)} className="btn btn-primary btn-sm"><Plus size={16} /> Add Address</button>
+                <p style={{ fontSize: "14px", color: "var(--text-secondary)" }}>
+                  Under HandyHub Security mandates, clients must register and verify their permanent home address. Once verified, you can optionally configure a secondary booking address.
+                </p>
               </div>
 
-              {addresses.length === 0 ? (
-                <div className="card" style={{ padding: "40px", textAlign: "center" }}>
-                  <MapPin size={40} color="#F59E0B" style={{ opacity: 0.6, marginBottom: 12 }} />
-                  <h4 className="h4">No Saved Addresses</h4>
-                  <p style={{ fontSize: "14px", color: "var(--text-secondary)" }}>Add your home or office address for instant service dispatches.</p>
-                </div>
-              ) : (
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 16 }}>
-                  {addresses.map((a) => (
-                    <div key={a.id} className="card" style={{ borderLeft: a.isDefault ? "4px solid #0EA5E9" : "1px solid var(--border-primary)" }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
-                        <strong style={{ fontSize: "16px" }}>{a.title}</strong>
-                        {a.isDefault && <span className="badge" style={{ background: "rgba(14,165,233,0.15)", color: "#0EA5E9" }}>Default</span>}
+              {/* 1. Permanent Address Status Card */}
+              <div style={{ marginBottom: 28 }}>
+                <h3 className="h4" style={{ marginBottom: 12, display: "flex", alignItems: "center", gap: 8 }}>
+                  <MapPin size={18} color="#0EA5E9" /> Permanent Home Address
+                </h3>
+                
+                {(!user?.permanentAddressStatus || user.permanentAddressStatus === "NOT_SUBMITTED") && (
+                  <div className="card" style={{ padding: 24, borderLeft: "4px solid var(--text-secondary)" }}>
+                    <p style={{ fontSize: 14, color: "var(--text-secondary)", marginBottom: 16 }}>
+                      You have not registered a permanent home address. Please provide your address and upload a utility bill or tenancy agreement for verification.
+                    </p>
+                    <form onSubmit={handlePermAddressSubmit} style={{ display: "flex", flexDirection: "column", gap: 16, maxWidth: 500 }}>
+                      <div>
+                        <label style={{ fontSize: 13, fontWeight: "bold", display: "block", marginBottom: 4 }}>Street Address</label>
+                        <input
+                          type="text"
+                          placeholder="e.g. Plot 104, Aminu Kano Crescent, Wuse 2, Abuja"
+                          value={permAddrStreet}
+                          onChange={(e) => setPermAddrStreet(e.target.value)}
+                          required
+                          style={{ width: "100%", padding: 10, borderRadius: 8, border: "1px solid var(--border-primary)", background: "var(--bg-tertiary)", color: "var(--text-primary)" }}
+                        />
                       </div>
-                      <p style={{ fontSize: "14px", color: "var(--text-secondary)", margin: 0 }}>{a.street}</p>
-                      <p style={{ fontSize: "12px", color: "var(--text-tertiary)", margin: "4px 0 0" }}>{a.city}, {a.state}</p>
+                      <div>
+                        <label style={{ fontSize: 13, fontWeight: "bold", display: "block", marginBottom: 4 }}>Proof of Address (Utility Bill/Tenant Contract)</label>
+                        <input
+                          type="file"
+                          accept="image/*,application/pdf"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) handleFileUpload(file, "perm");
+                          }}
+                          required
+                          style={{ width: "100%", padding: 6, borderRadius: 8, border: "1px solid var(--border-primary)", background: "var(--bg-tertiary)", color: "var(--text-primary)" }}
+                        />
+                        {permAddrUploading && <span style={{ fontSize: 12, color: "#F59E0B", marginTop: 4, display: "block" }}>Uploading file...</span>}
+                        {permAddrUploadUrl && <span style={{ fontSize: 12, color: "#10B981", marginTop: 4, display: "block" }}>✓ File uploaded successfully!</span>}
+                      </div>
+                      <button
+                        type="submit"
+                        disabled={permAddrSubmitting || permAddrUploading || !permAddrUploadUrl}
+                        className="btn btn-primary btn-sm"
+                        style={{ alignSelf: "flex-start", background: "#0EA5E9" }}
+                      >
+                        {permAddrSubmitting ? "Submitting..." : "Submit Address for Verification"}
+                      </button>
+                    </form>
+                  </div>
+                )}
+
+                {user?.permanentAddressStatus === "PENDING" && (
+                  <div className="card" style={{ padding: 24, borderLeft: "4px solid #F59E0B", background: "rgba(245,158,11,0.06)" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, color: "#F59E0B", fontWeight: 700, marginBottom: 8 }}>
+                      <span style={{ fontSize: 18 }}>⏳ Verification Pending</span>
                     </div>
-                  ))}
-                </div>
-              )}
+                    <strong style={{ display: "block", fontSize: 16, marginBottom: 4 }}>{user.permanentAddress}</strong>
+                    <div style={{ fontSize: 13, color: "var(--text-secondary)", marginBottom: 12 }}>
+                      Proof document:{" "}
+                      <a href={user.permanentAddressProof} target="_blank" rel="noopener noreferrer" style={{ color: "#0EA5E9", textDecoration: "underline" }}>
+                        View Uploaded Proof 📄
+                      </a>
+                    </div>
+                    <p style={{ fontSize: 13, color: "var(--text-tertiary)", margin: 0, borderTop: "1px solid var(--border-primary)", paddingTop: 10 }}>
+                      <strong>Audit Info:</strong> {user.permanentAddressNotes || "Awaiting administrator review."}
+                    </p>
+                  </div>
+                )}
+
+                {user?.permanentAddressStatus === "REJECTED" && (
+                  <div className="card" style={{ padding: 24, borderLeft: "4px solid #EF4444", background: "rgba(239,68,68,0.06)" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, color: "#EF4444", fontWeight: 700, marginBottom: 8 }}>
+                      <span style={{ fontSize: 18 }}>❌ Address Rejected</span>
+                    </div>
+                    <strong style={{ display: "block", fontSize: 16, marginBottom: 4 }}>{user.permanentAddress}</strong>
+                    <p style={{ fontSize: 13, color: "#EF4444", fontWeight: "600", margin: "0 0 16px 0" }}>
+                      Reason: {user.permanentAddressNotes}
+                    </p>
+                    
+                    <div style={{ borderTop: "1px solid var(--border-primary)", paddingTop: 16 }}>
+                      <h4 className="h5" style={{ marginBottom: 12 }}>Resubmit Address Details</h4>
+                      <form onSubmit={handlePermAddressSubmit} style={{ display: "flex", flexDirection: "column", gap: 16, maxWidth: 500 }}>
+                        <div>
+                          <label style={{ fontSize: 13, fontWeight: "bold", display: "block", marginBottom: 4 }}>Street Address</label>
+                          <input
+                            type="text"
+                            placeholder="e.g. Plot 104, Aminu Kano Crescent, Wuse 2, Abuja"
+                            value={permAddrStreet}
+                            onChange={(e) => setPermAddrStreet(e.target.value)}
+                            required
+                            style={{ width: "100%", padding: 10, borderRadius: 8, border: "1px solid var(--border-primary)", background: "var(--bg-tertiary)", color: "var(--text-primary)" }}
+                          />
+                        </div>
+                        <div>
+                          <label style={{ fontSize: 13, fontWeight: "bold", display: "block", marginBottom: 4 }}>Proof of Address File</label>
+                          <input
+                            type="file"
+                            accept="image/*,application/pdf"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file) handleFileUpload(file, "perm");
+                            }}
+                            required
+                            style={{ width: "100%", padding: 6, borderRadius: 8, border: "1px solid var(--border-primary)", background: "var(--bg-tertiary)", color: "var(--text-primary)" }}
+                          />
+                          {permAddrUploading && <span style={{ fontSize: 12, color: "#F59E0B", marginTop: 4, display: "block" }}>Uploading file...</span>}
+                          {permAddrUploadUrl && <span style={{ fontSize: 12, color: "#10B981", marginTop: 4, display: "block" }}>✓ File uploaded successfully!</span>}
+                        </div>
+                        <button
+                          type="submit"
+                          disabled={permAddrSubmitting || permAddrUploading || !permAddrUploadUrl}
+                          className="btn btn-primary btn-sm"
+                          style={{ alignSelf: "flex-start", background: "#0EA5E9" }}
+                        >
+                          {permAddrSubmitting ? "Submitting..." : "Submit Address for Verification"}
+                        </button>
+                      </form>
+                    </div>
+                  </div>
+                )}
+
+                {user?.permanentAddressStatus === "VERIFIED" && (
+                  <div className="card" style={{ padding: 24, borderLeft: "4px solid #10B981", background: "rgba(16,185,129,0.06)" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, color: "#10B981", fontWeight: 700 }}>
+                        <span style={{ fontSize: 18 }}>✅ Verified Permanent Address</span>
+                      </div>
+                      <button
+                        onClick={() => setShowChangeAddressForm(!showChangeAddressForm)}
+                        className="btn btn-secondary btn-xs"
+                        style={{ color: "#0EA5E9", borderColor: "#0EA5E9" }}
+                      >
+                        {showChangeAddressForm ? "Cancel Change" : "Apply for Change"}
+                      </button>
+                    </div>
+                    <strong style={{ display: "block", fontSize: 16, marginBottom: 4 }}>{user.permanentAddress}</strong>
+                    <span style={{ fontSize: 12, color: "var(--text-tertiary)" }}>Proof validated on our secure registry.</span>
+                    
+                    {showChangeAddressForm && (
+                      <div style={{ borderTop: "1px solid var(--border-primary)", marginTop: 16, paddingTop: 16 }}>
+                        <h4 className="h5" style={{ marginBottom: 12, color: "var(--text-primary)" }}>Apply for Change of Permanent Address</h4>
+                        <form onSubmit={handleChangeAddressSubmit} style={{ display: "flex", flexDirection: "column", gap: 16, maxWidth: 500 }}>
+                          <div>
+                            <label style={{ fontSize: 13, fontWeight: "bold", display: "block", marginBottom: 4 }}>New Street Address</label>
+                            <input
+                              type="text"
+                              placeholder="e.g. Plot 15, Alex Ekwueme Way, Jabi, Abuja"
+                              value={changeAddrStreet}
+                              onChange={(e) => setChangeAddrStreet(e.target.value)}
+                              required
+                              style={{ width: "100%", padding: 10, borderRadius: 8, border: "1px solid var(--border-primary)", background: "var(--bg-tertiary)", color: "var(--text-primary)" }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ fontSize: 13, fontWeight: "bold", display: "block", marginBottom: 4 }}>New Proof of Address (Utility Bill)</label>
+                            <input
+                              type="file"
+                              accept="image/*,application/pdf"
+                              onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (file) handleFileUpload(file, "change");
+                              }}
+                              required
+                              style={{ width: "100%", padding: 6, borderRadius: 8, border: "1px solid var(--border-primary)", background: "var(--bg-tertiary)", color: "var(--text-primary)" }}
+                            />
+                            {changeAddrUploading && <span style={{ fontSize: 12, color: "#F59E0B", marginTop: 4, display: "block" }}>Uploading file...</span>}
+                            {changeAddrUploadUrl && <span style={{ fontSize: 12, color: "#10B981", marginTop: 4, display: "block" }}>✓ File uploaded successfully!</span>}
+                          </div>
+                          <button
+                            type="submit"
+                            disabled={changeAddrSubmitting || changeAddrUploading || !changeAddrUploadUrl}
+                            className="btn btn-primary btn-sm"
+                            style={{ alignSelf: "flex-start", background: "#0EA5E9" }}
+                          >
+                            {changeAddrSubmitting ? "Submitting Change Request..." : "Submit Change Request"}
+                          </button>
+                        </form>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* 2. Secondary Address (Gated: only available if verified) */}
+              <div>
+                <h3 className="h4" style={{ marginBottom: 12, display: "flex", alignItems: "center", gap: 8 }}>
+                  <MapPin size={18} color="#0EA5E9" /> Secondary Address
+                </h3>
+                
+                {user?.permanentAddressStatus !== "VERIFIED" ? (
+                  <div className="card" style={{ padding: 24, textAlign: "center", opacity: 0.6, background: "var(--bg-tertiary)" }}>
+                    <MapPin size={32} color="var(--text-tertiary)" style={{ marginBottom: 10, display: "inline-block" }} />
+                    <h5 style={{ margin: "0 0 4px 0", fontSize: 14, color: "var(--text-primary)" }}>Secondary Address Locked</h5>
+                    <p style={{ fontSize: 12, color: "var(--text-secondary)", margin: 0 }}>
+                      You must complete your permanent home address verification to unlock secondary booking addresses.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="card" style={{ padding: 24 }}>
+                    {user.secondaryAddress ? (
+                      <div>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
+                          <div>
+                            <span className="badge" style={{ background: "rgba(14,165,233,0.12)", color: "#0EA5E9", marginBottom: 6, display: "inline-block" }}>
+                              Secondary Address Active
+                            </span>
+                            <strong style={{ display: "block", fontSize: 16 }}>{user.secondaryAddress}</strong>
+                          </div>
+                        </div>
+                        
+                        <div style={{ borderTop: "1px solid var(--border-primary)", paddingTop: 16, marginTop: 16 }}>
+                          <h5 style={{ marginBottom: 8, fontSize: 13 }}>Change Secondary Address</h5>
+                          <form onSubmit={handleSecondaryAddressSubmit} style={{ display: "flex", gap: 12, maxWidth: 500 }}>
+                            <input
+                              type="text"
+                              value={secondaryAddrStreet}
+                              onChange={(e) => setSecondaryAddrStreet(e.target.value)}
+                              placeholder="e.g. Office Suite 4B, Jabi Mall, Abuja"
+                              style={{ flex: 1, padding: 8, borderRadius: 8, border: "1px solid var(--border-primary)", background: "var(--bg-tertiary)", color: "var(--text-primary)", fontSize: 13 }}
+                            />
+                            <button
+                              type="submit"
+                              disabled={secondaryAddrSaving}
+                              className="btn btn-primary btn-xs"
+                              style={{ background: "#0EA5E9" }}
+                            >
+                              {secondaryAddrSaving ? "Saving..." : "Update"}
+                            </button>
+                          </form>
+                        </div>
+                      </div>
+                    ) : (
+                      <div>
+                        <p style={{ fontSize: 13, color: "var(--text-secondary)", marginBottom: 16 }}>
+                          You haven&apos;t added a secondary booking address yet. Add one to make it available for dispatches.
+                        </p>
+                        <form onSubmit={handleSecondaryAddressSubmit} style={{ display: "flex", gap: 12, maxWidth: 500 }}>
+                          <input
+                            type="text"
+                            value={secondaryAddrStreet}
+                            onChange={(e) => setSecondaryAddrStreet(e.target.value)}
+                            placeholder="e.g. Office Suite 4B, Jabi Mall, Abuja"
+                            required
+                            style={{ flex: 1, padding: 8, borderRadius: 8, border: "1px solid var(--border-primary)", background: "var(--bg-tertiary)", color: "var(--text-primary)", fontSize: 13 }}
+                          />
+                          <button
+                            type="submit"
+                            disabled={secondaryAddrSaving}
+                            className="btn btn-primary btn-xs"
+                            style={{ background: "#0EA5E9" }}
+                          >
+                            {secondaryAddrSaving ? "Adding..." : "Add Address"}
+                          </button>
+                        </form>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
             </motion.div>
           )}
 
