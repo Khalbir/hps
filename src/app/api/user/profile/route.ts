@@ -24,13 +24,14 @@ export async function GET(request: Request) {
     }
 
     if (!user) {
+      const isDemo = email.toLowerCase() === "customer@test.com";
       return NextResponse.json({
         user: {
-          id: "usr_cust_demo",
-          firstName: "Valued",
-          lastName: "Customer",
+          id: isDemo ? "usr_cust_demo" : `usr_${Date.now()}`,
+          firstName: isDemo ? "Valued" : "",
+          lastName: isDemo ? "Customer" : "",
           email: email,
-          phone: "+234 812 222 2936",
+          phone: isDemo ? "+234 812 222 2936" : "",
           role: "CUSTOMER",
           isVerified: true,
           wallet: { balance: 50000 },

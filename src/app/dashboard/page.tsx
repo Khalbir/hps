@@ -196,6 +196,7 @@ export default function DashboardPage() {
     setLoading(true);
     let activeUserId = "";
     let activeEmail = "";
+    let localUserPayload: any = null;
 
     if (typeof window !== "undefined") {
       try {
@@ -210,14 +211,24 @@ export default function DashboardPage() {
           const lastName = nameParts.slice(1).join(" ") || "Client";
           const gUser = { firstName, lastName, email: paramEmail, phone: "", role: "CUSTOMER" };
           setUser(gUser);
+          setEditFirstName(firstName);
+          setEditLastName(lastName);
+          setEditPhone("");
           localStorage.setItem("handyhub_user", JSON.stringify(gUser));
+          localUserPayload = gUser;
         } else {
           const stored = localStorage.getItem("handyhub_user");
           if (stored) {
             const parsed = JSON.parse(stored);
+            localUserPayload = parsed;
             if (parsed.id) activeUserId = parsed.id;
             if (parsed.email) activeEmail = parsed.email;
-            if (parsed.firstName) setUser(parsed);
+            if (parsed.firstName || parsed.lastName || parsed.phone) {
+              setUser((prev: any) => ({ ...prev, ...parsed }));
+              setEditFirstName(parsed.firstName || "");
+              setEditLastName(parsed.lastName || "");
+              setEditPhone(parsed.phone || "");
+            }
           }
         }
       } catch (e) { }
@@ -235,9 +246,9 @@ export default function DashboardPage() {
       const res = await fetch(`/api/customer/dashboard?userId=${activeUserId}&email=${encodeURIComponent(activeEmail)}`);
       const data = await res.json();
       if (res.ok && data.user) {
-        let mergedUser = data.user;
+        let mergedUser = { ...data.user };
         try {
-          const profRes = await fetch(`/api/user/profile?email=${encodeURIComponent(data.user.email)}`);
+          const profRes = await fetch(`/api/user/profile?email=${encodeURIComponent(data.user.email || activeEmail)}`);
           const profData = await profRes.json();
           if (profRes.ok && profData?.user) {
             mergedUser = {
@@ -247,6 +258,19 @@ export default function DashboardPage() {
           }
         } catch (e) {
           console.warn("Failed to merge profile fields:", e);
+        }
+
+        // If merged user name is a generic fallback ("Valued Client"), preserve the user's actual registered name from local storage
+        if (localUserPayload) {
+          if (!mergedUser.firstName || mergedUser.firstName.startsWith("Valued")) {
+            mergedUser.firstName = localUserPayload.firstName || mergedUser.firstName;
+          }
+          if (!mergedUser.lastName) {
+            mergedUser.lastName = localUserPayload.lastName || mergedUser.lastName;
+          }
+          if (!mergedUser.phone) {
+            mergedUser.phone = localUserPayload.phone || mergedUser.phone;
+          }
         }
 
         setUser(mergedUser);

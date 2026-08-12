@@ -10,7 +10,7 @@ export async function GET(request: Request) {
     if (!userId && !email) {
       return NextResponse.json({
         success: true,
-        user: { firstName: "Valued Client", lastName: "", email: "", phone: "" },
+        user: { firstName: "", lastName: "", email: email || "", phone: "" },
         walletBalance: 0,
         activeDispatchesCount: 0,
         totalBookingsCount: 0,
@@ -29,7 +29,7 @@ export async function GET(request: Request) {
     if (!user) {
       return NextResponse.json({
         success: true,
-        user: { firstName: "Valued Client", lastName: "", email: "", phone: "" },
+        user: { firstName: "", lastName: "", email: email || "", phone: "" },
         walletBalance: 0,
         activeDispatchesCount: 0,
         totalBookingsCount: 0,
