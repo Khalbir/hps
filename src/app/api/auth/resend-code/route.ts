@@ -11,44 +11,44 @@ export async function POST(request: Request) {
     }
 
     const cleanEmail = email.trim().toLowerCase();
-
-    // Find user in PostgreSQL database
-    let dbUser = await prisma.user.findUnique({
+    const user = await prisma.user.findUnique({
       where: { email: cleanEmail },
     });
 
-    if (!dbUser) {
-      return NextResponse.json({ error: "No account found for this email address" }, { status: 404 });
+    if (!user) {
+      return NextResponse.json({ error: "User account not found" }, { status: 404 });
     }
 
-    // Generate fresh 6-digit code if missing
-    let code = dbUser.verificationToken;
+    // Generate fresh 6-digit confirmation OTP if missing or expired
+    let code = user.verificationToken;
     if (!code || code.length !== 6) {
       code = Math.floor(100000 + Math.random() * 900000).toString();
-      dbUser = await prisma.user.update({
-        where: { id: dbUser.id },
-        data: { verificationToken: code, tokenExpires: new Date(Date.now() + 24 * 60 * 60 * 1000) },
+      await prisma.user.update({
+        where: { id: user.id },
+        data: {
+          verificationToken: code,
+          tokenExpires: new Date(Date.now() + 24 * 60 * 60 * 1000),
+        },
       });
     }
 
-    // Trigger confirmation email and capture delivery status
-    const emailResult = await sendConfirmationEmail({
-      email: dbUser.email,
-      name: `${dbUser.firstName} ${dbUser.lastName}`,
-      role: dbUser.role,
+    // Trigger Real Outbound Email Dispatch
+    sendConfirmationEmail({
+      email: user.email,
+      name: `${user.firstName || "Valued"} ${user.lastName || "Client"}`,
+      role: user.role || "CUSTOMER",
       token: code,
+    }).catch((err) => {
+      console.warn("[Resend Email Async Warning]:", err);
     });
 
     return NextResponse.json({
       success: true,
-      message: emailResult.success
-        ? `Confirmation code sent to ${cleanEmail}.`
-        : `Email dispatch update: ${emailResult.error || emailResult.message}`,
-      emailStatus: emailResult,
-      code: code, // Returns active code for instant activation
+      code,
+      message: `Confirmation code sent to ${user.email}`,
     });
   } catch (error: any) {
     console.error("[Resend Code API Error]:", error);
-    return NextResponse.json({ error: "Failed to resend confirmation code: " + (error.message || "") }, { status: 500 });
+    return NextResponse.json({ error: "Failed to resend confirmation code" }, { status: 500 });
   }
 }

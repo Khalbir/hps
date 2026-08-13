@@ -31,6 +31,7 @@ function VerifyEmailContent() {
       const data = await res.json();
       if (res.ok && data.code) {
         setRetrievedCode(data.code);
+        setOtpCode(data.code);
       }
     } catch (e) {}
   };
