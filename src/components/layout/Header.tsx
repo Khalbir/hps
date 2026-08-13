@@ -5,7 +5,7 @@ import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Sparkles, Wrench, Zap, Snowflake, Paintbrush, Hammer, Camera, SunMedium,
-  Menu, X, Sun, Moon, ChevronDown, Phone, MessageSquare, ArrowRight, Layers
+  Menu, X, Sun, Moon, ChevronDown, Phone, MessageSquare, ArrowRight, Layers, User
 } from "lucide-react";
 import { useTheme } from "@/components/ThemeProvider";
 import { BrandLogo } from "@/components/common/BrandLogo";
@@ -41,19 +41,29 @@ export function Header() {
   }, []);
 
   useEffect(() => {
-    // Check if user is logged in
+    // Check if user is logged in across cookies, localStorage, and sessionStorage
     const checkAuth = () => {
-      const hasUserSession = document.cookie.includes("handyhub_user_session=authenticated") ||
-                            document.cookie.includes("handyhub_pro_session=authenticated") ||
-                            document.cookie.includes("handyhub_admin_session=authenticated");
-      const storedUser = localStorage.getItem("handyhub_user");
+      const hasCookieSession = document.cookie.includes("handyhub_user_session=authenticated") ||
+                               document.cookie.includes("handyhub_pro_session=authenticated") ||
+                               document.cookie.includes("handyhub_admin_session=authenticated");
       
-      if (hasUserSession || storedUser) {
+      const hasStorageSession = typeof window !== "undefined" && (
+        Boolean(localStorage.getItem("handyhub_user")) ||
+        Boolean(localStorage.getItem("handyhub_user_session")) ||
+        Boolean(localStorage.getItem("handyhub_pro_session")) ||
+        Boolean(localStorage.getItem("handyhub_admin_session")) ||
+        Boolean(sessionStorage.getItem("handyhub_active_session")) ||
+        Boolean(sessionStorage.getItem("handyhub_user_session"))
+      );
+
+      if (hasCookieSession || hasStorageSession) {
         setIsLoggedIn(true);
-        if (storedUser) {
+        if (typeof window !== "undefined") {
           try {
-            const parsed = JSON.parse(storedUser);
-            setUserRole(parsed.role || null);
+            const rawUser = localStorage.getItem("handyhub_user");
+            const rawSession = localStorage.getItem("handyhub_user_session") || sessionStorage.getItem("handyhub_active_session");
+            const parsed = rawUser ? JSON.parse(rawUser) : rawSession ? JSON.parse(rawSession).user : null;
+            if (parsed?.role) setUserRole(parsed.role);
           } catch {}
         }
       } else {
@@ -196,9 +206,29 @@ export function Header() {
               </AnimatePresence>
             </button>
             {isLoggedIn ? (
-              <button onClick={handleLogout} className={`${styles.loginBtn}`} style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "inherit" }}>
-                Log Out
-              </button>
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <Link
+                  href={userRole === "SUPER_ADMIN" || userRole === "ADMIN" ? "/admin/dashboard" : userRole === "PROFESSIONAL" ? "/pro" : "/dashboard"}
+                  className="btn btn-secondary btn-sm"
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 6,
+                    color: "#0EA5E9",
+                    borderColor: "rgba(14, 165, 233, 0.4)",
+                    fontWeight: 600,
+                    padding: "6px 14px",
+                    borderRadius: "8px",
+                    textDecoration: "none",
+                  }}
+                >
+                  <User size={15} />
+                  <span>My Profile</span>
+                </Link>
+                <button onClick={handleLogout} className={`${styles.loginBtn}`} style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "inherit", opacity: 0.8 }}>
+                  Log Out
+                </button>
+              </div>
             ) : (
               <Link href="/auth/login" className={`${styles.loginBtn}`}>
                 Log In
@@ -306,16 +336,27 @@ export function Header() {
                   </Link>
                   <div className={styles.mobileDivider} />
                   {isLoggedIn ? (
-                    <button
-                      onClick={() => {
-                        setMobileOpen(false);
-                        handleLogout();
-                      }}
-                      className={styles.mobileLink}
-                      style={{ width: "100%", textAlign: "left", background: "none", border: "none", cursor: "pointer", fontFamily: "inherit" }}
-                    >
-                      Log Out
-                    </button>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                      <Link
+                        href={userRole === "SUPER_ADMIN" || userRole === "ADMIN" ? "/admin/dashboard" : userRole === "PROFESSIONAL" ? "/pro" : "/dashboard"}
+                        className={styles.mobileLink}
+                        onClick={() => setMobileOpen(false)}
+                        style={{ color: "#0EA5E9", fontWeight: "bold", display: "flex", alignItems: "center", gap: 8 }}
+                      >
+                        <User size={18} />
+                        <span>My Profile & Dashboard</span>
+                      </Link>
+                      <button
+                        onClick={() => {
+                          setMobileOpen(false);
+                          handleLogout();
+                        }}
+                        className={styles.mobileLink}
+                        style={{ width: "100%", textAlign: "left", background: "none", border: "none", cursor: "pointer", fontFamily: "inherit", opacity: 0.8 }}
+                      >
+                        Log Out
+                      </button>
+                    </div>
                   ) : (
                     <Link
                       href="/auth/login"
