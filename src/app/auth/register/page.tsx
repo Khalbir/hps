@@ -97,20 +97,26 @@ export default function RegisterPage() {
 
       const data = await res.json();
 
-      if (!res.ok && !data.success) {
+      if (!res.ok) {
         setError(data.error || "Registration failed. Please check your inputs.");
         setLoading(false);
         return;
       }
-
-      const userPayload = data.user || { email: form.email, firstName: form.firstName, lastName: form.lastName, phone: form.phone, role: form.role };
-      localStorage.setItem("handyhub_user", JSON.stringify(userPayload));
 
       if (staySignedIn) {
         localStorage.setItem("handyhub_stay_signed_in", "true");
       } else {
         localStorage.removeItem("handyhub_stay_signed_in");
       }
+
+      // If email verification is required, navigate to verify-email page
+      if (data.redirect || data.requiresVerification || data.unverified) {
+        router.push(data.redirect || `/auth/verify-email?email=${encodeURIComponent(form.email)}&role=${encodeURIComponent(form.role)}`);
+        return;
+      }
+
+      const userPayload = data.user || { email: form.email, firstName: form.firstName, lastName: form.lastName, phone: form.phone, role: form.role };
+      localStorage.setItem("handyhub_user", JSON.stringify(userPayload));
 
       const sessionPayload = { authenticated: true, user: userPayload, timestamp: Date.now() };
       sessionStorage.setItem("handyhub_active_session", JSON.stringify(sessionPayload));
