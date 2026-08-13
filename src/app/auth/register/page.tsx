@@ -39,6 +39,7 @@ export default function RegisterPage() {
     customSkill: "",
   });
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [offPlatformAgreed, setOffPlatformAgreed] = useState(false);
   const [staySignedIn, setStaySignedIn] = useState(false);
   const [error, setError] = useState("");
@@ -368,7 +369,7 @@ export default function RegisterPage() {
                 <input
                   id="confirmPassword"
                   name="confirmPassword"
-                  type="password"
+                  type={showConfirmPassword ? "text" : "password"}
                   autoComplete="new-password"
                   className={styles.input}
                   placeholder="Confirm your password"
@@ -376,6 +377,14 @@ export default function RegisterPage() {
                   onChange={(e) => update("confirmPassword", e.target.value)}
                   required
                 />
+                <button
+                  type="button"
+                  className={styles.eyeBtn}
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  aria-label={showConfirmPassword ? "Hide confirm password" : "Show confirm password"}
+                >
+                  {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
               </div>
             </div>
 
