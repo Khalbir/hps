@@ -10,7 +10,8 @@ import styles from "../auth.module.css";
 function ResetPasswordForm() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const token = searchParams.get("token") || "demo_reset_token";
+  const token = searchParams.get("token") || "";
+  const emailParam = searchParams.get("email") || "";
 
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -39,19 +40,21 @@ function ResetPasswordForm() {
       const res = await fetch("/api/auth/reset-password", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token, password }),
+        body: JSON.stringify({ token, password, email: emailParam }),
       });
 
       const data = await res.json();
+      if (!res.ok || data.error) {
+        setError(data.error || "Failed to reset password. Please request a new link.");
+        return;
+      }
+
       setSuccess(true);
       setTimeout(() => {
         router.push("/auth/login?reset=success");
       }, 2500);
     } catch {
-      setSuccess(true);
-      setTimeout(() => {
-        router.push("/auth/login?reset=success");
-      }, 2500);
+      setError("An unexpected network error occurred. Please try again.");
     } finally {
       setLoading(false);
     }

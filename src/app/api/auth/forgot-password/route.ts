@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import crypto from "crypto";
+import { prisma } from "@/lib/db";
 import { sendPasswordResetEmail } from "@/lib/email";
 
 // Temporary in-memory reset token storage for demo mode when database is not connected
@@ -19,8 +20,21 @@ export async function POST(request: Request) {
     const token = crypto.randomBytes(32).toString("hex");
     const expires = Date.now() + 60 * 60 * 1000; // 1 hour expiration
 
-    // Store token
+    // Store token in memory map (for fast access)
     mockResetTokensStore.set(token, { email: cleanEmail, expires });
+
+    // Persist reset token in database if user exists
+    try {
+      await prisma.user.updateMany({
+        where: { email: cleanEmail },
+        data: {
+          verificationToken: token,
+          tokenExpires: new Date(expires),
+        },
+      });
+    } catch (dbErr) {
+      console.warn("[Forgot Password DB Update Warning]:", dbErr);
+    }
 
     // Determine dynamic base URL (Production App URL vs Localhost for dev)
     const host = request.headers.get("host") || "";
@@ -33,7 +47,7 @@ export async function POST(request: Request) {
       ? `${protocol}://${host}`
       : "https://handyhubpro.ng";
 
-    const resetUrl = `${origin}/auth/reset-password?token=${token}`;
+    const resetUrl = `${origin}/auth/reset-password?token=${token}&email=${encodeURIComponent(cleanEmail)}`;
 
     // Send password reset email
     const name = cleanEmail.split("@")[0] || "User";

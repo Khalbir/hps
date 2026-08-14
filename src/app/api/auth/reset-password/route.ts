@@ -21,23 +21,45 @@ export async function POST(request: Request) {
       );
     }
 
-    // Check token from store or accept active reset token
-    const stored = mockResetTokensStore.get(token);
-    const targetEmail = stored?.email || email || "info@handyhubpro.ng";
+    // 1. Query database user by reset token
+    let dbUser = null;
+    if (token) {
+      try {
+        dbUser = await prisma.user.findFirst({
+          where: { verificationToken: token },
+        });
+      } catch (dbErr) {
+        console.warn("[Reset Password DB Lookup Warning]:", dbErr);
+      }
+    }
+
+    // 2. Check token from store or accept explicit email parameter
+    const stored = token ? mockResetTokensStore.get(token) : null;
+    const cleanEmailInput = email && typeof email === "string" && email.trim() !== "" ? email.trim().toLowerCase() : null;
+    const targetEmail = dbUser?.email || stored?.email || cleanEmailInput;
+
+    if (!targetEmail) {
+      return NextResponse.json(
+        { error: "Invalid or expired password reset link. Please request a new password reset." },
+        { status: 400 }
+      );
+    }
 
     // Hash new password securely
     const hashedPassword = await bcrypt.hash(password, 12);
 
-    // Update database user password if user exists
-    if (targetEmail) {
-      try {
-        await prisma.user.updateMany({
-          where: { email: targetEmail.toLowerCase() },
-          data: { password: hashedPassword },
-        });
-      } catch (dbErr) {
-        console.warn("[Reset Password DB Warning]: Database update fallback:", dbErr);
-      }
+    // Update database user password and clear reset token
+    try {
+      await prisma.user.updateMany({
+        where: { email: targetEmail.toLowerCase() },
+        data: {
+          password: hashedPassword,
+          verificationToken: null,
+          tokenExpires: null,
+        },
+      });
+    } catch (dbErr) {
+      console.warn("[Reset Password DB Update Warning]:", dbErr);
     }
 
     // Clear token after reset
