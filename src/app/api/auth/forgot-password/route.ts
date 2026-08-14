@@ -22,13 +22,20 @@ export async function POST(request: Request) {
     // Store token
     mockResetTokensStore.set(token, { email: cleanEmail, expires });
 
-    // Determine dynamic base URL (Live Domain vs Localhost)
+    // Determine dynamic base URL (Production App URL vs Localhost for dev)
     const host = request.headers.get("host") || "";
-    const protocol = request.headers.get("x-forwarded-proto") || (host.includes("localhost") ? "http" : "https");
-    const origin = host ? `${protocol}://${host}` : (process.env.NEXT_PUBLIC_APP_URL || "https://handyhubpro.ng");
+    const protocol = request.headers.get("x-forwarded-proto") || (host.includes("localhost") || host.includes("127.0.0.1") ? "http" : "https");
+    const configuredUrl = process.env.APP_URL || process.env.NEXT_PUBLIC_APP_URL;
+    const isLocal = host.includes("localhost") || host.includes("127.0.0.1");
+    const origin = configuredUrl
+      ? configuredUrl.replace(/\/$/, "")
+      : isLocal
+      ? `${protocol}://${host}`
+      : "https://handyhubpro.ng";
+
     const resetUrl = `${origin}/auth/reset-password?token=${token}`;
 
-    // Send password reset email from support@handyhubpro.ng
+    // Send password reset email
     const name = cleanEmail.split("@")[0] || "User";
     const formattedName = name.charAt(0).toUpperCase() + name.slice(1);
 
@@ -43,7 +50,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       success: true,
-      message: `Password reset instructions have been dispatched to ${cleanEmail} from support@handyhubpro.ng.`,
+      message: `Password reset instructions have been dispatched to ${cleanEmail}.`,
       resetUrlPreview: resetUrl,
     });
   } catch (error) {

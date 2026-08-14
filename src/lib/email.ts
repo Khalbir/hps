@@ -20,7 +20,7 @@ export async function sendConfirmationEmail({
   role,
   token,
 }: SendConfirmationEmailParams): Promise<{ success: boolean; error?: string; message?: string }> {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://handyhubpro.ng";
+  const baseUrl = process.env.APP_URL || process.env.NEXT_PUBLIC_APP_URL || "https://handyhubpro.ng";
   const confirmUrl = `${baseUrl}/api/auth/verify?token=${token}`;
   const otpFormatted = token.length === 6 ? `${token.substring(0, 3)} ${token.substring(3)}` : token;
 
@@ -84,7 +84,7 @@ export async function sendConfirmationEmail({
 
   // 1. Check Resend API Integration first
   if (process.env.RESEND_API_KEY) {
-    const primaryFrom = process.env.RESEND_FROM || process.env.SMTP_FROM || "HandyHub PRO Solutions <support@handyhubpro.ng>";
+    const primaryFrom = process.env.RESEND_FROM || process.env.SMTP_FROM || "HandyHub PRO Solutions <no-reply@support.handyhubpro.ng>";
     const fallbackFrom = "HandyHub PRO <onboarding@resend.dev>";
 
     try {
@@ -245,7 +245,7 @@ export async function sendPasswordResetEmail({
 
   // 1. Try Resend API first
   if (process.env.RESEND_API_KEY) {
-    const primaryFrom = process.env.RESEND_FROM || process.env.SMTP_FROM || "HandyHub PRO Solutions <support@handyhubpro.ng>";
+    const primaryFrom = process.env.RESEND_FROM || process.env.SMTP_FROM || "HandyHub PRO Solutions <no-reply@support.handyhubpro.ng>";
     const fallbackFrom = "HandyHub PRO <onboarding@resend.dev>";
 
     try {

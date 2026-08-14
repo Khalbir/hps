@@ -57,7 +57,7 @@ export async function POST(request: Request) {
     }
 
     const reference = `HHP_${bookingId || "TOPUP"}_${Date.now()}`;
-    const origin = request.headers.get("origin") || request.headers.get("referer")?.replace(/\/$/, "") || process.env.NEXT_PUBLIC_APP_URL || "https://handyhubpro.ng";
+    const origin = request.headers.get("origin") || request.headers.get("referer")?.replace(/\/$/, "") || process.env.APP_URL || process.env.NEXT_PUBLIC_APP_URL || "https://handyhubpro.ng";
     const callbackUrl = `${origin}/dashboard/wallet?status=success&reference=${reference}`;
 
     // Dual-gateway checkout router (Paystack primary -> Flutterwave failover)
