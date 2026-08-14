@@ -28,7 +28,7 @@ export async function POST(request: Request) {
     const origin = host ? `${protocol}://${host}` : (process.env.NEXT_PUBLIC_APP_URL || "https://handyhubpro.ng");
     const resetUrl = `${origin}/auth/reset-password?token=${token}`;
 
-    // Send password reset email from info@handyhubpro.ng
+    // Send password reset email from support@handyhubpro.ng
     const name = cleanEmail.split("@")[0] || "User";
     const formattedName = name.charAt(0).toUpperCase() + name.slice(1);
 
@@ -43,7 +43,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       success: true,
-      message: `Password reset instructions have been dispatched to ${cleanEmail} from info@handyhubpro.ng.`,
+      message: `Password reset instructions have been dispatched to ${cleanEmail} from support@handyhubpro.ng.`,
       resetUrlPreview: resetUrl,
     });
   } catch (error) {

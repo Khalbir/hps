@@ -161,7 +161,7 @@ async function sendEmailNotification(params: {
   try {
     if (process.env.SMTP_USER && process.env.SMTP_PASS) {
       await transporter.sendMail({
-        from: process.env.SMTP_FROM || `"HandyHub Pro" <notifications@handyhubpro.ng>`,
+        from: process.env.SMTP_FROM || `"HandyHub Pro" <support@handyhubpro.ng>`,
         to: params.to,
         subject: params.subject,
         html: htmlContent,

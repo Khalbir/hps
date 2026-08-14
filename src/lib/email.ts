@@ -92,7 +92,7 @@ export async function sendConfirmationEmail({
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          from: process.env.RESEND_FROM || "HandyHub PRO <onboarding@resend.dev>",
+          from: process.env.RESEND_FROM || process.env.SMTP_FROM || "HandyHub PRO Solutions <support@handyhubpro.ng>",
           to: [email],
           subject: `${token} is your HandyHub PRO Confirmation Code`,
           html: htmlContent,
@@ -136,7 +136,7 @@ export async function sendConfirmationEmail({
       );
 
       await transporter.sendMail({
-        from: `"HandyHub PRO Solutions" <${smtpUser}>`,
+        from: process.env.SMTP_FROM || `"HandyHub PRO Solutions" <support@handyhubpro.ng>`,
         to: email,
         subject: `${token} is your HandyHub PRO Confirmation Code`,
         html: htmlContent,
@@ -180,10 +180,24 @@ export async function sendPasswordResetEmail({
     return;
   }
 
-  const transporter = nodemailer.createTransport({
-    service: "gmail",
-    auth: { user: smtpUser, pass: smtpPass.replace(/\s+/g, "") },
-  });
+  const smtpHost = process.env.SMTP_HOST || "smtp.gmail.com";
+  const smtpPort = Number(process.env.SMTP_PORT) || 465;
+
+  const isGmail = smtpHost.includes("gmail");
+  const transporter = nodemailer.createTransport(
+    isGmail
+      ? {
+          service: "gmail",
+          auth: { user: smtpUser, pass: smtpPass.replace(/\s+/g, "") },
+        }
+      : {
+          host: smtpHost,
+          port: smtpPort,
+          secure: smtpPort === 465,
+          auth: { user: smtpUser, pass: smtpPass },
+          tls: { rejectUnauthorized: false },
+        }
+  );
 
   const htmlContent = `
     <!DOCTYPE html>
@@ -199,7 +213,7 @@ export async function sendPasswordResetEmail({
 
   try {
     await transporter.sendMail({
-      from: `"HandyHub PRO Solutions" <${smtpUser}>`,
+      from: process.env.SMTP_FROM || `"HandyHub PRO Solutions" <support@handyhubpro.ng>`,
       to: email,
       subject: "Reset Your HandyHub PRO Password",
       html: htmlContent,
