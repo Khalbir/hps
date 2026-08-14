@@ -78,15 +78,21 @@ export function Header() {
   }, []);
 
   const handleLogout = () => {
-    // Clear all cookies
+    // Clear all auth cookies
     document.cookie = "handyhub_user_session=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;";
     document.cookie = "handyhub_pro_session=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;";
     document.cookie = "handyhub_admin_session=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;";
     document.cookie = "handyhub_user_data=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;";
     
-    // Clear local storage
+    // Clear all localStorage session keys
     localStorage.removeItem("handyhub_user");
+    localStorage.removeItem("handyhub_user_session");
+    localStorage.removeItem("handyhub_pro_session");
     localStorage.removeItem("handyhub_admin_session");
+    
+    // Clear all sessionStorage session keys
+    sessionStorage.removeItem("handyhub_active_session");
+    sessionStorage.removeItem("handyhub_user_session");
     
     setIsLoggedIn(false);
     setUserRole(null);

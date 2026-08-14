@@ -86,8 +86,18 @@ export function AdminLayoutShell({ children }: { children: ReactNode }) {
   }, []);
 
   const handleLogout = () => {
-    localStorage.removeItem("handyhub_admin_session");
+    // Clear all auth cookies
+    document.cookie = "handyhub_user_session=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;";
+    document.cookie = "handyhub_pro_session=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;";
     document.cookie = "handyhub_admin_session=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;";
+    document.cookie = "handyhub_user_data=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;";
+    // Clear all storage session keys
+    localStorage.removeItem("handyhub_user");
+    localStorage.removeItem("handyhub_user_session");
+    localStorage.removeItem("handyhub_pro_session");
+    localStorage.removeItem("handyhub_admin_session");
+    sessionStorage.removeItem("handyhub_active_session");
+    sessionStorage.removeItem("handyhub_user_session");
     router.replace("/admin");
   };
 
