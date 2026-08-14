@@ -84,27 +84,50 @@ export async function sendConfirmationEmail({
 
   // 1. Check Resend API Integration first
   if (process.env.RESEND_API_KEY) {
+    const primaryFrom = process.env.RESEND_FROM || process.env.SMTP_FROM || "HandyHub PRO Solutions <support@handyhubpro.ng>";
+    const fallbackFrom = "HandyHub PRO <onboarding@resend.dev>";
+
     try {
-      const resendRes = await fetch("https://api.resend.com/emails", {
+      let resendRes = await fetch("https://api.resend.com/emails", {
         method: "POST",
         headers: {
           "Authorization": `Bearer ${process.env.RESEND_API_KEY}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          from: process.env.RESEND_FROM || process.env.SMTP_FROM || "HandyHub PRO Solutions <support@handyhubpro.ng>",
+          from: primaryFrom,
           to: [email],
           subject: `${token} is your HandyHub PRO Confirmation Code`,
           html: htmlContent,
         }),
       });
 
-      const resendData = await resendRes.json();
+      let resendData = await resendRes.json();
+
+      // If custom domain is not yet verified in Resend, fall back to onboarding@resend.dev
+      if (!resendRes.ok && primaryFrom !== fallbackFrom) {
+        console.warn(`[Resend Primary Sender Failed] (${primaryFrom}):`, resendData, `Retrying with ${fallbackFrom}...`);
+        resendRes = await fetch("https://api.resend.com/emails", {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${process.env.RESEND_API_KEY}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            from: fallbackFrom,
+            to: [email],
+            subject: `${token} is your HandyHub PRO Confirmation Code`,
+            html: htmlContent,
+          }),
+        });
+        resendData = await resendRes.json();
+      }
+
       if (resendRes.ok) {
         console.log(`[Resend API Success]: Real email delivered to ${email} (ID: ${resendData.id})`);
         return { success: true, message: `Email delivered to ${email} via Resend` };
       } else {
-        console.warn("[Resend API Error]:", resendData);
+        console.warn("[Resend API Final Error]:", resendData);
       }
     } catch (resendErr: any) {
       console.warn("[Resend API Exception]:", resendErr);
@@ -222,22 +245,45 @@ export async function sendPasswordResetEmail({
 
   // 1. Try Resend API first
   if (process.env.RESEND_API_KEY) {
+    const primaryFrom = process.env.RESEND_FROM || process.env.SMTP_FROM || "HandyHub PRO Solutions <support@handyhubpro.ng>";
+    const fallbackFrom = "HandyHub PRO <onboarding@resend.dev>";
+
     try {
-      const resendRes = await fetch("https://api.resend.com/emails", {
+      let resendRes = await fetch("https://api.resend.com/emails", {
         method: "POST",
         headers: {
           "Authorization": `Bearer ${process.env.RESEND_API_KEY}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          from: process.env.RESEND_FROM || process.env.SMTP_FROM || "HandyHub PRO Solutions <support@handyhubpro.ng>",
+          from: primaryFrom,
           to: [email],
           subject: "Reset Your HandyHub PRO Password",
           html: htmlContent,
         }),
       });
 
-      const resendData = await resendRes.json();
+      let resendData = await resendRes.json();
+
+      // If custom domain is not yet verified in Resend, fall back to onboarding@resend.dev
+      if (!resendRes.ok && primaryFrom !== fallbackFrom) {
+        console.warn(`[Resend Primary Sender Failed - Password Reset] (${primaryFrom}):`, resendData, `Retrying with ${fallbackFrom}...`);
+        resendRes = await fetch("https://api.resend.com/emails", {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${process.env.RESEND_API_KEY}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            from: fallbackFrom,
+            to: [email],
+            subject: "Reset Your HandyHub PRO Password",
+            html: htmlContent,
+          }),
+        });
+        resendData = await resendRes.json();
+      }
+
       if (resendRes.ok) {
         console.log(`[Resend API Success]: Password reset email delivered to ${email} (ID: ${resendData.id})`);
         return;
