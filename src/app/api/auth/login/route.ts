@@ -76,13 +76,13 @@ export async function POST(request: Request) {
       return response;
     }
 
-    // 2. Query Database User
+    // 2. Query Database User (case-insensitive email lookup)
     let dbUser = null;
     try {
       dbUser = await prisma.user.findFirst({
         where: {
           OR: [
-            { email: cleanEmail },
+            { email: { equals: cleanEmail, mode: "insensitive" } },
             { phone: email.trim() },
           ],
         },
@@ -94,9 +94,10 @@ export async function POST(request: Request) {
 
     if (dbUser) {
       const isGoogleAccount = !dbUser.password || dbUser.password.startsWith("google_oauth_");
+      const cleanPassword = password.trim();
 
       if (isGoogleAccount) {
-        const newHash = await hash(password, 10);
+        const newHash = await hash(cleanPassword, 10);
         dbUser = await prisma.user.update({
           where: { id: dbUser.id },
           data: { password: newHash, isVerified: true },
@@ -120,7 +121,10 @@ export async function POST(request: Request) {
 
       let isValid = false;
       try {
-        isValid = await compare(password, dbUser.password);
+        isValid = await compare(cleanPassword, dbUser.password);
+        if (!isValid) {
+          isValid = await compare(password, dbUser.password);
+        }
       } catch (compareErr) {
         console.error("[Login Compare Error]:", compareErr);
       }

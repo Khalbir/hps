@@ -50,9 +50,20 @@ function ResetPasswordForm() {
       }
 
       setSuccess(true);
+      if (data.user) {
+        localStorage.setItem("handyhub_user", JSON.stringify(data.user));
+        const sessionPayload = { authenticated: true, user: data.user, timestamp: Date.now() };
+        sessionStorage.setItem("handyhub_active_session", JSON.stringify(sessionPayload));
+        if (data.user.role === "PROFESSIONAL") {
+          localStorage.setItem("handyhub_pro_session", JSON.stringify(sessionPayload));
+        } else {
+          localStorage.setItem("handyhub_user_session", JSON.stringify(sessionPayload));
+        }
+      }
+
       setTimeout(() => {
-        router.push("/auth/login?reset=success");
-      }, 2500);
+        window.location.href = data.redirect || "/dashboard";
+      }, 1500);
     } catch {
       setError("An unexpected network error occurred. Please try again.");
     } finally {

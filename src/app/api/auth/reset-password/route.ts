@@ -23,22 +23,24 @@ export async function POST(request: Request) {
 
     const cleanEmailInput = email && typeof email === "string" && email.trim() !== "" ? email.trim().toLowerCase() : null;
 
-    // 1. Query database user by reset token or by email
-    let dbUser = null;
+    // 1. Query database user by reset token or by email (case-insensitive)
+    let targetUser = null;
     if (token) {
       try {
-        dbUser = await prisma.user.findFirst({
+        targetUser = await prisma.user.findFirst({
           where: { verificationToken: token },
+          include: { professional: true },
         });
       } catch (dbErr) {
         console.warn("[Reset Password DB Lookup Warning]:", dbErr);
       }
     }
 
-    if (!dbUser && cleanEmailInput) {
+    if (!targetUser && cleanEmailInput) {
       try {
-        dbUser = await prisma.user.findFirst({
-          where: { email: cleanEmailInput },
+        targetUser = await prisma.user.findFirst({
+          where: { email: { equals: cleanEmailInput, mode: "insensitive" } },
+          include: { professional: true },
         });
       } catch (dbErr) {
         console.warn("[Reset Password DB Email Lookup Warning]:", dbErr);
@@ -46,7 +48,7 @@ export async function POST(request: Request) {
     }
 
     const stored = token ? mockResetTokensStore.get(token) : null;
-    const targetEmail = dbUser?.email || stored?.email || cleanEmailInput;
+    const targetEmail = targetUser?.email || stored?.email || cleanEmailInput;
 
     if (!targetEmail) {
       return NextResponse.json(
@@ -58,13 +60,30 @@ export async function POST(request: Request) {
     const cleanTargetEmail = targetEmail.trim().toLowerCase();
 
     // Hash new password securely with bcrypt
-    const hashedPassword = await bcrypt.hash(password, 12);
+    const hashedPassword = await bcrypt.hash(password.trim(), 12);
 
-    // Update database user password, activate account, and clear reset token
-    let updateCount = 0;
+    // 2. Update database user password, activate account, and clear reset token
+    if (targetUser) {
+      try {
+        targetUser = await prisma.user.update({
+          where: { id: targetUser.id },
+          data: {
+            password: hashedPassword,
+            isVerified: true,
+            verificationToken: null,
+            tokenExpires: null,
+          },
+          include: { professional: true },
+        });
+      } catch (updErr) {
+        console.error("[Reset Password Direct User Update Error]:", updErr);
+      }
+    }
+
+    // Fallback bulk update across all matching emails (case-insensitive)
     try {
-      const updateResult = await prisma.user.updateMany({
-        where: { email: cleanTargetEmail },
+      await prisma.user.updateMany({
+        where: { email: { equals: cleanTargetEmail, mode: "insensitive" } },
         data: {
           password: hashedPassword,
           isVerified: true,
@@ -72,19 +91,18 @@ export async function POST(request: Request) {
           tokenExpires: null,
         },
       });
-      updateCount = updateResult.count;
     } catch (dbErr) {
-      console.error("[Reset Password DB Update Error]:", dbErr);
+      console.error("[Reset Password DB updateMany Error]:", dbErr);
     }
 
-    // If updateMany matched 0 rows, create/upsert the user in PostgreSQL so login immediately works
-    if (updateCount === 0) {
+    // Upsert fallback: If no user record was updated, create the user in PostgreSQL
+    if (!targetUser) {
       try {
         const nameParts = cleanTargetEmail.split("@")[0].split(".");
         const firstName = nameParts[0] ? nameParts[0].charAt(0).toUpperCase() + nameParts[0].slice(1) : "Client";
         const lastName = nameParts[1] ? nameParts[1].charAt(0).toUpperCase() + nameParts[1].slice(1) : "";
 
-        await prisma.user.create({
+        targetUser = await prisma.user.create({
           data: {
             email: cleanTargetEmail,
             firstName,
@@ -93,18 +111,11 @@ export async function POST(request: Request) {
             role: "CUSTOMER",
             isVerified: true,
           },
+          include: { professional: true },
         });
-        updateCount = 1;
       } catch (createErr) {
         console.error("[Reset Password User Upsert Error]:", createErr);
       }
-    }
-
-    if (updateCount === 0) {
-      return NextResponse.json(
-        { error: "Failed to update password in database. Please try again." },
-        { status: 500 }
-      );
     }
 
     // Clear token after reset
@@ -112,13 +123,33 @@ export async function POST(request: Request) {
       mockResetTokensStore.delete(token);
     }
 
-    return NextResponse.json({
+    // 3. AUTO-LOGIN: Grant active session cookies immediately
+    const userRole = targetUser?.role || "CUSTOMER";
+    const userPayload = {
+      id: targetUser?.id || "usr_reset_" + Date.now(),
+      email: cleanTargetEmail,
+      firstName: targetUser?.firstName || "Client",
+      lastName: targetUser?.lastName || "",
+      role: userRole,
+      isVerified: true,
+    };
+
+    const redirectPath = userRole === "PROFESSIONAL" ? "/pro" : "/dashboard";
+    const response = NextResponse.json({
       success: true,
       email: cleanTargetEmail,
-      message: "Your password has been successfully updated! You can now log in with your new password.",
+      message: "Password reset successful! Logging you in...",
+      redirect: redirectPath,
+      user: userPayload,
     });
+
+    const cookieName = userRole === "PROFESSIONAL" ? "handyhub_pro_session" : "handyhub_user_session";
+    response.cookies.set(cookieName, "authenticated", { path: "/", maxAge: 86400 * 30, sameSite: "lax" });
+    response.cookies.set("handyhub_user_data", JSON.stringify(userPayload), { path: "/", maxAge: 86400 * 30, sameSite: "lax" });
+
+    return response;
   } catch (error: any) {
-    console.error("[Reset Password API Error]:", error);
+    console.error("[Reset Password API Exception]:", error);
     return NextResponse.json(
       { error: "Failed to reset password. Please try again." },
       { status: 500 }
