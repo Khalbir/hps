@@ -883,28 +883,13 @@ export default function DashboardPage() {
                 <div style={{ fontSize: 13, color: "#94A3B8", textTransform: "uppercase", letterSpacing: 1, fontWeight: "bold" }}>Available Escrow Wallet Balance</div>
                 <h1 className="h1" style={{ color: "#10B981", fontSize: 38, margin: "10px 0 16px" }}>₦{walletBalance.toLocaleString("en-NG")}</h1>
                 
-                <div style={{ display: "flex", gap: 10, justifyContent: "center", flexWrap: "wrap", marginBottom: 20 }}>
-                  <button onClick={() => setShowTopUpModal(true)} className="btn btn-primary btn-md" style={{ background: "#10B981", padding: "10px 24px", fontWeight: "bold" }}>
+                <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap", marginTop: 8 }}>
+                  <button onClick={() => setShowTopUpModal(true)} className="btn btn-primary btn-md" style={{ background: "#0EA5E9", padding: "12px 28px", fontWeight: "bold" }}>
                     + Top Up Escrow Wallet ➔
                   </button>
                   <button onClick={fetchCustomerDashboardData} className="btn btn-outline btn-md" style={{ color: "#94A3B8", borderColor: "#334155" }}>
-                    🔄 Sync Balance
+                    🔄 Refresh Balance
                   </button>
-                </div>
-
-                <div style={{ borderTop: "1px dashed #334155", paddingTop: 16, display: "flex", justifyContent: "center", gap: 8, flexWrap: "wrap" }}>
-                  <span style={{ fontSize: 12, color: "#64748B", alignSelf: "center" }}>Quick Top Up:</span>
-                  {[5000, 10000, 20000, 50000].map((preset) => (
-                    <button
-                      key={preset}
-                      type="button"
-                      disabled={topUpLoading}
-                      onClick={() => handleRealTimeTopUp(preset)}
-                      style={{ background: "#0F172A", border: "1px solid #334155", color: "#38BDF8", borderRadius: 20, padding: "4px 12px", fontSize: 12, fontWeight: "bold", cursor: "pointer" }}
-                    >
-                      +₦{preset.toLocaleString()}
-                    </button>
-                  ))}
                 </div>
               </div>
             </motion.div>
@@ -1321,24 +1306,21 @@ export default function DashboardPage() {
                 ))}
               </div>
 
-              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                <button
-                  type="button"
-                  disabled={topUpLoading}
-                  onClick={() => handleRealTimeTopUp(topUpAmount)}
-                  className="btn btn-primary btn-md"
-                  style={{ background: "#10B981", width: "100%", fontWeight: "bold", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}
-                >
-                  {topUpLoading ? "Crediting Wallet..." : `⚡ Instant Real-Time Top Up (₦${topUpAmount.toLocaleString()})`}
-                </button>
-
+              <div style={{ marginTop: 12 }}>
                 <button
                   type="submit"
                   disabled={topUpLoading}
-                  className="btn btn-outline btn-md"
-                  style={{ color: "#38BDF8", borderColor: "#38BDF8", width: "100%", fontWeight: "bold" }}
+                  className="btn btn-primary btn-md"
+                  style={{
+                    background: "#0EA5E9",
+                    width: "100%",
+                    fontWeight: "bold",
+                    padding: "12px",
+                    fontSize: "15px",
+                    borderRadius: "8px",
+                  }}
                 >
-                  💳 Proceed to Paystack Gateway ➔
+                  {topUpLoading ? "Initializing Paystack Checkout..." : `Proceed to Secure Paystack Gateway (₦${topUpAmount.toLocaleString("en-NG")}) ➔`}
                 </button>
               </div>
             </form>
