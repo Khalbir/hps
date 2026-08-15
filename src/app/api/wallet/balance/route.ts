@@ -12,8 +12,9 @@ export async function GET(request: Request) {
       user = await prisma.user.findUnique({ where: { id: userId } });
     }
     if (!user && email) {
+      const cleanEmail = email.trim();
       user = await prisma.user.findFirst({
-        where: { email: { equals: email.trim(), mode: "insensitive" } },
+        where: { email: { equals: cleanEmail, mode: "insensitive" } },
       });
     }
 
@@ -40,31 +41,47 @@ export async function GET(request: Request) {
       });
     }
 
-    // Auto-reconcile balance from all successful top-ups for this user
+    // Auto-reconcile and re-link payments associated with this user's email
     try {
-      const topUpPayments = await prisma.payment.findMany({
+      const cleanEmail = user.email.toLowerCase().trim();
+
+      // Find all payments linked to user.id OR containing user's email in metadata
+      const userPayments = await prisma.payment.findMany({
         where: {
-          userId: user.id,
-          status: "SUCCESS",
           OR: [
-            { bookingId: { contains: "TOPUP" } },
-            { reference: { contains: "TOPUP" } },
+            { userId: user.id },
+            { metadata: { contains: cleanEmail } },
           ],
         },
       });
 
-      const totalTopUps = topUpPayments.reduce((acc, p) => acc + p.amount, 0);
-      if (totalTopUps > wallet.balance) {
+      let totalTopUpAmount = 0;
+      for (const p of userPayments) {
+        // Re-link payment to real user ID if unlinked or dummy
+        if (p.userId !== user.id) {
+          await prisma.payment.update({
+            where: { id: p.id },
+            data: { userId: user.id },
+          }).catch(() => {});
+        }
+
+        const isTopUp = p.bookingId?.includes("TOPUP") || p.reference?.includes("TOPUP");
+        if (isTopUp && p.status === "SUCCESS") {
+          totalTopUpAmount += p.amount;
+        }
+      }
+
+      if (totalTopUpAmount > wallet.balance) {
         wallet = await prisma.wallet.update({
           where: { id: wallet.id },
-          data: { balance: totalTopUps },
+          data: { balance: totalTopUpAmount },
         });
       }
     } catch (reconcileErr) {
       console.warn("[Wallet Balance Reconciliation Warning]:", reconcileErr);
     }
 
-    // Fetch payment top-up history
+    // Fetch all transactions for history display
     const payments = await prisma.payment.findMany({
       where: { userId: user.id },
       orderBy: { createdAt: "desc" },

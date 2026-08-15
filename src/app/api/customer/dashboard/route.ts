@@ -7,17 +7,6 @@ export async function GET(request: Request) {
     const userId = searchParams.get("userId");
     const email = searchParams.get("email");
 
-    if (!userId && !email) {
-      return NextResponse.json({
-        success: true,
-        user: { firstName: "", lastName: "", email: email || "", phone: "" },
-        walletBalance: 0,
-        activeDispatchesCount: 0,
-        totalBookingsCount: 0,
-        bookings: [],
-      });
-    }
-
     let user = null;
     if (userId) {
       user = await prisma.user.findUnique({ where: { id: userId } });
@@ -37,7 +26,7 @@ export async function GET(request: Request) {
       });
     }
 
-    const [wallet, dbBookings] = await Promise.all([
+    let [wallet, dbBookings] = await Promise.all([
       prisma.wallet.findUnique({ where: { userId: user.id } }),
       prisma.booking.findMany({
         where: { customerId: user.id },
@@ -49,6 +38,39 @@ export async function GET(request: Request) {
       }),
     ]);
 
+    if (!wallet) {
+      wallet = await prisma.wallet.create({ data: { userId: user.id, balance: 0 } }).catch(() => null);
+    }
+
+    // Auto-reconcile balance from Payment table
+    let realBalance = wallet?.balance || 0;
+    try {
+      const cleanEmail = user.email.toLowerCase().trim();
+      const topUpPayments = await prisma.payment.findMany({
+        where: {
+          OR: [
+            { userId: user.id },
+            { metadata: { contains: cleanEmail } },
+          ],
+          status: "SUCCESS",
+        },
+      });
+
+      const sumTopUps = topUpPayments.reduce((sum, p) => {
+        const isTopUp = p.bookingId?.includes("TOPUP") || p.reference?.includes("TOPUP");
+        return isTopUp ? sum + p.amount : sum;
+      }, 0);
+
+      if (sumTopUps > realBalance) {
+        realBalance = sumTopUps;
+        if (wallet?.id) {
+          await prisma.wallet.update({ where: { id: wallet.id }, data: { balance: sumTopUps } }).catch(() => {});
+        }
+      }
+    } catch (reconcileErr) {
+      console.warn("[Customer Dashboard Reconciliation Warning]:", reconcileErr);
+    }
+
     const formattedBookings = dbBookings.map((b) => ({
       id: b.reference,
       service: b.service?.name || "Service Dispatch",
@@ -58,27 +80,25 @@ export async function GET(request: Request) {
       pro: b.professional?.user ? `${b.professional.user.firstName} ${b.professional.user.lastName.charAt(0)}.` : "Unassigned",
     }));
 
-    const activeDispatchesCount = dbBookings.filter((b) =>
-      ["PENDING", "ASSIGNED", "ACCEPTED", "EN_ROUTE", "WORK_IN_PROGRESS"].includes(b.status)
-    ).length;
+    const activeDispatchesCount = dbBookings.filter((b) => ["PENDING", "ACCEPTED", "IN_PROGRESS"].includes(b.status)).length;
 
     return NextResponse.json({
       success: true,
       user: {
         id: user.id,
-        firstName: user.firstName || "Valued Client",
-        lastName: user.lastName || "",
+        firstName: user.firstName,
+        lastName: user.lastName,
         email: user.email,
-        phone: user.phone || "Not Provided",
-        role: user.role,
+        phone: user.phone,
+        secondaryAddress: user.secondaryAddress || "",
       },
-      walletBalance: wallet?.balance || 0,
+      walletBalance: realBalance,
       activeDispatchesCount,
       totalBookingsCount: dbBookings.length,
       bookings: formattedBookings,
     });
   } catch (error) {
-    console.error("[Customer Dashboard GET Error]:", error);
+    console.error("[Customer Dashboard API Error]:", error);
     return NextResponse.json({ error: "Failed to fetch customer dashboard data" }, { status: 500 });
   }
 }

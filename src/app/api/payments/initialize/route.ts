@@ -17,10 +17,12 @@ export async function POST(request: Request) {
 
     const cleanEmail = email.toLowerCase().trim();
 
-    // AUTO-RESOLUTION: Ensure customer exists in PostgreSQL database
+    // AUTO-RESOLUTION: Case-insensitive lookup for customer in PostgreSQL database
     let dbUser: any = null;
     try {
-      dbUser = await prisma.user.findUnique({ where: { email: cleanEmail } });
+      dbUser = await prisma.user.findFirst({
+        where: { email: { equals: cleanEmail, mode: "insensitive" } },
+      });
     } catch (dbErr) {
       console.warn("[Payment Init DB Warning]:", dbErr);
     }
@@ -46,16 +48,14 @@ export async function POST(request: Request) {
         });
         await prisma.wallet.create({ data: { userId: dbUser.id, balance: 0 } }).catch(() => {});
       } catch (createErr) {
-        dbUser = {
-          id: `usr_${Date.now()}`,
-          email: cleanEmail,
-          firstName: customerName || "Client",
-          lastName: "",
-          phone: customerPhone || null,
-        };
+        // Fallback search again case-insensitively in case of race condition
+        dbUser = await prisma.user.findFirst({
+          where: { email: { equals: cleanEmail, mode: "insensitive" } },
+        });
       }
     }
 
+    const userId = dbUser?.id || `usr_${Date.now()}`;
     const reference = `HHP_${bookingId || "TOPUP"}_${Date.now()}`;
     const origin = request.headers.get("origin") || request.headers.get("referer")?.replace(/\/$/, "") || process.env.APP_URL || process.env.NEXT_PUBLIC_APP_URL || "https://handyhubpro.ng";
     const callbackUrl = `${origin}/dashboard/wallet?status=success&reference=${reference}`;
@@ -66,9 +66,9 @@ export async function POST(request: Request) {
       amountNgn: Number(amountNgn),
       reference,
       callbackUrl,
-      customerName: customerName || `${dbUser.firstName} ${dbUser.lastName}`,
-      customerPhone: customerPhone || dbUser.phone || undefined,
-      metadata: { bookingId, email: cleanEmail, userId: dbUser.id },
+      customerName: customerName || (dbUser ? `${dbUser.firstName} ${dbUser.lastName}` : "HandyHub Client"),
+      customerPhone: customerPhone || dbUser?.phone || undefined,
+      metadata: { bookingId, email: cleanEmail, userId },
     });
 
     return NextResponse.json({
