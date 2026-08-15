@@ -192,8 +192,9 @@ export async function PUT(request: Request) {
 
     return NextResponse.json({
       success: true,
-      message: "Profile updated successfully! A confirmation email has been sent to your inbox. 🎉",
+      message: `Profile updated successfully! A confirmation email has been sent to ${cleanEmail}. 🎉`,
       user: updatedUser,
+      emailSentTo: cleanEmail,
     });
   } catch (error) {
     console.error("[User Profile PUT Error]:", error);

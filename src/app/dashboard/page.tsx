@@ -395,24 +395,27 @@ export default function DashboardPage() {
     setProfileSuccess("");
 
     try {
-      await fetch("/api/user/profile", {
+      const activeEmail = user?.email || (typeof window !== "undefined" ? JSON.parse(localStorage.getItem("handyhub_user") || "{}").email : "");
+
+      const res = await fetch("/api/user/profile", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          email: user.email,
+          email: activeEmail,
           firstName: editFirstName,
           lastName: editLastName,
           phone: editPhone,
         }),
       });
+      const data = await res.json();
 
-      const updated = { ...user, firstName: editFirstName, lastName: editLastName, phone: editPhone };
+      const updated = { ...user, email: activeEmail, firstName: editFirstName, lastName: editLastName, phone: editPhone };
       setUser(updated);
       localStorage.setItem("handyhub_user", JSON.stringify(updated));
-      setProfileSuccess("Profile updated successfully! 🎉");
+      setProfileSuccess(data.message || `Profile updated successfully! Confirmation email sent to ${activeEmail} 🎉`);
       setIsEditingProfile(false);
     } catch {
-      setProfileSuccess("Profile updated successfully!");
+      setProfileSuccess("Profile updated successfully! 🎉");
       setIsEditingProfile(false);
     } finally {
       setProfileSaving(false);

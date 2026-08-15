@@ -38,9 +38,8 @@ async function sendOutboundEmail({
     const candidateSenders = [
       "HandyHub PRO Solutions <no-reply@support.handyhubpro.ng>",
       "HandyHub PRO Solutions <support@support.handyhubpro.ng>",
-      process.env.RESEND_FROM || "",
       "HandyHub PRO <onboarding@resend.dev>",
-    ].filter((s, idx, arr) => Boolean(s) && arr.indexOf(s) === idx);
+    ];
 
     for (const fromSender of candidateSenders) {
       try {
@@ -62,7 +61,7 @@ async function sendOutboundEmail({
 
         if (resendRes.ok && resendData.id) {
           console.log(`[Resend API Success] (${fromSender}): Delivered to ${to} (ID: ${resendData.id})`);
-          return { success: true, message: `Delivered via Resend (${fromSender})` };
+          return { success: true, message: `Delivered via Resend to ${to}` };
         } else {
           console.warn(`[Resend API Attempt Failed] (${fromSender}):`, resendData);
         }
