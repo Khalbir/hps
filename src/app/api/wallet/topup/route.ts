@@ -11,11 +11,6 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "User email is required for top-up" }, { status: 400 });
     }
 
-    const numericAmount = Number(amount);
-    if (isNaN(numericAmount) || numericAmount < 500) {
-      return NextResponse.json({ error: "Minimum top-up amount is NGN ₦500" }, { status: 400 });
-    }
-
     const cleanEmail = email.toLowerCase().trim();
     let user = await prisma.user.findFirst({
       where: { email: { equals: cleanEmail, mode: "insensitive" } },
@@ -34,6 +29,36 @@ export async function POST(request: Request) {
       });
     }
 
+    let numericAmount = Number(amount);
+
+    // If payment reference is provided, inspect Payment table for recorded amount & update status
+    if (paymentReference) {
+      try {
+        const existingPayment = await prisma.payment.findFirst({
+          where: {
+            OR: [
+              { reference: paymentReference },
+              { bookingId: paymentReference },
+            ],
+          },
+        });
+
+        if (existingPayment) {
+          if (existingPayment.amount) numericAmount = existingPayment.amount;
+          await prisma.payment.update({
+            where: { id: existingPayment.id },
+            data: { status: "SUCCESS", userId: user.id },
+          });
+        }
+      } catch (payErr) {
+        console.warn("[Wallet TopUp Reference Lookup Warning]:", payErr);
+      }
+    }
+
+    if (isNaN(numericAmount) || numericAmount < 500) {
+      return NextResponse.json({ error: "Minimum top-up amount is NGN ₦500" }, { status: 400 });
+    }
+
     // Upsert Wallet record and increment balance in real time
     const wallet = await prisma.wallet.upsert({
       where: { userId: user.id },
@@ -49,10 +74,11 @@ export async function POST(request: Request) {
 
     const reference = paymentReference || `TOPUP-${Date.now()}`;
 
-    // Record Payment entry in PostgreSQL
+    // Record Payment entry in PostgreSQL if not already present
     try {
-      await prisma.payment.create({
-        data: {
+      await prisma.payment.upsert({
+        where: { reference },
+        create: {
           reference,
           bookingId: `TOPUP-${Date.now()}`,
           userId: user.id,
@@ -61,6 +87,10 @@ export async function POST(request: Request) {
           provider,
           status: "SUCCESS",
           metadata: JSON.stringify({ description: "Wallet Escrow Top-Up", email: cleanEmail }),
+        },
+        update: {
+          status: "SUCCESS",
+          userId: user.id,
         },
       });
     } catch (dbErr) {

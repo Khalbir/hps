@@ -14,9 +14,17 @@ export async function GET(request: Request) {
       return NextResponse.redirect(`${baseUrl}/dashboard?payment=failed&reason=no_reference`);
     }
 
-    // Handle Top-Up verification
-    if (reference.startsWith("TOPUP-")) {
-      const payment = await prisma.payment.findUnique({ where: { reference } });
+    // Handle Top-Up verification (matches both HHP_TOPUP- and TOPUP-)
+    if (reference.includes("TOPUP")) {
+      let payment = await prisma.payment.findFirst({
+        where: {
+          OR: [
+            { reference },
+            { bookingId: reference },
+          ],
+        },
+      });
+
       if (payment && payment.userId) {
         await prisma.wallet.upsert({
           where: { userId: payment.userId },
@@ -29,20 +37,20 @@ export async function GET(request: Request) {
           data: { status: "SUCCESS" },
         });
 
-        return NextResponse.redirect(`${baseUrl}/dashboard?payment=success&topup=SUCCESS&amount=${payment.amount}&reference=${reference}`);
+        return NextResponse.redirect(`${baseUrl}/dashboard/wallet?status=success&topup=SUCCESS&amount=${payment.amount}&reference=${reference}`);
       }
     }
 
     const verification = await verifyAndRecordPayment(reference, provider);
     if (verification.status === "SUCCESS") {
-      return NextResponse.redirect(`${baseUrl}/dashboard?payment=success&amount=${verification.amountNgn}&reference=${reference}`);
+      return NextResponse.redirect(`${baseUrl}/dashboard/wallet?status=success&amount=${verification.amountNgn}&reference=${reference}`);
     } else {
-      return NextResponse.redirect(`${baseUrl}/dashboard?payment=failed&reference=${reference}`);
+      return NextResponse.redirect(`${baseUrl}/dashboard/wallet?status=failed&reference=${reference}`);
     }
   } catch (error) {
     console.error("[Payment Verify GET API Error]:", error);
     const baseUrl = process.env.APP_URL || process.env.NEXT_PUBLIC_APP_URL || "https://handyhubpro.ng";
-    return NextResponse.redirect(`${baseUrl}/dashboard?payment=error`);
+    return NextResponse.redirect(`${baseUrl}/dashboard/wallet?status=error`);
   }
 }
 

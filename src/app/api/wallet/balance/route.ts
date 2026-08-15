@@ -40,6 +40,30 @@ export async function GET(request: Request) {
       });
     }
 
+    // Auto-reconcile balance from all successful top-ups for this user
+    try {
+      const topUpPayments = await prisma.payment.findMany({
+        where: {
+          userId: user.id,
+          status: "SUCCESS",
+          OR: [
+            { bookingId: { contains: "TOPUP" } },
+            { reference: { contains: "TOPUP" } },
+          ],
+        },
+      });
+
+      const totalTopUps = topUpPayments.reduce((acc, p) => acc + p.amount, 0);
+      if (totalTopUps > wallet.balance) {
+        wallet = await prisma.wallet.update({
+          where: { id: wallet.id },
+          data: { balance: totalTopUps },
+        });
+      }
+    } catch (reconcileErr) {
+      console.warn("[Wallet Balance Reconciliation Warning]:", reconcileErr);
+    }
+
     // Fetch payment top-up history
     const payments = await prisma.payment.findMany({
       where: { userId: user.id },
@@ -50,9 +74,9 @@ export async function GET(request: Request) {
     const history = payments.map((p) => ({
       id: p.id,
       reference: p.reference,
-      type: p.bookingId?.startsWith("TOPUP-") ? "WALLET_TOPUP" : "SERVICE_PAYMENT",
+      type: p.bookingId?.includes("TOPUP") || p.reference.includes("TOPUP") ? "WALLET_TOPUP" : "SERVICE_PAYMENT",
       amount: p.amount,
-      description: p.bookingId?.startsWith("TOPUP-")
+      description: p.bookingId?.includes("TOPUP") || p.reference.includes("TOPUP")
         ? `Wallet Top-Up via ${p.provider}`
         : `Service Payment (${p.reference})`,
       status: p.status,
