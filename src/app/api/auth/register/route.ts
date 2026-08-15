@@ -39,56 +39,72 @@ export async function POST(request: Request) {
     // 1. Check if account already exists in database
     let existingUser = null;
     try {
-      existingUser = await prisma.user.findUnique({
-        where: { email: cleanEmail },
+      existingUser = await prisma.user.findFirst({
+        where: {
+          OR: [
+            { email: cleanEmail },
+            ...(cleanPhone ? [{ phone: cleanPhone }] : []),
+          ],
+        },
       });
-    } catch (err) {}
+    } catch (err) {
+      console.warn("[Register DB Find Error]:", err);
+    }
 
     if (existingUser) {
-      if (existingUser.isVerified) {
+      if (existingUser.email === cleanEmail) {
+        if (existingUser.isVerified) {
+          return NextResponse.json(
+            { error: "An account with this email address already exists. Please log in to your account or reset your password." },
+            { status: 400 }
+          );
+        } else {
+          // Account exists but is unverified; update verification token and password, then resend email
+          const newOtpCode = Math.floor(100000 + Math.random() * 900000).toString();
+          const newExpires = new Date(Date.now() + 24 * 60 * 60 * 1000);
+          
+          try {
+            await prisma.user.update({
+              where: { id: existingUser.id },
+              data: {
+                firstName: firstName.trim(),
+                lastName: lastName.trim(),
+                password: hashedPassword,
+                phone: cleanPhone || existingUser.phone,
+                role: userRole,
+                verificationToken: newOtpCode,
+                tokenExpires: newExpires,
+              },
+            });
+          } catch (updErr) {
+            console.error("[Register Update Unverified User Error]:", updErr);
+          }
+
+          sendConfirmationEmail({
+            email: existingUser.email,
+            name: `${firstName.trim()} ${lastName.trim()}`,
+            role: userRole,
+            token: newOtpCode,
+          }).catch(() => {});
+
+          return NextResponse.json({
+            success: true,
+            unverified: true,
+            message: "An unverified account exists for this email. We've sent a new confirmation code to your inbox.",
+            redirect: `/auth/verify-email?email=${encodeURIComponent(cleanEmail)}&role=${encodeURIComponent(userRole)}`,
+            email: cleanEmail,
+            role: userRole,
+          });
+        }
+      } else if (cleanPhone && existingUser.phone === cleanPhone) {
         return NextResponse.json(
-          { error: "An account with this email address already exists. Please log in to your account or reset your password." },
+          { error: "An account with this phone number already exists. Please use a different phone number or sign in." },
           { status: 400 }
         );
-      } else {
-        // Account exists but is unverified; update verification token and resend email
-        const newOtpCode = Math.floor(100000 + Math.random() * 900000).toString();
-        const newExpires = new Date(Date.now() + 24 * 60 * 60 * 1000);
-        
-        try {
-          await prisma.user.update({
-            where: { id: existingUser.id },
-            data: {
-              firstName: firstName.trim(),
-              lastName: lastName.trim(),
-              password: hashedPassword,
-              phone: cleanPhone || existingUser.phone,
-              role: userRole,
-              verificationToken: newOtpCode,
-              tokenExpires: newExpires,
-            },
-          });
-        } catch {}
-
-        sendConfirmationEmail({
-          email: existingUser.email,
-          name: `${firstName.trim()} ${lastName.trim()}`,
-          role: userRole,
-          token: newOtpCode,
-        }).catch(() => {});
-
-        return NextResponse.json({
-          success: true,
-          unverified: true,
-          message: "An unverified account exists for this email. We've sent a new confirmation code to your inbox.",
-          redirect: `/auth/verify-email?email=${encodeURIComponent(cleanEmail)}&role=${encodeURIComponent(userRole)}`,
-          email: cleanEmail,
-          role: userRole,
-        });
       }
     }
 
-    // 2. Create new user record with isVerified: false
+    // 2. Create new user record in PostgreSQL database
     let user;
     try {
       user = await prisma.user.create({
@@ -104,17 +120,37 @@ export async function POST(request: Request) {
           tokenExpires,
         },
       });
-    } catch (dbErr) {
-      console.warn("[Register DB Fallback]:", dbErr);
-      user = {
-        id: `usr_${Date.now()}`,
-        firstName: firstName.trim(),
-        lastName: lastName.trim(),
-        email: cleanEmail,
-        phone: cleanPhone,
-        role: userRole,
-        isVerified: false,
-      };
+    } catch (dbErr: any) {
+      console.error("[Register DB Create Error]:", dbErr);
+      // If creation failed due to phone unique constraint, retry without phone
+      if (cleanPhone && (dbErr.code === "P2002" || String(dbErr).includes("phone"))) {
+        try {
+          user = await prisma.user.create({
+            data: {
+              firstName: firstName.trim(),
+              lastName: lastName.trim(),
+              email: cleanEmail,
+              phone: null,
+              password: hashedPassword,
+              role: userRole,
+              isVerified: false,
+              verificationToken: otpCode,
+              tokenExpires,
+            },
+          });
+        } catch (retryErr) {
+          console.error("[Register DB Retry Error]:", retryErr);
+          return NextResponse.json(
+            { error: "Registration failed. An account with this email address may already exist." },
+            { status: 400 }
+          );
+        }
+      } else {
+        return NextResponse.json(
+          { error: "Unable to create account. Please check your details and try again." },
+          { status: 500 }
+        );
+      }
     }
 
     // Create Escrow Wallet
