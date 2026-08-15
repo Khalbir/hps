@@ -402,9 +402,10 @@ export async function sendProfileUpdateEmail({
     </html>
   `;
 
+  // 1. Check Resend API first
   if (process.env.RESEND_API_KEY) {
     try {
-      let res = await fetch("https://api.resend.com/emails", {
+      let resendRes = await fetch("https://api.resend.com/emails", {
         method: "POST",
         headers: {
           "Authorization": `Bearer ${process.env.RESEND_API_KEY}`,
@@ -418,8 +419,11 @@ export async function sendProfileUpdateEmail({
         }),
       });
 
-      if (!res.ok && primaryFrom !== fallbackFrom) {
-        await fetch("https://api.resend.com/emails", {
+      let resendData = await resendRes.json();
+
+      if (!resendRes.ok && primaryFrom !== fallbackFrom) {
+        console.warn(`[Resend Primary Sender Failed - Profile Update] (${primaryFrom}):`, resendData, `Retrying with ${fallbackFrom}...`);
+        resendRes = await fetch("https://api.resend.com/emails", {
           method: "POST",
           headers: {
             "Authorization": `Bearer ${process.env.RESEND_API_KEY}`,
@@ -432,9 +436,57 @@ export async function sendProfileUpdateEmail({
             html: htmlContent,
           }),
         });
+        resendData = await resendRes.json();
+      }
+
+      if (resendRes.ok) {
+        console.log(`[Resend API Success]: Profile update email delivered to ${email} (ID: ${resendData.id})`);
+        return;
+      } else {
+        console.warn("[Resend API Error - Profile Update]:", resendData);
       }
     } catch (err) {
-      console.warn("[Profile Update Email Error]:", err);
+      console.warn("[Profile Update Email Resend Exception]:", err);
     }
+  }
+
+  // 2. Nodemailer SMTP Fallback
+  const smtpUser = process.env.SMTP_USER || "";
+  const smtpPass = process.env.SMTP_PASS || "";
+
+  if (!smtpUser || !smtpPass) {
+    console.log(`✉️ [PROFILE UPDATE EMAIL SIMULATION TO ${email}]: Updated ${fieldList}`);
+    return;
+  }
+
+  const smtpHost = process.env.SMTP_HOST || "smtp.gmail.com";
+  const smtpPort = Number(process.env.SMTP_PORT) || 465;
+
+  const isGmail = smtpHost.includes("gmail");
+  const transporter = nodemailer.createTransport(
+    isGmail
+      ? {
+          service: "gmail",
+          auth: { user: smtpUser, pass: smtpPass.replace(/\s+/g, "") },
+        }
+      : {
+          host: smtpHost,
+          port: smtpPort,
+          secure: smtpPort === 465,
+          auth: { user: smtpUser, pass: smtpPass },
+          tls: { rejectUnauthorized: false },
+        }
+  );
+
+  try {
+    await transporter.sendMail({
+      from: process.env.SMTP_FROM || `"HandyHub PRO Solutions" <support@handyhubpro.ng>`,
+      to: email,
+      subject: "Your HandyHub PRO Profile Details Were Updated",
+      html: htmlContent,
+    });
+    console.log(`[SMTP Email Delivered]: Profile update email sent to ${email}`);
+  } catch (err) {
+    console.error("[Profile Update SMTP Email Error]:", err);
   }
 }

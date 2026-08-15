@@ -180,13 +180,15 @@ export async function PUT(request: Request) {
     if (updateData.permanentAddress) updatedFieldsList.push("Permanent Home Address");
 
     // Trigger Outbound Email Confirmation Message
-    sendProfileUpdateEmail({
-      email: cleanEmail,
-      name: `${updatedUser.firstName || "Valued"} ${updatedUser.lastName || "Client"}`,
-      updatedFields: updatedFieldsList,
-    }).catch((err) => {
-      console.warn("[Profile Update Email Async Warning]:", err);
-    });
+    try {
+      await sendProfileUpdateEmail({
+        email: cleanEmail,
+        name: `${updatedUser.firstName || "Valued"} ${updatedUser.lastName || "Client"}`,
+        updatedFields: updatedFieldsList,
+      });
+    } catch (emailErr) {
+      console.warn("[Profile Update Email Warning]:", emailErr);
+    }
 
     return NextResponse.json({
       success: true,
