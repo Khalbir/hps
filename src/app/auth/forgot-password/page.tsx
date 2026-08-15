@@ -100,7 +100,10 @@ export default function ForgotPasswordPage() {
               <div className={styles.inputWrapper}>
                 <Mail size={18} className={styles.inputIcon} />
                 <input
+                  id="email"
+                  name="email"
                   type="email"
+                  autoComplete="email"
                   required
                   placeholder="name@example.com"
                   value={email}

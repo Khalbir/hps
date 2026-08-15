@@ -104,7 +104,10 @@ function ResetPasswordForm() {
               <div className={styles.inputWrapper}>
                 <Lock size={18} className={styles.inputIcon} />
                 <input
+                  id="password"
+                  name="password"
                   type={showPassword ? "text" : "password"}
+                  autoComplete="new-password"
                   className={styles.input}
                   placeholder="At least 6 characters"
                   value={password}
@@ -132,7 +135,10 @@ function ResetPasswordForm() {
               <div className={styles.inputWrapper}>
                 <Lock size={18} className={styles.inputIcon} />
                 <input
+                  id="confirmPassword"
+                  name="confirmPassword"
                   type={showConfirmPassword ? "text" : "password"}
+                  autoComplete="new-password"
                   className={styles.input}
                   placeholder="Re-enter new password"
                   value={confirmPassword}

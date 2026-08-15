@@ -127,7 +127,10 @@ export default function ContactPage() {
                   <div>
                     <label style={{ fontSize: "var(--fs-sm)", fontWeight: "bold", display: "block", marginBottom: 4 }}>Full Name</label>
                     <input
+                      id="name"
+                      name="name"
                       type="text"
+                      autoComplete="name"
                       required
                       placeholder="e.g. Amina Ibrahim"
                       value={formData.name}
@@ -138,7 +141,10 @@ export default function ContactPage() {
                   <div>
                     <label style={{ fontSize: "var(--fs-sm)", fontWeight: "bold", display: "block", marginBottom: 4 }}>Email Address</label>
                     <input
+                      id="email"
+                      name="email"
                       type="email"
+                      autoComplete="email"
                       required
                       placeholder="name@example.com"
                       value={formData.email}
@@ -151,7 +157,10 @@ export default function ContactPage() {
                 <div>
                   <label style={{ fontSize: "var(--fs-sm)", fontWeight: "bold", display: "block", marginBottom: 4 }}>Phone Number</label>
                   <input
-                    type="text"
+                    id="phone"
+                    name="tel"
+                    type="tel"
+                    autoComplete="tel"
                     placeholder="+234 812 222 2936"
                     value={formData.phone}
                     onChange={(e) => setFormData({ ...formData, phone: e.target.value })}

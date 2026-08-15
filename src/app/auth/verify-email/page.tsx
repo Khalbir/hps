@@ -175,7 +175,11 @@ function VerifyEmailContent() {
               Enter 6-Digit Confirmation Code
             </label>
             <input
+              id="otpCode"
+              name="one-time-code"
               type="text"
+              inputMode="numeric"
+              autoComplete="one-time-code"
               maxLength={6}
               placeholder="e.g. 839201"
               value={otpCode}
