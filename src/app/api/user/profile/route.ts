@@ -85,9 +85,16 @@ export async function PUT(request: Request) {
     }
 
     const updateData: any = {};
-    // First name and last name are locked post-registration for identity verification & fraud prevention
-    if (!existingUser.firstName && firstName !== undefined) updateData.firstName = firstName.trim();
-    if (!existingUser.lastName && lastName !== undefined) updateData.lastName = lastName.trim();
+    const defaultNames = ["Client", "Valued", "Test", "User", "Customer"];
+    const isFirstNameDefault = !existingUser.firstName || defaultNames.includes(existingUser.firstName.trim());
+    const isLastNameDefault = !existingUser.lastName || defaultNames.includes(existingUser.lastName.trim());
+
+    if ((isFirstNameDefault || !existingUser.firstName) && firstName !== undefined && firstName.trim() !== "") {
+      updateData.firstName = firstName.trim();
+    }
+    if ((isLastNameDefault || !existingUser.lastName) && lastName !== undefined && lastName.trim() !== "") {
+      updateData.lastName = lastName.trim();
+    }
     if (phone !== undefined) updateData.phone = phone.trim();
 
     // Check permanent address updates

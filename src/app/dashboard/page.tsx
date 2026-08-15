@@ -771,43 +771,74 @@ export default function DashboardPage() {
                 )}
 
                 <form onSubmit={handleProfileSave} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-                  <div>
-                    <label style={{ fontSize: 13, fontWeight: "bold", display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-                      <span>First Name</span>
-                      <span style={{ fontSize: 11, color: "#64748B", fontWeight: "normal" }}>🔒 Locked (Registered Identity Name)</span>
-                    </label>
-                    <input
-                      type="text"
-                      value={editFirstName}
-                      readOnly
-                      disabled
-                      style={{ width: "100%", padding: 10, borderRadius: 8, border: "1px solid var(--border-primary)", background: "rgba(148,163,184,0.12)", color: "var(--text-secondary)", cursor: "not-allowed" }}
-                    />
-                  </div>
-                  <div>
-                    <label style={{ fontSize: 13, fontWeight: "bold", display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-                      <span>Last Name</span>
-                      <span style={{ fontSize: 11, color: "#64748B", fontWeight: "normal" }}>🔒 Locked (Registered Identity Name)</span>
-                    </label>
-                    <input
-                      type="text"
-                      value={editLastName}
-                      readOnly
-                      disabled
-                      style={{ width: "100%", padding: 10, borderRadius: 8, border: "1px solid var(--border-primary)", background: "rgba(148,163,184,0.12)", color: "var(--text-secondary)", cursor: "not-allowed" }}
-                    />
-                  </div>
+                  {(() => {
+                    const defaultNames = ["Client", "Valued", "Test", "User", "Customer"];
+                    const isFirstNameEditable = !editFirstName || defaultNames.includes(editFirstName.trim());
+                    const isLastNameEditable = !editLastName || defaultNames.includes(editLastName.trim());
+
+                    return (
+                      <>
+                        <div>
+                          <label style={{ fontSize: 13, fontWeight: "bold", display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+                            <span>First Name</span>
+                            {!isFirstNameEditable && <span style={{ fontSize: 11, color: "#64748B", fontWeight: "normal" }}>🔒 Locked (Registered Identity Name)</span>}
+                          </label>
+                          <input
+                            type="text"
+                            value={editFirstName}
+                            onChange={(e) => setEditFirstName(e.target.value)}
+                            readOnly={!isFirstNameEditable}
+                            disabled={!isFirstNameEditable}
+                            placeholder="Enter your first name"
+                            style={{
+                              width: "100%",
+                              padding: 10,
+                              borderRadius: 8,
+                              border: "1px solid var(--border-primary)",
+                              background: isFirstNameEditable ? "var(--bg-tertiary)" : "rgba(148,163,184,0.12)",
+                              color: isFirstNameEditable ? "var(--text-primary)" : "var(--text-secondary)",
+                              cursor: isFirstNameEditable ? "text" : "not-allowed"
+                            }}
+                          />
+                        </div>
+                        <div>
+                          <label style={{ fontSize: 13, fontWeight: "bold", display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+                            <span>Last Name</span>
+                            {!isLastNameEditable && <span style={{ fontSize: 11, color: "#64748B", fontWeight: "normal" }}>🔒 Locked (Registered Identity Name)</span>}
+                          </label>
+                          <input
+                            type="text"
+                            value={editLastName}
+                            onChange={(e) => setEditLastName(e.target.value)}
+                            readOnly={!isLastNameEditable}
+                            disabled={!isLastNameEditable}
+                            placeholder="Enter your last name"
+                            style={{
+                              width: "100%",
+                              padding: 10,
+                              borderRadius: 8,
+                              border: "1px solid var(--border-primary)",
+                              background: isLastNameEditable ? "var(--bg-tertiary)" : "rgba(148,163,184,0.12)",
+                              color: isLastNameEditable ? "var(--text-primary)" : "var(--text-secondary)",
+                              cursor: isLastNameEditable ? "text" : "not-allowed"
+                            }}
+                          />
+                        </div>
+                      </>
+                    );
+                  })()}
                   <div>
                     <label style={{ fontSize: 13, fontWeight: "bold", display: "block", marginBottom: 4 }}>Phone Number</label>
                     <input
                       type="tel"
                       value={editPhone}
                       onChange={(e) => setEditPhone(e.target.value)}
+                      placeholder="+234 800 000 0000"
                       style={{ width: "100%", padding: 10, borderRadius: 8, border: "1px solid var(--border-primary)", background: "var(--bg-tertiary)", color: "var(--text-primary)" }}
                     />
                   </div>
                   <button type="submit" disabled={profileSaving} className="btn btn-primary btn-sm" style={{ background: "#0EA5E9", marginTop: 8 }}>
-                    {profileSaving ? "Saving..." : "Save Phone Number Updates ➔"}
+                    {profileSaving ? "Saving..." : "Save Profile Updates ➔"}
                   </button>
                 </form>
               </div>
