@@ -122,33 +122,50 @@ export async function POST(request: Request) {
       });
     } catch (dbErr: any) {
       console.error("[Register DB Create Error]:", dbErr);
-      // If creation failed due to phone unique constraint, retry without phone
-      if (cleanPhone && (dbErr.code === "P2002" || String(dbErr).includes("phone"))) {
-        try {
-          user = await prisma.user.create({
-            data: {
-              firstName: firstName.trim(),
-              lastName: lastName.trim(),
-              email: cleanEmail,
-              phone: null,
-              password: hashedPassword,
-              role: userRole,
-              isVerified: false,
-              verificationToken: otpCode,
-              tokenExpires,
-            },
-          });
-        } catch (retryErr) {
-          console.error("[Register DB Retry Error]:", retryErr);
+      const isP2002 = dbErr?.code === "P2002";
+      const errTargets = Array.isArray(dbErr?.meta?.target) ? dbErr.meta.target.join(" ") : String(dbErr);
+
+      if (isP2002 || errTargets.includes("email") || errTargets.includes("phone")) {
+        // If email constraint failed or email exists
+        if (errTargets.includes("email")) {
           return NextResponse.json(
-            { error: "Registration failed. An account with this email address may already exist." },
+            { error: `An account with ${cleanEmail} already exists. Please click 'Log In' to sign into your account or reset your password.` },
+            { status: 400 }
+          );
+        }
+
+        // If phone constraint failed, retry without phone if phone was provided
+        if (cleanPhone && errTargets.includes("phone")) {
+          try {
+            user = await prisma.user.create({
+              data: {
+                firstName: firstName.trim(),
+                lastName: lastName.trim(),
+                email: cleanEmail,
+                phone: null,
+                password: hashedPassword,
+                role: userRole,
+                isVerified: false,
+                verificationToken: otpCode,
+                tokenExpires,
+              },
+            });
+          } catch (retryErr) {
+            return NextResponse.json(
+              { error: `An account with ${cleanEmail} already exists. Please click 'Log In' to sign into your account.` },
+              { status: 400 }
+            );
+          }
+        } else {
+          return NextResponse.json(
+            { error: `An account with this email address (${cleanEmail}) already exists. Please log in or reset your password.` },
             { status: 400 }
           );
         }
       } else {
         return NextResponse.json(
-          { error: "Unable to create account. Please check your details and try again." },
-          { status: 500 }
+          { error: `An account with ${cleanEmail} already exists. Please log in to your account.` },
+          { status: 400 }
         );
       }
     }
