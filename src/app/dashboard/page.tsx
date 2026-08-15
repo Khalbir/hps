@@ -821,7 +821,11 @@ export default function DashboardPage() {
                     />
                   </div>
                   <button type="submit" disabled={profileSaving} className="btn btn-primary btn-sm" style={{ background: "#0EA5E9", marginTop: 8 }}>
-                    {profileSaving ? "Saving & Sending Confirmation..." : profileSuccess ? "Edit Profile" : "Save Profile Details & Send Email ➔"}
+                    {profileSaving
+                      ? "Saving & Sending Confirmation..."
+                      : (editFirstName?.trim() && editLastName?.trim() && editPhone?.trim()) || profileSuccess
+                      ? "Edit Profile"
+                      : "Save Profile Details & Send Email ➔"}
                   </button>
                 </form>
               </div>
