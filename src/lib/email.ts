@@ -14,6 +14,107 @@ interface SendPasswordResetParams {
   resetUrl: string;
 }
 
+interface SendProfileUpdateParams {
+  email: string;
+  name: string;
+  updatedFields: string[];
+}
+
+/**
+ * Universal Outbound Email Sender with Multi-Sender Resend Failovers and SMTP Fallback
+ */
+async function sendOutboundEmail({
+  to,
+  subject,
+  html,
+}: {
+  to: string;
+  subject: string;
+  html: string;
+}): Promise<{ success: boolean; message?: string; error?: string }> {
+  const apiKey = process.env.RESEND_API_KEY;
+
+  if (apiKey) {
+    const candidateSenders = [
+      "HandyHub PRO Solutions <no-reply@support.handyhubpro.ng>",
+      "HandyHub PRO Solutions <support@support.handyhubpro.ng>",
+      process.env.RESEND_FROM || "",
+      "HandyHub PRO <onboarding@resend.dev>",
+    ].filter((s, idx, arr) => Boolean(s) && arr.indexOf(s) === idx);
+
+    for (const fromSender of candidateSenders) {
+      try {
+        const resendRes = await fetch("https://api.resend.com/emails", {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${apiKey}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            from: fromSender,
+            to: [to],
+            subject,
+            html,
+          }),
+        });
+
+        const resendData = await resendRes.json();
+
+        if (resendRes.ok && resendData.id) {
+          console.log(`[Resend API Success] (${fromSender}): Delivered to ${to} (ID: ${resendData.id})`);
+          return { success: true, message: `Delivered via Resend (${fromSender})` };
+        } else {
+          console.warn(`[Resend API Attempt Failed] (${fromSender}):`, resendData);
+        }
+      } catch (err: any) {
+        console.warn(`[Resend API Exception] (${fromSender}):`, err);
+      }
+    }
+  }
+
+  // Fallback to Nodemailer SMTP
+  const smtpUser = process.env.SMTP_USER || "";
+  const smtpPass = process.env.SMTP_PASS || "";
+  const smtpHost = process.env.SMTP_HOST || "smtp.gmail.com";
+  const smtpPort = Number(process.env.SMTP_PORT) || 465;
+
+  if (smtpUser && smtpPass) {
+    try {
+      const isGmail = smtpHost.includes("gmail");
+      const transporter = nodemailer.createTransport(
+        isGmail
+          ? {
+              service: "gmail",
+              auth: { user: smtpUser, pass: smtpPass.replace(/\s+/g, "") },
+            }
+          : {
+              host: smtpHost,
+              port: smtpPort,
+              secure: smtpPort === 465,
+              auth: { user: smtpUser, pass: smtpPass },
+              tls: { rejectUnauthorized: false },
+            }
+      );
+
+      await transporter.sendMail({
+        from: process.env.SMTP_FROM || `"HandyHub PRO Solutions" <no-reply@support.handyhubpro.ng>`,
+        to,
+        subject,
+        html,
+      });
+
+      console.log(`[SMTP Email Delivered]: Delivered to ${to} via ${smtpHost}`);
+      return { success: true, message: `Delivered via SMTP (${smtpHost})` };
+    } catch (smtpErr: any) {
+      console.error("[SMTP Transport Error]: Failed to send mail:", smtpErr);
+      return { success: false, error: `SMTP Failed: ${smtpErr.message}` };
+    }
+  }
+
+  console.log(`✉️ [EMAIL SIMULATION TO ${to}]: ${subject}`);
+  return { success: true, message: "Simulation mode output" };
+}
+
 export async function sendConfirmationEmail({
   email,
   name,
@@ -44,7 +145,6 @@ export async function sendConfirmationEmail({
           .otp-box { background: #f8fafc; border: 2px dashed #0ea5e9; border-radius: 12px; padding: 20px; text-align: center; margin: 20px 0; }
           .otp-code { font-size: 32px; font-weight: 800; letter-spacing: 8px; color: #0ea5e9; font-family: monospace; }
           .cta-btn { display: inline-block; background: #0ea5e9; color: #ffffff !important; font-weight: 600; font-size: 16px; padding: 14px 32px; border-radius: 8px; text-decoration: none; margin: 15px 0; text-align: center; }
-          .offer-box { background: #eff6ff; border-left: 4px solid #3b82f6; padding: 15px 20px; border-radius: 6px; margin-bottom: 25px; }
           .footer { background: #f8fafc; padding: 20px 30px; text-align: center; font-size: 12px; color: #94a3b8; border-top: 1px solid #e2e8f0; }
         </style>
       </head>
@@ -82,111 +182,11 @@ export async function sendConfirmationEmail({
     </html>
   `;
 
-  // 1. Check Resend API Integration first
-  if (process.env.RESEND_API_KEY) {
-    const primaryFrom = process.env.RESEND_FROM || process.env.SMTP_FROM || "HandyHub PRO Solutions <no-reply@support.handyhubpro.ng>";
-    const fallbackFrom = "HandyHub PRO <onboarding@resend.dev>";
-
-    try {
-      let resendRes = await fetch("https://api.resend.com/emails", {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${process.env.RESEND_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          from: primaryFrom,
-          to: [email],
-          subject: `${token} is your HandyHub PRO Confirmation Code`,
-          html: htmlContent,
-        }),
-      });
-
-      let resendData = await resendRes.json();
-
-      // If custom domain is not yet verified in Resend, fall back to onboarding@resend.dev
-      if (!resendRes.ok && primaryFrom !== fallbackFrom) {
-        console.warn(`[Resend Primary Sender Failed] (${primaryFrom}):`, resendData, `Retrying with ${fallbackFrom}...`);
-        resendRes = await fetch("https://api.resend.com/emails", {
-          method: "POST",
-          headers: {
-            "Authorization": `Bearer ${process.env.RESEND_API_KEY}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            from: fallbackFrom,
-            to: [email],
-            subject: `${token} is your HandyHub PRO Confirmation Code`,
-            html: htmlContent,
-          }),
-        });
-        resendData = await resendRes.json();
-      }
-
-      if (resendRes.ok) {
-        console.log(`[Resend API Success]: Real email delivered to ${email} (ID: ${resendData.id})`);
-        return { success: true, message: `Email delivered to ${email} via Resend` };
-      } else {
-        console.warn("[Resend API Final Error]:", resendData);
-      }
-    } catch (resendErr: any) {
-      console.warn("[Resend API Exception]:", resendErr);
-    }
-  }
-
-  // 2. SMTP Nodemailer Fallback
-  const smtpHost = process.env.SMTP_HOST || "smtp.gmail.com";
-  const smtpPort = Number(process.env.SMTP_PORT) || 465;
-  const smtpUser = process.env.SMTP_USER || "";
-  const smtpPass = process.env.SMTP_PASS || "";
-
-  if (smtpUser && smtpPass) {
-    try {
-      const isGmail = smtpHost.includes("gmail");
-      const transporter = nodemailer.createTransport(
-        isGmail
-          ? {
-              service: "gmail",
-              auth: { user: smtpUser, pass: smtpPass.replace(/\s+/g, "") },
-            }
-          : {
-              host: smtpHost,
-              port: smtpPort,
-              secure: smtpPort === 465,
-              auth: { user: smtpUser, pass: smtpPass },
-              tls: { rejectUnauthorized: false },
-            }
-      );
-
-      await transporter.sendMail({
-        from: process.env.SMTP_FROM || `"HandyHub PRO Solutions" <support@handyhubpro.ng>`,
-        to: email,
-        subject: `${token} is your HandyHub PRO Confirmation Code`,
-        html: htmlContent,
-      });
-
-      console.log(`[SMTP Email Delivered]: Real email sent to ${email} via ${smtpHost}`);
-      return { success: true, message: `Email sent to ${email} via SMTP` };
-    } catch (smtpErr: any) {
-      console.error("[SMTP Transport Error]: Failed to send mail:", smtpErr);
-      return {
-        success: false,
-        error: `SMTP Delivery Failed: ${smtpErr.message || "Invalid credentials or Gmail App Password required"}`,
-      };
-    }
-  }
-
-  // 3. Dev Mode Simulation
-  console.log(`\n=================================================`);
-  console.log(`✉️ [EMAIL SIMULATION TO ${email}]:`);
-  console.log(`SUBJECT: ${token} is your HandyHub PRO Confirmation Code`);
-  console.log(`CONFIRMATION CODE: ${token}`);
-  console.log(`=================================================\n`);
-
-  return {
-    success: true,
-    message: "Simulation mode: SMTP credentials missing in .env",
-  };
+  return sendOutboundEmail({
+    to: email,
+    subject: `${token} is your HandyHub PRO Confirmation Code`,
+    html: htmlContent,
+  });
 }
 
 export async function sendPasswordResetEmail({
@@ -243,106 +243,11 @@ export async function sendPasswordResetEmail({
     </html>
   `;
 
-  // 1. Try Resend API first
-  if (process.env.RESEND_API_KEY) {
-    const primaryFrom = process.env.RESEND_FROM || process.env.SMTP_FROM || "HandyHub PRO Solutions <no-reply@support.handyhubpro.ng>";
-    const fallbackFrom = "HandyHub PRO <onboarding@resend.dev>";
-
-    try {
-      let resendRes = await fetch("https://api.resend.com/emails", {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${process.env.RESEND_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          from: primaryFrom,
-          to: [email],
-          subject: "Reset Your HandyHub PRO Password",
-          html: htmlContent,
-        }),
-      });
-
-      let resendData = await resendRes.json();
-
-      // If custom domain is not yet verified in Resend, fall back to onboarding@resend.dev
-      if (!resendRes.ok && primaryFrom !== fallbackFrom) {
-        console.warn(`[Resend Primary Sender Failed - Password Reset] (${primaryFrom}):`, resendData, `Retrying with ${fallbackFrom}...`);
-        resendRes = await fetch("https://api.resend.com/emails", {
-          method: "POST",
-          headers: {
-            "Authorization": `Bearer ${process.env.RESEND_API_KEY}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            from: fallbackFrom,
-            to: [email],
-            subject: "Reset Your HandyHub PRO Password",
-            html: htmlContent,
-          }),
-        });
-        resendData = await resendRes.json();
-      }
-
-      if (resendRes.ok) {
-        console.log(`[Resend API Success]: Password reset email delivered to ${email} (ID: ${resendData.id})`);
-        return;
-      } else {
-        console.warn("[Resend API Error - Password Reset]:", resendData);
-      }
-    } catch (resendErr: any) {
-      console.warn("[Resend API Exception - Password Reset]:", resendErr);
-    }
-  }
-
-  // 2. SMTP Fallback
-  const smtpUser = process.env.SMTP_USER || "";
-  const smtpPass = process.env.SMTP_PASS || "";
-
-  if (!smtpUser || !smtpPass) {
-    console.log(`\n=================================================`);
-    console.log(`✉️ [PASSWORD RESET SIMULATION TO ${email}]:`);
-    console.log(`RESET URL: ${resetUrl}`);
-    console.log(`=================================================\n`);
-    return;
-  }
-
-  const smtpHost = process.env.SMTP_HOST || "smtp.gmail.com";
-  const smtpPort = Number(process.env.SMTP_PORT) || 465;
-
-  const isGmail = smtpHost.includes("gmail");
-  const transporter = nodemailer.createTransport(
-    isGmail
-      ? {
-          service: "gmail",
-          auth: { user: smtpUser, pass: smtpPass.replace(/\s+/g, "") },
-        }
-      : {
-          host: smtpHost,
-          port: smtpPort,
-          secure: smtpPort === 465,
-          auth: { user: smtpUser, pass: smtpPass },
-          tls: { rejectUnauthorized: false },
-        }
-  );
-
-  try {
-    await transporter.sendMail({
-      from: process.env.SMTP_FROM || `"HandyHub PRO Solutions" <support@handyhubpro.ng>`,
-      to: email,
-      subject: "Reset Your HandyHub PRO Password",
-      html: htmlContent,
-    });
-    console.log(`[SMTP Email Delivered]: Password reset email sent to ${email}`);
-  } catch (err) {
-    console.error("[Password Reset Email Error]:", err);
-  }
-}
-
-interface SendProfileUpdateParams {
-  email: string;
-  name: string;
-  updatedFields: string[];
+  return sendOutboundEmail({
+    to: email,
+    subject: "Reset Your HandyHub PRO Password",
+    html: htmlContent,
+  });
 }
 
 export async function sendProfileUpdateEmail({
@@ -350,8 +255,6 @@ export async function sendProfileUpdateEmail({
   name,
   updatedFields,
 }: SendProfileUpdateParams): Promise<void> {
-  const primaryFrom = process.env.RESEND_FROM || process.env.SMTP_FROM || "HandyHub PRO Solutions <no-reply@support.handyhubpro.ng>";
-  const fallbackFrom = "HandyHub PRO <onboarding@resend.dev>";
   const fieldList = updatedFields.length > 0 ? updatedFields.join(", ") : "Personal Information & Profile Settings";
 
   const htmlContent = `
@@ -402,91 +305,9 @@ export async function sendProfileUpdateEmail({
     </html>
   `;
 
-  // 1. Check Resend API first
-  if (process.env.RESEND_API_KEY) {
-    try {
-      let resendRes = await fetch("https://api.resend.com/emails", {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${process.env.RESEND_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          from: primaryFrom,
-          to: [email],
-          subject: "Your HandyHub PRO Profile Details Were Updated",
-          html: htmlContent,
-        }),
-      });
-
-      let resendData = await resendRes.json();
-
-      if (!resendRes.ok && primaryFrom !== fallbackFrom) {
-        console.warn(`[Resend Primary Sender Failed - Profile Update] (${primaryFrom}):`, resendData, `Retrying with ${fallbackFrom}...`);
-        resendRes = await fetch("https://api.resend.com/emails", {
-          method: "POST",
-          headers: {
-            "Authorization": `Bearer ${process.env.RESEND_API_KEY}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            from: fallbackFrom,
-            to: [email],
-            subject: "Your HandyHub PRO Profile Details Were Updated",
-            html: htmlContent,
-          }),
-        });
-        resendData = await resendRes.json();
-      }
-
-      if (resendRes.ok) {
-        console.log(`[Resend API Success]: Profile update email delivered to ${email} (ID: ${resendData.id})`);
-        return;
-      } else {
-        console.warn("[Resend API Error - Profile Update]:", resendData);
-      }
-    } catch (err) {
-      console.warn("[Profile Update Email Resend Exception]:", err);
-    }
-  }
-
-  // 2. Nodemailer SMTP Fallback
-  const smtpUser = process.env.SMTP_USER || "";
-  const smtpPass = process.env.SMTP_PASS || "";
-
-  if (!smtpUser || !smtpPass) {
-    console.log(`✉️ [PROFILE UPDATE EMAIL SIMULATION TO ${email}]: Updated ${fieldList}`);
-    return;
-  }
-
-  const smtpHost = process.env.SMTP_HOST || "smtp.gmail.com";
-  const smtpPort = Number(process.env.SMTP_PORT) || 465;
-
-  const isGmail = smtpHost.includes("gmail");
-  const transporter = nodemailer.createTransport(
-    isGmail
-      ? {
-          service: "gmail",
-          auth: { user: smtpUser, pass: smtpPass.replace(/\s+/g, "") },
-        }
-      : {
-          host: smtpHost,
-          port: smtpPort,
-          secure: smtpPort === 465,
-          auth: { user: smtpUser, pass: smtpPass },
-          tls: { rejectUnauthorized: false },
-        }
-  );
-
-  try {
-    await transporter.sendMail({
-      from: process.env.SMTP_FROM || `"HandyHub PRO Solutions" <support@handyhubpro.ng>`,
-      to: email,
-      subject: "Your HandyHub PRO Profile Details Were Updated",
-      html: htmlContent,
-    });
-    console.log(`[SMTP Email Delivered]: Profile update email sent to ${email}`);
-  } catch (err) {
-    console.error("[Profile Update SMTP Email Error]:", err);
-  }
+  await sendOutboundEmail({
+    to: email,
+    subject: "Your HandyHub PRO Profile Details Were Updated",
+    html: htmlContent,
+  });
 }
