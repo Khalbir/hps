@@ -21,7 +21,9 @@ export async function POST(request: Request) {
       );
     }
 
-    // 1. Query database user by reset token
+    const cleanEmailInput = email && typeof email === "string" && email.trim() !== "" ? email.trim().toLowerCase() : null;
+
+    // 1. Query database user by reset token or by email
     let dbUser = null;
     if (token) {
       try {
@@ -33,33 +35,76 @@ export async function POST(request: Request) {
       }
     }
 
-    // 2. Check token from store or accept explicit email parameter
+    if (!dbUser && cleanEmailInput) {
+      try {
+        dbUser = await prisma.user.findFirst({
+          where: { email: cleanEmailInput },
+        });
+      } catch (dbErr) {
+        console.warn("[Reset Password DB Email Lookup Warning]:", dbErr);
+      }
+    }
+
     const stored = token ? mockResetTokensStore.get(token) : null;
-    const cleanEmailInput = email && typeof email === "string" && email.trim() !== "" ? email.trim().toLowerCase() : null;
     const targetEmail = dbUser?.email || stored?.email || cleanEmailInput;
 
     if (!targetEmail) {
       return NextResponse.json(
-        { error: "Invalid or expired password reset link. Please request a new password reset." },
+        { error: "Invalid or expired password reset link. Please request a new password reset link." },
         { status: 400 }
       );
     }
 
-    // Hash new password securely
+    const cleanTargetEmail = targetEmail.trim().toLowerCase();
+
+    // Hash new password securely with bcrypt
     const hashedPassword = await bcrypt.hash(password, 12);
 
-    // Update database user password and clear reset token
+    // Update database user password, activate account, and clear reset token
+    let updateCount = 0;
     try {
-      await prisma.user.updateMany({
-        where: { email: targetEmail.toLowerCase() },
+      const updateResult = await prisma.user.updateMany({
+        where: { email: cleanTargetEmail },
         data: {
           password: hashedPassword,
+          isVerified: true,
           verificationToken: null,
           tokenExpires: null,
         },
       });
+      updateCount = updateResult.count;
     } catch (dbErr) {
-      console.warn("[Reset Password DB Update Warning]:", dbErr);
+      console.error("[Reset Password DB Update Error]:", dbErr);
+    }
+
+    // If updateMany matched 0 rows, create/upsert the user in PostgreSQL so login immediately works
+    if (updateCount === 0) {
+      try {
+        const nameParts = cleanTargetEmail.split("@")[0].split(".");
+        const firstName = nameParts[0] ? nameParts[0].charAt(0).toUpperCase() + nameParts[0].slice(1) : "Client";
+        const lastName = nameParts[1] ? nameParts[1].charAt(0).toUpperCase() + nameParts[1].slice(1) : "";
+
+        await prisma.user.create({
+          data: {
+            email: cleanTargetEmail,
+            firstName,
+            lastName,
+            password: hashedPassword,
+            role: "CUSTOMER",
+            isVerified: true,
+          },
+        });
+        updateCount = 1;
+      } catch (createErr) {
+        console.error("[Reset Password User Upsert Error]:", createErr);
+      }
+    }
+
+    if (updateCount === 0) {
+      return NextResponse.json(
+        { error: "Failed to update password in database. Please try again." },
+        { status: 500 }
+      );
     }
 
     // Clear token after reset
@@ -69,14 +114,14 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       success: true,
-      email: targetEmail,
+      email: cleanTargetEmail,
       message: "Your password has been successfully updated! You can now log in with your new password.",
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error("[Reset Password API Error]:", error);
-    return NextResponse.json({
-      success: true,
-      message: "Password reset successful.",
-    });
+    return NextResponse.json(
+      { error: "Failed to reset password. Please try again." },
+      { status: 500 }
+    );
   }
 }
