@@ -55,6 +55,7 @@ export default function DashboardPage() {
   const [editFirstName, setEditFirstName] = useState("");
   const [editLastName, setEditLastName] = useState("");
   const [editPhone, setEditPhone] = useState("");
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [profileSaving, setProfileSaving] = useState(false);
   const [profileSuccess, setProfileSuccess] = useState("");
 
@@ -384,6 +385,12 @@ export default function DashboardPage() {
 
   const handleProfileSave = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!isEditingProfile) {
+      setIsEditingProfile(true);
+      setProfileSuccess("");
+      return;
+    }
+
     setProfileSaving(true);
     setProfileSuccess("");
 
@@ -403,8 +410,10 @@ export default function DashboardPage() {
       setUser(updated);
       localStorage.setItem("handyhub_user", JSON.stringify(updated));
       setProfileSuccess("Profile updated successfully! 🎉");
+      setIsEditingProfile(false);
     } catch {
       setProfileSuccess("Profile updated successfully!");
+      setIsEditingProfile(false);
     } finally {
       setProfileSaving(false);
     }
@@ -745,7 +754,12 @@ export default function DashboardPage() {
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
               <div className="card" style={{ maxWidth: 600 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20, flexWrap: "wrap", gap: 10 }}>
-                  <h3 className="h4" style={{ margin: 0 }}>My Profile</h3>
+                  <div>
+                    <h3 className="h4" style={{ margin: 0 }}>My Profile</h3>
+                    <span style={{ fontSize: "11px", color: isEditingProfile ? "#0EA5E9" : "#64748B", fontWeight: "normal" }}>
+                      {isEditingProfile ? "✏️ Editing Mode (Make updates below)" : "🔒 Locked (Click \"Edit Profile\" to make changes)"}
+                    </span>
+                  </div>
                   <div style={{ display: "flex", gap: 6 }}>
                     {user?.permanentAddressStatus === "VERIFIED" ? (
                       <>
@@ -768,7 +782,10 @@ export default function DashboardPage() {
 
                 <form onSubmit={handleProfileSave} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
                   <div>
-                    <label style={{ fontSize: 13, fontWeight: "bold", display: "block", marginBottom: 4 }}>First Name</label>
+                    <label style={{ fontSize: 13, fontWeight: "bold", display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+                      <span>First Name</span>
+                      {!isEditingProfile && <span style={{ fontSize: 11, color: "#64748B", fontWeight: "normal" }}>🔒 Locked</span>}
+                    </label>
                     <input
                       type="text"
                       value={editFirstName}
@@ -776,19 +793,25 @@ export default function DashboardPage() {
                         setEditFirstName(e.target.value);
                         if (profileSuccess) setProfileSuccess("");
                       }}
+                      readOnly={!isEditingProfile}
+                      disabled={!isEditingProfile}
                       placeholder="Enter your first name (e.g. Khalid)"
                       style={{
                         width: "100%",
                         padding: 10,
                         borderRadius: 8,
                         border: "1px solid var(--border-primary)",
-                        background: "var(--bg-tertiary)",
-                        color: "var(--text-primary)",
+                        background: isEditingProfile ? "var(--bg-tertiary)" : "rgba(148,163,184,0.12)",
+                        color: isEditingProfile ? "var(--text-primary)" : "var(--text-secondary)",
+                        cursor: isEditingProfile ? "text" : "not-allowed",
                       }}
                     />
                   </div>
                   <div>
-                    <label style={{ fontSize: 13, fontWeight: "bold", display: "block", marginBottom: 4 }}>Last Name</label>
+                    <label style={{ fontSize: 13, fontWeight: "bold", display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+                      <span>Last Name</span>
+                      {!isEditingProfile && <span style={{ fontSize: 11, color: "#64748B", fontWeight: "normal" }}>🔒 Locked</span>}
+                    </label>
                     <input
                       type="text"
                       value={editLastName}
@@ -796,19 +819,25 @@ export default function DashboardPage() {
                         setEditLastName(e.target.value);
                         if (profileSuccess) setProfileSuccess("");
                       }}
+                      readOnly={!isEditingProfile}
+                      disabled={!isEditingProfile}
                       placeholder="Enter your last name (e.g. Kabir)"
                       style={{
                         width: "100%",
                         padding: 10,
                         borderRadius: 8,
                         border: "1px solid var(--border-primary)",
-                        background: "var(--bg-tertiary)",
-                        color: "var(--text-primary)",
+                        background: isEditingProfile ? "var(--bg-tertiary)" : "rgba(148,163,184,0.12)",
+                        color: isEditingProfile ? "var(--text-primary)" : "var(--text-secondary)",
+                        cursor: isEditingProfile ? "text" : "not-allowed",
                       }}
                     />
                   </div>
                   <div>
-                    <label style={{ fontSize: 13, fontWeight: "bold", display: "block", marginBottom: 4 }}>Phone Number</label>
+                    <label style={{ fontSize: 13, fontWeight: "bold", display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+                      <span>Phone Number</span>
+                      {!isEditingProfile && <span style={{ fontSize: 11, color: "#64748B", fontWeight: "normal" }}>🔒 Locked</span>}
+                    </label>
                     <input
                       type="tel"
                       value={editPhone}
@@ -816,14 +845,24 @@ export default function DashboardPage() {
                         setEditPhone(e.target.value);
                         if (profileSuccess) setProfileSuccess("");
                       }}
+                      readOnly={!isEditingProfile}
+                      disabled={!isEditingProfile}
                       placeholder="+234 800 000 0000"
-                      style={{ width: "100%", padding: 10, borderRadius: 8, border: "1px solid var(--border-primary)", background: "var(--bg-tertiary)", color: "var(--text-primary)" }}
+                      style={{
+                        width: "100%",
+                        padding: 10,
+                        borderRadius: 8,
+                        border: "1px solid var(--border-primary)",
+                        background: isEditingProfile ? "var(--bg-tertiary)" : "rgba(148,163,184,0.12)",
+                        color: isEditingProfile ? "var(--text-primary)" : "var(--text-secondary)",
+                        cursor: isEditingProfile ? "text" : "not-allowed",
+                      }}
                     />
                   </div>
                   <button type="submit" disabled={profileSaving} className="btn btn-primary btn-sm" style={{ background: "#0EA5E9", marginTop: 8 }}>
                     {profileSaving
                       ? "Saving & Sending Confirmation..."
-                      : (editFirstName?.trim() && editLastName?.trim() && editPhone?.trim()) || profileSuccess
+                      : !isEditingProfile
                       ? "Edit Profile"
                       : "Save Profile Details & Send Email ➔"}
                   </button>
