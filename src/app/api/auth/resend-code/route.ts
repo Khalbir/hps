@@ -11,25 +11,34 @@ export async function POST(request: Request) {
     }
 
     const cleanEmail = email.trim().toLowerCase();
-    const user = await prisma.user.findUnique({
-      where: { email: cleanEmail },
-    });
+    let user = null;
+    try {
+      user = await prisma.user.findFirst({
+        where: { email: cleanEmail },
+      });
+    } catch (dbErr) {
+      console.warn("[Resend Code DB Query Warning]:", dbErr);
+    }
 
     if (!user) {
       return NextResponse.json({ error: "User account not found" }, { status: 404 });
     }
 
-    // Generate fresh 6-digit confirmation OTP if missing or expired
+    // Generate fresh 6-digit confirmation OTP if missing or invalid
     let code = user.verificationToken;
     if (!code || code.length !== 6) {
       code = Math.floor(100000 + Math.random() * 900000).toString();
-      await prisma.user.update({
-        where: { id: user.id },
-        data: {
-          verificationToken: code,
-          tokenExpires: new Date(Date.now() + 24 * 60 * 60 * 1000),
-        },
-      });
+      try {
+        await prisma.user.update({
+          where: { id: user.id },
+          data: {
+            verificationToken: code,
+            tokenExpires: new Date(Date.now() + 24 * 60 * 60 * 1000),
+          },
+        });
+      } catch (updErr) {
+        console.warn("[Resend Code DB Update Warning]:", updErr);
+      }
     }
 
     // Trigger Real Outbound Email Dispatch
