@@ -44,6 +44,7 @@ export default function DashboardPage() {
   const [topUpAmount, setTopUpAmount] = useState(5000);
   const [showTopUpModal, setShowTopUpModal] = useState(false);
   const [topUpLoading, setTopUpLoading] = useState(false);
+  const [topUpSuccessAlert, setTopUpSuccessAlert] = useState("");
 
   // Address state
   const [addresses, setAddresses] = useState<Address[]>([]);
@@ -310,7 +311,18 @@ export default function DashboardPage() {
         setEditLastName(mergedUser.lastName || "");
         setEditPhone(mergedUser.phone || "");
         setSecondaryAddrStreet(mergedUser.secondaryAddress || "");
-        setWalletBalance(data.walletBalance || 0);
+        try {
+          const walletRes = await fetch(`/api/wallet/balance?email=${encodeURIComponent(mergedUser.email || activeEmail)}`);
+          const walletData = await walletRes.json();
+          if (walletRes.ok && walletData?.availableBalance !== undefined) {
+            setWalletBalance(walletData.availableBalance);
+          } else {
+            setWalletBalance(data.walletBalance || 0);
+          }
+        } catch {
+          setWalletBalance(data.walletBalance || 0);
+        }
+
         setActiveDispatchesCount(data.activeDispatchesCount || 0);
         setTotalBookingsCount(data.totalBookingsCount || 0);
         setBookings(data.bookings || []);
@@ -328,11 +340,51 @@ export default function DashboardPage() {
     if (typeof window !== "undefined") {
       const urlParams = new URLSearchParams(window.location.search);
       const tabParam = urlParams.get("tab");
+      const paymentParam = urlParams.get("payment");
+      const topUpParam = urlParams.get("topup");
+      const amountParam = urlParams.get("amount");
+
       if (tabParam) {
         setActiveTab(tabParam);
       }
+
+      if (paymentParam === "success" || topUpParam === "SUCCESS") {
+        setActiveTab("wallet");
+        const formattedAmount = amountParam ? `₦${Number(amountParam).toLocaleString("en-NG")}` : "Funds";
+        setTopUpSuccessAlert(`🎉 Wallet Top-Up Successful! ${formattedAmount} has been credited to your available escrow balance in real-time.`);
+      }
     }
   }, []);
+
+  const handleRealTimeTopUp = async (amountToTopUp: number) => {
+    setTopUpLoading(true);
+    try {
+      const activeEmail = user?.email || (typeof window !== "undefined" ? JSON.parse(localStorage.getItem("handyhub_user") || "{}").email : "");
+      const res = await fetch("/api/wallet/topup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: activeEmail,
+          amount: amountToTopUp,
+          provider: "PAYSTACK",
+        }),
+      });
+      const data = await res.json();
+
+      if (res.ok && data.success) {
+        setWalletBalance(data.newBalance);
+        setShowTopUpModal(false);
+        setTopUpSuccessAlert(data.message || `🎉 Wallet successfully credited with ₦${amountToTopUp.toLocaleString("en-NG")} in real-time!`);
+        fetchCustomerDashboardData();
+      } else {
+        alert(data.error || "Failed to process real-time wallet top up.");
+      }
+    } catch {
+      alert("Network error processing wallet top up.");
+    } finally {
+      setTopUpLoading(false);
+    }
+  };
 
   const handleTopUpSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -818,14 +870,42 @@ export default function DashboardPage() {
 
           {/* TAB 4: WALLET */}
           {activeTab === "wallet" && (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-              <div className="card" style={{ maxWidth: 500, margin: "0 auto", textAlign: "center", padding: "40px" }}>
-                <Wallet size={48} color="#10B981" style={{ marginBottom: 16 }} />
-                <span style={{ fontSize: "14px", color: "var(--text-tertiary)" }}>Available Escrow Wallet Balance</span>
-                <h1 className="h1" style={{ color: "#10B981", margin: "8px 0 24px" }}>₦{walletBalance.toLocaleString()}</h1>
-                <button onClick={() => setShowTopUpModal(true)} className="btn btn-primary btn-md w-full" style={{ background: "#10B981" }}>
-                  + Top Up Funds (Paystack)
-                </button>
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ display: "flex", flexDirection: "column", gap: 20, maxWidth: 650, margin: "0 auto" }}>
+              {topUpSuccessAlert && (
+                <div style={{ background: "rgba(16,185,129,0.15)", border: "1px solid #10B981", color: "#10B981", padding: 16, borderRadius: 12, fontSize: 14, fontWeight: 500, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                  <span>{topUpSuccessAlert}</span>
+                  <button onClick={() => setTopUpSuccessAlert("")} style={{ background: "none", border: "none", color: "#10B981", cursor: "pointer", fontSize: 16, fontWeight: "bold" }}>✕</button>
+                </div>
+              )}
+
+              <div className="card" style={{ textAlign: "center", padding: "35px 25px", background: "linear-gradient(135deg, rgba(15,23,42,0.9) 0%, rgba(30,41,59,0.9) 100%)", border: "1px solid rgba(16,185,129,0.3)", borderRadius: 16 }}>
+                <Wallet size={44} color="#10B981" style={{ marginBottom: 12 }} />
+                <div style={{ fontSize: 13, color: "#94A3B8", textTransform: "uppercase", letterSpacing: 1, fontWeight: "bold" }}>Available Escrow Wallet Balance</div>
+                <h1 className="h1" style={{ color: "#10B981", fontSize: 38, margin: "10px 0 16px" }}>₦{walletBalance.toLocaleString("en-NG")}</h1>
+                
+                <div style={{ display: "flex", gap: 10, justifyContent: "center", flexWrap: "wrap", marginBottom: 20 }}>
+                  <button onClick={() => setShowTopUpModal(true)} className="btn btn-primary btn-md" style={{ background: "#10B981", padding: "10px 24px", fontWeight: "bold" }}>
+                    + Top Up Escrow Wallet ➔
+                  </button>
+                  <button onClick={fetchCustomerDashboardData} className="btn btn-outline btn-md" style={{ color: "#94A3B8", borderColor: "#334155" }}>
+                    🔄 Sync Balance
+                  </button>
+                </div>
+
+                <div style={{ borderTop: "1px dashed #334155", paddingTop: 16, display: "flex", justifyContent: "center", gap: 8, flexWrap: "wrap" }}>
+                  <span style={{ fontSize: 12, color: "#64748B", alignSelf: "center" }}>Quick Top Up:</span>
+                  {[5000, 10000, 20000, 50000].map((preset) => (
+                    <button
+                      key={preset}
+                      type="button"
+                      disabled={topUpLoading}
+                      onClick={() => handleRealTimeTopUp(preset)}
+                      style={{ background: "#0F172A", border: "1px solid #334155", color: "#38BDF8", borderRadius: 20, padding: "4px 12px", fontSize: 12, fontWeight: "bold", cursor: "pointer" }}
+                    >
+                      +₦{preset.toLocaleString()}
+                    </button>
+                  ))}
+                </div>
               </div>
             </motion.div>
           )}
@@ -1195,29 +1275,70 @@ export default function DashboardPage() {
         >
           <div
             className="card"
-            style={{ width: "100%", maxWidth: 450, background: "#1E293B", border: "1px solid #334155", borderRadius: 16, padding: 24 }}
+            style={{ width: "100%", maxWidth: 480, background: "#1E293B", border: "1px solid #334155", borderRadius: 16, padding: 24 }}
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 className="h4" style={{ margin: "0 0 16px 0", color: "#F8FAFC" }}>Top Up Escrow Wallet</h3>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+              <h3 className="h4" style={{ margin: 0, color: "#F8FAFC" }}>Top Up Escrow Wallet</h3>
+              <button onClick={() => setShowTopUpModal(false)} style={{ background: "none", border: "none", color: "#94A3B8", cursor: "pointer", fontSize: 18 }}>✕</button>
+            </div>
+
             <form onSubmit={handleTopUpSubmit}>
               <div style={{ marginBottom: 16 }}>
                 <label style={{ fontSize: 12, color: "#94A3B8", fontWeight: "bold", textTransform: "uppercase", display: "block", marginBottom: 6 }}>
-                  Amount to Top Up (NGN ₦)
+                  Select or Enter Amount (NGN ₦)
                 </label>
                 <input
                   type="number"
-                  min="1000"
-                  step="1000"
+                  min="500"
+                  step="500"
                   value={topUpAmount}
                   onChange={(e) => setTopUpAmount(Number(e.target.value))}
-                  style={{ width: "100%", padding: 12, borderRadius: 8, border: "1px solid #334155", background: "#0F172A", color: "#10B981", fontSize: 20, fontWeight: "bold" }}
+                  style={{ width: "100%", padding: 12, borderRadius: 8, border: "1px solid #334155", background: "#0F172A", color: "#10B981", fontSize: 22, fontWeight: "bold" }}
                   required
                 />
               </div>
-              <div style={{ display: "flex", gap: 12, justifyContent: "flex-end" }}>
-                <button type="button" className="btn btn-secondary btn-sm" onClick={() => setShowTopUpModal(false)}>Cancel</button>
-                <button type="submit" disabled={topUpLoading} className="btn btn-primary btn-sm" style={{ background: "#10B981" }}>
-                  {topUpLoading ? "Initializing..." : "Proceed to Paystack ➔"}
+
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 20 }}>
+                {[1000, 5000, 10000, 25000, 50000, 100000].map((amt) => (
+                  <button
+                    key={amt}
+                    type="button"
+                    onClick={() => setTopUpAmount(amt)}
+                    style={{
+                      background: topUpAmount === amt ? "rgba(16,185,129,0.2)" : "#0F172A",
+                      border: topUpAmount === amt ? "1px solid #10B981" : "1px solid #334155",
+                      color: topUpAmount === amt ? "#10B981" : "#94A3B8",
+                      borderRadius: 20,
+                      padding: "6px 14px",
+                      fontSize: 12,
+                      fontWeight: "bold",
+                      cursor: "pointer",
+                    }}
+                  >
+                    ₦{amt.toLocaleString()}
+                  </button>
+                ))}
+              </div>
+
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                <button
+                  type="button"
+                  disabled={topUpLoading}
+                  onClick={() => handleRealTimeTopUp(topUpAmount)}
+                  className="btn btn-primary btn-md"
+                  style={{ background: "#10B981", width: "100%", fontWeight: "bold", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}
+                >
+                  {topUpLoading ? "Crediting Wallet..." : `⚡ Instant Real-Time Top Up (₦${topUpAmount.toLocaleString()})`}
+                </button>
+
+                <button
+                  type="submit"
+                  disabled={topUpLoading}
+                  className="btn btn-outline btn-md"
+                  style={{ color: "#38BDF8", borderColor: "#38BDF8", width: "100%", fontWeight: "bold" }}
+                >
+                  💳 Proceed to Paystack Gateway ➔
                 </button>
               </div>
             </form>

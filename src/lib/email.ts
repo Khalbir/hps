@@ -23,7 +23,7 @@ interface SendProfileUpdateParams {
 /**
  * Universal Outbound Email Sender with Multi-Sender Resend Failovers and SMTP Fallback
  */
-async function sendOutboundEmail({
+export async function sendOutboundEmail({
   to,
   subject,
   html,

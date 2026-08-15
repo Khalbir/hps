@@ -1,32 +1,75 @@
 import { NextResponse } from "next/server";
+import { prisma } from "@/lib/db";
 
 export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url);
-  const userId = searchParams.get("userId") || "pro-user-demo-id";
+  try {
+    const { searchParams } = new URL(request.url);
+    const email = searchParams.get("email");
+    const userId = searchParams.get("userId");
 
-  return NextResponse.json({
-    userId,
-    currency: "NGN",
-    availableBalance: 142500,
-    pendingEscrow: 25000,
-    totalLifetimeEarnings: 1240000,
-    history: [
-      {
-        id: "tx_101",
-        type: "ESCROW_RELEASE",
-        amount: 21250,
-        description: "Net earnings from Deep Cleaning (Ref: HHP-M1K9X)",
-        status: "COMPLETED",
-        createdAt: new Date().toISOString(),
-      },
-      {
-        id: "tx_102",
-        type: "WITHDRAWAL",
-        amount: 50000,
-        description: "NUBAN Bank Transfer to GTBank (0123456789)",
-        status: "COMPLETED",
-        createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
-      },
-    ],
-  });
+    let user = null;
+    if (userId) {
+      user = await prisma.user.findUnique({ where: { id: userId } });
+    }
+    if (!user && email) {
+      user = await prisma.user.findFirst({
+        where: { email: { equals: email.trim(), mode: "insensitive" } },
+      });
+    }
+
+    if (!user) {
+      return NextResponse.json({
+        availableBalance: 0,
+        pendingEscrow: 0,
+        currency: "NGN",
+        history: [],
+      });
+    }
+
+    let wallet = await prisma.wallet.findUnique({
+      where: { userId: user.id },
+    });
+
+    if (!wallet) {
+      wallet = await prisma.wallet.create({
+        data: {
+          userId: user.id,
+          balance: 0,
+          pendingEscrow: 0,
+        },
+      });
+    }
+
+    // Fetch payment top-up history
+    const payments = await prisma.payment.findMany({
+      where: { userId: user.id },
+      orderBy: { createdAt: "desc" },
+      take: 20,
+    });
+
+    const history = payments.map((p) => ({
+      id: p.id,
+      reference: p.reference,
+      type: p.bookingId?.startsWith("TOPUP-") ? "WALLET_TOPUP" : "SERVICE_PAYMENT",
+      amount: p.amount,
+      description: p.bookingId?.startsWith("TOPUP-")
+        ? `Wallet Top-Up via ${p.provider}`
+        : `Service Payment (${p.reference})`,
+      status: p.status,
+      createdAt: p.createdAt.toISOString(),
+    }));
+
+    return NextResponse.json({
+      success: true,
+      userId: user.id,
+      email: user.email,
+      currency: "NGN",
+      availableBalance: wallet.balance,
+      pendingEscrow: wallet.pendingEscrow || 0,
+      history,
+    });
+  } catch (error) {
+    console.error("[Wallet Balance API Error]:", error);
+    return NextResponse.json({ error: "Failed to fetch wallet balance" }, { status: 500 });
+  }
 }
