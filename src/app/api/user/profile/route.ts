@@ -9,8 +9,8 @@ export async function GET(request: Request) {
 
     let user = null;
     try {
-      user = await prisma.user.findUnique({
-        where: { email: email.toLowerCase() },
+      user = await prisma.user.findFirst({
+        where: { email: { equals: email.trim(), mode: "insensitive" } },
         include: {
           addresses: true,
           wallet: true,
@@ -66,7 +66,6 @@ export async function PUT(request: Request) {
   try {
     const body = await request.json();
     const { email, firstName, lastName, phone, permanentAddress, permanentAddressProof, secondaryAddress, requestAddressChange, bookingAddresses } = body;
-
     if (!email) {
       return NextResponse.json({ error: "Email is required" }, { status: 400 });
     }
@@ -74,14 +73,33 @@ export async function PUT(request: Request) {
     const cleanEmail = email.toLowerCase().trim();
     let existingUser = null;
     try {
-      existingUser = await prisma.user.findUnique({ where: { email: cleanEmail } });
-    } catch {}
+      existingUser = await prisma.user.findFirst({
+        where: { email: { equals: cleanEmail, mode: "insensitive" } },
+      });
+    } catch (dbErr) {
+      console.warn("[User Profile Update DB Lookup Warning]:", dbErr);
+    }
 
     if (!existingUser) {
-      return NextResponse.json({
-        success: true,
-        message: "Profile updated successfully (Demo Mode)! 🎉",
-      });
+      try {
+        existingUser = await prisma.user.create({
+          data: {
+            email: cleanEmail,
+            firstName: firstName ? firstName.trim() : "Valued",
+            lastName: lastName ? lastName.trim() : "Client",
+            phone: phone ? phone.trim() : null,
+            password: "$2a$10$e8wJp5f5.dummy_hash_placeholder",
+            role: "CUSTOMER",
+            isVerified: true,
+          },
+        });
+      } catch (createErr) {
+        console.warn("[User Profile Upsert Warning]:", createErr);
+      }
+    }
+
+    if (!existingUser) {
+      return NextResponse.json({ error: "Unable to find or create user profile." }, { status: 500 });
     }
 
     const updateData: any = {};
