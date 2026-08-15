@@ -771,62 +771,40 @@ export default function DashboardPage() {
                 )}
 
                 <form onSubmit={handleProfileSave} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-                  {(() => {
-                    const defaultNames = ["Client", "Valued", "Test", "User", "Customer"];
-                    const isFirstNameEditable = !editFirstName || defaultNames.includes(editFirstName.trim());
-                    const isLastNameEditable = !editLastName || defaultNames.includes(editLastName.trim());
-
-                    return (
-                      <>
-                        <div>
-                          <label style={{ fontSize: 13, fontWeight: "bold", display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-                            <span>First Name</span>
-                            {!isFirstNameEditable && <span style={{ fontSize: 11, color: "#64748B", fontWeight: "normal" }}>🔒 Locked (Registered Identity Name)</span>}
-                          </label>
-                          <input
-                            type="text"
-                            value={editFirstName}
-                            onChange={(e) => setEditFirstName(e.target.value)}
-                            readOnly={!isFirstNameEditable}
-                            disabled={!isFirstNameEditable}
-                            placeholder="Enter your first name"
-                            style={{
-                              width: "100%",
-                              padding: 10,
-                              borderRadius: 8,
-                              border: "1px solid var(--border-primary)",
-                              background: isFirstNameEditable ? "var(--bg-tertiary)" : "rgba(148,163,184,0.12)",
-                              color: isFirstNameEditable ? "var(--text-primary)" : "var(--text-secondary)",
-                              cursor: isFirstNameEditable ? "text" : "not-allowed"
-                            }}
-                          />
-                        </div>
-                        <div>
-                          <label style={{ fontSize: 13, fontWeight: "bold", display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-                            <span>Last Name</span>
-                            {!isLastNameEditable && <span style={{ fontSize: 11, color: "#64748B", fontWeight: "normal" }}>🔒 Locked (Registered Identity Name)</span>}
-                          </label>
-                          <input
-                            type="text"
-                            value={editLastName}
-                            onChange={(e) => setEditLastName(e.target.value)}
-                            readOnly={!isLastNameEditable}
-                            disabled={!isLastNameEditable}
-                            placeholder="Enter your last name"
-                            style={{
-                              width: "100%",
-                              padding: 10,
-                              borderRadius: 8,
-                              border: "1px solid var(--border-primary)",
-                              background: isLastNameEditable ? "var(--bg-tertiary)" : "rgba(148,163,184,0.12)",
-                              color: isLastNameEditable ? "var(--text-primary)" : "var(--text-secondary)",
-                              cursor: isLastNameEditable ? "text" : "not-allowed"
-                            }}
-                          />
-                        </div>
-                      </>
-                    );
-                  })()}
+                  <div>
+                    <label style={{ fontSize: 13, fontWeight: "bold", display: "block", marginBottom: 4 }}>First Name</label>
+                    <input
+                      type="text"
+                      value={editFirstName}
+                      onChange={(e) => setEditFirstName(e.target.value)}
+                      placeholder="Enter your first name (e.g. Khalid)"
+                      style={{
+                        width: "100%",
+                        padding: 10,
+                        borderRadius: 8,
+                        border: "1px solid var(--border-primary)",
+                        background: "var(--bg-tertiary)",
+                        color: "var(--text-primary)",
+                      }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: 13, fontWeight: "bold", display: "block", marginBottom: 4 }}>Last Name</label>
+                    <input
+                      type="text"
+                      value={editLastName}
+                      onChange={(e) => setEditLastName(e.target.value)}
+                      placeholder="Enter your last name (e.g. Kabir)"
+                      style={{
+                        width: "100%",
+                        padding: 10,
+                        borderRadius: 8,
+                        border: "1px solid var(--border-primary)",
+                        background: "var(--bg-tertiary)",
+                        color: "var(--text-primary)",
+                      }}
+                    />
+                  </div>
                   <div>
                     <label style={{ fontSize: 13, fontWeight: "bold", display: "block", marginBottom: 4 }}>Phone Number</label>
                     <input
@@ -838,7 +816,7 @@ export default function DashboardPage() {
                     />
                   </div>
                   <button type="submit" disabled={profileSaving} className="btn btn-primary btn-sm" style={{ background: "#0EA5E9", marginTop: 8 }}>
-                    {profileSaving ? "Saving..." : "Save Profile Updates ➔"}
+                    {profileSaving ? "Saving & Sending Confirmation..." : "Save Profile Details & Send Email ➔"}
                   </button>
                 </form>
               </div>

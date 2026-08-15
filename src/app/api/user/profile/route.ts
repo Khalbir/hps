@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { sendProfileUpdateEmail } from "@/lib/email";
 
 export async function GET(request: Request) {
   try {
@@ -77,7 +78,6 @@ export async function PUT(request: Request) {
     } catch {}
 
     if (!existingUser) {
-      // In case DB is missing or disconnected
       return NextResponse.json({
         success: true,
         message: "Profile updated successfully (Demo Mode)! 🎉",
@@ -85,17 +85,15 @@ export async function PUT(request: Request) {
     }
 
     const updateData: any = {};
-    const defaultNames = ["Client", "Valued", "Test", "User", "Customer"];
-    const isFirstNameDefault = !existingUser.firstName || defaultNames.includes(existingUser.firstName.trim());
-    const isLastNameDefault = !existingUser.lastName || defaultNames.includes(existingUser.lastName.trim());
-
-    if ((isFirstNameDefault || !existingUser.firstName) && firstName !== undefined && firstName.trim() !== "") {
+    if (firstName !== undefined && firstName.trim() !== "") {
       updateData.firstName = firstName.trim();
     }
-    if ((isLastNameDefault || !existingUser.lastName) && lastName !== undefined && lastName.trim() !== "") {
+    if (lastName !== undefined && lastName.trim() !== "") {
       updateData.lastName = lastName.trim();
     }
-    if (phone !== undefined) updateData.phone = phone.trim();
+    if (phone !== undefined) {
+      updateData.phone = phone.trim();
+    }
 
     // Check permanent address updates
     if (permanentAddress !== undefined) {
@@ -104,13 +102,10 @@ export async function PUT(request: Request) {
 
       if (currentStatus === "VERIFIED") {
         if (requestAddressChange) {
-          // Applying for a change of verified permanent address (NON-DESTRUCTIVE FLOW)
           updateData.pendingPermanentAddress = trimmedAddr;
           updateData.pendingPermanentAddressProof = permanentAddressProof || existingUser.permanentAddressProof;
-          // Keep status as VERIFIED so they can still book with their current address, but set notes to indicate pending change
           updateData.permanentAddressNotes = `Change request pending: proposed address ${trimmedAddr}. Awaiting administrator review.`;
 
-          // Notify admins
           try {
             const superAdmins = await prisma.user.findMany({ where: { role: "SUPER_ADMIN" } });
             for (const sa of superAdmins) {
@@ -126,13 +121,11 @@ export async function PUT(request: Request) {
           } catch {}
         }
       } else {
-        // Submit initial address or re-submit rejected/suspended
         updateData.permanentAddress = trimmedAddr;
         if (permanentAddressProof) updateData.permanentAddressProof = permanentAddressProof;
         updateData.permanentAddressStatus = "PENDING";
         updateData.permanentAddressNotes = "Awaiting verification check.";
 
-        // Notify admins
         try {
           const superAdmins = await prisma.user.findMany({ where: { role: "SUPER_ADMIN" } });
           for (const sa of superAdmins) {
@@ -153,7 +146,6 @@ export async function PUT(request: Request) {
     if (bookingAddresses !== undefined) {
       const isVerified = existingUser.permanentAddressStatus === "VERIFIED" || updateData.permanentAddressStatus === "VERIFIED";
       if (isVerified) {
-        // Must be JSON string or array
         const rawJson = typeof bookingAddresses === "string" ? bookingAddresses : JSON.stringify(bookingAddresses);
         updateData.bookingAddresses = rawJson;
       } else {
@@ -171,8 +163,9 @@ export async function PUT(request: Request) {
       }
     }
 
+    let updatedUser = existingUser;
     try {
-      await prisma.user.update({
+      updatedUser = await prisma.user.update({
         where: { id: existingUser.id },
         data: updateData,
       });
@@ -180,9 +173,25 @@ export async function PUT(request: Request) {
       console.warn("[User Profile Update DB Update Warning]:", dbErr);
     }
 
+    const updatedFieldsList: string[] = [];
+    if (updateData.firstName) updatedFieldsList.push(`First Name (${updateData.firstName})`);
+    if (updateData.lastName) updatedFieldsList.push(`Last Name (${updateData.lastName})`);
+    if (updateData.phone) updatedFieldsList.push(`Phone Number (${updateData.phone})`);
+    if (updateData.permanentAddress) updatedFieldsList.push("Permanent Home Address");
+
+    // Trigger Outbound Email Confirmation Message
+    sendProfileUpdateEmail({
+      email: cleanEmail,
+      name: `${updatedUser.firstName || "Valued"} ${updatedUser.lastName || "Client"}`,
+      updatedFields: updatedFieldsList,
+    }).catch((err) => {
+      console.warn("[Profile Update Email Async Warning]:", err);
+    });
+
     return NextResponse.json({
       success: true,
-      message: "Profile updated successfully! 🎉",
+      message: "Profile updated successfully! A confirmation email has been sent to your inbox. 🎉",
+      user: updatedUser,
     });
   } catch (error) {
     console.error("[User Profile PUT Error]:", error);

@@ -338,3 +338,103 @@ export async function sendPasswordResetEmail({
     console.error("[Password Reset Email Error]:", err);
   }
 }
+
+interface SendProfileUpdateParams {
+  email: string;
+  name: string;
+  updatedFields: string[];
+}
+
+export async function sendProfileUpdateEmail({
+  email,
+  name,
+  updatedFields,
+}: SendProfileUpdateParams): Promise<void> {
+  const primaryFrom = process.env.RESEND_FROM || process.env.SMTP_FROM || "HandyHub PRO Solutions <no-reply@support.handyhubpro.ng>";
+  const fallbackFrom = "HandyHub PRO <onboarding@resend.dev>";
+  const fieldList = updatedFields.length > 0 ? updatedFields.join(", ") : "Personal Information & Profile Settings";
+
+  const htmlContent = `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f4f7f6; margin: 0; padding: 20px; color: #333; }
+          .container { max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
+          .header { background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); padding: 35px 30px; text-align: center; color: #ffffff; }
+          .badge { display: inline-block; background: rgba(16, 185, 129, 0.2); color: #34d399; font-size: 12px; font-weight: 600; padding: 4px 12px; border-radius: 20px; text-transform: uppercase; margin-bottom: 12px; }
+          .title { font-size: 24px; font-weight: 700; margin: 0; }
+          .content { padding: 35px 30px; }
+          .greeting { font-size: 18px; font-weight: 600; color: #0f172a; margin-bottom: 15px; }
+          .message { font-size: 15px; line-height: 1.6; color: #475569; margin-bottom: 20px; }
+          .field-box { background: #f0fdf4; border-left: 4px solid #10b981; padding: 15px 20px; border-radius: 6px; margin: 20px 0; }
+          .footer { background: #f8fafc; padding: 20px 30px; text-align: center; font-size: 12px; color: #94a3b8; border-top: 1px solid #e2e8f0; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <div class="badge">Account Security & Profile Confirmation</div>
+            <h1 class="title">HandyHub PRO Solutions</h1>
+          </div>
+          <div class="content">
+            <div class="greeting">Hello ${name || "Valued Client"},</div>
+            <p class="message">
+              This email confirms that your <strong>HandyHub PRO profile details</strong> were recently updated successfully.
+            </p>
+            
+            <div class="field-box">
+              <div style="font-size: 12px; color: #059669; font-weight: 700; text-transform: uppercase; margin-bottom: 4px;">Updated Profile Fields</div>
+              <div style="font-size: 15px; font-weight: 600; color: #065f46;">${fieldList}</div>
+            </div>
+
+            <p class="message">
+              If you authorized these changes, no further action is required. If you did not make these edits, please contact support immediately.
+            </p>
+          </div>
+          <div class="footer">
+            © ${new Date().getFullYear()} HandyHub PRO Solutions. All rights reserved.<br>
+            Security notification sent to ${email}
+          </div>
+        </div>
+      </body>
+    </html>
+  `;
+
+  if (process.env.RESEND_API_KEY) {
+    try {
+      let res = await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${process.env.RESEND_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          from: primaryFrom,
+          to: [email],
+          subject: "Your HandyHub PRO Profile Details Were Updated",
+          html: htmlContent,
+        }),
+      });
+
+      if (!res.ok && primaryFrom !== fallbackFrom) {
+        await fetch("https://api.resend.com/emails", {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${process.env.RESEND_API_KEY}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            from: fallbackFrom,
+            to: [email],
+            subject: "Your HandyHub PRO Profile Details Were Updated",
+            html: htmlContent,
+          }),
+        });
+      }
+    } catch (err) {
+      console.warn("[Profile Update Email Error]:", err);
+    }
+  }
+}
