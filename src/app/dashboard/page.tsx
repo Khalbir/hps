@@ -776,7 +776,10 @@ export default function DashboardPage() {
                     <input
                       type="text"
                       value={editFirstName}
-                      onChange={(e) => setEditFirstName(e.target.value)}
+                      onChange={(e) => {
+                        setEditFirstName(e.target.value);
+                        if (profileSuccess) setProfileSuccess("");
+                      }}
                       placeholder="Enter your first name (e.g. Khalid)"
                       style={{
                         width: "100%",
@@ -793,7 +796,10 @@ export default function DashboardPage() {
                     <input
                       type="text"
                       value={editLastName}
-                      onChange={(e) => setEditLastName(e.target.value)}
+                      onChange={(e) => {
+                        setEditLastName(e.target.value);
+                        if (profileSuccess) setProfileSuccess("");
+                      }}
                       placeholder="Enter your last name (e.g. Kabir)"
                       style={{
                         width: "100%",
@@ -810,13 +816,16 @@ export default function DashboardPage() {
                     <input
                       type="tel"
                       value={editPhone}
-                      onChange={(e) => setEditPhone(e.target.value)}
+                      onChange={(e) => {
+                        setEditPhone(e.target.value);
+                        if (profileSuccess) setProfileSuccess("");
+                      }}
                       placeholder="+234 800 000 0000"
                       style={{ width: "100%", padding: 10, borderRadius: 8, border: "1px solid var(--border-primary)", background: "var(--bg-tertiary)", color: "var(--text-primary)" }}
                     />
                   </div>
                   <button type="submit" disabled={profileSaving} className="btn btn-primary btn-sm" style={{ background: "#0EA5E9", marginTop: 8 }}>
-                    {profileSaving ? "Saving & Sending Confirmation..." : "Save Profile Details & Send Email ➔"}
+                    {profileSaving ? "Saving & Sending Confirmation..." : profileSuccess ? "Edit Profile" : "Save Profile Details & Send Email ➔"}
                   </button>
                 </form>
               </div>
