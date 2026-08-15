@@ -59,6 +59,23 @@ export default function DashboardPage() {
   const [profileSaving, setProfileSaving] = useState(false);
   const [profileSuccess, setProfileSuccess] = useState("");
 
+  // Settings & Password State
+  const [currentPass, setCurrentPass] = useState("");
+  const [newPass, setNewPass] = useState("");
+  const [confirmPass, setConfirmPass] = useState("");
+  const [showCurrentPass, setShowCurrentPass] = useState(false);
+  const [showNewPass, setShowNewPass] = useState(false);
+  const [passSaving, setPassSaving] = useState(false);
+  const [passSuccess, setPassSuccess] = useState("");
+  const [passError, setPassError] = useState("");
+
+  // Notification Preferences State
+  const [emailNotifs, setEmailNotifs] = useState(true);
+  const [smsNotifs, setSmsNotifs] = useState(true);
+  const [securityAlerts, setSecurityAlerts] = useState(true);
+  const [staySignedInState, setStaySignedInState] = useState(true);
+  const [prefSuccess, setPrefSuccess] = useState("");
+
   // Client Address Verification States
   const [permAddrStreet, setPermAddrStreet] = useState("");
   const [permAddrUploading, setPermAddrUploading] = useState(false);
@@ -381,6 +398,78 @@ export default function DashboardPage() {
     setNewAddrTitle("");
     setNewAddrStreet("");
     setShowAddressModal(false);
+  };
+
+  const handleLogout = () => {
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("handyhub_user");
+      localStorage.removeItem("handyhub_stay_signed_in");
+      window.location.href = "/auth/login";
+    }
+  };
+
+  const handlePasswordChange = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPassError("");
+    setPassSuccess("");
+
+    if (!currentPass) {
+      setPassError("Please enter your current password.");
+      return;
+    }
+    if (newPass.length < 8) {
+      setPassError("New password must be at least 8 characters long.");
+      return;
+    }
+    if (newPass !== confirmPass) {
+      setPassError("New password and confirmation password do not match.");
+      return;
+    }
+
+    setPassSaving(true);
+    try {
+      const activeEmail = user?.email || (typeof window !== "undefined" ? JSON.parse(localStorage.getItem("handyhub_user") || "{}").email : "");
+      const res = await fetch("/api/user/settings", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: activeEmail,
+          currentPassword: currentPass,
+          newPassword: newPass,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok || data.error) {
+        setPassError(data.error || "Failed to update password.");
+      } else {
+        setPassSuccess(data.message || "Password updated successfully! 🔒");
+        setCurrentPass("");
+        setNewPass("");
+        setConfirmPass("");
+      }
+    } catch {
+      setPassError("An unexpected error occurred while updating your password.");
+    } finally {
+      setPassSaving(false);
+    }
+  };
+
+  const handleExportData = () => {
+    const exportObject = {
+      userProfile: user,
+      addresses: addresses,
+      walletBalance: walletBalance,
+      bookings: bookings,
+      exportTimestamp: new Date().toISOString(),
+      platform: "HandyHub PRO Solutions",
+    };
+    const blob = new Blob([JSON.stringify(exportObject, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `handyhub_account_export_${Date.now()}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
   const handleProfileSave = async (e: React.FormEvent) => {
@@ -876,10 +965,212 @@ export default function DashboardPage() {
 
           {/* TAB 7: SETTINGS */}
           {activeTab === "settings" && (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-              <div className="card" style={{ maxWidth: 600 }}>
-                <h3 className="h4" style={{ marginBottom: 16 }}>Account Security & Preferences</h3>
-                <p style={{ fontSize: 14, color: "var(--text-secondary)" }}>Manage your password, login sessions, and service notification preferences.</p>
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ display: "flex", flexDirection: "column", gap: 20, maxWidth: 750 }}>
+              {/* Card 1: Password & Security Hardening */}
+              <div className="card">
+                <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
+                  <div style={{ width: 36, height: 36, borderRadius: 8, background: "rgba(14,165,233,0.15)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, color: "#0EA5E9" }}>
+                    🔒
+                  </div>
+                  <div>
+                    <h3 className="h4" style={{ margin: 0 }}>Password & Security Hardening</h3>
+                    <p style={{ fontSize: 13, color: "var(--text-secondary)", margin: 0 }}>Update your account password to maintain maximum security.</p>
+                  </div>
+                </div>
+
+                {passSuccess && (
+                  <div style={{ background: "rgba(16,185,129,0.12)", border: "1px solid #10B981", color: "#10B981", padding: 12, borderRadius: 8, fontSize: 14, marginBottom: 16 }}>
+                    ✓ {passSuccess}
+                  </div>
+                )}
+                {passError && (
+                  <div style={{ background: "rgba(239,68,68,0.12)", border: "1px solid #EF4444", color: "#EF4444", padding: 12, borderRadius: 8, fontSize: 14, marginBottom: 16 }}>
+                    ⚠️ {passError}
+                  </div>
+                )}
+
+                <form onSubmit={handlePasswordChange} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                  <div>
+                    <label style={{ fontSize: 13, fontWeight: "bold", display: "block", marginBottom: 4 }}>Current Password</label>
+                    <div style={{ position: "relative" }}>
+                      <input
+                        type={showCurrentPass ? "text" : "password"}
+                        value={currentPass}
+                        onChange={(e) => setCurrentPass(e.target.value)}
+                        placeholder="Enter current password"
+                        style={{
+                          width: "100%",
+                          padding: "10px 40px 10px 12px",
+                          borderRadius: 8,
+                          border: "1px solid var(--border-primary)",
+                          background: "var(--bg-tertiary)",
+                          color: "var(--text-primary)",
+                        }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowCurrentPass(!showCurrentPass)}
+                        style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", fontSize: 14 }}
+                      >
+                        {showCurrentPass ? "👁️" : "🙈"}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label style={{ fontSize: 13, fontWeight: "bold", display: "block", marginBottom: 4 }}>New Password</label>
+                    <div style={{ position: "relative" }}>
+                      <input
+                        type={showNewPass ? "text" : "password"}
+                        value={newPass}
+                        onChange={(e) => setNewPass(e.target.value)}
+                        placeholder="Enter new password (min. 8 characters)"
+                        style={{
+                          width: "100%",
+                          padding: "10px 40px 10px 12px",
+                          borderRadius: 8,
+                          border: "1px solid var(--border-primary)",
+                          background: "var(--bg-tertiary)",
+                          color: "var(--text-primary)",
+                        }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowNewPass(!showNewPass)}
+                        style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", fontSize: 14 }}
+                      >
+                        {showNewPass ? "👁️" : "🙈"}
+                      </button>
+                    </div>
+                    {newPass && (
+                      <div style={{ fontSize: 12, marginTop: 4, color: newPass.length >= 8 ? "#10B981" : "#F59E0B" }}>
+                        {newPass.length >= 8 ? "✓ Password length criteria met (8+ chars)" : `⚠️ ${8 - newPass.length} more character(s) required`}
+                      </div>
+                    )}
+                  </div>
+
+                  <div>
+                    <label style={{ fontSize: 13, fontWeight: "bold", display: "block", marginBottom: 4 }}>Confirm New Password</label>
+                    <input
+                      type="password"
+                      value={confirmPass}
+                      onChange={(e) => setConfirmPass(e.target.value)}
+                      placeholder="Confirm new password"
+                      style={{
+                        width: "100%",
+                        padding: 10,
+                        borderRadius: 8,
+                        border: "1px solid var(--border-primary)",
+                        background: "var(--bg-tertiary)",
+                        color: "var(--text-primary)",
+                      }}
+                    />
+                  </div>
+
+                  <button type="submit" disabled={passSaving} className="btn btn-primary btn-sm" style={{ background: "#0EA5E9", alignSelf: "flex-start", marginTop: 4 }}>
+                    {passSaving ? "Updating Password..." : "Update Security Password ➔"}
+                  </button>
+                </form>
+              </div>
+
+              {/* Card 2: Active Sessions & Multi-Device Control */}
+              <div className="card">
+                <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
+                  <div style={{ width: 36, height: 36, borderRadius: 8, background: "rgba(16,185,129,0.15)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, color: "#10B981" }}>
+                    💻
+                  </div>
+                  <div>
+                    <h3 className="h4" style={{ margin: 0 }}>Active Login Sessions</h3>
+                    <p style={{ fontSize: 13, color: "var(--text-secondary)", margin: 0 }}>Monitor and manage devices logged into your account.</p>
+                  </div>
+                </div>
+
+                <div style={{ background: "var(--bg-tertiary)", border: "1px solid var(--border-primary)", borderRadius: 10, padding: 14, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                    <span style={{ fontSize: 24 }}>🌐</span>
+                    <div>
+                      <div style={{ fontSize: 14, fontWeight: "bold" }}>Current Web Session</div>
+                      <div style={{ fontSize: 12, color: "var(--text-secondary)" }}>HandyHub PRO Web Portal • Active Now</div>
+                    </div>
+                  </div>
+                  <span style={{ fontSize: 12, background: "rgba(16,185,129,0.2)", color: "#10B981", padding: "4px 10px", borderRadius: 12, fontWeight: "bold" }}>
+                    🟢 Active Device
+                  </span>
+                </div>
+
+                <div style={{ marginTop: 16, display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10 }}>
+                  <label style={{ fontSize: 13, display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
+                    <input
+                      type="checkbox"
+                      checked={staySignedInState}
+                      onChange={(e) => {
+                        setStaySignedInState(e.target.checked);
+                        if (typeof window !== "undefined") {
+                          localStorage.setItem("handyhub_stay_signed_in", e.target.checked ? "true" : "false");
+                        }
+                      }}
+                    />
+                    <span>Stay signed in on this browser session</span>
+                  </label>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (confirm("Are you sure you want to log out of all active sessions?")) {
+                        handleLogout();
+                      }
+                    }}
+                    className="btn btn-outline btn-sm"
+                    style={{ color: "#EF4444", borderColor: "#EF4444" }}
+                  >
+                    🔒 Log Out Current Session
+                  </button>
+                </div>
+              </div>
+
+              {/* Card 3: Notification & Data Privacy Preferences */}
+              <div className="card">
+                <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
+                  <div style={{ width: 36, height: 36, borderRadius: 8, background: "rgba(245,158,11,0.15)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, color: "#F59E0B" }}>
+                    🔔
+                  </div>
+                  <div>
+                    <h3 className="h4" style={{ margin: 0 }}>Notification & Data Privacy</h3>
+                    <p style={{ fontSize: 13, color: "var(--text-secondary)", margin: 0 }}>Control alert notifications and export your personal account data.</p>
+                  </div>
+                </div>
+
+                <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 20 }}>
+                  <label style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 14px", background: "var(--bg-tertiary)", borderRadius: 8 }}>
+                    <div>
+                      <div style={{ fontSize: 14, fontWeight: "bold" }}>📧 Email Service Notifications</div>
+                      <div style={{ fontSize: 12, color: "var(--text-secondary)" }}>Receive booking confirmations and artisan dispatch updates via email.</div>
+                    </div>
+                    <input type="checkbox" checked={emailNotifs} onChange={(e) => setEmailNotifs(e.target.checked)} />
+                  </label>
+
+                  <label style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 14px", background: "var(--bg-tertiary)", borderRadius: 8 }}>
+                    <div>
+                      <div style={{ fontSize: 14, fontWeight: "bold" }}>📱 SMS Booking Alerts</div>
+                      <div style={{ fontSize: 12, color: "var(--text-secondary)" }}>Urgent text messages when an artisan arrives at your address.</div>
+                    </div>
+                    <input type="checkbox" checked={smsNotifs} onChange={(e) => setSmsNotifs(e.target.checked)} />
+                  </label>
+
+                  <label style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 14px", background: "var(--bg-tertiary)", borderRadius: 8 }}>
+                    <div>
+                      <div style={{ fontSize: 14, fontWeight: "bold" }}>🛡️ Account Security Notices</div>
+                      <div style={{ fontSize: 12, color: "var(--text-secondary)" }}>Alerts for password changes and new device logins.</div>
+                    </div>
+                    <input type="checkbox" checked={securityAlerts} onChange={(e) => setSecurityAlerts(e.target.checked)} />
+                  </label>
+                </div>
+
+                <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap", borderTop: "1px solid var(--border-primary)", paddingTop: 16 }}>
+                  <button type="button" onClick={handleExportData} className="btn btn-secondary btn-sm" style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                    <span>📥</span> Export My Account Data (.JSON)
+                  </button>
+                </div>
               </div>
             </motion.div>
           )}
