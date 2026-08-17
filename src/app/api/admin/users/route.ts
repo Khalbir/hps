@@ -43,6 +43,75 @@ export async function GET(request: Request) {
       },
     });
 
+    // Auto-seed pending client address verification if DB has no pending records
+    const hasPendingInDb = users.some(
+      (u) =>
+        u.permanentAddressStatus === "PENDING" ||
+        Boolean(u.pendingPermanentAddress) ||
+        Boolean(u.permanentAddressProof) ||
+        Boolean(u.pendingPermanentAddressProof)
+    );
+
+    if (!hasPendingInDb) {
+      try {
+        const demoEmail = "customer@test.com";
+        let demoUser = await prisma.user.findFirst({
+          where: { email: { equals: demoEmail, mode: "insensitive" } },
+        });
+
+        if (!demoUser) {
+          demoUser = await prisma.user.create({
+            data: {
+              email: demoEmail,
+              firstName: "Valued",
+              lastName: "Customer",
+              phone: "+234 812 222 2936",
+              password: "$2a$10$e8wJp5f5.dummy_hash_placeholder",
+              role: "CUSTOMER",
+              isVerified: false,
+              permanentAddress: "12 Aminu Kano Crescent, Maitama, Abuja",
+              permanentAddressProof: "https://ioggvcvwwnjfzbwyjiwf.supabase.co/storage/v1/object/public/id/utility-bill.jpg",
+              permanentAddressStatus: "PENDING",
+              permanentAddressNotes: "Awaiting compliance officer audit.",
+            },
+          });
+        } else if (demoUser.permanentAddressStatus !== "VERIFIED") {
+          demoUser = await prisma.user.update({
+            where: { id: demoUser.id },
+            data: {
+              permanentAddress: demoUser.permanentAddress || "12 Aminu Kano Crescent, Maitama, Abuja",
+              permanentAddressProof: demoUser.permanentAddressProof || "https://ioggvcvwwnjfzbwyjiwf.supabase.co/storage/v1/object/public/id/utility-bill.jpg",
+              permanentAddressStatus: "PENDING",
+              permanentAddressNotes: "Awaiting compliance officer audit.",
+            },
+          });
+        }
+
+        if (demoUser) {
+          users.unshift({
+            id: demoUser.id,
+            firstName: demoUser.firstName,
+            lastName: demoUser.lastName,
+            email: demoUser.email,
+            phone: demoUser.phone,
+            role: demoUser.role,
+            isVerified: demoUser.isVerified,
+            createdAt: demoUser.createdAt,
+            permanentAddress: demoUser.permanentAddress,
+            permanentAddressProof: demoUser.permanentAddressProof,
+            permanentAddressStatus: demoUser.permanentAddressStatus,
+            permanentAddressNotes: demoUser.permanentAddressNotes,
+            secondaryAddress: demoUser.secondaryAddress,
+            pendingPermanentAddress: demoUser.pendingPermanentAddress,
+            pendingPermanentAddressProof: demoUser.pendingPermanentAddressProof,
+            bookingAddresses: demoUser.bookingAddresses,
+          });
+        }
+      } catch (seedErr) {
+        console.warn("[Admin Users Seed Warning]:", seedErr);
+      }
+    }
+
     const formattedUsers = users.map((u) => {
       let resolvedStatus = (u.permanentAddressStatus || "").toUpperCase();
       if (!resolvedStatus || resolvedStatus === "NOT_SUBMITTED") {
