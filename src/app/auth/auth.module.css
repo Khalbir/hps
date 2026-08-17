@@ -333,3 +333,18 @@
     min-height: 100vh;
   }
 }
+
+@media (max-width: 480px) {
+  .rightPanel {
+    padding: var(--space-4);
+  }
+  .nameRow {
+    grid-template-columns: 1fr;
+  }
+  .socialBtns {
+    flex-direction: column;
+  }
+  .formTitle {
+    font-size: var(--fs-xl);
+  }
+}

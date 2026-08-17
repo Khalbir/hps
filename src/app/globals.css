@@ -1170,6 +1170,11 @@ body, #__next, main {
 /* ============================================
    SMARTPHONE HORIZONTAL (LANDSCAPE) OPTIMIZATION
    ============================================ */
+}
+
+/* ============================================
+   SMARTPHONE HORIZONTAL (LANDSCAPE) OPTIMIZATION
+   ============================================ */
 @media (max-height: 520px) and (orientation: landscape) {
   :root {
     --header-height: 54px;
@@ -1186,14 +1191,58 @@ body, #__next, main {
 
   /* Modals & Overlays scrollable in landscape */
   [class*="modal"], [class*="Modal"], [class*="overlay"], [class*="Overlay"], [class*="drawer"], [class*="Drawer"] {
-    max-height: 95vh !important;
+    max-height: 95dvh !important;
     overflow-y: auto !important;
     -webkit-overflow-scrolling: touch;
   }
+}
 
 /* ============================================
    SMARTPHONE VERTICAL (PORTRAIT) OPTIMIZATION
    ============================================ */
+@media (max-width: 768px) {
+  :root {
+    --header-height: 64px;
+  }
+
+  /* Safe Area Padding Support for Modern iPhones and Notch Devices */
+  body {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  /* Form controls & touch buttons for touch devices */
+  .input, select, textarea, button, input[type="text"], input[type="email"], input[type="tel"], input[type="password"], input[type="number"], input[type="search"] {
+    min-height: 48px;
+    font-size: 16px !important; /* Prevents iOS Safari canvas auto-zoom */
+    touch-action: manipulation;
+  }
+
+  .btn {
+    min-height: 48px;
+    font-size: var(--fs-sm);
+    padding-inline: var(--space-4);
+    touch-action: manipulation;
+  }
+
+  /* Horizontal touch scrolling containers */
+  .mobile-touch-scroll {
+    display: flex;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scroll-snap-type: x mandatory;
+    gap: 12px;
+    padding-bottom: 8px;
+    scrollbar-width: none;
+  }
+  .mobile-touch-scroll::-webkit-scrollbar {
+    display: none;
+  }
+  .mobile-touch-scroll > * {
+    scroll-snap-align: start;
+    flex-shrink: 0;
+  }
+}
+
 @media (max-width: 600px) and (orientation: portrait) {
   :root {
     --header-height: 60px;
@@ -1204,7 +1253,6 @@ body, #__next, main {
     max-width: 100% !important;
   }
 
-  /* Compact top spacing for portrait mode */
   main {
     padding-top: 60px;
   }
@@ -1213,33 +1261,12 @@ body, #__next, main {
     padding-block: var(--space-10);
   }
 
-  /* Form controls & touch buttons for portrait typing */
-  .input, select, textarea {
-    min-height: 48px;
-    font-size: 16px !important; /* Fixes iOS Safari auto-zoom */
-    padding: 12px 14px;
-    border-radius: var(--radius-lg);
-  }
-
-  .btn {
-    min-height: 48px;
-    font-size: var(--fs-sm);
-    padding-inline: var(--space-4);
-  }
-
   /* Modals & Bottom Drawers in Portrait View */
   [class*="modal"], [class*="Modal"], [class*="overlay"], [class*="Overlay"] {
     max-height: 90dvh !important;
     overflow-y: auto !important;
     -webkit-overflow-scrolling: touch;
-    border-top-left-radius: var(--radius-2xl);
-    border-top-right-radius: var(--radius-2xl);
-  }
-
-  /* 1-Column Stacking for cards & service grids in portrait */
-  [class*="Grid"], [class*="grid"], [class*="CardGrid"], [class*="serviceGrid"] {
-    grid-template-columns: 1fr !important;
-    gap: 14px !important;
   }
 }
+
 

@@ -162,6 +162,42 @@
   top: calc(120px + var(--space-8));
 }
 
+/* Mobile Bottom Sticky Summary Bar */
+.mobileStickyBar {
+  display: none;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: var(--bg-elevated);
+  border-top: 1px solid var(--border-primary);
+  padding: 12px 16px;
+  padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+  z-index: 100;
+  box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.1);
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.mobileStickyInfo {
+  display: flex;
+  flex-direction: column;
+}
+
+.mobileStickyLabel {
+  font-size: 11px;
+  color: var(--text-tertiary);
+  font-weight: var(--fw-medium);
+}
+
+.mobileStickyPrice {
+  font-size: var(--fs-base);
+  font-weight: var(--fw-bold);
+  color: var(--color-primary-500);
+  font-family: var(--font-mono);
+}
+
 /* Responsive */
 @media (max-width: 1024px) {
   .content {
@@ -177,6 +213,9 @@
 }
 
 @media (max-width: 768px) {
+  .mobileStickyBar {
+    display: flex;
+  }
   .progressWrapper {
     padding: 0 var(--space-4) var(--space-4);
   }
@@ -188,6 +227,18 @@
   }
   .headerSpacer {
     width: 60px;
+  }
+  .progressDot {
+    width: 28px;
+    height: 28px;
+    font-size: 11px;
+  }
+  .progressSteps {
+    gap: 4px;
+  }
+  /* Extra bottom padding on mobile mainCol to make room for sticky bottom bar */
+  .mainCol {
+    padding-bottom: 70px;
   }
 }
 
@@ -206,4 +257,8 @@
   .headerSpacer {
     width: 40px;
   }
+  .stepLabel {
+    font-size: 10px;
+  }
 }
+

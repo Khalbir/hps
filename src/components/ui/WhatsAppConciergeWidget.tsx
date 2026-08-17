@@ -18,15 +18,16 @@ export function WhatsAppConciergeWidget() {
   };
 
   return (
-    <div style={{ position: "fixed", bottom: "24px", right: "24px", zIndex: 99999, fontFamily: "system-ui, -apple-system, sans-serif" }}>
+    <div style={{ position: "fixed", bottom: "calc(20px + env(safe-area-inset-bottom, 0px))", right: "16px", zIndex: 99999, fontFamily: "system-ui, -apple-system, sans-serif" }}>
       {/* Floating Concierge Chat Window */}
       {isOpen && (
         <div
           style={{
             position: "absolute",
-            bottom: "70px",
+            bottom: "64px",
             right: "0",
-            width: "320px",
+            width: "calc(100vw - 32px)",
+            maxWidth: "340px",
             background: "#1E293B",
             borderRadius: "16px",
             border: "1px solid #334155",

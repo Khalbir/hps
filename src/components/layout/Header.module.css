@@ -235,11 +235,14 @@
   top: 0;
   right: 0;
   bottom: 0;
+  height: 100dvh;
   width: 100%;
   max-width: 380px;
   background: var(--bg-primary);
   z-index: var(--z-modal);
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  box-shadow: var(--shadow-2xl);
 }
 
 .mobileMenuContent {
@@ -247,6 +250,7 @@
   flex-direction: column;
   min-height: 100%;
   padding: var(--space-6);
+  padding-bottom: calc(var(--space-6) + env(safe-area-inset-bottom, 0px));
 }
 
 .mobileMenuHeader {

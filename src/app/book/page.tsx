@@ -300,6 +300,31 @@ function BookingContent() {
           </div>
         )}
       </div>
+
+      {/* Sticky Mobile Summary Bar */}
+      {step < 6 && (
+        <div className={styles.mobileStickyBar}>
+          <div className={styles.mobileStickyInfo}>
+            <span className={styles.mobileStickyLabel}>
+              {booking.serviceName ? booking.serviceName : "Select Service"}
+            </span>
+            <span className={styles.mobileStickyPrice}>
+              ₦{booking.totalPrice.toLocaleString()}
+            </span>
+          </div>
+          <button
+            className="btn btn-primary btn-sm"
+            onClick={() => {
+              const sideCol = document.querySelector(`.${styles.sideCol}`);
+              if (sideCol) {
+                sideCol.scrollIntoView({ behavior: "smooth" });
+              }
+            }}
+          >
+            View Details
+          </button>
+        </div>
+      )}
     </div>
   );
 }
