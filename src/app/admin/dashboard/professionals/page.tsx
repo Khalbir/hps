@@ -20,7 +20,7 @@ export default function ProfessionalVerificationPage() {
 
   const fetchPros = async () => {
     try {
-      const res = await fetch("/api/admin/verification");
+      const res = await fetch(`/api/admin/verification?_t=${Date.now()}`, { cache: "no-store" });
       const data = await res.json();
       if (res.ok && data.professionals) {
         setPros(data.professionals);
@@ -47,6 +47,10 @@ export default function ProfessionalVerificationPage() {
       (p?.field || "").toLowerCase().includes(search.toLowerCase());
     return matchStatus && matchSearch;
   });
+
+  const pendingCount = pros.filter((p) => (p.verificationStatus || p.status) === "PENDING" || (p.verificationStatus || p.status) === "SUBMITTED").length;
+  const verifiedCount = pros.filter((p) => (p.verificationStatus || p.status) === "VERIFIED" || (p.verificationStatus || p.status) === "APPROVED").length;
+  const rejectedCount = pros.filter((p) => (p.verificationStatus || p.status) === "REJECTED").length;
 
   const handleAuditDecision = async (newStatus: "VERIFIED" | "REJECTED") => {
     if (!inspectPro) return;
@@ -93,7 +97,34 @@ export default function ProfessionalVerificationPage() {
             Review real artisan registrations from database. Mandatory verification required before accepting bookings.
           </p>
         </div>
+        <button
+          onClick={fetchPros}
+          className="btn btn-secondary btn-sm"
+          style={{ display: "flex", alignItems: "center", gap: 6 }}
+        >
+          <Clock size={14} /> Sync Live Data
+        </button>
       </header>
+
+      {/* Stats Deck */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 16, marginBottom: 24 }}>
+        <div className="card" style={{ padding: 16, background: "#1E293B", border: "1px solid #334155" }}>
+          <span style={{ fontSize: 12, color: "#94A3B8" }}>Total Artisans</span>
+          <h3 style={{ margin: "4px 0 0 0", fontSize: 22, fontWeight: "bold", color: "#F8FAFC" }}>{pros.length}</h3>
+        </div>
+        <div className="card" style={{ padding: 16, background: "#1E293B", border: "1px solid #334155" }}>
+          <span style={{ fontSize: 12, color: "#F59E0B" }}>Pending Verification</span>
+          <h3 style={{ margin: "4px 0 0 0", fontSize: 22, fontWeight: "bold", color: "#F59E0B" }}>{pendingCount}</h3>
+        </div>
+        <div className="card" style={{ padding: 16, background: "#1E293B", border: "1px solid #334155" }}>
+          <span style={{ fontSize: 12, color: "#10B981" }}>Verified Badge Holders</span>
+          <h3 style={{ margin: "4px 0 0 0", fontSize: 22, fontWeight: "bold", color: "#10B981" }}>{verifiedCount}</h3>
+        </div>
+        <div className="card" style={{ padding: 16, background: "#1E293B", border: "1px solid #334155" }}>
+          <span style={{ fontSize: 12, color: "#EF4444" }}>Rejected Dossiers</span>
+          <h3 style={{ margin: "4px 0 0 0", fontSize: 22, fontWeight: "bold", color: "#EF4444" }}>{rejectedCount}</h3>
+        </div>
+      </div>
 
       {toast && (
         <div style={{ background: "rgba(16,185,129,0.2)", border: "1px solid #10B981", color: "#10B981", padding: "12px 16px", borderRadius: "8px", marginBottom: "20px", fontSize: "14px" }}>
@@ -138,7 +169,7 @@ export default function ProfessionalVerificationPage() {
                 cursor: "pointer",
               }}
             >
-              {st}
+              {st} {st === "ALL" ? `(${pros.length})` : st === "PENDING" ? `(${pendingCount})` : st === "VERIFIED" ? `(${verifiedCount})` : `(${rejectedCount})`}
             </button>
           ))}
         </div>
@@ -146,11 +177,16 @@ export default function ProfessionalVerificationPage() {
 
       {/* Professionals List Table */}
       <div className="card" style={{ background: "#1E293B", border: "1px solid #334155", padding: 0, overflow: "hidden" }}>
-        {filteredPros.length === 0 ? (
+        {loading ? (
+          <div style={{ padding: "50px", textAlign: "center", color: "#94A3B8" }}>Loading artisan verification registry...</div>
+        ) : filteredPros.length === 0 ? (
           <div style={{ padding: "50px", textAlign: "center", color: "#94A3B8" }}>
             <Inbox size={36} style={{ marginBottom: "12px", opacity: 0.5 }} />
-            <h4 className="h4" style={{ color: "#F8FAFC", margin: "0 0 6px 0" }}>No Artisans Registered in Database</h4>
-            <p style={{ margin: 0, fontSize: "13px" }}>Artisans registering on HandyHub Pro will display here automatically for verification audit.</p>
+            <h4 className="h4" style={{ color: "#F8FAFC", margin: "0 0 6px 0" }}>No Artisans Match Filter Criteria</h4>
+            <p style={{ margin: "0 0 16px 0", fontSize: "13px" }}>Artisans registering on HandyHub Pro will display here automatically for verification audit.</p>
+            <button onClick={fetchPros} className="btn btn-secondary btn-xs" style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+              <Clock size={12} /> Refresh Live Database Directory
+            </button>
           </div>
         ) : (
           <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left", fontSize: "14px" }}>
