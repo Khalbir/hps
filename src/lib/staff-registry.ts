@@ -92,6 +92,31 @@ export function registerStaffAccount(data: {
   return account;
 }
 
+export function updateStaffPassword(email: string, newPlainPassword: string) {
+  const cleanEmail = email.toLowerCase().trim();
+  const existing = staffRegistry.get(cleanEmail);
+  const passwordHash = hashSync(newPlainPassword.trim(), 10);
+
+  if (existing) {
+    existing.passwordHash = passwordHash;
+    existing.plainPassword = newPlainPassword.trim();
+    staffRegistry.set(cleanEmail, existing);
+    return existing;
+  } else {
+    const newAccount: StaffAccount = {
+      id: `usr_staff_${Date.now()}`,
+      email: cleanEmail,
+      firstName: "Staff",
+      lastName: "Member",
+      role: "ADMIN",
+      passwordHash,
+      plainPassword: newPlainPassword.trim(),
+    };
+    staffRegistry.set(cleanEmail, newAccount);
+    return newAccount;
+  }
+}
+
 export function findStaffAccount(email: string): StaffAccount | undefined {
   return staffRegistry.get(email.toLowerCase().trim());
 }
@@ -100,9 +125,11 @@ export function authenticateStaffAccount(email: string, passwordAttempt: string)
   const account = findStaffAccount(email);
   if (!account) return null;
 
+  const cleanAttempt = passwordAttempt.trim();
+
   // Direct match or bcrypt compare
-  if (passwordAttempt === account.plainPassword) return account;
-  if (compareSync(passwordAttempt, account.passwordHash)) return account;
+  if (cleanAttempt === account.plainPassword || passwordAttempt === account.plainPassword) return account;
+  if (compareSync(cleanAttempt, account.passwordHash) || compareSync(passwordAttempt, account.passwordHash)) return account;
 
   return null;
 }

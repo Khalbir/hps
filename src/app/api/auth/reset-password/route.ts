@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/db";
 import { mockResetTokensStore } from "../forgot-password/route";
+import { updateStaffPassword } from "@/lib/staff-registry";
+import { storeCredential } from "@/lib/credentials-store";
 
 export async function POST(request: Request) {
   try {
@@ -58,9 +60,10 @@ export async function POST(request: Request) {
     }
 
     const cleanTargetEmail = targetEmail.trim().toLowerCase();
+    const cleanPassword = password.trim();
 
     // Hash new password securely with bcrypt
-    const hashedPassword = await bcrypt.hash(password.trim(), 12);
+    const hashedPassword = await bcrypt.hash(cleanPassword, 12);
 
     // 2. Update database user password, activate account, and clear reset token
     if (targetUser) {
@@ -118,12 +121,13 @@ export async function POST(request: Request) {
       }
     }
 
-    // Clear token after reset
-    if (token) {
-      mockResetTokensStore.delete(token);
+    // 3. Keep Staff Registry & Credentials Store in lockstep
+    try {
+      updateStaffPassword(cleanTargetEmail, cleanPassword);
+    } catch (e) {
+      console.warn("[Reset Password Staff Registry Warning]:", e);
     }
 
-    // 3. AUTO-LOGIN: Grant active session cookies immediately
     const userRole = targetUser?.role || "CUSTOMER";
     const userPayload = {
       id: targetUser?.id || "usr_reset_" + Date.now(),
@@ -134,7 +138,15 @@ export async function POST(request: Request) {
       isVerified: true,
     };
 
-    const redirectPath = userRole === "PROFESSIONAL" ? "/pro" : "/dashboard";
+    storeCredential(cleanTargetEmail, cleanPassword, userPayload);
+
+    // Clear token after reset
+    if (token) {
+      mockResetTokensStore.delete(token);
+    }
+
+    // 4. Grant active session cookies immediately
+    const redirectPath = userRole === "PROFESSIONAL" ? "/pro" : userRole === "ADMIN" || userRole === "SUPER_ADMIN" ? "/admin/dashboard" : "/dashboard";
     const response = NextResponse.json({
       success: true,
       email: cleanTargetEmail,
@@ -143,9 +155,11 @@ export async function POST(request: Request) {
       user: userPayload,
     });
 
-    const cookieName = userRole === "PROFESSIONAL" ? "handyhub_pro_session" : "handyhub_user_session";
+    const cookieName = userRole === "PROFESSIONAL" ? "handyhub_pro_session" : userRole === "ADMIN" || userRole === "SUPER_ADMIN" ? "handyhub_admin_session" : "handyhub_user_session";
     response.cookies.set(cookieName, "authenticated", { path: "/", maxAge: 86400 * 30, sameSite: "lax" });
     response.cookies.set("handyhub_user_data", JSON.stringify(userPayload), { path: "/", maxAge: 86400 * 30, sameSite: "lax" });
+
+    return response;
 
     return response;
   } catch (error: any) {

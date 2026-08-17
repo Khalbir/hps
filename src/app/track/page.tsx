@@ -20,15 +20,6 @@ function TrackContent() {
 
   const initialRef = searchParams.get("reference") || searchParams.get("ref") || searchParams.get("id") || "";
 
-  useEffect(() => {
-    const savedRef = typeof window !== "undefined" ? localStorage.getItem("handyhub_last_booking_ref") : "";
-    const targetRef = initialRef || savedRef || "";
-    if (targetRef) {
-      setQuery(targetRef);
-      fetchBookingTrack(targetRef);
-    }
-  }, [initialRef]);
-
   const fetchBookingTrack = async (searchQuery: string) => {
     if (!searchQuery) return;
     setLoading(true);
@@ -51,6 +42,15 @@ function TrackContent() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    const savedRef = typeof window !== "undefined" ? localStorage.getItem("handyhub_last_booking_ref") : "";
+    const targetRef = initialRef || savedRef || "";
+    if (targetRef) {
+      setQuery(targetRef);
+      fetchBookingTrack(targetRef);
+    }
+  }, [initialRef]);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -131,7 +131,26 @@ function TrackContent() {
                   <h2 className="h3" style={{ color: "#0EA5E9" }}>{booking.id}</h2>
                 </div>
 
-                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+                  <Link
+                    href={`/receipt/${encodeURIComponent(booking.id)}`}
+                    className="btn btn-secondary btn-sm"
+                    style={{
+                      background: "#1E293B",
+                      color: "#10B981",
+                      border: "1px solid rgba(16, 185, 129, 0.4)",
+                      padding: "6px 14px",
+                      borderRadius: 99,
+                      fontSize: "var(--fs-xs)",
+                      fontWeight: "bold",
+                      textDecoration: "none",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 6,
+                    }}
+                  >
+                    <span>🧾</span> View Payment Receipt
+                  </Link>
                   <div style={{ padding: "6px 14px", background: "rgba(16,185,129,0.15)", color: "#10B981", borderRadius: 99, fontSize: "var(--fs-xs)", fontWeight: "bold" }}>
                     {booking.paymentStatus}
                   </div>

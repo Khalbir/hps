@@ -212,12 +212,12 @@ export function StepConfirmation({ booking }: Props) {
         animate={{ opacity: 1 }}
         transition={{ delay: 1.4 }}
       >
+        <Link href={`/receipt/${bookingRef}`} className="btn btn-primary btn-lg" style={{ background: "#10B981" }}>
+          View Payment Receipt 🧾
+        </Link>
         <Link href={`/track?ref=${bookingRef}`} className="btn btn-primary btn-lg" style={{ background: "#0EA5E9" }}>
           Track Your Booking Live 📍
           <ArrowRight size={18} />
-        </Link>
-        <Link href="/dashboard?tab=profile" className="btn btn-secondary btn-lg">
-          Go to Profile Page 👤
         </Link>
         <Link href="/dashboard" className="btn btn-secondary btn-lg" style={{ border: "1.5px solid var(--border-primary)", background: "transparent" }}>
           Go to Dashboard

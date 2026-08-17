@@ -6,7 +6,7 @@ import { hash } from "bcryptjs";
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { email, amountNgn, bookingId, customerName, customerPhone } = body;
+    const { email, amountNgn, bookingId, customerName, customerPhone, callbackUrl: customCallbackUrl, metadata } = body;
 
     if (!email || !amountNgn) {
       return NextResponse.json(
@@ -47,7 +47,7 @@ export async function POST(request: Request) {
           },
         });
         await prisma.wallet.create({ data: { userId: dbUser.id, balance: 0 } }).catch(() => {});
-      } catch (createErr) {
+      } catch {
         // Fallback search again case-insensitively in case of race condition
         dbUser = await prisma.user.findFirst({
           where: { email: { equals: cleanEmail, mode: "insensitive" } },
@@ -56,19 +56,36 @@ export async function POST(request: Request) {
     }
 
     const userId = dbUser?.id || `usr_${Date.now()}`;
-    const reference = `HHP_${bookingId || "TOPUP"}_${Date.now()}`;
+    const sanitizedBookingId = bookingId ? String(bookingId).replace(/\s+/g, "_") : "BOOKING";
+    const reference = `HHP_${sanitizedBookingId}_${Date.now()}_${Math.floor(1000 + Math.random() * 9000)}`;
     const origin = request.headers.get("origin") || request.headers.get("referer")?.replace(/\/$/, "") || process.env.APP_URL || process.env.NEXT_PUBLIC_APP_URL || "https://handyhubpro.ng";
-    const callbackUrl = `${origin}/dashboard/wallet?status=success&reference=${reference}`;
+    
+    // Dynamic callback URL resolution
+    let finalCallbackUrl = customCallbackUrl;
+    if (!finalCallbackUrl) {
+      if (sanitizedBookingId.includes("TOPUP")) {
+        finalCallbackUrl = `${origin}/dashboard/wallet?status=success&reference=${reference}`;
+      } else {
+        finalCallbackUrl = `${origin}/receipt/${reference}?status=success`;
+      }
+    }
 
-    // Dual-gateway checkout router (Paystack primary -> Flutterwave failover)
+    // Initialize Paystack primary checkout
     const checkout = await initializeDualGatewayCheckout({
       email: cleanEmail,
       amountNgn: Number(amountNgn),
       reference,
-      callbackUrl,
+      callbackUrl: finalCallbackUrl,
       customerName: customerName || (dbUser ? `${dbUser.firstName} ${dbUser.lastName}` : "HandyHub Client"),
       customerPhone: customerPhone || dbUser?.phone || undefined,
-      metadata: { bookingId, email: cleanEmail, userId },
+      bookingId: bookingId || undefined,
+      metadata: {
+        bookingId,
+        email: cleanEmail,
+        userId,
+        customerName: customerName || (dbUser ? `${dbUser.firstName} ${dbUser.lastName}` : "HandyHub Client"),
+        ...(metadata || {}),
+      },
     });
 
     return NextResponse.json({

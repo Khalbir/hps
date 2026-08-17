@@ -13,6 +13,7 @@ import { StepPayment } from "@/components/features/booking/StepPayment";
 import { StepConfirmation } from "@/components/features/booking/StepConfirmation";
 import { BookingSummary } from "@/components/features/booking/BookingSummary";
 import { resolveServiceCategory } from "@/lib/services";
+import { STORAGE_KEYS, saveToStorage, loadFromStorage, removeFromStorage } from "@/lib/localStorage-utils";
 import styles from "./book.module.css";
 
 export interface BookingData {
@@ -85,10 +86,22 @@ const stepTitles = [
 
 function BookingContent() {
   const searchParams = useSearchParams();
-  const [step, setStep] = useState(1);
-  const [booking, setBooking] = useState<BookingData>(initialBookingData);
-  const [direction, setDirection] = useState(1);
 
+  // Restore booking draft and step from localStorage for refresh resilience
+  const [step, setStep] = useState(() => {
+    if (typeof window !== "undefined") {
+      const savedStep = localStorage.getItem(STORAGE_KEYS.BOOKING_STEP);
+      return savedStep ? Math.min(Math.max(Number(savedStep), 1), 5) : 1;
+    }
+    return 1;
+  });
+  const [booking, setBooking] = useState<BookingData>(() => {
+    if (typeof window !== "undefined") {
+      return loadFromStorage<BookingData>(STORAGE_KEYS.PENDING_BOOKING, initialBookingData);
+    }
+    return initialBookingData;
+  });
+  const [direction, setDirection] = useState(1);
   useEffect(() => {
     const categoryParam = searchParams.get("category");
     const serviceParam = searchParams.get("service");
@@ -117,6 +130,9 @@ function BookingContent() {
       }));
 
       setStep(6);
+      // Clean up persisted step since booking is confirmed
+      removeFromStorage(STORAGE_KEYS.BOOKING_STEP);
+      removeFromStorage(STORAGE_KEYS.PENDING_BOOKING);
       return;
     }
 
@@ -147,17 +163,32 @@ function BookingContent() {
 
   const nextStep = () => {
     setDirection(1);
-    setStep((prev) => Math.min(prev + 1, 6));
+    setStep((prev) => {
+      const next = Math.min(prev + 1, 6);
+      if (next === 6) {
+        // Booking confirmed — clean up draft & step
+        removeFromStorage(STORAGE_KEYS.BOOKING_STEP);
+        removeFromStorage(STORAGE_KEYS.PENDING_BOOKING);
+      } else {
+        saveToStorage(STORAGE_KEYS.BOOKING_STEP, next);
+      }
+      return next;
+    });
   };
 
   const prevStep = () => {
     setDirection(-1);
-    setStep((prev) => Math.max(prev - 1, 1));
+    setStep((prev) => {
+      const next = Math.max(prev - 1, 1);
+      saveToStorage(STORAGE_KEYS.BOOKING_STEP, next);
+      return next;
+    });
   };
 
   const goToStep = (s: number) => {
     setDirection(s > step ? 1 : -1);
     setStep(s);
+    saveToStorage(STORAGE_KEYS.BOOKING_STEP, s);
   };
 
   const slideVariants = {

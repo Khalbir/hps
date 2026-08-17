@@ -49,8 +49,10 @@ export function AdminLayoutShell({ children }: { children: ReactNode }) {
     const hasCookie = document.cookie.includes("handyhub_admin_session=authenticated");
 
     if (!sessionStr && !hasCookie) {
-      setAuthenticated(false);
-      router.replace("/admin?unauthorized=1");
+      queueMicrotask(() => {
+        setAuthenticated(false);
+        router.replace("/admin?unauthorized=1");
+      });
       return;
     }
 
@@ -58,8 +60,10 @@ export function AdminLayoutShell({ children }: { children: ReactNode }) {
       if (sessionStr) {
         const sess = JSON.parse(sessionStr);
         if (!sess.authenticated) {
-          setAuthenticated(false);
-          router.replace("/admin?unauthorized=1");
+          queueMicrotask(() => {
+            setAuthenticated(false);
+            router.replace("/admin?unauthorized=1");
+          });
           return;
         }
         setAdminUser(sess.user || { role: "SUPER_ADMIN", firstName: "System", lastName: "Admin" });
@@ -68,8 +72,10 @@ export function AdminLayoutShell({ children }: { children: ReactNode }) {
       }
       setAuthenticated(true);
     } catch {
-      setAuthenticated(false);
-      router.replace("/admin?unauthorized=1");
+      queueMicrotask(() => {
+        setAuthenticated(false);
+        router.replace("/admin?unauthorized=1");
+      });
     }
   }, [router]);
 

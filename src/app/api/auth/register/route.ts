@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { hash } from "bcryptjs";
 import { sendConfirmationEmail } from "@/lib/email";
+import { storeCredential } from "@/lib/credentials-store";
 
 export async function POST(request: Request) {
   try {
@@ -79,6 +80,14 @@ export async function POST(request: Request) {
           } catch (updErr) {
             console.error("[Register Update Unverified User Error]:", updErr);
           }
+
+          storeCredential(cleanEmail, password.trim(), {
+            id: existingUser.id,
+            email: cleanEmail,
+            firstName: firstName.trim(),
+            lastName: lastName.trim(),
+            role: userRole,
+          });
 
           sendConfirmationEmail({
             email: existingUser.email,
@@ -196,6 +205,14 @@ export async function POST(request: Request) {
         });
       } catch (err) {}
     }
+
+    storeCredential(cleanEmail, password.trim(), {
+      id: user.id,
+      email: cleanEmail,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      role: user.role,
+    });
 
     // Send 6-Digit Email Confirmation Code & Verification Link
     sendConfirmationEmail({

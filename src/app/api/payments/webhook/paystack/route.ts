@@ -1,18 +1,18 @@
 import { NextResponse } from "next/server";
-import { verifyPaystackSignature, verifyAndRecordPayment } from "@/lib/fintech";
+import { paystack } from "@/lib/paystack";
+import { verifyAndRecordPayment } from "@/lib/fintech";
 import { prisma } from "@/lib/db";
-import { sendMultiChannelNotification, formatNaira } from "@/lib/notifications";
 
 export async function POST(request: Request) {
   try {
     const rawBody = await request.text();
     const paystackSignature = request.headers.get("x-paystack-signature");
 
-    // 1. Verify HMAC SHA512 signature securely using environment variables
-    const isValidSignature = verifyPaystackSignature(rawBody, paystackSignature);
+    // 1. Verify HMAC SHA512 signature securely
+    const isValidSignature = paystack.verifyWebhookSignature(rawBody, paystackSignature);
 
     if (!isValidSignature && process.env.NODE_ENV === "production") {
-      console.error("[Paystack Webhook] Invalid HMAC SHA512 Signature");
+      console.error("[Paystack Webhook] Invalid HMAC SHA512 Signature rejected");
       return NextResponse.json({ error: "Invalid Paystack signature" }, { status: 401 });
     }
 
@@ -20,15 +20,14 @@ export async function POST(request: Request) {
     const eventType = event.event;
     const data = event.data || {};
 
-    console.log(`[Paystack Webhook Received] Event: ${eventType}, Ref: ${data.reference}`);
+    console.log(`[Paystack Webhook Received] Event: ${eventType}, Reference: ${data.reference}`);
 
-    // 2. Handle Event Callbacks
+    // 2. Handle Event Callbacks Idempotently
     switch (eventType) {
       case "charge.success": {
         const reference = data.reference;
-        const amountNgn = (data.amount || 0) / 100;
 
-        // Update DB payment record & trigger notifications
+        // Verify and record payment idempotently
         await verifyAndRecordPayment(reference, "PAYSTACK");
 
         console.log(`[Paystack Webhook] Successfully processed charge.success for ref: ${reference}`);
@@ -41,35 +40,35 @@ export async function POST(request: Request) {
         if (payment) {
           await prisma.payment.update({
             where: { id: payment.id },
-            data: { status: "FAILED" },
+            data: {
+              status: "FAILED",
+              metadata: JSON.stringify({
+                gateway_response: data.gateway_response,
+                message: data.message,
+                channel: data.channel,
+              }),
+            },
           });
 
-          await prisma.booking.update({
-            where: { id: payment.bookingId },
-            data: { paymentStatus: "FAILED" },
-          });
+          if (payment.bookingId) {
+            await prisma.booking.update({
+              where: { id: payment.bookingId },
+              data: { paymentStatus: "FAILED" },
+            }).catch(() => {});
+          }
         }
-        console.warn(`[Paystack Webhook] Charge failed for ref: ${reference}`);
-        break;
-      }
-
-      case "transfer.success": {
-        console.log(`[Paystack Webhook] Transfer success for ref: ${data.reference}`);
-        break;
-      }
-
-      case "transfer.failed": {
-        console.warn(`[Paystack Webhook] Transfer failed for ref: ${data.reference}`);
+        console.warn(`[Paystack Webhook] Charge marked FAILED for ref: ${reference}`);
         break;
       }
 
       default:
-        console.log(`[Paystack Webhook] Event ignored: ${eventType}`);
+        console.log(`[Paystack Webhook] Unhandled event type: ${eventType} (Acknowledged)`);
     }
 
+    // Always return 200 OK fast so Paystack does not retry
     return NextResponse.json({ status: "success", received: true });
   } catch (error: any) {
     console.error("[Paystack Webhook Processing Error]:", error);
-    return NextResponse.json({ error: "Webhook process error", details: error.message }, { status: 500 });
+    return NextResponse.json({ error: "Webhook processing error", details: error.message }, { status: 500 });
   }
 }

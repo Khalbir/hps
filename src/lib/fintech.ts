@@ -56,91 +56,73 @@ const MONNIFY_SECRET_KEY = process.env.MONNIFY_SECRET_KEY || "MONNIFY_SEC_TEST_m
 const MONNIFY_CONTRACT_CODE = process.env.MONNIFY_CONTRACT_CODE || "1234567890";
 const FLUTTERWAVE_SECRET_KEY = process.env.FLW_SECRET_KEY || process.env.FLUTTERWAVE_SECRET_KEY || "FLWSECK_TEST_handyhub_flw_mock";
 
-const PLATFORM_COMMISSION_RATE = 0.20; // 20% Platform Escrow Commission
+import { paystack, PaystackService } from "@/lib/paystack";
+
+export const PLATFORM_COMMISSION_RATE = 0.20; // 20% Platform Escrow Commission
 
 /**
- * Strategy 1: Paystack Payment Provider
+ * Strategy 1: Paystack Payment Provider (Production Grade)
  */
 export class PaystackGatewayStrategy implements IPaymentGateway {
   name: "PAYSTACK" = "PAYSTACK";
 
   async initialize(params: InitializePaymentParams) {
-    try {
-      const amountKobo = Math.round(params.amountNgn * 100);
-      const res = await fetch("https://api.paystack.co/transaction/initialize", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${PAYSTACK_SECRET_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          email: params.email,
-          amount: amountKobo,
-          reference: params.reference,
-          callback_url: params.callbackUrl,
-          metadata: {
-            bookingId: params.bookingId,
-            customerName: params.customerName,
-            customerPhone: params.customerPhone,
-            ...params.metadata,
-          },
-        }),
-      });
+    const result = await paystack.initializeTransaction({
+      email: params.email,
+      amountNgn: params.amountNgn,
+      reference: params.reference,
+      callbackUrl: params.callbackUrl,
+      customerName: params.customerName,
+      customerPhone: params.customerPhone,
+      metadata: {
+        bookingId: params.bookingId,
+        customerName: params.customerName,
+        customerPhone: params.customerPhone,
+        ...params.metadata,
+      },
+    });
 
-      const data = await res.json();
-      if (!res.ok || !data.status) {
-        return { success: false, error: data.message || "Paystack transaction rejected" };
-      }
-
+    if (!result.success || !result.data) {
       return {
-        success: true,
-        data: {
-          gateway: "PAYSTACK" as const,
-          authorizationUrl: data.data.authorization_url,
-          accessCode: data.data.access_code,
-          reference: data.data.reference,
-          isFallback: false,
-        },
+        success: false,
+        error: result.error || "Paystack transaction initialization rejected",
       };
-    } catch (err: any) {
-      return { success: false, error: err.message || "Network timeout connecting to Paystack" };
     }
+
+    return {
+      success: true,
+      data: {
+        gateway: "PAYSTACK" as const,
+        authorizationUrl: result.data.authorization_url,
+        accessCode: result.data.access_code,
+        reference: result.data.reference,
+        isFallback: false,
+      },
+    };
   }
 
   async verify(reference: string): Promise<VerifyPaymentResult> {
-    try {
-      const res = await fetch(`https://api.paystack.co/transaction/verify/${encodeURIComponent(reference)}`, {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${PAYSTACK_SECRET_KEY}`,
-        },
-      });
+    const result = await paystack.verifyTransaction(reference);
 
-      const data = await res.json();
-      if (res.ok && data.status && data.data?.status === "success") {
-        return {
-          gateway: "PAYSTACK",
-          status: "SUCCESS",
-          reference: data.data.reference,
-          amountNgn: data.data.amount / 100,
-          channel: data.data.channel || "card",
-          paidAt: data.data.paid_at || new Date().toISOString(),
-          metadata: data.data.metadata,
-        };
-      }
-    } catch (err) {
-      console.warn("[Paystack Verification Error]:", err);
-    }
-
-    // Secure Dev/Test fallback return
-    if (PAYSTACK_SECRET_KEY.startsWith("sk_test_handyhub_paystack_mock") || PAYSTACK_SECRET_KEY === "sk_test_") {
+    if (result.success && result.data) {
+      const data = result.data;
       return {
         gateway: "PAYSTACK",
-        status: "SUCCESS",
-        reference,
-        amountNgn: 15000,
-        channel: "card",
-        paidAt: new Date().toISOString(),
+        status: result.status,
+        reference: data.reference,
+        amountNgn: data.amount / 100,
+        channel: data.channel || (data.authorization?.channel as string) || "card",
+        paidAt: data.paid_at || new Date().toISOString(),
+        metadata: {
+          ...data.metadata,
+          fees: data.fees ? data.fees / 100 : 0,
+          ipAddress: data.ip_address,
+          authorizationCode: data.authorization?.authorization_code,
+          cardType: data.authorization?.card_type,
+          last4: data.authorization?.last4,
+          bank: data.authorization?.bank,
+          gatewayResponse: data.gateway_response,
+        },
       };
     }
 
@@ -151,6 +133,7 @@ export class PaystackGatewayStrategy implements IPaymentGateway {
       amountNgn: 0,
       channel: "unknown",
       paidAt: new Date().toISOString(),
+      metadata: {},
     };
   }
 }
@@ -362,13 +345,14 @@ export async function initializeDualGatewayCheckout(
 
 /**
  * Handle Payment Verification, Database Status Update, & Notifications Dispatch
+ * Fully idempotent: safe to call from both webhook and redirect callbacks.
  */
 export async function verifyAndRecordPayment(reference: string, providerName?: string) {
   const provider = PaymentGatewayRegistry.getGateway(providerName);
   const verifyRes = await provider.verify(reference);
 
   try {
-    const existingPayment = await prisma.payment.findUnique({
+    let existingPayment = await prisma.payment.findUnique({
       where: { reference },
       include: {
         booking: {
@@ -381,24 +365,43 @@ export async function verifyAndRecordPayment(reference: string, providerName?: s
       },
     });
 
+    const isSuccess = verifyRes.status === "SUCCESS";
+    const metaString = JSON.stringify({
+      channel: verifyRes.channel,
+      paidAt: verifyRes.paidAt,
+      ...(verifyRes.metadata || {}),
+    });
+
+    // If payment record already exists
     if (existingPayment) {
-      const isSuccess = verifyRes.status === "SUCCESS";
+      // Idempotent Guard: if already SUCCESS and we get another SUCCESS notification, skip notifications
+      const alreadySuccessful = existingPayment.status === "SUCCESS";
 
       // 1. Update Payment record
-      await prisma.payment.update({
+      existingPayment = await prisma.payment.update({
         where: { id: existingPayment.id },
         data: {
           status: isSuccess ? "SUCCESS" : "FAILED",
+          metadata: metaString,
+        },
+        include: {
+          booking: {
+            include: {
+              customer: true,
+              professional: { include: { user: true } },
+              service: true,
+            },
+          },
         },
       });
 
-      // 2. Update Booking payment status & state
-      if (isSuccess) {
+      // 2. Update Booking payment status & state if success and not already processed
+      if (isSuccess && existingPayment.bookingId) {
         const updatedBooking = await prisma.booking.update({
           where: { id: existingPayment.bookingId },
           data: {
             paymentStatus: "PAID",
-            status: "ACCEPTED",
+            status: existingPayment.booking.status === "PENDING" ? "ACCEPTED" : existingPayment.booking.status,
             paymentMethod: verifyRes.gateway.toLowerCase(),
           },
           include: {
@@ -408,33 +411,78 @@ export async function verifyAndRecordPayment(reference: string, providerName?: s
           },
         });
 
-        // 3. Dispatch Multi-Channel Notifications (Customer & Artisan)
-        await notifyBookingStatusChange({
-          id: updatedBooking.id,
-          reference: updatedBooking.reference,
-          status: "ACCEPTED",
-          customerId: updatedBooking.customerId,
-          customer: updatedBooking.customer,
-          professional: updatedBooking.professional,
-          service: updatedBooking.service,
-          estimatedPrice: updatedBooking.estimatedPrice,
-        });
+        // 3. Dispatch Multi-Channel Notifications (Only on first transition to SUCCESS)
+        if (!alreadySuccessful) {
+          await notifyBookingStatusChange({
+            id: updatedBooking.id,
+            reference: updatedBooking.reference,
+            status: "ACCEPTED",
+            customerId: updatedBooking.customerId,
+            customer: updatedBooking.customer,
+            professional: updatedBooking.professional,
+            service: updatedBooking.service,
+            estimatedPrice: updatedBooking.estimatedPrice,
+          }).catch((e) => console.warn("[Notification Warn]:", e));
 
-        await sendMultiChannelNotification({
-          userId: updatedBooking.customerId,
-          recipientEmail: updatedBooking.customer.email,
-          recipientPhone: updatedBooking.customer.phone || undefined,
-          recipientName: `${updatedBooking.customer.firstName} ${updatedBooking.customer.lastName}`,
-          type: "PAYMENT",
-          title: "Payment Confirmed — Booking Accepted",
-          message: `Your payment of ${formatNaira(verifyRes.amountNgn)} via ${verifyRes.gateway} for Booking #${updatedBooking.reference} (${updatedBooking.service.name}) was confirmed successfully!`,
-          metadata: {
-            "Payment Reference": reference,
-            "Gateway": verifyRes.gateway,
-            "Amount Paid": formatNaira(verifyRes.amountNgn),
-            "Status": "PAID",
+          await sendMultiChannelNotification({
+            userId: updatedBooking.customerId,
+            recipientEmail: updatedBooking.customer.email,
+            recipientPhone: updatedBooking.customer.phone || undefined,
+            recipientName: `${updatedBooking.customer.firstName} ${updatedBooking.customer.lastName}`,
+            type: "PAYMENT",
+            title: "Payment Confirmed — Booking Accepted",
+            message: `Your payment of ${formatNaira(verifyRes.amountNgn)} via ${verifyRes.gateway} for Booking #${updatedBooking.reference} (${updatedBooking.service.name}) was confirmed successfully!`,
+            metadata: {
+              "Payment Reference": reference,
+              "Gateway": verifyRes.gateway,
+              "Amount Paid": formatNaira(verifyRes.amountNgn),
+              "Status": "PAID",
+            },
+          }).catch((e) => console.warn("[Notification Warn]:", e));
+        }
+      }
+    } else {
+      // Fallback: If payment record wasn't pre-created, attempt to resolve booking from reference or metadata
+      const bookingIdFromMeta = verifyRes.metadata?.bookingId;
+      const bookingRefFromMeta = verifyRes.metadata?.bookingRef;
+
+      let matchedBooking = null;
+      if (bookingIdFromMeta) {
+        matchedBooking = await prisma.booking.findFirst({
+          where: { OR: [{ id: bookingIdFromMeta }, { reference: bookingIdFromMeta }] },
+          include: { customer: true, professional: { include: { user: true } }, service: true },
+        });
+      } else if (bookingRefFromMeta) {
+        matchedBooking = await prisma.booking.findFirst({
+          where: { reference: bookingRefFromMeta },
+          include: { customer: true, professional: { include: { user: true } }, service: true },
+        });
+      }
+
+      if (matchedBooking) {
+        await prisma.payment.create({
+          data: {
+            reference,
+            bookingId: matchedBooking.id,
+            userId: matchedBooking.customerId,
+            amount: verifyRes.amountNgn,
+            currency: "NGN",
+            provider: verifyRes.gateway,
+            status: isSuccess ? "SUCCESS" : "FAILED",
+            metadata: metaString,
           },
         });
+
+        if (isSuccess) {
+          await prisma.booking.update({
+            where: { id: matchedBooking.id },
+            data: {
+              paymentStatus: "PAID",
+              status: matchedBooking.status === "PENDING" ? "ACCEPTED" : matchedBooking.status,
+              paymentMethod: verifyRes.gateway.toLowerCase(),
+            },
+          });
+        }
       }
     }
   } catch (err) {

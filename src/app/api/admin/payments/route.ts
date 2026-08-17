@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { purgeDemoRecordsFromDB, DEMO_EMAILS, DEMO_PAYMENT_REFS } from "@/lib/purge-demo-utility";
+import { verifyAndRecordPayment } from "@/lib/fintech";
 
 export const dynamic = "force-dynamic";
 
@@ -27,8 +28,15 @@ export async function GET(request: Request) {
       where,
       orderBy: { createdAt: "desc" },
       include: {
-        user: { select: { firstName: true, lastName: true, email: true } },
-        booking: { select: { reference: true } },
+        user: { select: { firstName: true, lastName: true, email: true, phone: true } },
+        booking: {
+          select: {
+            id: true,
+            reference: true,
+            status: true,
+            service: { select: { name: true } },
+          },
+        },
       },
     });
 
@@ -39,7 +47,7 @@ export async function GET(request: Request) {
         customer: { email: { notIn: DEMO_EMAILS } },
       },
       include: {
-        customer: { select: { firstName: true, lastName: true, email: true } },
+        customer: { select: { firstName: true, lastName: true, email: true, phone: true } },
         service: { select: { name: true } },
       },
       orderBy: { createdAt: "desc" },
@@ -54,11 +62,12 @@ export async function GET(request: Request) {
         id: `pay_bkg_${b.id}`,
         reference: `PAY_${b.reference}`,
         bookingId: b.id,
-        booking: { reference: b.reference },
+        booking: { id: b.id, reference: b.reference, status: b.status, service: b.service },
         amount: b.estimatedPrice,
         currency: "NGN",
         provider: b.paymentMethod ? b.paymentMethod.toUpperCase() : "PAYSTACK",
         status: b.paymentStatus === "REFUNDED" ? "REFUNDED" : "SUCCESS",
+        metadata: "{}",
         user: b.customer,
         createdAt: b.createdAt,
       }));
@@ -94,5 +103,30 @@ export async function GET(request: Request) {
   } catch (error: any) {
     console.error("[Payments GET Error]:", error);
     return NextResponse.json({ error: "Failed to fetch payments: " + error.message }, { status: 500 });
+  }
+}
+
+/**
+ * POST handler for Admin Manual Payment Verification & Reconciliation
+ */
+export async function POST(request: Request) {
+  try {
+    const body = await request.json();
+    const { reference, provider } = body;
+
+    if (!reference) {
+      return NextResponse.json({ error: "Payment reference is required" }, { status: 400 });
+    }
+
+    const verification = await verifyAndRecordPayment(reference, provider || "PAYSTACK");
+
+    return NextResponse.json({
+      success: true,
+      verification,
+      message: `Transaction ${reference} verification processed. Result: ${verification.status}`,
+    });
+  } catch (error: any) {
+    console.error("[Admin Payment POST Error]:", error);
+    return NextResponse.json({ error: "Manual verification error: " + error.message }, { status: 500 });
   }
 }

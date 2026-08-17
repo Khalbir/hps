@@ -227,10 +227,12 @@ export function StepPayment({ booking, updateBooking, onNext, onBack }: StepProp
 
   const isHighRisk = isHighRiskService(booking.serviceCategory || "");
   const addressStatus = activeUser?.permanentAddressStatus || "NOT_SUBMITTED";
-  const isCheckoutBlocked = isPaying || !activeUser || (
-    isHighRisk 
-      ? addressStatus !== "VERIFIED" 
-      : (addressStatus === "NOT_SUBMITTED" || addressStatus === "REJECTED" || addressStatus === "SUSPENDED")
+  const isCheckoutBlocked = isPaying || (
+    activeUser ? (
+      isHighRisk 
+        ? addressStatus !== "VERIFIED" 
+        : (addressStatus === "NOT_SUBMITTED" || addressStatus === "REJECTED" || addressStatus === "SUSPENDED")
+    ) : false
   );
 
   return (

@@ -11,6 +11,16 @@ import {
 } from "lucide-react";
 import { BrandLogo } from "@/components/common/BrandLogo";
 import { AddressVerificationModule } from "@/components/features/verification/AddressVerificationModule";
+import {
+  STORAGE_KEYS,
+  saveToStorage,
+  loadFromStorage,
+  loadNotificationPrefs,
+  saveNotificationPrefs,
+  saveDashboardStats,
+  loadDashboardStats,
+  clearUserDataCache,
+} from "@/lib/localStorage-utils";
 import styles from "./dashboard.module.css";
 
 interface Address {
@@ -24,7 +34,12 @@ interface Address {
 
 export default function DashboardPage() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState("overview");
+  const [activeTab, setActiveTab] = useState(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem(STORAGE_KEYS.DASHBOARD_TAB) || "overview";
+    }
+    return "overview";
+  });
 
   // User state
   const [user, setUser] = useState<any>({
@@ -35,10 +50,12 @@ export default function DashboardPage() {
     role: "CUSTOMER",
   });
 
-  const [walletBalance, setWalletBalance] = useState(0);
-  const [activeDispatchesCount, setActiveDispatchesCount] = useState(0);
-  const [totalBookingsCount, setTotalBookingsCount] = useState(0);
-  const [bookings, setBookings] = useState<any[]>([]);
+  // Initialize from cached dashboard stats for instant display (before API responds)
+  const cachedStats = typeof window !== "undefined" ? loadDashboardStats() : null;
+  const [walletBalance, setWalletBalance] = useState(cachedStats?.walletBalance ?? 0);
+  const [activeDispatchesCount, setActiveDispatchesCount] = useState(cachedStats?.activeDispatchesCount ?? 0);
+  const [totalBookingsCount, setTotalBookingsCount] = useState(cachedStats?.totalBookingsCount ?? 0);
+  const [bookings, setBookings] = useState<any[]>(() => loadFromStorage<any[]>(STORAGE_KEYS.BOOKINGS_CACHE, []));
   const [loading, setLoading] = useState(true);
 
   const [topUpAmount, setTopUpAmount] = useState(5000);
@@ -46,8 +63,8 @@ export default function DashboardPage() {
   const [topUpLoading, setTopUpLoading] = useState(false);
   const [topUpSuccessAlert, setTopUpSuccessAlert] = useState("");
 
-  // Address state
-  const [addresses, setAddresses] = useState<Address[]>([]);
+  // Address state — restore from localStorage cache
+  const [addresses, setAddresses] = useState<Address[]>(() => loadFromStorage<Address[]>(STORAGE_KEYS.ADDRESSES, []));
   const [showAddressModal, setShowAddressModal] = useState(false);
   const [newAddrTitle, setNewAddrTitle] = useState("");
   const [newAddrStreet, setNewAddrStreet] = useState("");
@@ -70,10 +87,11 @@ export default function DashboardPage() {
   const [passSuccess, setPassSuccess] = useState("");
   const [passError, setPassError] = useState("");
 
-  // Notification Preferences State
-  const [emailNotifs, setEmailNotifs] = useState(true);
-  const [smsNotifs, setSmsNotifs] = useState(true);
-  const [securityAlerts, setSecurityAlerts] = useState(true);
+  // Notification Preferences State — restore from localStorage
+  const savedNotifPrefs = typeof window !== "undefined" ? loadNotificationPrefs() : { emailNotifs: true, smsNotifs: true, securityAlerts: true };
+  const [emailNotifs, setEmailNotifs] = useState(savedNotifPrefs.emailNotifs);
+  const [smsNotifs, setSmsNotifs] = useState(savedNotifPrefs.smsNotifs);
+  const [securityAlerts, setSecurityAlerts] = useState(savedNotifPrefs.securityAlerts);
   const [staySignedInState, setStaySignedInState] = useState(true);
   const [prefSuccess, setPrefSuccess] = useState("");
 
@@ -325,7 +343,16 @@ export default function DashboardPage() {
 
         setActiveDispatchesCount(data.activeDispatchesCount || 0);
         setTotalBookingsCount(data.totalBookingsCount || 0);
-        setBookings(data.bookings || []);
+        const fetchedBookings = data.bookings || [];
+        setBookings(fetchedBookings);
+
+        // Cache dashboard data to localStorage for instant restore on next visit
+        saveDashboardStats({
+          activeDispatchesCount: data.activeDispatchesCount || 0,
+          totalBookingsCount: data.totalBookingsCount || 0,
+          walletBalance: walletBalance,
+        });
+        saveToStorage(STORAGE_KEYS.BOOKINGS_CACHE, fetchedBookings);
       }
     } catch (err) {
       console.warn("Failed to fetch customer dashboard data:", err);
@@ -346,6 +373,7 @@ export default function DashboardPage() {
 
       if (tabParam) {
         setActiveTab(tabParam);
+        saveToStorage(STORAGE_KEYS.DASHBOARD_TAB, tabParam);
       }
 
       if (paymentParam === "success" || topUpParam === "SUCCESS") {
@@ -446,7 +474,9 @@ export default function DashboardPage() {
       state: "FCT",
       isDefault: addresses.length === 0,
     };
-    setAddresses([...addresses, newAddr]);
+    const updatedAddresses = [...addresses, newAddr];
+    setAddresses(updatedAddresses);
+    saveToStorage(STORAGE_KEYS.ADDRESSES, updatedAddresses);
     setNewAddrTitle("");
     setNewAddrStreet("");
     setShowAddressModal(false);
@@ -456,6 +486,8 @@ export default function DashboardPage() {
     if (typeof window !== "undefined") {
       localStorage.removeItem("handyhub_user");
       localStorage.removeItem("handyhub_stay_signed_in");
+      // Clean up all cached user data on logout
+      clearUserDataCache();
       window.location.href = "/auth/login";
     }
   };
@@ -601,6 +633,7 @@ export default function DashboardPage() {
               key={link.id}
               onClick={() => {
                 setActiveTab(link.id);
+                saveToStorage(STORAGE_KEYS.DASHBOARD_TAB, link.id);
                 setSidebarOpen(false);
               }}
               className={`${styles.navLink} ${activeTab === link.id ? styles.navLinkActive : ""}`}
@@ -1211,7 +1244,7 @@ export default function DashboardPage() {
                       <div style={{ fontSize: 14, fontWeight: "bold" }}>📧 Email Service Notifications</div>
                       <div style={{ fontSize: 12, color: "var(--text-secondary)" }}>Receive booking confirmations and artisan dispatch updates via email.</div>
                     </div>
-                    <input type="checkbox" checked={emailNotifs} onChange={(e) => setEmailNotifs(e.target.checked)} />
+                    <input type="checkbox" checked={emailNotifs} onChange={(e) => { setEmailNotifs(e.target.checked); saveNotificationPrefs({ emailNotifs: e.target.checked, smsNotifs, securityAlerts }); }} />
                   </label>
 
                   <label style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 14px", background: "var(--bg-tertiary)", borderRadius: 8 }}>
@@ -1219,7 +1252,7 @@ export default function DashboardPage() {
                       <div style={{ fontSize: 14, fontWeight: "bold" }}>📱 SMS Booking Alerts</div>
                       <div style={{ fontSize: 12, color: "var(--text-secondary)" }}>Urgent text messages when an artisan arrives at your address.</div>
                     </div>
-                    <input type="checkbox" checked={smsNotifs} onChange={(e) => setSmsNotifs(e.target.checked)} />
+                    <input type="checkbox" checked={smsNotifs} onChange={(e) => { setSmsNotifs(e.target.checked); saveNotificationPrefs({ emailNotifs, smsNotifs: e.target.checked, securityAlerts }); }} />
                   </label>
 
                   <label style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 14px", background: "var(--bg-tertiary)", borderRadius: 8 }}>
@@ -1227,7 +1260,7 @@ export default function DashboardPage() {
                       <div style={{ fontSize: 14, fontWeight: "bold" }}>🛡️ Account Security Notices</div>
                       <div style={{ fontSize: 12, color: "var(--text-secondary)" }}>Alerts for password changes and new device logins.</div>
                     </div>
-                    <input type="checkbox" checked={securityAlerts} onChange={(e) => setSecurityAlerts(e.target.checked)} />
+                    <input type="checkbox" checked={securityAlerts} onChange={(e) => { setSecurityAlerts(e.target.checked); saveNotificationPrefs({ emailNotifs, smsNotifs, securityAlerts: e.target.checked }); }} />
                   </label>
                 </div>
 

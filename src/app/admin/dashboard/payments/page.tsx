@@ -1,10 +1,12 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import { AdminLayoutShell } from "@/components/layout/AdminLayoutShell";
 import {
   CreditCard, DollarSign, Lock, ArrowUpRight, ArrowDownLeft, CheckCircle2,
-  Clock, Search, Filter, FileSpreadsheet, RefreshCw, AlertCircle, Inbox, ShieldCheck, Zap, TrendingUp, Layers, AlertTriangle
+  Clock, Search, Filter, FileSpreadsheet, RefreshCw, AlertCircle, Inbox,
+  ShieldCheck, Zap, TrendingUp, Layers, AlertTriangle, Eye, ExternalLink, X
 } from "lucide-react";
 import styles from "../../admin.module.css";
 
@@ -13,6 +15,8 @@ export default function AdminPaymentsPage() {
   const [providerFilter, setProviderFilter] = useState("ALL");
   const [search, setSearch] = useState("");
   const [payments, setPayments] = useState<any[]>([]);
+  const [selectedTx, setSelectedTx] = useState<any | null>(null);
+  const [verifyingRef, setVerifyingRef] = useState<string | null>(null);
   const [stats, setStats] = useState({
     totalSuccessNgn: 0,
     paystackVolumeNgn: 0,
@@ -21,7 +25,7 @@ export default function AdminPaymentsPage() {
     totalCount: 0,
   });
   const [loading, setLoading] = useState(true);
-  const [exportNotice, setExportNotice] = useState("");
+  const [notice, setNotice] = useState("");
 
   const fetchPayments = async () => {
     try {
@@ -29,17 +33,33 @@ export default function AdminPaymentsPage() {
       const data = await res.json();
       if (res.ok && data.payments) {
         setPayments(
-          data.payments.map((p: any) => ({
-            id: p.id,
-            reference: p.reference,
-            bookingRef: p.booking?.reference || "BKG",
-            amount: p.amount,
-            provider: p.provider || "PAYSTACK",
-            customer: p.user ? `${p.user.firstName} ${p.user.lastName}` : "Customer Client",
-            email: p.user?.email || "N/A",
-            status: p.status,
-            date: new Date(p.createdAt).toLocaleString(),
-          }))
+          data.payments.map((p: any) => {
+            let meta: any = {};
+            try {
+              meta = typeof p.metadata === "string" ? JSON.parse(p.metadata || "{}") : p.metadata || {};
+            } catch {}
+
+            return {
+              id: p.id,
+              reference: p.reference,
+              bookingId: p.bookingId || p.booking?.id,
+              bookingRef: p.booking?.reference || "N/A",
+              serviceName: p.booking?.service?.name || "Verified Property Service",
+              amount: p.amount,
+              provider: p.provider || "PAYSTACK",
+              customer: p.user ? `${p.user.firstName} ${p.user.lastName}` : "Customer Client",
+              email: p.user?.email || "N/A",
+              phone: p.user?.phone || "N/A",
+              status: p.status,
+              channel: meta.channel || "card",
+              cardType: meta.cardType || "N/A",
+              last4: meta.last4 || "••••",
+              bank: meta.bank || "N/A",
+              authorizationCode: meta.authorizationCode || null,
+              date: new Date(p.createdAt).toLocaleString(),
+              rawDate: p.createdAt,
+            };
+          })
         );
         if (data.stats) setStats(data.stats);
       }
@@ -52,9 +72,32 @@ export default function AdminPaymentsPage() {
 
   useEffect(() => {
     fetchPayments();
-    const interval = setInterval(fetchPayments, 4000);
+    const interval = setInterval(fetchPayments, 5000);
     return () => clearInterval(interval);
   }, []);
+
+  const handleManualVerify = async (ref: string) => {
+    setVerifyingRef(ref);
+    try {
+      const res = await fetch("/api/admin/payments", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reference: ref, provider: "PAYSTACK" }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setNotice(`✅ Payment ${ref} verified live: ${data.verification.status}`);
+        fetchPayments();
+      } else {
+        setNotice(`⚠️ Verification error: ${data.error || "Failed"}`);
+      }
+    } catch {
+      setNotice("❌ Network error during manual verification.");
+    } finally {
+      setVerifyingRef(null);
+      setTimeout(() => setNotice(""), 5000);
+    }
+  };
 
   const filteredPayments = payments.filter((p) => {
     const matchStatus = statusFilter === "ALL" || p.status === statusFilter;
@@ -81,8 +124,8 @@ export default function AdminPaymentsPage() {
     link.click();
     document.body.removeChild(link);
 
-    setExportNotice("Paystack financial ledger exported to Excel (.CSV) successfully!");
-    setTimeout(() => setExportNotice(""), 4000);
+    setNotice("Paystack financial ledger exported to Excel (.CSV) successfully!");
+    setTimeout(() => setNotice(""), 4000);
   };
 
   const getStatusBadge = (st: string) => {
@@ -103,7 +146,7 @@ export default function AdminPaymentsPage() {
           <div>
             <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "8px" }}>
               <h1 style={{ fontSize: "1.75rem", fontWeight: 800, color: "#F8FAFC", margin: 0, letterSpacing: "-0.02em" }}>
-                Paystack Live Transaction & Escrow Command
+                Paystack Production Transaction Engine
               </h1>
               <span
                 style={{
@@ -119,11 +162,11 @@ export default function AdminPaymentsPage() {
                   gap: 6,
                 }}
               >
-                <Zap size={13} fill="#10B981" /> PAYSTACK LIVE GATEWAY ACTIVE
+                <Zap size={13} fill="#10B981" /> PAYSTACK ACTIVE
               </span>
             </div>
             <p style={{ color: "#94A3B8", fontSize: "14px", margin: 0 }}>
-              Real production Paystack NGN transactions, automatic webhooks, and 20% platform escrow tracking.
+              Live payment verification, webhook monitoring, and digital receipt command center.
             </p>
           </div>
 
@@ -169,9 +212,9 @@ export default function AdminPaymentsPage() {
           </div>
         </div>
 
-        {exportNotice && (
+        {notice && (
           <div style={{ background: "rgba(16, 185, 129, 0.15)", border: "1px solid #10B981", color: "#10B981", padding: "14px 20px", borderRadius: "12px", marginBottom: "28px", fontSize: "14px", fontWeight: 700 }}>
-            ✅ {exportNotice}
+            {notice}
           </div>
         )}
 
@@ -244,7 +287,7 @@ export default function AdminPaymentsPage() {
           >
             <div>
               <span style={{ fontSize: "12px", fontWeight: 700, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.5px" }}>
-                Platform Net Fee (20%)
+                Platform Net Escrow (20%)
               </span>
               <h2 style={{ fontSize: "1.75rem", fontWeight: 800, color: "#0EA5E9", margin: "6px 0 0", letterSpacing: "-0.02em" }}>
                 ₦{stats.platformFeeNgn.toLocaleString()}
@@ -381,10 +424,11 @@ export default function AdminPaymentsPage() {
                     <th style={{ padding: "16px 20px", fontWeight: 700, fontSize: "12px", textTransform: "uppercase", letterSpacing: "0.5px" }}>Transaction Ref</th>
                     <th style={{ padding: "16px 20px", fontWeight: 700, fontSize: "12px", textTransform: "uppercase", letterSpacing: "0.5px" }}>Booking Ref</th>
                     <th style={{ padding: "16px 20px", fontWeight: 700, fontSize: "12px", textTransform: "uppercase", letterSpacing: "0.5px" }}>Payer Customer</th>
-                    <th style={{ padding: "16px 20px", fontWeight: 700, fontSize: "12px", textTransform: "uppercase", letterSpacing: "0.5px" }}>Gateway Provider</th>
+                    <th style={{ padding: "16px 20px", fontWeight: 700, fontSize: "12px", textTransform: "uppercase", letterSpacing: "0.5px" }}>Gateway</th>
                     <th style={{ padding: "16px 20px", fontWeight: 700, fontSize: "12px", textTransform: "uppercase", letterSpacing: "0.5px" }}>Amount (NGN)</th>
                     <th style={{ padding: "16px 20px", fontWeight: 700, fontSize: "12px", textTransform: "uppercase", letterSpacing: "0.5px" }}>Status</th>
                     <th style={{ padding: "16px 20px", fontWeight: 700, fontSize: "12px", textTransform: "uppercase", letterSpacing: "0.5px" }}>Date & Time</th>
+                    <th style={{ padding: "16px 20px", fontWeight: 700, fontSize: "12px", textTransform: "uppercase", letterSpacing: "0.5px", textAlign: "right" }}>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -392,7 +436,14 @@ export default function AdminPaymentsPage() {
                     const sb = getStatusBadge(tx.status);
                     return (
                       <tr key={tx.id} style={{ borderBottom: "1px solid rgba(255, 255, 255, 0.04)", transition: "background 0.15s ease" }}>
-                        <td style={{ padding: "16px 20px", fontFamily: "monospace", color: "#38BDF8", fontWeight: 700 }}>{tx.reference}</td>
+                        <td style={{ padding: "16px 20px", fontFamily: "monospace", color: "#38BDF8", fontWeight: 700 }}>
+                          <button
+                            onClick={() => setSelectedTx(tx)}
+                            style={{ background: "none", border: "none", color: "#38BDF8", cursor: "pointer", fontFamily: "inherit", fontWeight: 700, padding: 0, textDecoration: "underline" }}
+                          >
+                            {tx.reference}
+                          </button>
+                        </td>
                         <td style={{ padding: "16px 20px", fontWeight: 700, color: "#F8FAFC" }}>#{tx.bookingRef}</td>
                         <td style={{ padding: "16px 20px" }}>
                           <strong style={{ display: "block", color: "#F8FAFC" }}>{tx.customer}</strong>
@@ -432,6 +483,68 @@ export default function AdminPaymentsPage() {
                           </span>
                         </td>
                         <td style={{ padding: "16px 20px", color: "#94A3B8", fontSize: "13px" }}>{tx.date}</td>
+                        <td style={{ padding: "16px 20px", textAlign: "right" }}>
+                          <div style={{ display: "inline-flex", gap: 8 }}>
+                            <Link
+                              href={`/receipt/${encodeURIComponent(tx.reference)}`}
+                              target="_blank"
+                              className="btn btn-secondary btn-xs"
+                              style={{
+                                background: "#0F172A",
+                                border: "1px solid #334155",
+                                color: "#38BDF8",
+                                padding: "4px 8px",
+                                borderRadius: 6,
+                                fontSize: 12,
+                                textDecoration: "none",
+                                display: "inline-flex",
+                                alignItems: "center",
+                                gap: 4,
+                              }}
+                              title="View Digital Receipt"
+                            >
+                              <span>🧾</span> Receipt
+                            </Link>
+
+                            <button
+                              onClick={() => setSelectedTx(tx)}
+                              className="btn btn-secondary btn-xs"
+                              style={{
+                                background: "#0F172A",
+                                border: "1px solid #334155",
+                                color: "#F8FAFC",
+                                padding: "4px 8px",
+                                borderRadius: 6,
+                                fontSize: 12,
+                                cursor: "pointer",
+                              }}
+                              title="Inspect Details"
+                            >
+                              <Eye size={13} />
+                            </button>
+
+                            {tx.status === "PENDING" && (
+                              <button
+                                onClick={() => handleManualVerify(tx.reference)}
+                                disabled={verifyingRef === tx.reference}
+                                className="btn btn-primary btn-xs"
+                                style={{
+                                  background: "#F59E0B",
+                                  border: "none",
+                                  color: "#0F172A",
+                                  fontWeight: 700,
+                                  padding: "4px 8px",
+                                  borderRadius: 6,
+                                  fontSize: 11,
+                                  cursor: "pointer",
+                                }}
+                                title="Re-Verify with Paystack Live"
+                              >
+                                {verifyingRef === tx.reference ? "..." : "Verify 🔄"}
+                              </button>
+                            )}
+                          </div>
+                        </td>
                       </tr>
                     );
                   })}
@@ -440,6 +553,107 @@ export default function AdminPaymentsPage() {
             </div>
           )}
         </div>
+
+        {/* Transaction Detail Inspection Modal */}
+        {selectedTx && (
+          <div
+            style={{
+              position: "fixed",
+              inset: 0,
+              background: "rgba(15, 23, 42, 0.85)",
+              backdropFilter: "blur(6px)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              zIndex: 9999,
+              padding: 16,
+            }}
+            onClick={() => setSelectedTx(null)}
+          >
+            <div
+              style={{
+                background: "#1E293B",
+                border: "1px solid #334155",
+                borderRadius: 16,
+                padding: 28,
+                maxWidth: 600,
+                width: "100%",
+                color: "#F8FAFC",
+                boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.5)",
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid #334155", paddingBottom: 16, marginBottom: 20 }}>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: 18, fontWeight: 800, color: "#F8FAFC" }}>
+                    Transaction Audit Inspector
+                  </h3>
+                  <span style={{ fontSize: 12, color: "#38BDF8", fontFamily: "monospace" }}>
+                    {selectedTx.reference}
+                  </span>
+                </div>
+                <button
+                  onClick={() => setSelectedTx(null)}
+                  style={{ background: "none", border: "none", color: "#94A3B8", cursor: "pointer" }}
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 24, fontSize: 13 }}>
+                <div>
+                  <span style={{ color: "#94A3B8", display: "block", fontSize: 11, textTransform: "uppercase" }}>Amount Paid</span>
+                  <strong style={{ fontSize: 20, color: "#10B981" }}>₦{selectedTx.amount.toLocaleString()}</strong>
+                </div>
+
+                <div>
+                  <span style={{ color: "#94A3B8", display: "block", fontSize: 11, textTransform: "uppercase" }}>Status</span>
+                  <strong style={{ color: selectedTx.status === "SUCCESS" ? "#10B981" : "#F59E0B" }}>{selectedTx.status}</strong>
+                </div>
+
+                <div>
+                  <span style={{ color: "#94A3B8", display: "block", fontSize: 11, textTransform: "uppercase" }}>Customer</span>
+                  <div>{selectedTx.customer}</div>
+                  <div style={{ color: "#94A3B8", fontSize: 12 }}>{selectedTx.email}</div>
+                </div>
+
+                <div>
+                  <span style={{ color: "#94A3B8", display: "block", fontSize: 11, textTransform: "uppercase" }}>Booking Reference</span>
+                  <div style={{ color: "#38BDF8", fontWeight: 700 }}>#{selectedTx.bookingRef}</div>
+                  <div style={{ color: "#94A3B8", fontSize: 12 }}>{selectedTx.serviceName}</div>
+                </div>
+
+                <div>
+                  <span style={{ color: "#94A3B8", display: "block", fontSize: 11, textTransform: "uppercase" }}>Payment Gateway & Channel</span>
+                  <div>{selectedTx.provider} ({selectedTx.channel})</div>
+                  <div style={{ color: "#94A3B8", fontSize: 12 }}>{selectedTx.cardType} • {selectedTx.last4}</div>
+                </div>
+
+                <div>
+                  <span style={{ color: "#94A3B8", display: "block", fontSize: 11, textTransform: "uppercase" }}>Issuing Bank</span>
+                  <div>{selectedTx.bank}</div>
+                </div>
+              </div>
+
+              <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, borderTop: "1px solid #334155", paddingTop: 16 }}>
+                <Link
+                  href={`/receipt/${encodeURIComponent(selectedTx.reference)}`}
+                  target="_blank"
+                  className="btn btn-primary btn-sm"
+                  style={{ background: "#10B981", display: "inline-flex", alignItems: "center", gap: 6, textDecoration: "none" }}
+                >
+                  <ExternalLink size={14} /> Open Digital Receipt
+                </Link>
+                <button
+                  onClick={() => setSelectedTx(null)}
+                  className="btn btn-secondary btn-sm"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </AdminLayoutShell>
   );
