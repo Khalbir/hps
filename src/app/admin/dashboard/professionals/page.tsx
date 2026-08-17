@@ -39,8 +39,22 @@ export default function ProfessionalVerificationPage() {
   }, []);
 
   const filteredPros = pros.filter((p) => {
-    const statusVal = p.verificationStatus || p.status || "PENDING";
-    const matchStatus = filterStatus === "ALL" || statusVal === filterStatus;
+    const rawStatus = (p.verificationStatus || p.status || "PENDING").toUpperCase();
+    const isPending = (rawStatus === "PENDING" || rawStatus === "SUBMITTED") && rawStatus !== "REJECTED";
+    const isVerified = rawStatus === "VERIFIED" || rawStatus === "APPROVED";
+    const isRejected = rawStatus === "REJECTED";
+
+    const matchStatus =
+      filterStatus === "ALL"
+        ? true
+        : filterStatus === "PENDING"
+        ? isPending
+        : filterStatus === "VERIFIED"
+        ? isVerified
+        : filterStatus === "REJECTED"
+        ? isRejected
+        : rawStatus === filterStatus;
+
     const matchSearch =
       (p?.name || "").toLowerCase().includes(search.toLowerCase()) ||
       (p?.email || "").toLowerCase().includes(search.toLowerCase()) ||
@@ -48,9 +62,18 @@ export default function ProfessionalVerificationPage() {
     return matchStatus && matchSearch;
   });
 
-  const pendingCount = pros.filter((p) => (p.verificationStatus || p.status) === "PENDING" || (p.verificationStatus || p.status) === "SUBMITTED").length;
-  const verifiedCount = pros.filter((p) => (p.verificationStatus || p.status) === "VERIFIED" || (p.verificationStatus || p.status) === "APPROVED").length;
-  const rejectedCount = pros.filter((p) => (p.verificationStatus || p.status) === "REJECTED").length;
+  const pendingCount = pros.filter((p) => {
+    const s = (p.verificationStatus || p.status || "PENDING").toUpperCase();
+    return (s === "PENDING" || s === "SUBMITTED") && s !== "REJECTED";
+  }).length;
+  const verifiedCount = pros.filter((p) => {
+    const s = (p.verificationStatus || p.status || "").toUpperCase();
+    return s === "VERIFIED" || s === "APPROVED";
+  }).length;
+  const rejectedCount = pros.filter((p) => {
+    const s = (p.verificationStatus || p.status || "").toUpperCase();
+    return s === "REJECTED";
+  }).length;
 
   const handleAuditDecision = async (newStatus: "VERIFIED" | "REJECTED") => {
     if (!inspectPro) return;
