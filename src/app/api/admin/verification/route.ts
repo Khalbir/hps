@@ -41,16 +41,12 @@ export async function GET(request: Request) {
       }
     }
 
-    // 2. Fetch all Users with role PROFESSIONAL or pending NIN/Address submissions
+    // 2. Fetch Users who have role PROFESSIONAL only (NOT CUSTOMERS!)
     let proUsers: any[] = [];
     try {
       proUsers = await prisma.user.findMany({
         where: {
-          OR: [
-            { role: "PROFESSIONAL" },
-            { ninStatus: { in: ["PENDING", "VERIFIED", "SUBMITTED"] } },
-            { permanentAddressStatus: { in: ["PENDING", "VERIFIED", "SUBMITTED"] } },
-          ],
+          role: "PROFESSIONAL",
         },
         select: {
           id: true,
@@ -114,11 +110,13 @@ export async function GET(request: Request) {
       const key = u.id;
       if (!proMap.has(key)) {
         let pro = u.professional;
+        const resolvedNin = (u.ninStatus || "").toUpperCase();
+        const initialStatus = resolvedNin === "VERIFIED" ? "VERIFIED" : resolvedNin === "REJECTED" ? "REJECTED" : "PENDING";
         if (!pro) {
           pro = {
             id: `pro_${u.id}`,
             userId: u.id,
-            verificationStatus: u.ninStatus === "VERIFIED" ? "VERIFIED" : "PENDING",
+            verificationStatus: initialStatus,
             skills: JSON.stringify(["Skilled Services"]),
             documents: "{}",
             createdAt: u.createdAt,
@@ -162,7 +160,13 @@ export async function GET(request: Request) {
         if (typeof p.skills === "string" && p.skills) skillArray = [p.skills];
       }
 
-      const vStatus = p.verificationStatus || u.ninStatus || "PENDING";
+      const rawPStatus = (p.verificationStatus || "").toUpperCase();
+      const rawUStatus = (u.ninStatus || "").toUpperCase();
+      const vStatus = rawPStatus === "REJECTED" || rawUStatus === "REJECTED"
+        ? "REJECTED"
+        : rawPStatus === "VERIFIED" || rawUStatus === "VERIFIED"
+        ? "VERIFIED"
+        : rawPStatus || rawUStatus || "PENDING";
       const fullName = `${u.firstName || ""} ${u.lastName || ""}`.trim() || docs.fullName || p.accountName || "Artisan Partner";
 
       const rawIdUrl = docs.idDocumentUrl || docs.idUrl || p.idUrl;

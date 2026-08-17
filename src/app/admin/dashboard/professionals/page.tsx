@@ -9,7 +9,7 @@ import {
 import styles from "../../admin.module.css";
 
 export default function ProfessionalVerificationPage() {
-  const [filterStatus, setFilterStatus] = useState("ALL");
+  const [filterStatus, setFilterStatus] = useState("PENDING");
   const [search, setSearch] = useState("");
   const [pros, setPros] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
