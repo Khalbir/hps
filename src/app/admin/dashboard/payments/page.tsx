@@ -615,18 +615,18 @@ export default function AdminPaymentsPage() {
                         </td>
                         <td style={{ padding: "16px 20px", color: "#94A3B8", fontSize: "13px" }}>{tx.date}</td>
                         <td style={{ padding: "16px 20px", textAlign: "right" }}>
-                          <div style={{ display: "inline-flex", gap: 8 }}>
+                          <div style={{ display: "inline-flex", gap: 8, alignItems: "center" }}>
                             <Link
                               href={`/receipt/${encodeURIComponent(tx.reference)}`}
                               target="_blank"
-                              className="btn btn-secondary btn-xs"
                               style={{
-                                background: "#0F172A",
-                                border: "1px solid #334155",
+                                background: "rgba(14, 165, 233, 0.15)",
+                                border: "1px solid rgba(14, 165, 233, 0.4)",
                                 color: "#38BDF8",
-                                padding: "4px 8px",
+                                padding: "5px 10px",
                                 borderRadius: 6,
                                 fontSize: 12,
+                                fontWeight: 600,
                                 textDecoration: "none",
                                 display: "inline-flex",
                                 alignItems: "center",
@@ -639,35 +639,39 @@ export default function AdminPaymentsPage() {
 
                             <button
                               onClick={() => setSelectedTx(tx)}
-                              className="btn btn-secondary btn-xs"
                               style={{
-                                background: "#0F172A",
-                                border: "1px solid #334155",
+                                background: "#1E293B",
+                                border: "1px solid #475569",
                                 color: "#F8FAFC",
-                                padding: "4px 8px",
+                                padding: "6px 10px",
                                 borderRadius: 6,
                                 fontSize: 12,
                                 cursor: "pointer",
+                                display: "inline-flex",
+                                alignItems: "center",
                               }}
                               title="Inspect Details"
                             >
-                              <Eye size={13} />
+                              <Eye size={14} color="#F8FAFC" />
                             </button>
 
                             {tx.status === "PENDING" && (
                               <button
                                 onClick={() => handleManualVerify(tx.reference)}
                                 disabled={verifyingRef === tx.reference}
-                                className="btn btn-primary btn-xs"
                                 style={{
-                                  background: "#F59E0B",
+                                  background: "linear-gradient(135deg, #F59E0B 0%, #D97706 100%)",
                                   border: "none",
-                                  color: "#0F172A",
+                                  color: "#FFFFFF",
                                   fontWeight: 700,
-                                  padding: "4px 8px",
+                                  padding: "6px 10px",
                                   borderRadius: 6,
                                   fontSize: 11,
                                   cursor: "pointer",
+                                  boxShadow: "0 2px 8px rgba(245, 158, 11, 0.3)",
+                                  display: "inline-flex",
+                                  alignItems: "center",
+                                  gap: 4,
                                 }}
                                 title="Re-Verify with Paystack Live"
                               >
