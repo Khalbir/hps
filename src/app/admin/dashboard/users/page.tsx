@@ -198,27 +198,29 @@ export default function UsersRoleManagementPage() {
 
     if (!matchSearch) return false;
 
-    if (activeTab === "EXECUTIVE") return u.role === "SUPER_ADMIN" || u.role === "ADMIN";
-    if (activeTab === "OPERATIONS") return u.role === "OPERATIONS_MANAGER";
-    if (activeTab === "VERIFICATION") return u.role === "VERIFICATION_OFFICER";
-    if (activeTab === "SUPPORT_FINANCE") return u.role === "CUSTOMER_SUPPORT" || u.role === "FINANCE";
-    if (activeTab === "CUSTOMERS_PROS") return u.role === "CUSTOMER" || u.role === "PROFESSIONAL";
+    if (activeTab === "CLIENTS") return u.role === "CUSTOMER";
+    if (activeTab === "ARTISANS") return u.role === "PROFESSIONAL";
+    if (activeTab === "STAFF") return u.role !== "CUSTOMER" && u.role !== "PROFESSIONAL";
 
     return true;
   });
 
   const isChiefCommander = currentUserRole === "SUPER_ADMIN";
 
+  const clientsCount = users.filter((u) => u.role === "CUSTOMER").length;
+  const artisansCount = users.filter((u) => u.role === "PROFESSIONAL").length;
+  const staffCount = users.filter((u) => u.role !== "CUSTOMER" && u.role !== "PROFESSIONAL").length;
+
   return (
     <AdminLayoutShell>
       <header className={styles.adminTopBar} style={{ marginBottom: "var(--space-6)" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "16px", width: "100%" }}>
           <div>
-            <h1 className="h3">Staff Role Assignment & Access Control (RBAC)</h1>
+            <h1 className="h3">All Users & Staff Role Directory</h1>
             <p style={{ color: "var(--text-secondary)", fontSize: "var(--fs-sm)" }}>
               {isChiefCommander
-                ? "Chief Commander Control Panel: Assign designated administrative roles to staff members and restrict each account to its allowed operations."
-                : "Staff Registry Control Panel: View live staff directories, check administrative roles, and request privilege reassignments."}
+                ? "Chief Commander Control Panel: Oversee all platform users (Clients, Artisans/Pros, and Administrative Staff) and manage role permissions."
+                : "User & Staff Registry: View live directories of all Clients, Artisans, and Staff members."}
             </p>
           </div>
 
@@ -254,12 +256,10 @@ export default function UsersRoleManagementPage() {
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px", flexWrap: "wrap", gap: "12px" }}>
         <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
           {[
-            { id: "ALL", label: "All Users & Staff" },
-            { id: "EXECUTIVE", label: "Executive Admins" },
-            { id: "OPERATIONS", label: "Operations" },
-            { id: "VERIFICATION", label: "Verifiers" },
-            { id: "SUPPORT_FINANCE", label: "Support & Finance" },
-            { id: "CUSTOMERS_PROS", label: "Clients & Pros" },
+            { id: "ALL", label: `All Users (${users.length})` },
+            { id: "CLIENTS", label: `Clients / Customers (${clientsCount})` },
+            { id: "ARTISANS", label: `Artisans / Pros (${artisansCount})` },
+            { id: "STAFF", label: `Administrative Staff (${staffCount})` },
           ].map((tab) => (
             <button
               key={tab.id}
@@ -358,8 +358,12 @@ export default function UsersRoleManagementPage() {
                         <span className="badge" style={{ background: `${addrBadge.color}20`, color: addrBadge.color, fontSize: "11px", fontWeight: "bold", border: `1px solid ${addrBadge.color}40` }}>
                           {addrBadge.label}
                         </span>
+                      ) : u.role === "PROFESSIONAL" ? (
+                        <span className="badge" style={{ background: u.isVerified ? "#10B98120" : "#F59E0B20", color: u.isVerified ? "#10B981" : "#F59E0B", fontSize: "11px", fontWeight: "bold", border: `1px solid ${u.isVerified ? "#10B98140" : "#F59E0B40"}` }}>
+                          {u.isVerified ? "Verified Artisan 🛡️" : "Artisan Partner ⏳"}
+                        </span>
                       ) : (
-                        <span style={{ color: "#475569" }}>—</span>
+                        <span style={{ color: "#475569", fontSize: "12px" }}>— (Staff Account)</span>
                       )}
                     </td>
                     <td style={{ padding: "12px 16px", color: "#94A3B8", fontSize: "13px" }}>{u.createdAt}</td>
@@ -382,6 +386,14 @@ export default function UsersRoleManagementPage() {
                         >
                           <MapPin size={12} /> {u.permanentAddressStatus === "VERIFIED" ? "Manage Address" : u.permanentAddressStatus === "PENDING" ? "Audit Address ⏳" : "Set/Verify Address"}
                         </button>
+                      ) : u.role === "PROFESSIONAL" ? (
+                        <a
+                          href="/admin/dashboard/professionals"
+                          className="btn btn-secondary btn-xs"
+                          style={{ color: "#F59E0B", borderColor: "#F59E0B", display: "inline-flex", alignItems: "center", gap: "4px", textDecoration: "none" }}
+                        >
+                          <Shield size={12} /> Audit Artisan Dossier
+                        </a>
                       ) : (
                         <button
                           className="btn btn-secondary btn-xs"
