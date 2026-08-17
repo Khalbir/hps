@@ -329,28 +329,29 @@ export default function DashboardPage() {
         setEditLastName(mergedUser.lastName || "");
         setEditPhone(mergedUser.phone || "");
         setSecondaryAddrStreet(mergedUser.secondaryAddress || "");
+        let freshWallet = data.walletBalance || 0;
         try {
           const walletRes = await fetch(`/api/wallet/balance?email=${encodeURIComponent(mergedUser.email || activeEmail)}`);
           const walletData = await walletRes.json();
           if (walletRes.ok && walletData?.availableBalance !== undefined) {
-            setWalletBalance(walletData.availableBalance);
-          } else {
-            setWalletBalance(data.walletBalance || 0);
+            freshWallet = walletData.availableBalance;
           }
         } catch {
-          setWalletBalance(data.walletBalance || 0);
+          freshWallet = data.walletBalance || 0;
         }
 
+        setWalletBalance(freshWallet);
         setActiveDispatchesCount(data.activeDispatchesCount || 0);
         setTotalBookingsCount(data.totalBookingsCount || 0);
         const fetchedBookings = data.bookings || [];
         setBookings(fetchedBookings);
 
-        // Cache dashboard data to localStorage for instant restore on next visit
+        // Cache dashboard user & stats data to localStorage for instant restore on next visit
+        saveToStorage(STORAGE_KEYS.USER, mergedUser);
         saveDashboardStats({
           activeDispatchesCount: data.activeDispatchesCount || 0,
           totalBookingsCount: data.totalBookingsCount || 0,
-          walletBalance: walletBalance,
+          walletBalance: freshWallet,
         });
         saveToStorage(STORAGE_KEYS.BOOKINGS_CACHE, fetchedBookings);
       }
