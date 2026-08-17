@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { initializeDualGatewayCheckout } from "@/lib/fintech";
-import { prisma } from "@/lib/db";
+import { prisma, ensureUserSchema } from "@/lib/db";
 import { hash } from "bcryptjs";
 
 export async function POST(request: Request) {
@@ -17,11 +17,23 @@ export async function POST(request: Request) {
 
     const cleanEmail = email.toLowerCase().trim();
 
-    // AUTO-RESOLUTION: Case-insensitive lookup for customer in PostgreSQL database
+    // Auto-heal database schema if missing columns exist
+    await ensureUserSchema().catch(() => {});
+
+    // AUTO-RESOLUTION: Safe case-insensitive lookup selecting strictly core fields
     let dbUser: any = null;
     try {
       dbUser = await prisma.user.findFirst({
         where: { email: { equals: cleanEmail, mode: "insensitive" } },
+        select: {
+          id: true,
+          email: true,
+          firstName: true,
+          lastName: true,
+          phone: true,
+          role: true,
+          isVerified: true,
+        },
       });
     } catch (dbErr) {
       console.warn("[Payment Init DB Warning]:", dbErr);
@@ -45,13 +57,33 @@ export async function POST(request: Request) {
             role: "CUSTOMER",
             isVerified: true,
           },
+          select: {
+            id: true,
+            email: true,
+            firstName: true,
+            lastName: true,
+            phone: true,
+            role: true,
+            isVerified: true,
+          },
         });
         await prisma.wallet.create({ data: { userId: dbUser.id, balance: 0 } }).catch(() => {});
       } catch {
-        // Fallback search again case-insensitively in case of race condition
-        dbUser = await prisma.user.findFirst({
-          where: { email: { equals: cleanEmail, mode: "insensitive" } },
-        });
+        // Fallback search again safely
+        try {
+          dbUser = await prisma.user.findFirst({
+            where: { email: { equals: cleanEmail, mode: "insensitive" } },
+            select: {
+              id: true,
+              email: true,
+              firstName: true,
+              lastName: true,
+              phone: true,
+              role: true,
+              isVerified: true,
+            },
+          });
+        } catch {}
       }
     }
 

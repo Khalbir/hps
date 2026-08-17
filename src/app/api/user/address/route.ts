@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
+import { prisma, ensureUserSchema } from "@/lib/db";
 import { parseBookingAddresses } from "@/lib/verification/verification-service";
 import { BookingAddressItem } from "@/lib/verification/types";
 
 // Helper function to safely find user by email or ID, with fallback for demo/production clients
 async function findTargetUser(email?: string | null, userId?: string | null) {
+  await ensureUserSchema().catch(() => {});
   const cleanEmail = email ? email.toLowerCase().trim() : undefined;
   const cleanUserId = userId ? userId.trim() : undefined;
 

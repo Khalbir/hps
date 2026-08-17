@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
+import { prisma, ensureUserSchema } from "@/lib/db";
 import { sendProfileUpdateEmail } from "@/lib/email";
 
 export async function GET(request: Request) {
   try {
+    await ensureUserSchema().catch(() => {});
     const { searchParams } = new URL(request.url);
     const email = searchParams.get("email") || "customer@test.com";
 
