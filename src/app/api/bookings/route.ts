@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { checkRateLimit, sanitizeInput } from "@/lib/security";
+import { notifyBookingStatusChange } from "@/lib/notifications";
 
 export const dynamic = "force-dynamic";
 
@@ -200,6 +201,28 @@ export async function POST(request: Request) {
         },
       },
     });
+
+    // Dispatch live multi-channel notification (Email + WhatsApp + In-App)
+    try {
+      await notifyBookingStatusChange({
+        id: booking.id,
+        reference: booking.reference,
+        status: assignedProfessionalId ? "ASSIGNED" : "PENDING",
+        customerId: customerUser.id,
+        customer: {
+          email: customerUser.email,
+          phone: customerUser.phone,
+          firstName: customerUser.firstName,
+          lastName: customerUser.lastName,
+        },
+        professional: fullBooking?.professional as any,
+        service: fullBooking?.service || service,
+        estimatedPrice: calculatedPrice,
+        scheduledTime: scheduledTime,
+      });
+    } catch (notifErr) {
+      console.warn("[Booking Creation Notification Warning]:", notifErr);
+    }
 
     return NextResponse.json({
       success: true,

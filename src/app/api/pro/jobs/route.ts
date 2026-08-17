@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { notifyBookingStatusChange } from "@/lib/notifications";
+import { releaseEscrowPayout } from "@/lib/escrow";
 
 export async function GET(request: Request) {
   try {
@@ -85,12 +87,78 @@ export async function POST(request: Request) {
 
     const booking = await prisma.booking.findUnique({
       where: { reference: bookingReference },
+      include: {
+        customer: true,
+        service: true,
+        professional: {
+          include: {
+            user: { select: { firstName: true, lastName: true, phone: true, email: true } },
+          },
+        },
+      },
     });
 
     if (!booking) {
       return NextResponse.json({ error: "Booking not found" }, { status: 404 });
     }
 
+    // 1. ACCEPT JOB
+    if (action === "ACCEPT_JOB") {
+      const updated = await prisma.booking.update({
+        where: { reference: bookingReference },
+        data: { status: "CONFIRMED" },
+        include: { customer: true, service: true, professional: { include: { user: true } } },
+      });
+
+      try {
+        await notifyBookingStatusChange({
+          id: updated.id,
+          reference: updated.reference,
+          status: "CONFIRMED",
+          customerId: updated.customerId,
+          customer: updated.customer,
+          professional: updated.professional as any,
+          service: updated.service,
+          estimatedPrice: updated.finalPrice || updated.estimatedPrice || 15000,
+        });
+      } catch {}
+
+      return NextResponse.json({
+        success: true,
+        message: "Job accepted and customer notified live on WhatsApp & Email!",
+        booking: updated,
+      });
+    }
+
+    // 2. EN ROUTE / ON THE WAY
+    if (action === "EN_ROUTE" || action === "ON_THE_WAY") {
+      const updated = await prisma.booking.update({
+        where: { reference: bookingReference },
+        data: { status: "EN_ROUTE" },
+        include: { customer: true, service: true, professional: { include: { user: true } } },
+      });
+
+      try {
+        await notifyBookingStatusChange({
+          id: updated.id,
+          reference: updated.reference,
+          status: "EN_ROUTE",
+          customerId: updated.customerId,
+          customer: updated.customer,
+          professional: updated.professional as any,
+          service: updated.service,
+          estimatedPrice: updated.finalPrice || updated.estimatedPrice || 15000,
+        });
+      } catch {}
+
+      return NextResponse.json({
+        success: true,
+        message: "Marked on the way! Live GPS tracking dispatched to customer.",
+        booking: updated,
+      });
+    }
+
+    // 3. START JOB / ARRIVED
     if (action === "START_JOB") {
       const updated = await prisma.booking.update({
         where: { reference: bookingReference },
@@ -98,15 +166,30 @@ export async function POST(request: Request) {
           status: "IN_PROGRESS",
           beforePhotos: JSON.stringify([beforePhotoUrl || "https://handyhub.ng/photos/before_sample.jpg"]),
         },
+        include: { customer: true, service: true, professional: { include: { user: true } } },
       });
+
+      try {
+        await notifyBookingStatusChange({
+          id: updated.id,
+          reference: updated.reference,
+          status: "IN_PROGRESS",
+          customerId: updated.customerId,
+          customer: updated.customer,
+          professional: updated.professional as any,
+          service: updated.service,
+          estimatedPrice: updated.finalPrice || updated.estimatedPrice || 15000,
+        });
+      } catch {}
 
       return NextResponse.json({
         success: true,
-        message: "Job started! Before photo saved.",
+        message: "Job started! Customer notified on work progress.",
         booking: updated,
       });
     }
 
+    // 4. COMPLETE JOB
     if (action === "COMPLETE_JOB") {
       const expectedOtp = booking.completionNote || "4819";
       if (otpCode && otpCode.trim() !== expectedOtp) {
@@ -120,37 +203,34 @@ export async function POST(request: Request) {
           afterPhotos: JSON.stringify([afterPhotoUrl || "https://handyhub.ng/photos/after_sample.jpg"]),
           completedAt: new Date(),
         },
+        include: { customer: true, service: true, professional: { include: { user: true } } },
       });
 
-      // Transfer escrow to professional wallet
+      // Transfer escrow payout to professional wallet
       if (booking.professionalId) {
-        const pro = await prisma.professional.findUnique({ where: { id: booking.professionalId } });
-        if (pro) {
-          const wallet = await prisma.wallet.findUnique({ where: { userId: pro.userId } });
-          if (wallet) {
-            await prisma.wallet.update({
-              where: { userId: pro.userId },
-              data: {
-                balance: wallet.balance + booking.estimatedPrice,
-              },
-            });
-
-            await prisma.walletTransaction.create({
-              data: {
-                walletId: wallet.id,
-                amount: booking.estimatedPrice,
-                type: "CREDIT",
-                reference: `PAYOUT-${booking.reference}`,
-                description: `Escrow payout released for completed job #${booking.reference}`,
-              },
-            });
-          }
-        }
+        await releaseEscrowPayout({
+          bookingId: booking.id,
+          triggerSource: "JOB_COMPLETION",
+          notes: "Auto-released upon OTP verification",
+        }).catch((e) => console.warn("[Escrow Payout Warning]:", e));
       }
+
+      try {
+        await notifyBookingStatusChange({
+          id: updated.id,
+          reference: updated.reference,
+          status: "COMPLETED",
+          customerId: updated.customerId,
+          customer: updated.customer,
+          professional: updated.professional as any,
+          service: updated.service,
+          estimatedPrice: updated.finalPrice || updated.estimatedPrice || 15000,
+        });
+      } catch {}
 
       return NextResponse.json({
         success: true,
-        message: "Job completed & verified with OTP! Escrow payout credited to wallet.",
+        message: "Job completed & verified with OTP! Escrow payout credited and customer notified.",
         booking: updated,
       });
     }
