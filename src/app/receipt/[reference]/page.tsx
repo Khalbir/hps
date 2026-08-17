@@ -77,7 +77,7 @@ export default function DigitalReceiptPage() {
               <Printer size={16} /> Print / Save PDF
             </button>
             <Link
-              href={receipt?.service?.bookingRef ? `/track?ref=${receipt.service.bookingRef}` : "/track"}
+              href={receipt?.service?.bookingRef || rawReference ? `/track?ref=${encodeURIComponent(receipt?.service?.bookingRef || rawReference)}` : "/track"}
               className="btn btn-primary btn-sm"
               style={{
                 display: "inline-flex",
@@ -112,9 +112,14 @@ export default function DigitalReceiptPage() {
             <AlertCircle size={36} color="#EF4444" style={{ margin: "0 auto 12px" }} />
             <h3 style={{ color: "#F8FAFC", margin: "0 0 8px" }}>Receipt Generation Notice</h3>
             <p style={{ color: "#94A3B8", fontSize: 14, marginBottom: 20 }}>{error}</p>
-            <div style={{ display: "flex", gap: 12, justifyContent: "center" }}>
+            <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
               <button onClick={fetchReceipt} className="btn btn-secondary btn-sm">Try Again</button>
-              <Link href="/dashboard" className="btn btn-primary btn-sm">Go to Dashboard</Link>
+              {rawReference && (
+                <Link href={`/track?ref=${encodeURIComponent(rawReference)}`} className="btn btn-primary btn-sm" style={{ background: "#0EA5E9" }}>
+                  Track Booking 📍
+                </Link>
+              )}
+              <Link href="/dashboard" className="btn btn-secondary btn-sm">Go to Dashboard</Link>
             </div>
           </div>
         )}
