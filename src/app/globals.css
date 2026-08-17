@@ -1170,11 +1170,6 @@ body, #__next, main {
 /* ============================================
    SMARTPHONE HORIZONTAL (LANDSCAPE) OPTIMIZATION
    ============================================ */
-}
-
-/* ============================================
-   SMARTPHONE HORIZONTAL (LANDSCAPE) OPTIMIZATION
-   ============================================ */
 @media (max-height: 520px) and (orientation: landscape) {
   :root {
     --header-height: 54px;
