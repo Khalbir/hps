@@ -284,7 +284,7 @@ export default function ProJobsPage() {
                   <span style={{ fontSize: 11, color: "#94A3B8" }}>Supports JPG, PNG, WEBP files</span>
                 </div>
 
-                <div style={{ display: "flex", gap: 12, justifyContent: "flex-end" }}>
+                <div className="modal-actions">
                   <button className="btn btn-secondary btn-sm" onClick={() => setSelectedJob(null)}>Cancel</button>
                   <button
                     className="btn btn-primary btn-sm"
@@ -351,7 +351,7 @@ export default function ProJobsPage() {
                   </span>
                 </div>
 
-                <div style={{ display: "flex", gap: 12, justifyContent: "flex-end" }}>
+                <div className="modal-actions">
                   <button className="btn btn-secondary btn-sm" onClick={() => setSelectedJob(null)}>Cancel</button>
                   <button
                     className="btn btn-primary btn-sm"

@@ -512,7 +512,7 @@ export default function UsersRoleManagementPage() {
                 </select>
               </div>
 
-              <div style={{ display: "flex", gap: "12px", justifyContent: "flex-end" }}>
+              <div className="modal-actions">
                 <button type="button" className="btn btn-secondary btn-sm" onClick={() => setShowAddStaffModal(false)}>Cancel</button>
                 <button type="submit" className="btn btn-primary btn-sm" disabled={submittingStaff} style={{ background: "#0EA5E9" }}>
                   {submittingStaff ? "Submitting..." : (isChiefCommander ? "Assign Staff Role Credentials ✅" : "Submit Appointment Request 📩")}
@@ -586,7 +586,7 @@ export default function UsersRoleManagementPage() {
               />
             </div>
 
-            <div style={{ display: "flex", gap: "12px", justifyContent: "flex-end" }}>
+            <div className="modal-actions">
               <button className="btn btn-secondary btn-sm" onClick={() => setEditingUser(null)}>Cancel</button>
               <button className="btn btn-primary btn-sm" onClick={handleRoleChange} style={{ background: "#0EA5E9" }}>
                 {isChiefCommander ? "Save Role Update" : "Submit Role Update Request"}
@@ -679,7 +679,7 @@ export default function UsersRoleManagementPage() {
               />
             </div>
 
-            <div style={{ display: "flex", gap: "12px", justifyContent: "flex-end" }}>
+            <div className="modal-actions">
               <button className="btn btn-secondary btn-sm" onClick={() => setAuditingUserAddress(null)}>Cancel</button>
               <button
                 className="btn btn-secondary btn-sm"

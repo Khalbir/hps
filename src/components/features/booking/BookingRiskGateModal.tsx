@@ -192,7 +192,7 @@ export function BookingRiskGateModal({
                 {proofUrl && <div style={{ marginTop: "4px", color: "#10B981", fontSize: "12px" }}>✓ Proof document attached</div>}
               </div>
 
-              <div style={{ display: "flex", gap: "10px", justifyContent: "flex-end" }}>
+              <div className="modal-actions">
                 <button type="button" className="btn btn-secondary btn-sm" onClick={onClose}>
                   Cancel
                 </button>

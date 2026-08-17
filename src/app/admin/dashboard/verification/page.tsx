@@ -514,7 +514,7 @@ export default function TrustVerificationCenterPage() {
             </div>
 
             {/* Decision Actions */}
-            <div style={{ display: "flex", gap: "10px", justifyContent: "flex-end" }}>
+            <div className="modal-actions">
               <button className="btn btn-secondary btn-sm" onClick={() => setAuditingClient(null)}>Cancel</button>
               <button
                 className="btn btn-secondary btn-sm"

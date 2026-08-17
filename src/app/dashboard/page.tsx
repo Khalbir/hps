@@ -1409,7 +1409,7 @@ export default function DashboardPage() {
                   style={{ width: "100%", padding: 10, borderRadius: 8, border: "1px solid #334155", background: "#0F172A", color: "#F8FAFC" }}
                 />
               </div>
-              <div style={{ display: "flex", gap: 12, justifyContent: "flex-end" }}>
+              <div className="modal-actions">
                 <button type="button" className="btn btn-secondary btn-sm" onClick={() => setShowAddressModal(false)}>Cancel</button>
                 <button type="submit" className="btn btn-primary btn-sm" style={{ background: "#0EA5E9" }}>
                   Save Address ➔

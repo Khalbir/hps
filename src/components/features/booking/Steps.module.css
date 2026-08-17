@@ -1182,11 +1182,14 @@
   }
 
   .stepActions {
-    flex-direction: column;
+    flex-direction: column-reverse;
+    gap: var(--space-3);
   }
 
   .stepActions button {
     width: 100%;
+    justify-content: center;
+    white-space: normal;
   }
 
   .counterRow {

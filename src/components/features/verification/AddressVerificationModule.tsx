@@ -616,7 +616,7 @@ export function AddressVerificationModule({
               )}
             </div>
 
-            <div style={{ display: "flex", gap: "10px", justifyContent: "flex-end" }}>
+            <div className="modal-actions">
               <button type="button" className="btn btn-secondary btn-sm" onClick={() => setShowChangeForm(false)}>
                 Cancel
               </button>
@@ -856,7 +856,7 @@ export function AddressVerificationModule({
                 />
               </div>
 
-              <div style={{ display: "flex", gap: "10px", justifyContent: "flex-end" }}>
+              <div className="modal-actions">
                 <button type="button" className="btn btn-secondary btn-sm" onClick={() => setShowBookingAddrModal(false)}>Cancel</button>
                 <button type="submit" className="btn btn-primary btn-sm" disabled={addingBookingAddr}>
                   {addingBookingAddr ? "Saving..." : "Save Address"}

@@ -371,7 +371,7 @@ export default function ProEarningsPage() {
                 />
               </div>
 
-              <div style={{ display: "flex", gap: 12, justifyContent: "flex-end" }}>
+              <div className="modal-actions">
                 <button
                   type="button"
                   disabled={isSubmitting}
