@@ -26,33 +26,7 @@ export async function GET(request: Request) {
     }
 
     if (!user) {
-      const isDemo = email.toLowerCase() === "customer@test.com";
-      return NextResponse.json({
-        user: {
-          id: isDemo ? "usr_cust_demo" : `usr_${Date.now()}`,
-          firstName: isDemo ? "Valued" : "",
-          lastName: isDemo ? "Customer" : "",
-          email: email,
-          phone: isDemo ? "+234 812 222 2936" : "",
-          role: "CUSTOMER",
-          isVerified: true,
-          wallet: { balance: 50000 },
-          permanentAddress: "12 Aminu Kano Crescent, Maitama, Abuja",
-          permanentAddressProof: "https://ioggvcvwwnjfzbwyjiwf.supabase.co/storage/v1/object/public/id/utility-bill.jpg",
-          permanentAddressStatus: "VERIFIED",
-          permanentAddressNotes: "Address verified by Admin.",
-          secondaryAddress: "Plot 5 Alex Ekwueme Way, Jabi, Abuja",
-          addresses: [
-            { id: "addr_1", title: "Home", street: "12 Aminu Kano Crescent", city: "Maitama", state: "Abuja", isDefault: true },
-            { id: "addr_2", title: "Office", street: "Plot 5 Alex Ekwueme Way", city: "Jabi", state: "Abuja", isDefault: false },
-          ],
-          bookings: [
-            { id: "HHP-ABC123", serviceCategory: "Deep Cleaning", status: "COMPLETED", date: "Jul 15, 2026", price: 25000, pro: "Blessing O." },
-            { id: "HHP-DEF456", serviceCategory: "AC Servicing", status: "IN_PROGRESS", date: "Jul 18, 2026", price: 8000, pro: "Yusuf A." },
-            { id: "HHP-GHI789", serviceCategory: "Plumbing Repair", status: "PENDING", date: "Jul 20, 2026", price: 10000, pro: "Ibrahim M." },
-          ],
-        },
-      });
+      return NextResponse.json({ error: "User profile not found in database" }, { status: 404 });
     }
 
     const { password: _, ...userWithoutPassword } = user;

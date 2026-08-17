@@ -16,27 +16,6 @@ const SEED_ACCOUNTS: Record<string, { pass: string; user: any }> = {
       role: "SUPER_ADMIN",
     },
   },
-  "customer@test.com": {
-    pass: "Customer123!",
-    user: {
-      id: "usr_cust_demo",
-      email: "customer@test.com",
-      firstName: "Test",
-      lastName: "Customer",
-      role: "CUSTOMER",
-    },
-  },
-  "abubakar@handyhubpro.com": {
-    pass: "ProPass123!",
-    user: {
-      id: "usr_pro_abubakar",
-      email: "abubakar@handyhubpro.com",
-      firstName: "Abubakar",
-      lastName: "Tanko",
-      role: "PROFESSIONAL",
-      serviceCategory: "Electrical",
-    },
-  },
 };
 
 export async function POST(request: Request) {

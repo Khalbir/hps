@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/db";
 
 export const DEMO_EMAILS = [
+  "customer@test.com",
   "abubakar@handyhubpro.com",
   "blessing@handyhubpro.com",
   "grace@handyhubpro.com",
@@ -9,6 +10,9 @@ export const DEMO_EMAILS = [
   "sarah@test.com",
   "ibrahim@test.com",
   "emeka@test.com",
+  "artisan@handyhubpro.ng",
+  "client@handyhubpro.ng",
+  "user@test.com",
 ];
 
 export const DEMO_BOOKING_REFS = [
@@ -70,7 +74,14 @@ export async function purgeDemoRecordsFromDB() {
 
     // Delete demo users and pros
     const demoUsers = await prisma.user.findMany({
-      where: { email: { in: DEMO_EMAILS } },
+      where: {
+        OR: [
+          { email: { in: DEMO_EMAILS } },
+          { email: { contains: "test.com", mode: "insensitive" } },
+          { email: { contains: "handyhubpro.com", mode: "insensitive" } },
+          { id: { startsWith: "usr_cust_demo" } },
+        ],
+      },
       select: { id: true },
     }).catch(() => []);
 

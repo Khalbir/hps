@@ -12,10 +12,20 @@ export async function GET() {
       "khalbir@hotmail.com",
     ];
 
-    // Find all non-admin demo users
+import { DEMO_EMAILS, DEMO_BOOKING_REFS, DEMO_PAYMENT_REFS } from "@/lib/purge-demo-utility";
+
+export async function GET() {
+  try {
+    // Find all demo mockup users specifically
     const demoUsers = await prisma.user.findMany({
       where: {
-        email: { notIn: adminEmails },
+        OR: [
+          { email: { in: DEMO_EMAILS } },
+          { email: { contains: "customer@test.com", mode: "insensitive" } },
+          { email: { contains: "handyhubpro.com", mode: "insensitive" } },
+          { email: { contains: "test.com", mode: "insensitive" } },
+          { id: { startsWith: "usr_cust_demo" } },
+        ],
       },
       select: { id: true, email: true },
     });
