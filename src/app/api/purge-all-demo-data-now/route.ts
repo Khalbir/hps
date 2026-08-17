@@ -1,18 +1,8 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { DEMO_EMAILS, DEMO_BOOKING_REFS, DEMO_PAYMENT_REFS } from "@/lib/purge-demo-utility";
 
 export const dynamic = "force-dynamic";
-
-export async function GET() {
-  try {
-    const adminEmails = [
-      "admin@handyhubpro.ng",
-      "admin@handyhubpro.com",
-      "khaleid.kabir@gmail.com",
-      "khalbir@hotmail.com",
-    ];
-
-import { DEMO_EMAILS, DEMO_BOOKING_REFS, DEMO_PAYMENT_REFS } from "@/lib/purge-demo-utility";
 
 export async function GET() {
   try {
@@ -37,6 +27,7 @@ export async function GET() {
       where: {
         OR: [
           { userId: { in: demoUserIds } },
+          { reference: { in: DEMO_PAYMENT_REFS } },
           { reference: { startsWith: "HHP_BKG_100" } },
         ],
       },
@@ -47,6 +38,7 @@ export async function GET() {
       where: {
         OR: [
           { customerId: { in: demoUserIds } },
+          { booking: { reference: { in: DEMO_BOOKING_REFS } } },
           { booking: { reference: { startsWith: "BKG-10" } } },
         ],
       },
@@ -57,6 +49,7 @@ export async function GET() {
       where: {
         OR: [
           { customerId: { in: demoUserIds } },
+          { booking: { reference: { in: DEMO_BOOKING_REFS } } },
           { booking: { reference: { startsWith: "BKG-10" } } },
         ],
       },
@@ -67,6 +60,7 @@ export async function GET() {
       where: {
         OR: [
           { customerId: { in: demoUserIds } },
+          { reference: { in: DEMO_BOOKING_REFS } },
           { reference: { startsWith: "BKG-10" } },
         ],
       },
@@ -88,7 +82,7 @@ export async function GET() {
 
     return NextResponse.json({
       success: true,
-      message: "PURGE COMPLETE: All demo mockup records deleted from PostgreSQL database!",
+      message: "PURGE COMPLETE: All demo mockup records deleted from database!",
       purged: {
         deletedPayments: deletedPayments.count,
         deletedReviews: deletedReviews.count,
