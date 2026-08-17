@@ -649,20 +649,38 @@ export default function UsersRoleManagementPage() {
               </div>
             </div>
 
-            {auditingUserAddress.permanentAddressProof && (
+            {auditingUserAddress.pendingPermanentAddress && (
+              <div style={{ background: "rgba(245,158,11,0.1)", border: "1px solid #F59E0B", borderRadius: "8px", padding: "10px 12px", marginBottom: "16px" }}>
+                <span style={{ fontSize: "11px", color: "#F59E0B", fontWeight: "bold", textTransform: "uppercase" }}>Proposed Address Change Request:</span>
+                <p style={{ margin: "2px 0 0 0", color: "#F8FAFC", fontSize: "13px" }}>{auditingUserAddress.pendingPermanentAddress}</p>
+              </div>
+            )}
+
+            {(auditingUserAddress.pendingPermanentAddressProof || auditingUserAddress.permanentAddressProof) && (
               <div style={{ marginBottom: "16px" }}>
                 <span style={{ fontSize: "12px", color: "#64748B", fontWeight: 700, textTransform: "uppercase", display: "block", marginBottom: "6px" }}>
-                  Proof Document
+                  Uploaded Proof Document (Utility Bill / Tenancy Contract)
                 </span>
-                <a
-                  href={auditingUserAddress.permanentAddressProof}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="btn btn-secondary btn-xs"
-                  style={{ display: "inline-flex", alignItems: "center", gap: "6px", color: "#0EA5E9", borderColor: "#0EA5E9" }}
-                >
-                  View Client Proof Document (Utility Bill / Tenancy Contract) 📄
-                </a>
+                <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                  {(auditingUserAddress.pendingPermanentAddressProof || auditingUserAddress.permanentAddressProof).match(/\.(jpg|jpeg|png|webp|gif)(\?.*)?$/i) ? (
+                    <div style={{ background: "#0F172A", border: "1px solid #334155", borderRadius: "8px", padding: "8px", textAlign: "center" }}>
+                      <img
+                        src={auditingUserAddress.pendingPermanentAddressProof || auditingUserAddress.permanentAddressProof}
+                        alt="Submitted Address Proof"
+                        style={{ maxWidth: "100%", maxHeight: "200px", borderRadius: "6px", objectFit: "contain" }}
+                      />
+                    </div>
+                  ) : null}
+                  <a
+                    href={auditingUserAddress.pendingPermanentAddressProof || auditingUserAddress.permanentAddressProof}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="btn btn-secondary btn-xs"
+                    style={{ display: "inline-flex", alignItems: "center", gap: "6px", color: "#0EA5E9", borderColor: "#0EA5E9" }}
+                  >
+                    Open Full Client Proof Document (Utility Bill / Tenancy Contract) 📄
+                  </a>
+                </div>
               </div>
             )}
 

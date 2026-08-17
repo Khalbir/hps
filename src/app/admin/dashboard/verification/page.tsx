@@ -137,7 +137,7 @@ export default function TrustVerificationCenterPage() {
   // Filter clients based on search query and status tab
   const filteredClients = clients.filter((c) => {
     const s = c.permanentAddressStatus;
-    const isPending = (s === "PENDING" || Boolean(c.pendingPermanentAddress)) && s !== "REJECTED" && s !== "SUSPENDED";
+    const isPending = (s === "PENDING" || Boolean(c.pendingPermanentAddress) || Boolean(c.permanentAddressProof) || Boolean(c.pendingPermanentAddressProof)) && s !== "VERIFIED" && s !== "REJECTED" && s !== "SUSPENDED";
     const isVerified = s === "VERIFIED";
     const isRejected = s === "REJECTED" || s === "SUSPENDED";
 
@@ -161,7 +161,7 @@ export default function TrustVerificationCenterPage() {
   });
 
   // Strict stats counters
-  const pendingCount = clients.filter((c) => (c.permanentAddressStatus === "PENDING" || Boolean(c.pendingPermanentAddress)) && c.permanentAddressStatus !== "REJECTED" && c.permanentAddressStatus !== "SUSPENDED").length;
+  const pendingCount = clients.filter((c) => (c.permanentAddressStatus === "PENDING" || Boolean(c.pendingPermanentAddress) || Boolean(c.permanentAddressProof) || Boolean(c.pendingPermanentAddressProof)) && c.permanentAddressStatus !== "VERIFIED" && c.permanentAddressStatus !== "REJECTED" && c.permanentAddressStatus !== "SUSPENDED").length;
   const verifiedCount = clients.filter((c) => c.permanentAddressStatus === "VERIFIED").length;
   const rejectedCount = clients.filter((c) => c.permanentAddressStatus === "REJECTED" || c.permanentAddressStatus === "SUSPENDED").length;
 

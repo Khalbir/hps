@@ -43,23 +43,34 @@ export async function GET(request: Request) {
       },
     });
 
-    const formattedUsers = users.map((u) => ({
-      id: u.id,
-      name: `${u.firstName || ""} ${u.lastName || ""}`.trim() || "User Account",
-      email: u.email,
-      phone: u.phone || "Not Provided",
-      role: u.role,
-      isVerified: u.isVerified,
-      createdAt: u.createdAt ? new Date(u.createdAt).toISOString().split("T")[0] : "Recent",
-      permanentAddress: u.permanentAddress,
-      permanentAddressProof: u.permanentAddressProof,
-      permanentAddressStatus: u.permanentAddressStatus || "NOT_SUBMITTED",
-      permanentAddressNotes: u.permanentAddressNotes,
-      secondaryAddress: u.secondaryAddress,
-      pendingPermanentAddress: u.pendingPermanentAddress,
-      pendingPermanentAddressProof: u.pendingPermanentAddressProof,
-      bookingAddresses: u.bookingAddresses || "[]",
-    }));
+    const formattedUsers = users.map((u) => {
+      let resolvedStatus = (u.permanentAddressStatus || "").toUpperCase();
+      if (!resolvedStatus || resolvedStatus === "NOT_SUBMITTED") {
+        if (u.pendingPermanentAddress || u.pendingPermanentAddressProof || u.permanentAddressProof || u.permanentAddress) {
+          resolvedStatus = "PENDING";
+        } else {
+          resolvedStatus = "NOT_SUBMITTED";
+        }
+      }
+
+      return {
+        id: u.id,
+        name: `${u.firstName || ""} ${u.lastName || ""}`.trim() || "User Account",
+        email: u.email,
+        phone: u.phone || "Not Provided",
+        role: u.role,
+        isVerified: u.isVerified,
+        createdAt: u.createdAt ? new Date(u.createdAt).toISOString().split("T")[0] : "Recent",
+        permanentAddress: u.permanentAddress,
+        permanentAddressProof: u.permanentAddressProof,
+        permanentAddressStatus: resolvedStatus,
+        permanentAddressNotes: u.permanentAddressNotes,
+        secondaryAddress: u.secondaryAddress,
+        pendingPermanentAddress: u.pendingPermanentAddress,
+        pendingPermanentAddressProof: u.pendingPermanentAddressProof,
+        bookingAddresses: u.bookingAddresses || "[]",
+      };
+    });
 
     return NextResponse.json({ success: true, users: formattedUsers });
   } catch (error) {

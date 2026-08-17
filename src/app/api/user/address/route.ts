@@ -13,7 +13,7 @@ async function findTargetUser(email?: string | null, userId?: string | null) {
 
   if (cleanEmail || cleanUserId) {
     const orConditions: any[] = [];
-    if (cleanEmail) orConditions.push({ email: cleanEmail });
+    if (cleanEmail) orConditions.push({ email: { equals: cleanEmail, mode: "insensitive" } });
     if (cleanUserId) orConditions.push({ id: cleanUserId });
 
     try {
@@ -23,16 +23,6 @@ async function findTargetUser(email?: string | null, userId?: string | null) {
     } catch (err) {
       console.warn("[User Address findTargetUser DB Warning]:", err);
     }
-  }
-
-  // Fallback: If exact match not found, fetch latest CUSTOMER user
-  if (!existingUser) {
-    try {
-      existingUser = await prisma.user.findFirst({
-        where: { role: "CUSTOMER" },
-        orderBy: { createdAt: "desc" },
-      });
-    } catch {}
   }
 
   return existingUser;
