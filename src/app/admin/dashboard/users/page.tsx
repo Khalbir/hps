@@ -37,20 +37,26 @@ export default function UsersRoleManagementPage() {
   // Client Address Verification Audit Modal State
   const [auditingUserAddress, setAuditingUserAddress] = useState<any | null>(null);
   const [addressAuditNotes, setAddressAuditNotes] = useState("");
+  const [manualAddressInput, setManualAddressInput] = useState("");
   const [auditSubmitting, setAuditSubmitting] = useState(false);
 
   const handleAddressAuditSubmit = async (decision: "APPROVE" | "REJECT") => {
     if (!auditingUserAddress) return;
     setAuditSubmitting(true);
     try {
+      const payload: any = {
+        userId: auditingUserAddress.id,
+        decision,
+        notes: addressAuditNotes,
+      };
+      if (manualAddressInput.trim()) {
+        payload.permanentAddress = manualAddressInput.trim();
+      }
+
       const res = await fetch("/api/admin/users/verify-address", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          userId: auditingUserAddress.id,
-          decision,
-          notes: addressAuditNotes,
-        }),
+        body: JSON.stringify(payload),
       });
 
       const data = await res.json();
@@ -60,6 +66,7 @@ export default function UsersRoleManagementPage() {
             u.id === auditingUserAddress.id
               ? {
                   ...u,
+                  permanentAddress: manualAddressInput.trim() || u.permanentAddress,
                   permanentAddressStatus: decision === "APPROVE" ? "VERIFIED" : "REJECTED",
                   permanentAddressNotes: addressAuditNotes || (decision === "APPROVE" ? "Address verified successfully." : "Rejection notes not specified."),
                 }
@@ -76,6 +83,7 @@ export default function UsersRoleManagementPage() {
       setAuditSubmitting(false);
       setAuditingUserAddress(null);
       setAddressAuditNotes("");
+      setManualAddressInput("");
       setTimeout(() => setToast(""), 6000);
     }
   };
@@ -357,20 +365,23 @@ export default function UsersRoleManagementPage() {
                     <td style={{ padding: "12px 16px", color: "#94A3B8", fontSize: "13px" }}>{u.createdAt}</td>
                     <td style={{ padding: "12px 16px" }}>
                       {u.role === "CUSTOMER" ? (
-                        u.permanentAddressStatus === "PENDING" || u.permanentAddressStatus === "REJECTED" || u.permanentAddress ? (
-                          <button
-                            className="btn btn-secondary btn-xs"
-                            style={{ color: "#F59E0B", borderColor: "#F59E0B" }}
-                            onClick={() => {
-                              setAuditingUserAddress(u);
-                              setAddressAuditNotes(u.permanentAddressNotes || "");
-                            }}
-                          >
-                            <MapPin size={12} /> Audit Address
-                          </button>
-                        ) : (
-                          <span style={{ color: "#475569", fontSize: "12px" }}>No Address Submitted</span>
-                        )
+                        <button
+                          className="btn btn-secondary btn-xs"
+                          style={{
+                            color: u.permanentAddressStatus === "VERIFIED" ? "#10B981" : u.permanentAddressStatus === "PENDING" ? "#F59E0B" : "#0EA5E9",
+                            borderColor: u.permanentAddressStatus === "VERIFIED" ? "#10B981" : u.permanentAddressStatus === "PENDING" ? "#F59E0B" : "#0EA5E9",
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: "4px",
+                          }}
+                          onClick={() => {
+                            setAuditingUserAddress(u);
+                            setAddressAuditNotes(u.permanentAddressNotes || "");
+                            setManualAddressInput(u.permanentAddress || "");
+                          }}
+                        >
+                          <MapPin size={12} /> {u.permanentAddressStatus === "VERIFIED" ? "Manage Address" : u.permanentAddressStatus === "PENDING" ? "Audit Address ⏳" : "Set/Verify Address"}
+                        </button>
                       ) : (
                         <button
                           className="btn btn-secondary btn-xs"
@@ -578,12 +589,11 @@ export default function UsersRoleManagementPage() {
           style={{
             position: "fixed",
             inset: 0,
-            backgroundColor: "rgba(15,23,42,0.85)",
-            backdropFilter: "blur(8px)",
-            zIndex: 9999,
+            background: "rgba(15, 23, 42, 0.8)",
+            zIndex: 1000,
             display: "flex",
-            justifyContent: "center",
             alignItems: "center",
+            justifyContent: "center",
             padding: "20px",
           }}
           onClick={() => setAuditingUserAddress(null)}
@@ -594,7 +604,7 @@ export default function UsersRoleManagementPage() {
             onClick={(e) => e.stopPropagation()}
           >
             <h3 className="h4" style={{ margin: "0 0 8px 0", color: "#F8FAFC", display: "flex", alignItems: "center", gap: "8px" }}>
-              <MapPin size={20} color="#0EA5E9" /> Audit Client Permanent Address
+              <MapPin size={20} color="#0EA5E9" /> Client Permanent Address Verification
             </h3>
             
             <div style={{ marginBottom: "16px", background: "#0F172A", padding: "12px", borderRadius: "8px", border: "1px solid #334155" }}>
@@ -606,10 +616,24 @@ export default function UsersRoleManagementPage() {
               </span>
               
               <div style={{ borderTop: "1px solid #334155", paddingTop: "8px" }}>
-                <span style={{ fontSize: "11px", color: "#64748B", textTransform: "uppercase", fontWeight: "bold" }}>Submitted Address:</span>
-                <p style={{ margin: "4px 0 0 0", color: "#CBD5E1", fontSize: "13px", lineHeight: 1.4 }}>
-                  {auditingUserAddress.permanentAddress || "No address string provided"}
-                </p>
+                <label style={{ fontSize: "11px", color: "#64748B", textTransform: "uppercase", fontWeight: "bold", display: "block", marginBottom: "4px" }}>
+                  Permanent Residential Address:
+                </label>
+                <input
+                  type="text"
+                  placeholder="Enter client's verified street address (e.g. 12 Aminu Kano, Wuse 2, Abuja)..."
+                  value={manualAddressInput}
+                  onChange={(e) => setManualAddressInput(e.target.value)}
+                  style={{
+                    width: "100%",
+                    background: "#1E293B",
+                    border: "1px solid #334155",
+                    borderRadius: "6px",
+                    padding: "8px 10px",
+                    color: "#F8FAFC",
+                    fontSize: "13px",
+                  }}
+                />
               </div>
             </div>
 

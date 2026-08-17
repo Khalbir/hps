@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard, Users, ClipboardList, CreditCard, Star,
-  Settings, Shield, BarChart3, Tag, Bell, LogOut, Menu, X,
+  Settings, Shield, ShieldCheck, BarChart3, Tag, Bell, LogOut, Menu, X,
   MapPin, Lock, Search, AlertCircle, Download, HelpCircle
 } from "lucide-react";
 import styles from "@/app/admin/admin.module.css";
@@ -25,6 +25,7 @@ const adminNav: NavItem[] = [
   { href: "/admin/dashboard/map", label: "Live Map & Radius", icon: MapPin, permissionKey: "map" },
   { href: "/admin/dashboard/bookings", label: "Bookings Workflow", icon: ClipboardList, permissionKey: "bookings" },
   { href: "/admin/dashboard/users", label: "Users & Staff Roles", icon: Users, permissionKey: "users" },
+  { href: "/admin/dashboard/verification", label: "Trust & Verification Center", icon: ShieldCheck, permissionKey: "verification" },
   { href: "/admin/dashboard/professionals", label: "Artisan Verification", icon: Shield, permissionKey: "professionals" },
   { href: "/admin/dashboard/disputes", label: "Dispute & Refund Center", icon: AlertCircle, permissionKey: "disputes" },
   { href: "/admin/dashboard/payments", label: "Payments & Escrow", icon: CreditCard, permissionKey: "payments" },

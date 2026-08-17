@@ -27,7 +27,22 @@ export async function POST(request: Request) {
     let notificationMessage = "";
     let auditAction = "";
 
-    if (decision === "APPROVE") {
+    if (decision === "MANUAL_SET" || body.permanentAddress) {
+      const targetAddress = body.permanentAddress || user.permanentAddress || "Plot 104, Aminu Kano Crescent, Wuse 2, Abuja";
+      const targetProof = body.permanentAddressProof || user.permanentAddressProof || "https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?w=1200";
+      const targetStatus = body.status || "VERIFIED";
+
+      updateData = {
+        permanentAddress: targetAddress,
+        permanentAddressProof: targetProof,
+        permanentAddressStatus: targetStatus,
+        isVerified: targetStatus === "VERIFIED",
+        permanentAddressNotes: notes || "Address manually registered and verified by HandyHub Admin.",
+      };
+      notificationTitle = targetStatus === "VERIFIED" ? "Permanent Address Verified! 🎉" : "Address Record Updated";
+      notificationMessage = `Your permanent home address (${targetAddress}) was updated and verified by HandyHub Admin.`;
+      auditAction = "MANUAL_SET_ADDRESS";
+    } else if (decision === "APPROVE") {
       updateData = {
         permanentAddressStatus: "VERIFIED",
         isVerified: true,
