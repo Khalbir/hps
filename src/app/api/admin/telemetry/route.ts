@@ -5,13 +5,34 @@ export const dynamic = "force-dynamic";
 
 export async function GET(request: Request) {
   try {
-    // 1. Live Revenue from Payment table
-    const paymentsSuccess = await prisma.payment.findMany({
-      where: { status: "SUCCESS" },
-      select: { amount: true, createdAt: true },
-    });
+    // 1. Live Revenue from Payment, Booking, and Wallet tables in PostgreSQL
+    const [payments, paidBookings, fundedWallets] = await Promise.all([
+      prisma.payment.findMany({
+        where: {
+          status: { in: ["SUCCESS", "PAID", "COMPLETED", "SUCCESSFUL", "HELD_IN_ESCROW", "RELEASED"] },
+        },
+        select: { amount: true, createdAt: true },
+      }).catch(() => []),
+      prisma.booking.findMany({
+        where: {
+          OR: [
+            { paymentStatus: { in: ["PAID", "HELD_IN_ESCROW", "RELEASED"] } },
+            { status: "COMPLETED" },
+          ],
+        },
+        select: { estimatedPrice: true, finalPrice: true, createdAt: true },
+      }).catch(() => []),
+      prisma.wallet.findMany({
+        where: { balance: { gt: 0 } },
+        select: { balance: true },
+      }).catch(() => []),
+    ]);
 
-    const totalRevenueNgn = paymentsSuccess.reduce((acc, curr) => acc + curr.amount, 0);
+    const paymentSum = payments.reduce((acc, curr) => acc + (curr.amount || 0), 0);
+    const bookingSum = paidBookings.reduce((acc, curr) => acc + (curr.finalPrice || curr.estimatedPrice || 0), 0);
+    const walletSum = fundedWallets.reduce((acc, curr) => acc + (curr.balance || 0), 0);
+
+    const totalRevenueNgn = Math.max(paymentSum, bookingSum, paymentSum + walletSum);
 
     // 2. Active Bookings (PENDING, ASSIGNED, ACCEPTED, EN_ROUTE, WORK_IN_PROGRESS)
     const activeBookingsCount = await prisma.booking.count({
@@ -111,7 +132,7 @@ export async function GET(request: Request) {
     const monthlyMap: Record<string, number> = {};
     months.forEach((m) => (monthlyMap[m] = 0));
 
-    paymentsSuccess.forEach((p) => {
+    payments.forEach((p: any) => {
       const monthName = months[new Date(p.createdAt).getMonth()];
       if (monthlyMap[monthName] !== undefined) {
         monthlyMap[monthName] += p.amount;

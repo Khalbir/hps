@@ -17,9 +17,6 @@ export async function GET(request: Request) {
 
     // 1. Fetch database payments from Payment table
     const where: any = {
-      user: {
-        email: { notIn: DEMO_EMAILS },
-      },
       reference: { notIn: DEMO_PAYMENT_REFS },
     };
     if (status && status !== "ALL") where.status = status;
