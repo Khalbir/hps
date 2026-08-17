@@ -287,6 +287,52 @@ export class PaystackService {
   }
 
   /**
+   * Fetch Live Transactions directly from Paystack REST API
+   */
+  async listTransactions(params?: { perPage?: number; page?: number; status?: string }): Promise<{
+    success: boolean;
+    data?: PaystackVerifyResponseData[];
+    meta?: any;
+    error?: string;
+  }> {
+    try {
+      const perPage = params?.perPage || 50;
+      const page = params?.page || 1;
+      let url = `${this.baseUrl}/transaction?perPage=${perPage}&page=${page}`;
+      if (params?.status) url += `&status=${params.status}`;
+
+      const response = await fetch(url, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${this.secretKey}`,
+          "Content-Type": "application/json",
+        },
+        cache: "no-store",
+      });
+
+      const result = await response.json();
+      if (!response.ok || !result.status) {
+        return {
+          success: false,
+          error: result.message || "Failed to fetch live Paystack transactions",
+        };
+      }
+
+      return {
+        success: true,
+        data: result.data as PaystackVerifyResponseData[],
+        meta: result.meta,
+      };
+    } catch (error: any) {
+      console.error("[PaystackService] listTransactions Error:", error);
+      return {
+        success: false,
+        error: error.message || "Network error querying Paystack API",
+      };
+    }
+  }
+
+  /**
    * Validate Paystack Webhook Cryptographic HMAC SHA512 Signature
    */
   verifyWebhookSignature(rawBody: string, signature: string | null): boolean {

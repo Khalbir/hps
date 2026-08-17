@@ -21,8 +21,10 @@ export default function AdminPaymentsPage() {
     totalSuccessNgn: 0,
     paystackVolumeNgn: 0,
     platformFeeNgn: 0,
+    escrowHeldNgn: 0,
     failedCount: 0,
     totalCount: 0,
+    livePaystackCount: 0,
   });
   const [loading, setLoading] = useState(true);
   const [notice, setNotice] = useState("");
@@ -58,6 +60,7 @@ export default function AdminPaymentsPage() {
               authorizationCode: meta.authorizationCode || null,
               date: new Date(p.createdAt).toLocaleString(),
               rawDate: p.createdAt,
+              isLivePaystack: Boolean(p.isLivePaystack || meta.isLivePaystackApi),
             };
           })
         );
@@ -75,6 +78,28 @@ export default function AdminPaymentsPage() {
     const interval = setInterval(fetchPayments, 5000);
     return () => clearInterval(interval);
   }, []);
+
+  const handleSyncPaystackLive = async () => {
+    setNotice("⚡ Connecting to Live Paystack REST API and syncing transactions...");
+    try {
+      const res = await fetch("/api/admin/payments", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "SYNC_LIVE_PAYSTACK" }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setNotice("✅ Live Paystack transactions successfully fetched and reconciled!");
+        fetchPayments();
+      } else {
+        setNotice(`⚠️ Paystack sync: ${data.error || "Failed"}`);
+      }
+    } catch {
+      setNotice("❌ Network error during Paystack sync.");
+    } finally {
+      setTimeout(() => setNotice(""), 5000);
+    }
+  };
 
   const handleManualVerify = async (ref: string) => {
     setVerifyingRef(ref);
@@ -207,7 +232,7 @@ export default function AdminPaymentsPage() {
           <div>
             <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "8px" }}>
               <h1 style={{ fontSize: "1.75rem", fontWeight: 800, color: "#F8FAFC", margin: 0, letterSpacing: "-0.02em" }}>
-                Paystack Production Transaction Engine
+                Paystack Payments & Escrow Ledger
               </h1>
               <span
                 style={{
@@ -223,15 +248,34 @@ export default function AdminPaymentsPage() {
                   gap: 6,
                 }}
               >
-                <Zap size={13} fill="#10B981" /> PAYSTACK ACTIVE
+                <Zap size={13} fill="#10B981" /> LIVE PAYSTACK API CONNECTED
               </span>
             </div>
             <p style={{ color: "#94A3B8", fontSize: "14px", margin: 0 }}>
-              Live payment verification, webhook monitoring, and digital receipt command center.
+              Live payment verification, Paystack REST API ingestion, automated escrow holding, and artisan payout disbursement.
             </p>
           </div>
 
-          <div style={{ display: "flex", gap: "10px" }}>
+          <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
+            <button
+              onClick={handleSyncPaystackLive}
+              className="btn btn-secondary btn-sm"
+              style={{
+                background: "#0F172A",
+                border: "1px solid #0EA5E9",
+                color: "#38BDF8",
+                padding: "9px 16px",
+                borderRadius: "10px",
+                fontSize: "13px",
+                fontWeight: 700,
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                cursor: "pointer",
+              }}
+            >
+              <Zap size={14} color="#38BDF8" /> Sync Paystack Live
+            </button>
             <button
               onClick={fetchPayments}
               className="btn btn-secondary btn-sm"
@@ -280,14 +324,14 @@ export default function AdminPaymentsPage() {
         )}
 
         {/* Financial Summary KPI Cards Grid */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(230px, 1fr))", gap: "20px", marginBottom: "32px" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(210px, 1fr))", gap: "16px", marginBottom: "32px" }}>
           {/* Card 1: Paystack Volume */}
           <div
             style={{
               background: "#1E293B",
               border: "1px solid rgba(255, 255, 255, 0.08)",
               borderRadius: "16px",
-              padding: "22px 24px",
+              padding: "20px 22px",
               boxShadow: "0 10px 25px rgba(0, 0, 0, 0.2)",
               display: "flex",
               alignItems: "center",
@@ -296,24 +340,24 @@ export default function AdminPaymentsPage() {
           >
             <div>
               <span style={{ fontSize: "12px", fontWeight: 700, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.5px" }}>
-                Paystack Verified Volume
+                Paystack Volume
               </span>
-              <h2 style={{ fontSize: "1.75rem", fontWeight: 800, color: "#10B981", margin: "6px 0 0", letterSpacing: "-0.02em" }}>
+              <h2 style={{ fontSize: "1.6rem", fontWeight: 800, color: "#10B981", margin: "6px 0 0", letterSpacing: "-0.02em" }}>
                 ₦{stats.paystackVolumeNgn.toLocaleString()}
               </h2>
             </div>
-            <div style={{ width: 44, height: 44, borderRadius: "12px", background: "rgba(16, 185, 129, 0.12)", color: "#10B981", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <TrendingUp size={22} />
+            <div style={{ width: 42, height: 42, borderRadius: "12px", background: "rgba(16, 185, 129, 0.12)", color: "#10B981", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <TrendingUp size={20} />
             </div>
           </div>
 
-          {/* Card 2: Total Transactions */}
+          {/* Card 2: Escrow Held (80%) */}
           <div
             style={{
               background: "#1E293B",
               border: "1px solid rgba(255, 255, 255, 0.08)",
               borderRadius: "16px",
-              padding: "22px 24px",
+              padding: "20px 22px",
               boxShadow: "0 10px 25px rgba(0, 0, 0, 0.2)",
               display: "flex",
               alignItems: "center",
@@ -322,24 +366,24 @@ export default function AdminPaymentsPage() {
           >
             <div>
               <span style={{ fontSize: "12px", fontWeight: 700, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.5px" }}>
-                Total Transactions
+                Escrow Funds (80%)
               </span>
-              <h2 style={{ fontSize: "1.75rem", fontWeight: 800, color: "#F59E0B", margin: "6px 0 0", letterSpacing: "-0.02em" }}>
-                {stats.totalCount}
+              <h2 style={{ fontSize: "1.6rem", fontWeight: 800, color: "#F59E0B", margin: "6px 0 0", letterSpacing: "-0.02em" }}>
+                ₦{(stats.escrowHeldNgn || Math.round(stats.totalSuccessNgn * 0.8)).toLocaleString()}
               </h2>
             </div>
-            <div style={{ width: 44, height: 44, borderRadius: "12px", background: "rgba(245, 158, 11, 0.12)", color: "#F59E0B", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <Layers size={22} />
+            <div style={{ width: 42, height: 42, borderRadius: "12px", background: "rgba(245, 158, 11, 0.12)", color: "#F59E0B", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <Lock size={20} />
             </div>
           </div>
 
-          {/* Card 3: Platform Net Fee */}
+          {/* Card 3: Platform Commission (20%) */}
           <div
             style={{
               background: "#1E293B",
               border: "1px solid rgba(255, 255, 255, 0.08)",
               borderRadius: "16px",
-              padding: "22px 24px",
+              padding: "20px 22px",
               boxShadow: "0 10px 25px rgba(0, 0, 0, 0.2)",
               display: "flex",
               alignItems: "center",
@@ -348,24 +392,24 @@ export default function AdminPaymentsPage() {
           >
             <div>
               <span style={{ fontSize: "12px", fontWeight: 700, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.5px" }}>
-                Platform Net Escrow (20%)
+                Platform Fee (20%)
               </span>
-              <h2 style={{ fontSize: "1.75rem", fontWeight: 800, color: "#0EA5E9", margin: "6px 0 0", letterSpacing: "-0.02em" }}>
+              <h2 style={{ fontSize: "1.6rem", fontWeight: 800, color: "#0EA5E9", margin: "6px 0 0", letterSpacing: "-0.02em" }}>
                 ₦{stats.platformFeeNgn.toLocaleString()}
               </h2>
             </div>
-            <div style={{ width: 44, height: 44, borderRadius: "12px", background: "rgba(14, 165, 233, 0.12)", color: "#0EA5E9", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <ShieldCheck size={22} />
+            <div style={{ width: 42, height: 42, borderRadius: "12px", background: "rgba(14, 165, 233, 0.12)", color: "#0EA5E9", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <ShieldCheck size={20} />
             </div>
           </div>
 
-          {/* Card 4: Failed Transactions */}
+          {/* Card 4: Total Transactions */}
           <div
             style={{
               background: "#1E293B",
               border: "1px solid rgba(255, 255, 255, 0.08)",
               borderRadius: "16px",
-              padding: "22px 24px",
+              padding: "20px 22px",
               boxShadow: "0 10px 25px rgba(0, 0, 0, 0.2)",
               display: "flex",
               alignItems: "center",
@@ -374,14 +418,40 @@ export default function AdminPaymentsPage() {
           >
             <div>
               <span style={{ fontSize: "12px", fontWeight: 700, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.5px" }}>
-                Failed Transactions
+                Transactions
               </span>
-              <h2 style={{ fontSize: "1.75rem", fontWeight: 800, color: "#EF4444", margin: "6px 0 0", letterSpacing: "-0.02em" }}>
+              <h2 style={{ fontSize: "1.6rem", fontWeight: 800, color: "#CBD5E1", margin: "6px 0 0", letterSpacing: "-0.02em" }}>
+                {stats.totalCount}
+              </h2>
+            </div>
+            <div style={{ width: 42, height: 42, borderRadius: "12px", background: "rgba(203, 213, 225, 0.12)", color: "#CBD5E1", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <Layers size={20} />
+            </div>
+          </div>
+
+          {/* Card 5: Failed Transactions */}
+          <div
+            style={{
+              background: "#1E293B",
+              border: "1px solid rgba(255, 255, 255, 0.08)",
+              borderRadius: "16px",
+              padding: "20px 22px",
+              boxShadow: "0 10px 25px rgba(0, 0, 0, 0.2)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+            }}
+          >
+            <div>
+              <span style={{ fontSize: "12px", fontWeight: 700, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+                Failed / Dropped
+              </span>
+              <h2 style={{ fontSize: "1.6rem", fontWeight: 800, color: "#EF4444", margin: "6px 0 0", letterSpacing: "-0.02em" }}>
                 {stats.failedCount}
               </h2>
             </div>
-            <div style={{ width: 44, height: 44, borderRadius: "12px", background: "rgba(239, 68, 68, 0.12)", color: "#EF4444", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <AlertTriangle size={22} />
+            <div style={{ width: 42, height: 42, borderRadius: "12px", background: "rgba(239, 68, 68, 0.12)", color: "#EF4444", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <AlertTriangle size={20} />
             </div>
           </div>
         </div>
