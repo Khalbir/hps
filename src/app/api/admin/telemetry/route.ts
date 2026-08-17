@@ -23,7 +23,7 @@ export async function GET(request: Request) {
     // 3. Verified Artisans & Pending Verifications
     const [verifiedArtisansCount, pendingVerificationsCount, totalPros, prosList] = await Promise.all([
       prisma.professional.count({ where: { verificationStatus: "VERIFIED" } }),
-      prisma.professional.count({ where: { verificationStatus: "PENDING" } }),
+      prisma.professional.count({ where: { verificationStatus: { in: ["PENDING", "SUBMITTED", "PENDING_REVIEW"] } } }),
       prisma.professional.count(),
       prisma.professional.findMany({ select: { documents: true } }),
     ]);

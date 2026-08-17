@@ -57,6 +57,7 @@ export default function ProfessionalVerificationPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           professionalId: inspectPro.id,
+          userId: inspectPro.userId,
           status: newStatus,
           verificationNotes: officerNotes || inspectPro.notes,
           addressVerified: newStatus === "VERIFIED",

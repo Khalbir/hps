@@ -81,7 +81,20 @@ export async function POST(request: Request) {
     let proRecord = null;
 
     if (targetUser) {
-      // Find or create Professional linked to targetUser
+      // 1. Upgrade User role to PROFESSIONAL & sync address/NIN fields
+      await prisma.user.update({
+        where: { id: targetUser.id },
+        data: {
+          role: "PROFESSIONAL",
+          permanentAddress: homeAddress || targetUser.permanentAddress,
+          permanentAddressProof: addressProofUrl || targetUser.permanentAddressProof,
+          permanentAddressStatus: "PENDING",
+          ninNumber: idNumber || targetUser.ninNumber,
+          ninStatus: "PENDING",
+        },
+      }).catch((uErr) => console.warn("[User Pro Role Update Warn]:", uErr));
+
+      // 2. Find or create Professional linked to targetUser
       let existingPro = await prisma.professional.findUnique({
         where: { userId: targetUser.id },
       });
@@ -96,6 +109,8 @@ export async function POST(request: Request) {
             idUrl: idDocumentUrl || selfieUrl || "",
             addressProofUrl: addressProofUrl || "",
             documents: JSON.stringify(verificationPayload),
+            skills: JSON.stringify([serviceCategory || "Skilled Services"]),
+            bio: `${serviceCategory || "Skilled"} Artisan Partner based in ${operatingState || "FCT Abuja"}`,
           },
         });
       } else {
@@ -112,7 +127,26 @@ export async function POST(request: Request) {
         });
       }
 
-      // Notify User
+      // 3. Record Audit Log for Admin Dashboard
+      try {
+        await prisma.auditLog.create({
+          data: {
+            userId: targetUser.id,
+            action: "ARTISAN_VERIFICATION_SUBMITTED",
+            entity: "Professional",
+            entityId: proRecord.id,
+            details: JSON.stringify({
+              email: targetUser.email,
+              name: `${targetUser.firstName} ${targetUser.lastName}`,
+              idType: idType || "NIN",
+              operatingState: operatingState || "FCT Abuja",
+              notes: "Dossier uploaded and queued for admin review",
+            }),
+          },
+        });
+      } catch {}
+
+      // 4. Notify User
       try {
         await prisma.notification.create({
           data: {

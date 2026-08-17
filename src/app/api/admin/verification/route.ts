@@ -1,67 +1,73 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getValidMediaUrl, SAMPLE_PORTFOLIO_IMAGE } from "@/lib/sample-documents";
-import { DEMO_EMAILS } from "@/lib/purge-demo-utility";
+
+export const dynamic = "force-dynamic";
 
 export async function GET(request: Request) {
   try {
-
     const { searchParams } = new URL(request.url);
     const status = searchParams.get("status");
 
-    // 1. Fetch all users registered as PROFESSIONAL in PostgreSQL User table
-    let proUsers: any[] = [];
-    try {
-      proUsers = await prisma.user.findMany({
-        where: {
-          role: "PROFESSIONAL",
-        },
-        include: { professional: true },
-        orderBy: { createdAt: "desc" },
-      });
-    } catch (err) {
-      console.warn("[Admin Verification DB Warning]:", err);
-    }
-
-    // 2. Fetch all entries in Professional table
+    // 1. Fetch all Professional records with their linked User
     let dbPros: any[] = [];
     try {
       dbPros = await prisma.professional.findMany({
         include: { user: true },
         orderBy: { createdAt: "desc" },
       });
-    } catch (err) {}
+    } catch (err) {
+      console.warn("[Admin Verification DB Warning - Professionals]:", err);
+    }
 
-    // Combine entries
+    // 2. Fetch all Users with role PROFESSIONAL or pending NIN/Address submissions
+    let proUsers: any[] = [];
+    try {
+      proUsers = await prisma.user.findMany({
+        where: {
+          OR: [
+            { role: "PROFESSIONAL" },
+            { ninStatus: { in: ["PENDING", "VERIFIED", "SUBMITTED"] } },
+            { permanentAddressStatus: { in: ["PENDING", "VERIFIED", "SUBMITTED"] } },
+          ],
+        },
+        include: { professional: true },
+        orderBy: { createdAt: "desc" },
+      });
+    } catch (err) {
+      console.warn("[Admin Verification DB Warning - Users]:", err);
+    }
+
+    // Combine into unified map keyed by User ID or Pro ID
     const proMap = new Map<string, any>();
+
+    // Add all database professionals
     dbPros.forEach((p) => {
       const key = p.userId || p.id;
       proMap.set(key, p);
     });
 
+    // Add/enrich with user entries
     for (const u of proUsers) {
-      if (!proMap.has(u.id)) {
-        let newPro: any = u.professional;
-        if (!newPro) {
-          try {
-            newPro = await prisma.professional.create({
-              data: {
-                userId: u.id,
-                bio: `Verified Professional Artisan`,
-                skills: JSON.stringify(["Electrical", "Plumbing", "HVAC"]),
-                verificationStatus: "PENDING",
-              },
-            });
-          } catch {
-            newPro = {
-              id: `pro_${u.id}`,
-              userId: u.id,
-              verificationStatus: "PENDING",
-              skills: JSON.stringify(["Skilled Services"]),
-            };
-          }
+      const key = u.id;
+      if (!proMap.has(key)) {
+        let pro = u.professional;
+        if (!pro) {
+          pro = {
+            id: `pro_${u.id}`,
+            userId: u.id,
+            verificationStatus: u.ninStatus === "VERIFIED" ? "VERIFIED" : "PENDING",
+            skills: JSON.stringify(["Skilled Services"]),
+            documents: "{}",
+            createdAt: u.createdAt,
+          };
         }
-        proMap.set(u.id, { ...newPro, user: u });
+        proMap.set(key, { ...pro, user: u });
+      } else {
+        const existing = proMap.get(key);
+        if (!existing.user) {
+          proMap.set(key, { ...existing, user: u });
+        }
       }
     }
 
@@ -72,46 +78,57 @@ export async function GET(request: Request) {
       const u = p.user || {};
       let docs: any = {};
       try {
-        if (p.documents) docs = JSON.parse(p.documents);
+        if (typeof p.documents === "string" && p.documents.trim()) {
+          let parsed = JSON.parse(p.documents);
+          if (typeof parsed === "string") parsed = JSON.parse(parsed);
+          docs = parsed || {};
+        } else if (p.documents && typeof p.documents === "object") {
+          docs = p.documents;
+        }
       } catch {}
 
       let skillArray: string[] = [];
       try {
-        if (p.skills) skillArray = JSON.parse(p.skills);
+        if (typeof p.skills === "string" && p.skills.trim()) {
+          skillArray = JSON.parse(p.skills);
+        } else if (Array.isArray(p.skills)) {
+          skillArray = p.skills;
+        }
       } catch {}
 
-      const vStatus = p.verificationStatus || "PENDING";
-      const fullName = `${u.firstName || ""} ${u.lastName || ""}`.trim() || p.name || "Artisan Partner";
+      const vStatus = p.verificationStatus || u.ninStatus || "PENDING";
+      const fullName = `${u.firstName || ""} ${u.lastName || ""}`.trim() || docs.fullName || p.accountName || "Artisan Partner";
 
-      const rawIdUrl = docs.idDocumentUrl || p.idUrl;
+      const rawIdUrl = docs.idDocumentUrl || docs.idUrl || p.idUrl;
       const rawSelfieUrl = docs.selfieUrl;
       const rawTradeCertUrl = docs.tradeCertUrl || p.tradeCertUrl;
-      const rawPortfolioUrls: string[] = docs.portfolioUrls && docs.portfolioUrls.length > 0 ? docs.portfolioUrls : [];
+      const rawPortfolioUrls: string[] = Array.isArray(docs.portfolioUrls) && docs.portfolioUrls.length > 0 ? docs.portfolioUrls : [];
 
       const formattedPortfolio = rawPortfolioUrls.length > 0
         ? rawPortfolioUrls.map((url) => getValidMediaUrl(url, "portfolio"))
         : [SAMPLE_PORTFOLIO_IMAGE];
 
-      const rawAddressProofUrl = docs.addressProofUrl || p.addressProofUrl;
+      const rawAddressProofUrl = docs.addressProofUrl || p.addressProofUrl || u.permanentAddressProof;
 
       return {
         id: p.id,
         userId: p.userId || u.id,
         name: fullName,
-        email: u.email || p.email || "no-email-provided",
-        phone: u.phone || p.phone || "Not Provided",
+        email: u.email || docs.email || p.email || "artisan@handyhubpro.ng",
+        phone: u.phone || docs.phone || p.phone || "Not Provided",
         field: docs.serviceCategory || (skillArray.length > 0 ? skillArray.join(", ") : "Skilled Services"),
         city: docs.operatingState || docs.city || p.city || "FCT Abuja",
-        operatingState: docs.operatingState || p.city || "FCT Abuja",
-        homeAddress: docs.homeAddress || "Plot 104, Aminu Kano Crescent, Wuse 2",
+        operatingState: docs.operatingState || docs.city || p.city || "FCT Abuja",
+        homeAddress: docs.homeAddress || u.permanentAddress || "Plot 104, Aminu Kano Crescent, Wuse 2",
         lga: docs.lga || "AMAC",
         addressProofUrl: getValidMediaUrl(rawAddressProofUrl, "address"),
-        experienceYears: p.yearsExperience || 5,
-        rating: p.rating || 4.9,
+        experienceYears: p.yearsExperience || docs.experienceYears || 5,
+        rating: p.rating || 5.0,
         totalJobs: p.totalJobs || 0,
         verificationStatus: vStatus,
+        status: vStatus,
         idType: docs.idType || p.idType || "NIN",
-        idNumber: docs.idNumber || p.idNumber || "NIN-89302194812",
+        idNumber: docs.idNumber || p.idNumber || u.ninNumber || "NIN-89302194812",
         idUrl: getValidMediaUrl(rawIdUrl, "id"),
         selfieUrl: getValidMediaUrl(rawSelfieUrl, "selfie"),
         tradeCertUrl: getValidMediaUrl(rawTradeCertUrl, "cert"),
@@ -119,15 +136,15 @@ export async function GET(request: Request) {
         guarantor1: docs.guarantor1 || { name: "Chief James Okon", phone: "+234 803 111 2222", relationship: "Landlord / Community Leader", nin: "NIN-1029384756" },
         guarantor2: docs.guarantor2 || { name: "Engr. Aliyu Hassan", phone: "+234 802 333 4444", relationship: "Master Craftsman / Employer", nin: "NIN-9876543210" },
         quizScore: docs.quizScore !== undefined ? docs.quizScore : 85,
-        addressVerified: Boolean(p.addressVerified),
-        notes: p.verificationNotes || "",
-        submittedAt: docs.submittedAt || p.createdAt,
+        addressVerified: Boolean(p.addressVerified || u.permanentAddressStatus === "VERIFIED"),
+        notes: p.verificationNotes || docs.notes || "",
+        submittedAt: docs.submittedAt || p.createdAt || new Date().toISOString(),
       };
     });
 
     // Filter by status if specified
     const filtered = status && status !== "ALL"
-      ? formattedPros.filter((p) => p.verificationStatus === status)
+      ? formattedPros.filter((p) => p.verificationStatus === status || p.status === status)
       : formattedPros;
 
     return NextResponse.json({ success: true, professionals: filtered });
@@ -140,55 +157,100 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { professionalId, status, verificationNotes } = body;
+    const targetId = body.professionalId || body.userId || body.proId || body.id;
+    const targetStatus = body.status || "VERIFIED";
+    const notes = body.verificationNotes || body.notes || "Approved by Admin Compliance Team";
 
-    if (!professionalId) {
-      return NextResponse.json({ error: "Professional ID is required" }, { status: 400 });
+    if (!targetId) {
+      return NextResponse.json({ error: "Target Artisan or User ID is required" }, { status: 400 });
     }
 
-    try {
-      const pro = await prisma.professional.findUnique({
-        where: { id: professionalId },
-        include: { user: true },
-      });
+    // Resolve Professional record by id OR userId
+    let pro = await prisma.professional.findFirst({
+      where: {
+        OR: [{ id: targetId }, { userId: targetId }],
+      },
+      include: { user: true },
+    });
 
-      if (pro) {
-        await prisma.professional.update({
-          where: { id: professionalId },
+    if (!pro) {
+      // If user exists without a professional row, create one
+      const user = await prisma.user.findUnique({ where: { id: targetId } });
+      if (user) {
+        pro = await prisma.professional.create({
           data: {
-            verificationStatus: status || "VERIFIED",
-            verificationNotes: verificationNotes || "Approved by Admin Compliance Team",
-            addressVerified: status === "VERIFIED",
-            verifiedAt: status === "VERIFIED" ? new Date() : undefined,
+            userId: user.id,
+            verificationStatus: targetStatus,
+            verificationNotes: notes,
+            addressVerified: targetStatus === "VERIFIED",
+            verifiedAt: targetStatus === "VERIFIED" ? new Date() : undefined,
+          },
+          include: { user: true },
+        });
+      }
+    } else {
+      await prisma.professional.update({
+        where: { id: pro.id },
+        data: {
+          verificationStatus: targetStatus,
+          verificationNotes: notes,
+          addressVerified: targetStatus === "VERIFIED",
+          verifiedAt: targetStatus === "VERIFIED" ? new Date() : undefined,
+        },
+      });
+    }
+
+    // Update linked user
+    const resolvedUserId = pro?.userId || targetId;
+    if (resolvedUserId) {
+      await prisma.user.update({
+        where: { id: resolvedUserId },
+        data: {
+          isVerified: targetStatus === "VERIFIED",
+          role: "PROFESSIONAL",
+          ninStatus: targetStatus === "VERIFIED" ? "VERIFIED" : targetStatus,
+          permanentAddressStatus: targetStatus === "VERIFIED" ? "VERIFIED" : targetStatus,
+        },
+      }).catch(() => {});
+
+      // Record Audit Log
+      try {
+        await prisma.auditLog.create({
+          data: {
+            userId: resolvedUserId,
+            action: targetStatus === "VERIFIED" ? "ARTISAN_VERIFIED" : "ARTISAN_REJECTED",
+            entity: "Professional",
+            entityId: pro?.id || targetId,
+            details: JSON.stringify({
+              targetId,
+              status: targetStatus,
+              notes,
+            }),
           },
         });
+      } catch {}
 
-        if (status === "VERIFIED" && pro.userId) {
-          await prisma.user.update({
-            where: { id: pro.userId },
-            data: { isVerified: true },
-          }).catch(() => {});
-
-          await prisma.notification.create({
-            data: {
-              userId: pro.userId,
-              type: "SYSTEM",
-              title: "Artisan Account Verified! 🎉",
-              message: "Congratulations! Your identity and trade credentials have been verified. You can now accept client bookings.",
-            },
-          }).catch(() => {});
-        }
-      }
-    } catch (err) {
-      console.warn("[Admin Verification POST Error]:", err);
+      // Dispatch Notification
+      try {
+        await prisma.notification.create({
+          data: {
+            userId: resolvedUserId,
+            type: "SYSTEM",
+            title: targetStatus === "VERIFIED" ? "Artisan Account Verified! 🎉" : "Verification Status Update",
+            message: targetStatus === "VERIFIED"
+              ? "Congratulations! Your identity and trade credentials have been verified. You can now accept client bookings."
+              : `Your verification submission status was updated to ${targetStatus}. Notes: ${notes}`,
+          },
+        });
+      } catch {}
     }
 
     return NextResponse.json({
       success: true,
-      message: `Professional status updated to ${status || "VERIFIED"}.`,
+      message: `Artisan verification status updated to ${targetStatus} successfully!`,
     });
   } catch (error: any) {
     console.error("[Verification POST Error]:", error);
-    return NextResponse.json({ error: "Failed to update professional verification status" }, { status: 500 });
+    return NextResponse.json({ error: error.message || "Failed to update artisan verification status" }, { status: 500 });
   }
 }

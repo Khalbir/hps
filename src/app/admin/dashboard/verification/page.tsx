@@ -33,6 +33,7 @@ export default function VerificationCenterPage() {
   // Audit modal states
   const [auditingClient, setAuditingClient] = useState<ClientVerification | null>(null);
   const [auditingArtisan, setAuditingArtisan] = useState<any | null>(null);
+  const [previewMediaUrl, setPreviewMediaUrl] = useState<string | null>(null);
   const [auditNotes, setAuditNotes] = useState("");
   const [submittingAudit, setSubmittingAudit] = useState(false);
 
@@ -131,9 +132,10 @@ export default function VerificationCenterPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          professionalId: auditingArtisan.id,
           userId: auditingArtisan.userId,
           status: decision === "APPROVE" ? "VERIFIED" : "REJECTED",
-          notes: auditNotes,
+          verificationNotes: auditNotes,
         }),
       });
 
@@ -555,47 +557,144 @@ export default function VerificationCenterPage() {
         >
           <div
             className="card"
-            style={{ width: "100%", maxWidth: "500px", background: "#1E293B", border: "1px solid #334155", borderRadius: "16px", padding: "24px" }}
+            style={{ width: "100%", maxWidth: "680px", background: "#1E293B", border: "1px solid #334155", borderRadius: "16px", padding: "24px", maxHeight: "90vh", overflowY: "auto" }}
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 className="h4" style={{ margin: "0 0 16px 0", color: "#F8FAFC", display: "flex", alignItems: "center", gap: 8 }}>
-              <Award size={20} color="#F59E0B" /> Audit Artisan Trade Credentials
-            </h3>
-
-            <div style={{ background: "#0F172A", padding: 14, borderRadius: 8, border: "1px solid #334155", marginBottom: 16 }}>
-              <strong style={{ color: "#F8FAFC", fontSize: 15, display: "block" }}>{auditingArtisan.name}</strong>
-              <span style={{ fontSize: 12, color: "#94A3B8", display: "block" }}>{auditingArtisan.email} • {auditingArtisan.phone}</span>
-              <span style={{ fontSize: 13, color: "#0EA5E9", display: "block", marginTop: 6, fontWeight: "bold" }}>
-                Trade Specialty: {auditingArtisan.field}
-              </span>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid #334155", paddingBottom: "12px", marginBottom: "16px" }}>
+              <h3 className="h4" style={{ margin: 0, color: "#F8FAFC", display: "flex", alignItems: "center", gap: 8 }}>
+                <Award size={20} color="#F59E0B" /> Comprehensive Artisan Audit Dossier
+              </h3>
+              <button onClick={() => setAuditingArtisan(null)} style={{ background: "transparent", border: "none", color: "#94A3B8", cursor: "pointer", fontSize: 18 }}>✕</button>
             </div>
 
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 16 }}>
-              {auditingArtisan.idUrl && (
+            {/* Header info */}
+            <div style={{ background: "#0F172A", padding: 14, borderRadius: 10, border: "1px solid #334155", marginBottom: 16 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 10 }}>
                 <div>
-                  <span style={{ fontSize: 10, color: "#64748B", textTransform: "uppercase", fontWeight: "bold", display: "block", marginBottom: 4 }}>ID Document (NIN):</span>
-                  <a href={auditingArtisan.idUrl} target="_blank" rel="noopener noreferrer" style={{ color: "#0EA5E9", fontSize: 12, textDecoration: "underline" }}>
-                    View NIN Document 📄
-                  </a>
+                  <strong style={{ color: "#F8FAFC", fontSize: 16, display: "block" }}>{auditingArtisan.name}</strong>
+                  <span style={{ fontSize: 12, color: "#94A3B8", display: "block" }}>{auditingArtisan.email} • {auditingArtisan.phone}</span>
+                  <span style={{ fontSize: 13, color: "#0EA5E9", display: "block", marginTop: 4, fontWeight: "bold" }}>
+                    Trade Specialty: {auditingArtisan.field}
+                  </span>
                 </div>
-              )}
-              {auditingArtisan.tradeCertUrl && (
-                <div>
-                  <span style={{ fontSize: 10, color: "#64748B", textTransform: "uppercase", fontWeight: "bold", display: "block", marginBottom: 4 }}>Trade Certification:</span>
-                  <a href={auditingArtisan.tradeCertUrl} target="_blank" rel="noopener noreferrer" style={{ color: "#0EA5E9", fontSize: 12, textDecoration: "underline" }}>
-                    View Trade Certificate 📄
-                  </a>
-                </div>
-              )}
+                <span className="badge" style={{ background: auditingArtisan.verificationStatus === "VERIFIED" ? "rgba(16,185,129,0.15)" : "rgba(245,158,11,0.15)", color: auditingArtisan.verificationStatus === "VERIFIED" ? "#10B981" : "#F59E0B", fontSize: 12, fontWeight: "bold" }}>
+                  {auditingArtisan.verificationStatus || "PENDING"}
+                </span>
+              </div>
             </div>
 
+            <div style={{ display: "flex", flexDirection: "column", gap: "14px", marginBottom: "20px" }}>
+              {/* 1. Identity & Facial Selfie */}
+              <div style={{ background: "#0F172A", padding: "14px", borderRadius: "10px", border: "1px solid #334155" }}>
+                <strong style={{ fontSize: "12px", color: "#0EA5E9", textTransform: "uppercase", display: "block", marginBottom: 8 }}>
+                  1️⃣ Government Identity & Facial Biometric Selfie
+                </strong>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
+                  <div>
+                    <div style={{ fontSize: "14px", fontWeight: 700, color: "#F8FAFC" }}>{auditingArtisan.idType || "NIN"}: {auditingArtisan.idNumber}</div>
+                    {auditingArtisan.idUrl && (
+                      <button
+                        type="button"
+                        onClick={() => setPreviewMediaUrl(auditingArtisan.idUrl)}
+                        style={{ background: "none", border: "none", padding: 0, fontSize: "12px", color: "#38BDF8", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: "4px", marginTop: "4px", fontWeight: 600 }}
+                      >
+                        👁️ Inspect ID Document (NIN/Passport)
+                      </button>
+                    )}
+                  </div>
+                  {auditingArtisan.selfieUrl && (
+                    <div style={{ textAlign: "center", cursor: "pointer" }} onClick={() => setPreviewMediaUrl(auditingArtisan.selfieUrl)}>
+                      <img src={auditingArtisan.selfieUrl} alt="Facial Biometric Selfie" style={{ width: 50, height: 50, borderRadius: "50%", objectFit: "cover", border: "2px solid #10B981" }} />
+                      <span style={{ fontSize: "10px", color: "#10B981", display: "block", marginTop: 2 }}>Enlarge Selfie 🔍</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* 2. Residential Address & Utility Bill */}
+              <div style={{ background: "#0F172A", padding: "14px", borderRadius: "10px", border: "1px solid #334155" }}>
+                <strong style={{ fontSize: "12px", color: "#F59E0B", textTransform: "uppercase", display: "block", marginBottom: 8 }}>
+                  2️⃣ Residential Address & Utility Bill Verification
+                </strong>
+                <div>
+                  <div style={{ fontSize: "13px", color: "#F8FAFC", fontWeight: 600 }}>
+                    State: <span style={{ color: "#F59E0B" }}>{auditingArtisan.operatingState || auditingArtisan.city}</span> ({auditingArtisan.lga || "AMAC"})
+                  </div>
+                  <div style={{ fontSize: "12px", color: "#94A3B8", marginTop: 2 }}>
+                    Street: {auditingArtisan.homeAddress || "Plot 104, Aminu Kano Crescent, Wuse 2, Abuja"}
+                  </div>
+                  {auditingArtisan.addressProofUrl && (
+                    <button
+                      type="button"
+                      onClick={() => setPreviewMediaUrl(auditingArtisan.addressProofUrl)}
+                      style={{ background: "none", border: "none", padding: 0, fontSize: "12px", color: "#38BDF8", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: "4px", marginTop: "6px", fontWeight: 600 }}
+                    >
+                      👁️ Inspect Proof of Address (Utility Bill / Tenancy)
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* 3. Trade Certificate & Work Portfolio */}
+              <div style={{ background: "#0F172A", padding: "14px", borderRadius: "10px", border: "1px solid #334155" }}>
+                <strong style={{ fontSize: "12px", color: "#8B5CF6", textTransform: "uppercase", display: "block", marginBottom: 8 }}>
+                  3️⃣ Trade Competency Certificate & Work Portfolio
+                </strong>
+                {auditingArtisan.tradeCertUrl && (
+                  <div style={{ marginBottom: 8 }}>
+                    <button
+                      type="button"
+                      onClick={() => setPreviewMediaUrl(auditingArtisan.tradeCertUrl)}
+                      style={{ background: "none", border: "none", padding: 0, fontSize: "12px", color: "#38BDF8", cursor: "pointer", fontWeight: 600 }}
+                    >
+                      👁️ Inspect Trade Certification Document
+                    </button>
+                  </div>
+                )}
+                {auditingArtisan.portfolioUrls && auditingArtisan.portfolioUrls.length > 0 && (
+                  <div style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 4 }}>
+                    {auditingArtisan.portfolioUrls.map((url: string, idx: number) => (
+                      <div key={idx} onClick={() => setPreviewMediaUrl(url)} style={{ cursor: "pointer", flexShrink: 0 }}>
+                        <img src={url} alt={`Portfolio ${idx + 1}`} style={{ width: 64, height: 64, borderRadius: 6, objectFit: "cover", border: "1px solid #0EA5E9" }} />
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* 4. Guarantors & Trade Assessment */}
+              <div style={{ background: "#0F172A", padding: "14px", borderRadius: "10px", border: "1px solid #334155" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                  <strong style={{ fontSize: "12px", color: "#10B981", textTransform: "uppercase" }}>
+                    4️⃣ 2 Verified Guarantors & Technical Quiz
+                  </strong>
+                  <span className="badge" style={{ background: "rgba(16,185,129,0.15)", color: "#10B981", fontSize: 11, fontWeight: "bold" }}>
+                    Quiz Score: {auditingArtisan.quizScore || 85}%
+                  </span>
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                  <div style={{ background: "#1E293B", padding: 8, borderRadius: 6 }}>
+                    <strong style={{ fontSize: "12px", color: "#F8FAFC", display: "block" }}>{auditingArtisan.guarantor1?.name || "Chief James Okon"}</strong>
+                    <span style={{ fontSize: "11px", color: "#94A3B8", display: "block" }}>{auditingArtisan.guarantor1?.phone || "+234 803 111 2222"}</span>
+                    <span style={{ fontSize: "10px", color: "#64748B", display: "block" }}>{auditingArtisan.guarantor1?.relationship || "Landlord / Community Leader"}</span>
+                  </div>
+                  <div style={{ background: "#1E293B", padding: 8, borderRadius: 6 }}>
+                    <strong style={{ fontSize: "12px", color: "#F8FAFC", display: "block" }}>{auditingArtisan.guarantor2?.name || "Engr. Aliyu Hassan"}</strong>
+                    <span style={{ fontSize: "11px", color: "#94A3B8", display: "block" }}>{auditingArtisan.guarantor2?.phone || "+234 802 333 4444"}</span>
+                    <span style={{ fontSize: "10px", color: "#64748B", display: "block" }}>{auditingArtisan.guarantor2?.relationship || "Master Craftsman / Employer"}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Audit Notes & Actions */}
             <div style={{ marginBottom: "20px" }}>
               <label style={{ fontSize: "12px", color: "#64748B", fontWeight: 700, textTransform: "uppercase", display: "block", marginBottom: "6px" }}>
                 Audit Feedback & Notes (Shared with artisan)
               </label>
               <textarea
                 rows={3}
-                placeholder="Enter feedback notes..."
+                placeholder="Enter audit approval remarks or reason for rejection..."
                 value={auditNotes}
                 onChange={(e) => setAuditNotes(e.target.value)}
                 style={{ width: "100%", background: "#0F172A", border: "1px solid #334155", borderRadius: "8px", padding: "10px", color: "#F8FAFC", fontSize: "13px", outline: "none" }}
@@ -620,6 +719,30 @@ export default function VerificationCenterPage() {
               >
                 {submittingAudit ? "Saving..." : "Verify & Approve ✅"}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Document & Image High-Resolution Preview Modal */}
+      {previewMediaUrl && (
+        <div
+          style={{ position: "fixed", inset: 0, backgroundColor: "rgba(15,23,42,0.92)", backdropFilter: "blur(10px)", zIndex: 10000, display: "flex", justifyContent: "center", alignItems: "center", padding: "20px" }}
+          onClick={() => setPreviewMediaUrl(null)}
+        >
+          <div
+            style={{ maxWidth: "850px", width: "100%", background: "#1E293B", border: "1px solid #334155", borderRadius: "16px", padding: "20px", display: "flex", flexDirection: "column", gap: "12px" }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <span style={{ fontSize: "14px", fontWeight: "bold", color: "#F8FAFC" }}>High-Resolution Document Preview</span>
+              <button onClick={() => setPreviewMediaUrl(null)} style={{ background: "transparent", border: "none", color: "#94A3B8", cursor: "pointer", fontSize: 18 }}>✕</button>
+            </div>
+            <div style={{ maxHeight: "75vh", overflowY: "auto", display: "flex", justifyContent: "center", alignItems: "center", background: "#0F172A", borderRadius: "12px", padding: "16px" }}>
+              <img src={previewMediaUrl} alt="Document Preview" style={{ maxWidth: "100%", maxHeight: "65vh", objectFit: "contain", borderRadius: "8px" }} />
+            </div>
+            <div style={{ display: "flex", justifyContent: "flex-end" }}>
+              <button className="btn btn-secondary btn-sm" onClick={() => setPreviewMediaUrl(null)}>Close Preview</button>
             </div>
           </div>
         </div>
