@@ -23,7 +23,7 @@ interface ClientVerification {
 }
 
 export default function TrustVerificationCenterPage() {
-  const [filterTab, setFilterTab] = useState<"ALL" | "PENDING" | "VERIFIED" | "REJECTED" | "AUDITS">("PENDING");
+  const [filterTab, setFilterTab] = useState<"ALL" | "PENDING" | "VERIFIED" | "REJECTED" | "AUDITS">("ALL");
   const [clients, setClients] = useState<ClientVerification[]>([]);
   const [auditLogs, setAuditLogs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -44,7 +44,7 @@ export default function TrustVerificationCenterPage() {
       const usersRes = await fetch(`/api/admin/users?_t=${Date.now()}`, { cache: "no-store" });
       const usersData = await usersRes.json();
       if (usersRes.ok && Array.isArray(usersData.users)) {
-        let customerList = usersData.users
+        const customerList = usersData.users
           .filter((u: any) => u.role !== "SUPER_ADMIN" && u.role !== "ADMIN" && u.role !== "OPERATIONS_MANAGER")
           .map((u: any) => ({
             id: u.id,
@@ -60,52 +60,7 @@ export default function TrustVerificationCenterPage() {
             createdAt: u.createdAt || "Recent",
           }));
 
-        if (customerList.length === 0) {
-          customerList = [
-            {
-              id: "usr_cust_demo",
-              name: "Valued Customer",
-              email: "customer@test.com",
-              phone: "+234 812 222 2936",
-              permanentAddress: "12 Aminu Kano Crescent, Maitama, Abuja",
-              permanentAddressProof: "https://ioggvcvwwnjfzbwyjiwf.supabase.co/storage/v1/object/public/id/utility-bill.jpg",
-              permanentAddressStatus: "PENDING",
-              permanentAddressNotes: "Awaiting compliance officer audit.",
-              pendingPermanentAddress: null,
-              pendingPermanentAddressProof: null,
-              createdAt: "Recent",
-            },
-          ];
-        }
         setClients(customerList);
-      } else {
-        setClients([
-          {
-            id: "usr_cust_demo",
-            name: "Valued Customer",
-            email: "customer@test.com",
-            phone: "+234 812 222 2936",
-            permanentAddress: "12 Aminu Kano Crescent, Maitama, Abuja",
-            permanentAddressProof: "https://ioggvcvwwnjfzbwyjiwf.supabase.co/storage/v1/object/public/id/utility-bill.jpg",
-            permanentAddressStatus: "PENDING",
-            permanentAddressNotes: "Awaiting compliance officer audit.",
-            pendingPermanentAddress: null,
-            pendingPermanentAddressProof: null,
-            createdAt: "Recent",
-          },
-        ]);
-      }
-
-      // 2. Fetch Address Verification Audit Logs
-      const logsRes = await fetch("/api/admin/audit-logs", { cache: "no-store" });
-      if (logsRes.ok) {
-        const logsData = await logsRes.json();
-        setAuditLogs(logsData.logs || []);
-      } else {
-        setAuditLogs([
-          { id: "1", action: "APPROVE_CLIENT_ADDRESS", details: '{"email":"client@handyhubpro.ng","notes":"Tenancy agreement verified."}', createdAt: new Date().toLocaleDateString() },
-          { id: "2", action: "REJECT_CLIENT_ADDRESS", details: '{"email":"user@test.com","notes":"Invalid utility bill uploaded."}', createdAt: new Date().toLocaleDateString() },
-        ]);
       }
     } catch (err) {
       console.warn("Failed to fetch client verification directory:", err);
@@ -171,7 +126,7 @@ export default function TrustVerificationCenterPage() {
   // Filter clients based on search query and status tab
   const filteredClients = clients.filter((c) => {
     const s = c.permanentAddressStatus;
-    const isPending = (s === "PENDING" || Boolean(c.pendingPermanentAddress) || Boolean(c.permanentAddressProof) || Boolean(c.pendingPermanentAddressProof)) && s !== "VERIFIED" && s !== "REJECTED" && s !== "SUSPENDED";
+    const isPending = (s === "PENDING" || s === "NOT_SUBMITTED" || Boolean(c.pendingPermanentAddress) || Boolean(c.permanentAddressProof) || Boolean(c.pendingPermanentAddressProof)) && s !== "VERIFIED" && s !== "REJECTED" && s !== "SUSPENDED";
     const isVerified = s === "VERIFIED";
     const isRejected = s === "REJECTED" || s === "SUSPENDED";
 
