@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { AdminLayoutShell } from "@/components/layout/AdminLayoutShell";
 import {
   Shield, CheckCircle2, XCircle, Search, Filter, Eye, FileText,
-  MapPin, Phone, Mail, Award, Clock, AlertTriangle, ExternalLink, Inbox
+  MapPin, Phone, Mail, Award, Clock, AlertTriangle, ExternalLink, Inbox, Trash2
 } from "lucide-react";
 import styles from "../../admin.module.css";
 
@@ -74,6 +74,28 @@ export default function ProfessionalVerificationPage() {
     const s = (p.verificationStatus || p.status || "").toUpperCase();
     return s === "REJECTED";
   }).length;
+
+  const handlePurgeArtisan = async (pro: any) => {
+    if (!pro) return;
+    if (!confirm(`Are you sure you want to permanently purge ${pro.name} from the database?`)) return;
+
+    try {
+      const res = await fetch(`/api/admin/verification?id=${encodeURIComponent(pro.id)}&userId=${encodeURIComponent(pro.userId || "")}&email=${encodeURIComponent(pro.email || "")}`, {
+        method: "DELETE",
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setPros((prev) => prev.filter((p) => p.id !== pro.id && p.userId !== pro.userId));
+        setToast(`Artisan record ${pro.name} purged from database successfully.`);
+        setInspectPro(null);
+        setTimeout(fetchPros, 500);
+      } else {
+        setToast(`Error: ${data.error || "Failed to purge artisan"}`);
+      }
+    } catch {
+      setToast("Failed to connect to server to purge artisan.");
+    }
+  };
 
   const handleAuditDecision = async (newStatus: "VERIFIED" | "REJECTED") => {
     if (!inspectPro) return;
@@ -270,9 +292,19 @@ export default function ProfessionalVerificationPage() {
                     </span>
                   </td>
                   <td style={{ padding: "12px 16px" }}>
-                    <button className="btn btn-primary btn-xs" onClick={() => setInspectPro(p)}>
-                      <Eye size={14} /> Audit Docs
-                    </button>
+                    <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
+                      <button className="btn btn-primary btn-xs" onClick={() => setInspectPro(p)} style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+                        <Eye size={13} /> Audit Docs
+                      </button>
+                      <button
+                        className="btn btn-secondary btn-xs"
+                        style={{ color: "#EF4444", borderColor: "#EF444440", padding: "4px 8px" }}
+                        title="Permanently Purge / Delete Artisan"
+                        onClick={() => handlePurgeArtisan(p)}
+                      >
+                        <Trash2 size={13} />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -455,21 +487,30 @@ export default function ProfessionalVerificationPage() {
               />
             </div>
 
-            <div style={{ display: "flex", gap: "12px", justifyContent: "flex-end" }}>
+            <div style={{ display: "flex", gap: "10px", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap" }}>
               <button
-                onClick={() => handleAuditDecision("REJECTED")}
+                onClick={() => handlePurgeArtisan(inspectPro)}
                 className="btn btn-secondary btn-sm"
-                style={{ borderColor: "#EF4444", color: "#EF4444" }}
+                style={{ borderColor: "#EF444440", color: "#EF4444", display: "inline-flex", alignItems: "center", gap: 6 }}
               >
-                <XCircle size={16} /> Deny Verification Application
+                <Trash2 size={15} /> Purge / Delete Test Artisan
               </button>
-              <button
-                onClick={() => handleAuditDecision("VERIFIED")}
-                className="btn btn-primary btn-sm"
-                style={{ background: "#10B981" }}
-              >
-                <CheckCircle2 size={16} /> Approve & Issue Verified Badge
-              </button>
+              <div style={{ display: "flex", gap: "10px" }}>
+                <button
+                  onClick={() => handleAuditDecision("REJECTED")}
+                  className="btn btn-secondary btn-sm"
+                  style={{ borderColor: "#EF4444", color: "#EF4444", display: "inline-flex", alignItems: "center", gap: 6 }}
+                >
+                  <XCircle size={16} /> Deny Verification Application
+                </button>
+                <button
+                  onClick={() => handleAuditDecision("VERIFIED")}
+                  className="btn btn-primary btn-sm"
+                  style={{ background: "#10B981", display: "inline-flex", alignItems: "center", gap: 6 }}
+                >
+                  <CheckCircle2 size={16} /> Approve & Issue Verified Badge
+                </button>
+              </div>
             </div>
           </div>
         </div>

@@ -362,3 +362,65 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: error.message || "Failed to update artisan verification status" }, { status: 500 });
   }
 }
+
+export async function DELETE(request: Request) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const targetId = searchParams.get("id") || searchParams.get("userId") || searchParams.get("professionalId");
+    const email = searchParams.get("email");
+
+    const rawIds = [targetId].filter(Boolean) as string[];
+    const candidateIds = Array.from(
+      new Set(rawIds.flatMap((val) => [val, val.replace(/^pro_/, ""), `pro_${val}`]))
+    );
+
+    // Find and delete matching Professional record
+    const pro = await prisma.professional.findFirst({
+      where: {
+        OR: [
+          { id: { in: candidateIds } },
+          { userId: { in: candidateIds } },
+          email ? { user: { email: email.trim().toLowerCase() } } : undefined,
+        ].filter(Boolean) as any,
+      },
+    });
+
+    if (pro) {
+      await prisma.professional.delete({ where: { id: pro.id } }).catch(() => {});
+    }
+
+    // If matching user found, delete or reset role
+    const user = await prisma.user.findFirst({
+      where: {
+        OR: [
+          { id: { in: candidateIds } },
+          email ? { email: email.trim().toLowerCase() } : undefined,
+        ].filter(Boolean) as any,
+      },
+    });
+
+    if (user) {
+      if (
+        user.email.toLowerCase().includes("artisan@") ||
+        user.email.toLowerCase().includes("test") ||
+        user.email.toLowerCase().includes("demo") ||
+        user.firstName === "Artisan"
+      ) {
+        await prisma.user.delete({ where: { id: user.id } }).catch(() => {});
+      } else {
+        await prisma.user.update({
+          where: { id: user.id },
+          data: { role: "CUSTOMER", ninStatus: "NOT_SUBMITTED" },
+        }).catch(() => {});
+      }
+    }
+
+    return NextResponse.json({
+      success: true,
+      message: "Artisan record purged from database successfully.",
+    });
+  } catch (error: any) {
+    console.error("[Verification DELETE Error]:", error);
+    return NextResponse.json({ error: error.message || "Failed to purge artisan record" }, { status: 500 });
+  }
+}
