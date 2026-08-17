@@ -13,11 +13,32 @@ export async function GET(request: Request) {
     let dbPros: any[] = [];
     try {
       dbPros = await prisma.professional.findMany({
-        include: { user: true },
-        orderBy: { createdAt: "desc" },
+        include: {
+          user: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              email: true,
+              phone: true,
+              role: true,
+              isVerified: true,
+              permanentAddress: true,
+              permanentAddressProof: true,
+              permanentAddressStatus: true,
+              ninNumber: true,
+              ninStatus: true,
+            },
+          },
+        },
       });
     } catch (err) {
-      console.warn("[Admin Verification DB Warning - Professionals]:", err);
+      console.warn("[Admin Verification DB Warning - Professionals include user]:", err);
+      try {
+        dbPros = await prisma.professional.findMany();
+      } catch (err2) {
+        console.warn("[Admin Verification DB Warning - Professionals basic]:", err2);
+      }
     }
 
     // 2. Fetch all Users with role PROFESSIONAL or pending NIN/Address submissions
@@ -31,11 +52,51 @@ export async function GET(request: Request) {
             { permanentAddressStatus: { in: ["PENDING", "VERIFIED", "SUBMITTED"] } },
           ],
         },
-        include: { professional: true },
-        orderBy: { createdAt: "desc" },
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          email: true,
+          phone: true,
+          role: true,
+          isVerified: true,
+          permanentAddress: true,
+          permanentAddressProof: true,
+          permanentAddressStatus: true,
+          ninNumber: true,
+          ninStatus: true,
+          createdAt: true,
+          professional: true,
+        },
       });
     } catch (err) {
       console.warn("[Admin Verification DB Warning - Users]:", err);
+    }
+
+    // 3. For any professional without a resolved user, query user directly
+    const missingUserIds = dbPros.filter((p) => !p.user && p.userId).map((p) => p.userId);
+    let resolvedUsersMap = new Map<string, any>();
+    if (missingUserIds.length > 0) {
+      try {
+        const extraUsers = await prisma.user.findMany({
+          where: { id: { in: missingUserIds } },
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+            phone: true,
+            role: true,
+            isVerified: true,
+            permanentAddress: true,
+            permanentAddressProof: true,
+            permanentAddressStatus: true,
+            ninNumber: true,
+            ninStatus: true,
+          },
+        });
+        extraUsers.forEach((u) => resolvedUsersMap.set(u.id, u));
+      } catch {}
     }
 
     // Combine into unified map keyed by User ID or Pro ID
@@ -43,8 +104,9 @@ export async function GET(request: Request) {
 
     // Add all database professionals
     dbPros.forEach((p) => {
+      const userObj = p.user || (p.userId ? resolvedUsersMap.get(p.userId) : null);
       const key = p.userId || p.id;
-      proMap.set(key, p);
+      proMap.set(key, { ...p, user: userObj });
     });
 
     // Add/enrich with user entries
@@ -90,11 +152,15 @@ export async function GET(request: Request) {
       let skillArray: string[] = [];
       try {
         if (typeof p.skills === "string" && p.skills.trim()) {
-          skillArray = JSON.parse(p.skills);
+          const parsedSkills = JSON.parse(p.skills);
+          if (Array.isArray(parsedSkills)) skillArray = parsedSkills;
+          else if (typeof parsedSkills === "string") skillArray = [parsedSkills];
         } else if (Array.isArray(p.skills)) {
           skillArray = p.skills;
         }
-      } catch {}
+      } catch {
+        if (typeof p.skills === "string" && p.skills) skillArray = [p.skills];
+      }
 
       const vStatus = p.verificationStatus || u.ninStatus || "PENDING";
       const fullName = `${u.firstName || ""} ${u.lastName || ""}`.trim() || docs.fullName || p.accountName || "Artisan Partner";
