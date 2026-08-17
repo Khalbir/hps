@@ -249,7 +249,8 @@ export async function POST(request: Request) {
             verificationStatus: targetStatus,
             verificationNotes: notes,
             addressVerified: targetStatus === "VERIFIED",
-            verifiedAt: targetStatus === "VERIFIED" ? new Date() : undefined,
+            isAvailable: targetStatus === "VERIFIED",
+            verifiedAt: targetStatus === "VERIFIED" ? new Date() : null,
           },
           include: { user: true },
         });
@@ -261,7 +262,8 @@ export async function POST(request: Request) {
           verificationStatus: targetStatus,
           verificationNotes: notes,
           addressVerified: targetStatus === "VERIFIED",
-          verifiedAt: targetStatus === "VERIFIED" ? new Date() : undefined,
+          isAvailable: targetStatus === "VERIFIED",
+          verifiedAt: targetStatus === "VERIFIED" ? new Date() : null,
         },
       });
     }
@@ -273,9 +275,8 @@ export async function POST(request: Request) {
         where: { id: resolvedUserId },
         data: {
           isVerified: targetStatus === "VERIFIED",
-          role: "PROFESSIONAL",
-          ninStatus: targetStatus === "VERIFIED" ? "VERIFIED" : targetStatus,
-          permanentAddressStatus: targetStatus === "VERIFIED" ? "VERIFIED" : targetStatus,
+          ninStatus: targetStatus,
+          permanentAddressStatus: targetStatus === "VERIFIED" ? "VERIFIED" : "REJECTED",
         },
       }).catch(() => {});
 

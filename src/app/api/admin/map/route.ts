@@ -43,9 +43,12 @@ export async function GET(request: Request) {
       };
     });
 
-    // 2. Fetch real online/available professionals from DB
+    // 2. Fetch real online/available VERIFIED professionals from DB
     const realPros = await prisma.professional.findMany({
-      where: { isAvailable: true },
+      where: {
+        isAvailable: true,
+        verificationStatus: "VERIFIED",
+      },
       include: {
         user: { select: { firstName: true, lastName: true, phone: true } },
       },
