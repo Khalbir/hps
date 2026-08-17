@@ -21,6 +21,50 @@ async function getRequestingUser() {
 
 export async function GET(request: Request) {
   try {
+    // 1. Auto-reconcile orphan bookings and payments into User table
+    try {
+      const bookings = await prisma.booking.findMany({ select: { customerId: true, customer: { select: { email: true } } } }).catch(() => []);
+      const payments = await prisma.payment.findMany({ select: { userId: true, user: { select: { email: true } } } }).catch(() => []);
+      
+      const existingUsers = await prisma.user.findMany({ select: { email: true } });
+      const existingUserMap = new Set(existingUsers.map((u) => u.email.toLowerCase()));
+      
+      for (const b of bookings) {
+        if (b.customer?.email && !existingUserMap.has(b.customer.email.toLowerCase())) {
+          await prisma.user.create({
+            data: {
+              email: b.customer.email.toLowerCase().trim(),
+              firstName: "Valued",
+              lastName: "Customer",
+              password: "$2a$10$e8wJp5f5.dummy_hash_placeholder",
+              role: "CUSTOMER",
+              isVerified: true,
+            },
+          }).catch(() => {});
+          existingUserMap.add(b.customer.email.toLowerCase());
+        }
+      }
+
+      for (const p of payments) {
+        if (p.user?.email && !existingUserMap.has(p.user.email.toLowerCase())) {
+          await prisma.user.create({
+            data: {
+              email: p.user.email.toLowerCase().trim(),
+              firstName: "Valued",
+              lastName: "Customer",
+              password: "$2a$10$e8wJp5f5.dummy_hash_placeholder",
+              role: "CUSTOMER",
+              isVerified: true,
+            },
+          }).catch(() => {});
+          existingUserMap.add(p.user.email.toLowerCase());
+        }
+      }
+    } catch (reconcileErr) {
+      console.warn("[Admin Users Reconcile Warning]:", reconcileErr);
+    }
+
+    // 2. Fetch all users from PostgreSQL
     const users = await prisma.user.findMany({
       orderBy: { createdAt: "desc" },
       select: {
@@ -55,7 +99,7 @@ export async function GET(request: Request) {
 
       return {
         id: u.id,
-        name: `${u.firstName || ""} ${u.lastName || ""}`.trim() || "User Account",
+        name: `${u.firstName || ""} ${u.lastName || ""}`.trim() || u.email.split("@")[0] || "User Account",
         email: u.email,
         phone: u.phone || "Not Provided",
         role: u.role,
