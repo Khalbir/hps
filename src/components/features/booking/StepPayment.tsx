@@ -18,7 +18,6 @@ interface StepProps {
 
 const paymentMethods = [
   { id: "paystack", label: "Pay with Card / Paystack", desc: "Debit/Credit Card via Paystack NGN", icon: CreditCard },
-  { id: "monnify", label: "Bank Transfer (Monnify)", desc: "Instant NUBAN transfer", icon: Building },
   { id: "wallet", label: "Wallet Balance", desc: "Pay from your HandyHub wallet", icon: Wallet },
 ];
 
@@ -204,7 +203,7 @@ export function StepPayment({ booking, updateBooking, onNext, onBack }: StepProp
           bookingId: booking.serviceCategory || "BKG",
           customerName: `${activeUser.firstName || "Client"} ${activeUser.lastName || ""}`.trim(),
           customerPhone: activeUser.phone || "+2348122222936",
-          preferredGateway: booking.paymentMethod === "monnify" ? "MONNIFY" : "PAYSTACK",
+          preferredGateway: "PAYSTACK",
         }),
       });
 
