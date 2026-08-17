@@ -79,22 +79,33 @@ export default function ProfessionalVerificationPage() {
     if (!inspectPro) return;
 
     try {
-      await fetch("/api/admin/verification", {
+      const res = await fetch("/api/admin/verification", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           professionalId: inspectPro.id,
           userId: inspectPro.userId,
+          email: inspectPro.email,
+          phone: inspectPro.phone,
           status: newStatus,
           verificationNotes: officerNotes || inspectPro.notes,
           addressVerified: newStatus === "VERIFIED",
         }),
       });
-    } catch {}
+
+      const data = await res.json();
+      if (!res.ok) {
+        setToast(`Error: ${data.error || "Failed to update artisan status on server"}`);
+        return;
+      }
+    } catch (err: any) {
+      setToast("Failed to connect to verification server.");
+      return;
+    }
 
     setPros((prev) =>
       prev.map((p) =>
-        p.id === inspectPro.id || p.userId === inspectPro.userId
+        p.id === inspectPro.id || p.userId === inspectPro.userId || (inspectPro.email && p.email === inspectPro.email)
           ? {
               ...p,
               verificationStatus: newStatus,
@@ -106,11 +117,11 @@ export default function ProfessionalVerificationPage() {
       )
     );
 
-    setToast(`Artisan ${inspectPro.name} verification status updated to ${newStatus}. Notification sent!`);
+    setToast(`Artisan ${inspectPro.name} status permanently updated to ${newStatus}! 🎉`);
     setInspectPro(null);
     setOfficerNotes("");
-    setTimeout(() => setToast(""), 4000);
-    setTimeout(fetchPros, 500);
+    setTimeout(() => setToast(""), 5000);
+    setTimeout(fetchPros, 1000);
   };
 
   return (

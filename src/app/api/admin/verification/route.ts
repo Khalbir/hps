@@ -227,39 +227,72 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const targetId = body.professionalId || body.userId || body.proId || body.id;
-    const targetStatus = body.status || "VERIFIED";
-    const notes = body.verificationNotes || body.notes || "Approved by Admin Compliance Team";
+    const rawIds = [body.professionalId, body.userId, body.proId, body.id].filter(Boolean);
+    const candidateIds = Array.from(
+      new Set(rawIds.flatMap((val: string) => [val, val.replace(/^pro_/, ""), `pro_${val}`]))
+    );
+    const targetStatus = (body.status || "VERIFIED").toUpperCase();
+    const notes = body.verificationNotes || body.notes || (targetStatus === "VERIFIED" ? "Approved by Admin Compliance Team" : "Rejected by Admin Compliance Team");
 
-    if (!targetId) {
-      return NextResponse.json({ error: "Target Artisan or User ID is required" }, { status: 400 });
+    if (candidateIds.length === 0 && !body.email && !body.phone) {
+      return NextResponse.json({ error: "Target Artisan ID, User ID, or Email is required" }, { status: 400 });
     }
 
-    // Resolve Professional record by id OR userId
+    // 1. Resolve Professional record by candidate IDs
     let pro = await prisma.professional.findFirst({
       where: {
-        OR: [{ id: targetId }, { userId: targetId }],
+        OR: [
+          { id: { in: candidateIds } },
+          { userId: { in: candidateIds } },
+        ],
       },
       include: { user: true },
     });
 
-    if (!pro) {
-      // If user exists without a professional row, create one
-      const user = await prisma.user.findUnique({ where: { id: targetId } });
-      if (user) {
-        pro = await prisma.professional.create({
-          data: {
-            userId: user.id,
-            verificationStatus: targetStatus,
-            verificationNotes: notes,
-            addressVerified: targetStatus === "VERIFIED",
-            isAvailable: targetStatus === "VERIFIED",
-            verifiedAt: targetStatus === "VERIFIED" ? new Date() : null,
-          },
-          include: { user: true },
-        });
+    // 2. Resolve User record if pro wasn't found or missing user relation
+    let user: any = pro?.user || null;
+    if (!user) {
+      const userConditions: any[] = [{ id: { in: candidateIds } }];
+      if (body.email && typeof body.email === "string" && body.email.trim()) {
+        userConditions.push({ email: body.email.trim().toLowerCase() });
       }
-    } else {
+      if (body.phone && typeof body.phone === "string" && body.phone.trim()) {
+        userConditions.push({ phone: body.phone.trim() });
+      }
+
+      user = await prisma.user.findFirst({
+        where: {
+          OR: userConditions,
+        },
+        include: { professional: true },
+      });
+
+      if (user?.professional && !pro) {
+        pro = user.professional;
+      }
+    }
+
+    if (!pro && !user) {
+      return NextResponse.json(
+        { error: `Artisan record not found for IDs: ${candidateIds.join(", ")}` },
+        { status: 404 }
+      );
+    }
+
+    // 3. Upsert / Update Professional table
+    if (!pro && user) {
+      pro = await prisma.professional.create({
+        data: {
+          userId: user.id,
+          verificationStatus: targetStatus,
+          verificationNotes: notes,
+          addressVerified: targetStatus === "VERIFIED",
+          isAvailable: targetStatus === "VERIFIED",
+          verifiedAt: targetStatus === "VERIFIED" ? new Date() : null,
+        },
+        include: { user: true },
+      });
+    } else if (pro) {
       await prisma.professional.update({
         where: { id: pro.id },
         data: {
@@ -272,28 +305,29 @@ export async function POST(request: Request) {
       });
     }
 
-    // Update linked user
-    const resolvedUserId = pro?.userId || targetId;
-    if (resolvedUserId) {
+    // 4. Update linked User record
+    const targetUserId = pro?.userId || user?.id;
+    if (targetUserId) {
       await prisma.user.update({
-        where: { id: resolvedUserId },
+        where: { id: targetUserId },
         data: {
           isVerified: targetStatus === "VERIFIED",
+          role: "PROFESSIONAL",
           ninStatus: targetStatus,
           permanentAddressStatus: targetStatus === "VERIFIED" ? "VERIFIED" : "REJECTED",
         },
-      }).catch(() => {});
+      }).catch((err) => console.warn("[Admin Verification Update User Warning]:", err));
 
       // Record Audit Log
       try {
         await prisma.auditLog.create({
           data: {
-            userId: resolvedUserId,
+            userId: targetUserId,
             action: targetStatus === "VERIFIED" ? "ARTISAN_VERIFIED" : "ARTISAN_REJECTED",
             entity: "Professional",
-            entityId: pro?.id || targetId,
+            entityId: pro?.id || targetUserId,
             details: JSON.stringify({
-              targetId,
+              targetId: candidateIds[0] || targetUserId,
               status: targetStatus,
               notes,
             }),
@@ -305,7 +339,7 @@ export async function POST(request: Request) {
       try {
         await prisma.notification.create({
           data: {
-            userId: resolvedUserId,
+            userId: targetUserId,
             type: "SYSTEM",
             title: targetStatus === "VERIFIED" ? "Artisan Account Verified! 🎉" : "Verification Status Update",
             message: targetStatus === "VERIFIED"
@@ -319,6 +353,9 @@ export async function POST(request: Request) {
     return NextResponse.json({
       success: true,
       message: `Artisan verification status updated to ${targetStatus} successfully!`,
+      status: targetStatus,
+      professionalId: pro?.id,
+      userId: targetUserId,
     });
   } catch (error: any) {
     console.error("[Verification POST Error]:", error);
