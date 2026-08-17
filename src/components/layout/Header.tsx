@@ -212,24 +212,14 @@ export function Header() {
               </AnimatePresence>
             </button>
             {isLoggedIn ? (
-              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                 <Link
                   href={userRole === "SUPER_ADMIN" || userRole === "ADMIN" ? "/admin/dashboard" : userRole === "PROFESSIONAL" ? "/pro" : "/dashboard"}
-                  className="btn btn-secondary btn-sm"
-                  style={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: 6,
-                    color: "#0EA5E9",
-                    borderColor: "rgba(14, 165, 233, 0.4)",
-                    fontWeight: 600,
-                    padding: "6px 14px",
-                    borderRadius: "8px",
-                    textDecoration: "none",
-                  }}
+                  className={styles.profileBtn}
+                  title="My Profile & Dashboard"
                 >
-                  <User size={15} />
-                  <span>My Profile</span>
+                  <User size={16} />
+                  <span className={styles.profileText}>My Profile</span>
                 </Link>
                 <button onClick={handleLogout} className={`${styles.loginBtn}`} style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "inherit", opacity: 0.8 }}>
                   Log Out
