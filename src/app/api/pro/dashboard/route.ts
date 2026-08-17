@@ -96,6 +96,32 @@ export async function GET(request: Request) {
       });
     }
 
+    let transactions: any[] = [];
+    let lifetimeEarnings = 0;
+
+    if (wallet) {
+      const dbTxs = await prisma.walletTransaction.findMany({
+        where: { walletId: wallet.id },
+        orderBy: { createdAt: "desc" },
+        take: 15,
+      });
+
+      transactions = dbTxs.map((tx) => ({
+        id: tx.id,
+        reference: tx.reference || `TX_${tx.id}`,
+        description: tx.description,
+        amount: tx.amount,
+        type: tx.type,
+        status: "COMPLETED",
+        date: new Date(tx.createdAt).toLocaleDateString(),
+      }));
+
+      const releasesTotal = dbTxs
+        .filter((t) => t.type === "ESCROW_RELEASE" || t.type === "CREDIT")
+        .reduce((acc, t) => acc + t.amount, 0);
+      lifetimeEarnings = releasesTotal || (walletBalance + completedJobs * 15000);
+    }
+
     return NextResponse.json({
       success: true,
       proName,
@@ -105,9 +131,11 @@ export async function GET(request: Request) {
       verificationNotes: pro?.verificationNotes || "",
       walletBalance,
       pendingEscrow,
+      lifetimeEarnings,
       completedJobs,
       rating,
       activeJobs: activeBookings,
+      transactions,
     });
   } catch (error: any) {
     console.error("[Pro Dashboard API Error]:", error);

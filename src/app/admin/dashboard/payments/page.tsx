@@ -99,6 +99,67 @@ export default function AdminPaymentsPage() {
     }
   };
 
+  const [escrowActionLoading, setEscrowActionLoading] = useState(false);
+
+  const handleReleaseEscrow = async (bookingRef: string) => {
+    if (!bookingRef || bookingRef === "N/A") {
+      setNotice("⚠️ No valid booking reference attached to this payment.");
+      return;
+    }
+    if (!confirm(`Are you sure you want to release Escrow payout for booking #${bookingRef} to the assigned artisan's available wallet balance?`)) return;
+
+    setEscrowActionLoading(true);
+    try {
+      const res = await fetch("/api/admin/actions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "release_escrow", bookingReference: bookingRef }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setNotice(`✅ ${data.message || "Escrow payout disbursed successfully!"}`);
+        fetchPayments();
+      } else {
+        setNotice(`⚠️ ${data.error || "Failed to release escrow."}`);
+      }
+    } catch {
+      setNotice("❌ Network error releasing escrow.");
+    } finally {
+      setEscrowActionLoading(false);
+      setTimeout(() => setNotice(""), 5000);
+    }
+  };
+
+  const handleRefundEscrow = async (bookingRef: string, amount: number) => {
+    if (!bookingRef || bookingRef === "N/A") {
+      setNotice("⚠️ No valid booking reference attached to this payment.");
+      return;
+    }
+    const reason = prompt(`Enter reason for refunding ₦${amount.toLocaleString()} for Booking #${bookingRef}:`, "Service cancellation / dissatisfaction");
+    if (!reason) return;
+
+    setEscrowActionLoading(true);
+    try {
+      const res = await fetch("/api/admin/actions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "refund_escrow", bookingReference: bookingRef, refundAmount: amount, reason }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setNotice(`✅ ${data.message || "Escrow refund credited to customer wallet successfully!"}`);
+        fetchPayments();
+      } else {
+        setNotice(`⚠️ ${data.error || "Failed to refund escrow."}`);
+      }
+    } catch {
+      setNotice("❌ Network error refunding escrow.");
+    } finally {
+      setEscrowActionLoading(false);
+      setTimeout(() => setNotice(""), 5000);
+    }
+  };
+
   const filteredPayments = payments.filter((p) => {
     const matchStatus = statusFilter === "ALL" || p.status === statusFilter;
     const matchProvider = providerFilter === "ALL" || p.provider === providerFilter;
@@ -600,7 +661,7 @@ export default function AdminPaymentsPage() {
                 </button>
               </div>
 
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 24, fontSize: 13 }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 20, fontSize: 13 }}>
                 <div>
                   <span style={{ color: "#94A3B8", display: "block", fontSize: 11, textTransform: "uppercase" }}>Amount Paid</span>
                   <strong style={{ fontSize: 20, color: "#10B981" }}>₦{selectedTx.amount.toLocaleString()}</strong>
@@ -635,21 +696,63 @@ export default function AdminPaymentsPage() {
                 </div>
               </div>
 
-              <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, borderTop: "1px solid #334155", paddingTop: 16 }}>
-                <Link
-                  href={`/receipt/${encodeURIComponent(selectedTx.reference)}`}
-                  target="_blank"
-                  className="btn btn-primary btn-sm"
-                  style={{ background: "#10B981", display: "inline-flex", alignItems: "center", gap: 6, textDecoration: "none" }}
-                >
-                  <ExternalLink size={14} /> Open Digital Receipt
-                </Link>
-                <button
-                  onClick={() => setSelectedTx(null)}
-                  className="btn btn-secondary btn-sm"
-                >
-                  Close
-                </button>
+              {/* Escrow & Commission Breakdown Box */}
+              <div style={{ background: "#0F172A", border: "1px solid #334155", borderRadius: 12, padding: 14, marginBottom: 20 }}>
+                <div style={{ fontSize: 12, fontWeight: 700, color: "#F59E0B", marginBottom: 8, display: "flex", alignItems: "center", gap: 6 }}>
+                  <ShieldCheck size={16} /> Escrow Vault & Platform Commission Breakdown
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, fontSize: 12 }}>
+                  <div>
+                    <span style={{ color: "#94A3B8" }}>HandyHub Platform Fee (20%):</span>
+                    <strong style={{ display: "block", color: "#38BDF8", fontSize: 14 }}>₦{Math.round(selectedTx.amount * 0.20).toLocaleString()}</strong>
+                  </div>
+                  <div>
+                    <span style={{ color: "#94A3B8" }}>Artisan Net Earnings (80%):</span>
+                    <strong style={{ display: "block", color: "#10B981", fontSize: 14 }}>₦{Math.round(selectedTx.amount * 0.80).toLocaleString()}</strong>
+                  </div>
+                </div>
+              </div>
+
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 10, borderTop: "1px solid #334155", paddingTop: 16 }}>
+                <div style={{ display: "flex", gap: 8 }}>
+                  {selectedTx.status === "SUCCESS" && (
+                    <>
+                      <button
+                        onClick={() => handleReleaseEscrow(selectedTx.bookingRef || selectedTx.bookingId)}
+                        disabled={escrowActionLoading}
+                        className="btn btn-primary btn-xs"
+                        style={{ background: "#10B981", color: "#FFFFFF", fontWeight: 700, padding: "6px 12px", borderRadius: 6, fontSize: 12 }}
+                      >
+                        Release Escrow Payout 💸
+                      </button>
+                      <button
+                        onClick={() => handleRefundEscrow(selectedTx.bookingRef || selectedTx.bookingId, selectedTx.amount)}
+                        disabled={escrowActionLoading}
+                        className="btn btn-secondary btn-xs"
+                        style={{ background: "rgba(239,68,68,0.15)", color: "#EF4444", border: "1px solid #EF4444", padding: "6px 12px", borderRadius: 6, fontSize: 12 }}
+                      >
+                        Refund Customer ↩️
+                      </button>
+                    </>
+                  )}
+                </div>
+
+                <div style={{ display: "flex", gap: 8 }}>
+                  <Link
+                    href={`/receipt/${encodeURIComponent(selectedTx.reference)}`}
+                    target="_blank"
+                    className="btn btn-primary btn-sm"
+                    style={{ background: "#0EA5E9", display: "inline-flex", alignItems: "center", gap: 6, textDecoration: "none" }}
+                  >
+                    <ExternalLink size={14} /> Open Digital Receipt
+                  </Link>
+                  <button
+                    onClick={() => setSelectedTx(null)}
+                    className="btn btn-secondary btn-sm"
+                  >
+                    Close
+                  </button>
+                </div>
               </div>
             </div>
           </div>

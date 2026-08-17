@@ -81,24 +81,54 @@ export async function GET(request: Request) {
       console.warn("[Wallet Balance Reconciliation Warning]:", reconcileErr);
     }
 
-    // Fetch all transactions for history display
-    const payments = await prisma.payment.findMany({
-      where: { userId: user.id },
-      orderBy: { createdAt: "desc" },
-      take: 20,
-    });
+    // Fetch real ledger records from WalletTransaction table
+    const [walletTxs, payments] = await Promise.all([
+      prisma.walletTransaction.findMany({
+        where: { walletId: wallet.id },
+        orderBy: { createdAt: "desc" },
+        take: 30,
+      }),
+      prisma.payment.findMany({
+        where: { userId: user.id },
+        orderBy: { createdAt: "desc" },
+        take: 20,
+      }),
+    ]);
 
-    const history = payments.map((p) => ({
-      id: p.id,
-      reference: p.reference,
-      type: p.bookingId?.includes("TOPUP") || p.reference.includes("TOPUP") ? "WALLET_TOPUP" : "SERVICE_PAYMENT",
-      amount: p.amount,
-      description: p.bookingId?.includes("TOPUP") || p.reference.includes("TOPUP")
-        ? `Wallet Top-Up via ${p.provider}`
-        : `Service Payment (${p.reference})`,
-      status: p.status,
-      createdAt: p.createdAt.toISOString(),
+    // Build unified history
+    const history = walletTxs.map((tx) => ({
+      id: tx.id,
+      reference: tx.reference || `TX_${tx.id}`,
+      type: tx.type,
+      amount: tx.amount,
+      description: tx.description,
+      status: "SUCCESS",
+      gateway: tx.gateway || "WALLET",
+      createdAt: tx.createdAt.toISOString(),
     }));
+
+    // If no wallet transactions yet, fallback to payments
+    if (history.length === 0) {
+      payments.forEach((p) => {
+        history.push({
+          id: p.id,
+          reference: p.reference,
+          type: p.bookingId?.includes("TOPUP") || p.reference.includes("TOPUP") ? "WALLET_TOPUP" : "SERVICE_PAYMENT",
+          amount: p.amount,
+          description: p.bookingId?.includes("TOPUP") || p.reference.includes("TOPUP")
+            ? `Wallet Top-Up via ${p.provider}`
+            : `Service Payment (${p.reference})`,
+          status: p.status,
+          gateway: p.provider,
+          createdAt: p.createdAt.toISOString(),
+        });
+      });
+    }
+
+    // Compute lifetime earnings from escrow releases
+    const lifetimeReleases = walletTxs
+      .filter((t) => t.type === "ESCROW_RELEASE" || t.type === "CREDIT")
+      .reduce((acc, t) => acc + t.amount, 0);
 
     return NextResponse.json({
       success: true,
@@ -107,6 +137,7 @@ export async function GET(request: Request) {
       currency: "NGN",
       availableBalance: wallet.balance,
       pendingEscrow: wallet.pendingEscrow || 0,
+      lifetimeEarnings: lifetimeReleases || wallet.balance,
       history,
     });
   } catch (error) {

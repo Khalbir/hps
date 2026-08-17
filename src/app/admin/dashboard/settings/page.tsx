@@ -8,6 +8,7 @@ import {
   Search, Tag, RotateCcw, Edit3
 } from "lucide-react";
 import { DEFAULT_PRICING_RULES, PricingRulesConfig, PricingModel } from "@/lib/pricingEngine";
+import { DEFAULT_COMMISSION_RULES, CommissionRulesConfig } from "@/lib/escrow-types";
 import { SERVICE_CATEGORIES } from "@/lib/services";
 import styles from "../../admin.module.css";
 
@@ -39,9 +40,56 @@ export default function SettingsAndBackupsPage() {
   const [rulesConfig, setRulesConfig] = useState<PricingRulesConfig>(DEFAULT_PRICING_RULES);
   const [savingRules, setSavingRules] = useState(false);
 
+  // Platform Commission & Escrow State
+  const [commissionRules, setCommissionRules] = useState<CommissionRulesConfig>(DEFAULT_COMMISSION_RULES);
+  const [savingCommission, setSavingCommission] = useState(false);
+  const [commissionMetrics, setCommissionMetrics] = useState({
+    totalEscrowHeld: 0,
+    totalEscrowReleased: 0,
+    totalPlatformCommissionEarned: 0,
+    pendingWithdrawalCount: 0,
+    pendingWithdrawalTotal: 0,
+  });
+
   // Executive Service Pricing Filters & Overrides State
   const [modelFilter, setModelFilter] = useState<string>("ALL");
   const [serviceSearch, setServiceSearch] = useState<string>("");
+
+  const fetchCommissionRules = async () => {
+    try {
+      const res = await fetch("/api/admin/commission-rules", { cache: "no-store" });
+      const data = await res.json();
+      if (res.ok && data.rules) {
+        setCommissionRules(data.rules);
+        if (data.metrics) setCommissionMetrics(data.metrics);
+      }
+    } catch (err) {
+      console.warn("Failed to fetch admin commission rules:", err);
+    }
+  };
+
+  const handleSaveCommissionRules = async () => {
+    setSavingCommission(true);
+    try {
+      const res = await fetch("/api/admin/commission-rules", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ rules: commissionRules }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setToast("Platform Commission & Escrow Policy saved successfully! 💳");
+        fetchCommissionRules();
+      } else {
+        setToast(data.error || "Failed to save commission rules.");
+      }
+    } catch {
+      setToast("Network error saving commission rules.");
+    } finally {
+      setSavingCommission(false);
+      setTimeout(() => setToast(""), 4000);
+    }
+  };
 
   const updateServiceOverride = (serviceId: string, field: "basePrice" | "pricingModel" | "unitLabel", value: any) => {
     const currentOverrides = rulesConfig.serviceOverrides || {};
@@ -108,6 +156,7 @@ export default function SettingsAndBackupsPage() {
   useEffect(() => {
     fetchRealCityMetrics();
     fetchPricingRules();
+    fetchCommissionRules();
   }, []);
 
   const toggleCity = (cityName: string) => {
@@ -200,6 +249,169 @@ export default function SettingsAndBackupsPage() {
       )}
 
       <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+        {/* Platform Commission Rates & Escrow Vault Policy Editor */}
+        <div className="card" style={{ background: "#1E293B", border: "1px solid #10B981", padding: "24px", borderRadius: "16px" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px", flexWrap: "wrap", gap: "12px" }}>
+            <div>
+              <h3 className="h4" style={{ margin: 0, color: "#F8FAFC", display: "flex", alignItems: "center", gap: "8px" }}>
+                <CreditCard size={20} color="#10B981" /> Platform Commission & Escrow Vault Policy Management
+              </h3>
+              <span style={{ fontSize: "12px", color: "#94A3B8" }}>
+                Configure platform fee splits, dispute escrow hold timers, withdrawal limits, and per-category commission rules.
+              </span>
+            </div>
+
+            <button
+              onClick={handleSaveCommissionRules}
+              disabled={savingCommission}
+              className="btn btn-primary btn-md"
+              style={{ background: "#10B981", display: "flex", alignItems: "center", gap: "8px" }}
+            >
+              <Save size={16} /> {savingCommission ? "Saving Policy..." : "Save Commission Policy Live 💾"}
+            </button>
+          </div>
+
+          {/* Escrow Telemetry Metric Chips */}
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "12px", marginBottom: "20px" }}>
+            <div style={{ background: "#0F172A", border: "1px solid #334155", borderRadius: "10px", padding: "12px 16px" }}>
+              <span style={{ fontSize: "11px", color: "#F59E0B", fontWeight: 700, textTransform: "uppercase" }}>Escrow Vault Active</span>
+              <div style={{ fontSize: "18px", fontWeight: 800, color: "#F59E0B", marginTop: 4 }}>₦{commissionMetrics.totalEscrowHeld.toLocaleString()}</div>
+            </div>
+            <div style={{ background: "#0F172A", border: "1px solid #334155", borderRadius: "10px", padding: "12px 16px" }}>
+              <span style={{ fontSize: "11px", color: "#10B981", fontWeight: 700, textTransform: "uppercase" }}>Total Escrow Released</span>
+              <div style={{ fontSize: "18px", fontWeight: 800, color: "#10B981", marginTop: 4 }}>₦{commissionMetrics.totalEscrowReleased.toLocaleString()}</div>
+            </div>
+            <div style={{ background: "#0F172A", border: "1px solid #334155", borderRadius: "10px", padding: "12px 16px" }}>
+              <span style={{ fontSize: "11px", color: "#38BDF8", fontWeight: 700, textTransform: "uppercase" }}>Platform Revenue Earned</span>
+              <div style={{ fontSize: "18px", fontWeight: 800, color: "#38BDF8", marginTop: 4 }}>₦{commissionMetrics.totalPlatformCommissionEarned.toLocaleString()}</div>
+            </div>
+            <div style={{ background: "#0F172A", border: "1px solid #334155", borderRadius: "10px", padding: "12px 16px" }}>
+              <span style={{ fontSize: "11px", color: "#A855F7", fontWeight: 700, textTransform: "uppercase" }}>Pending Withdrawals</span>
+              <div style={{ fontSize: "18px", fontWeight: 800, color: "#A855F7", marginTop: 4 }}>
+                {commissionMetrics.pendingWithdrawalCount} (₦{commissionMetrics.pendingWithdrawalTotal.toLocaleString()})
+              </div>
+            </div>
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
+            {/* Global Rules */}
+            <div style={{ background: "#0F172A", border: "1px solid #334155", borderRadius: "12px", padding: "16px" }}>
+              <h4 style={{ margin: "0 0 12px 0", color: "#10B981", fontSize: "14px", fontWeight: 700 }}>
+                ⚙️ Global Financial & Escrow Controls
+              </h4>
+
+              <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                <div>
+                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+                    <label style={{ fontSize: "12px", color: "#94A3B8", fontWeight: 600 }}>Default Platform Commission Rate (%)</label>
+                    <span style={{ fontSize: "13px", fontWeight: 800, color: "#10B981" }}>{commissionRules.defaultRatePercent}%</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="5"
+                    max="35"
+                    step="1"
+                    value={commissionRules.defaultRatePercent}
+                    onChange={(e) => setCommissionRules({ ...commissionRules, defaultRatePercent: Number(e.target.value) })}
+                    style={{ width: "100%", accentColor: "#10B981" }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ fontSize: "12px", color: "#94A3B8", fontWeight: 600, display: "block", marginBottom: 4 }}>
+                    Escrow Dispute Protection Window (Hours before Auto-Release)
+                  </label>
+                  <input
+                    type="number"
+                    value={commissionRules.escrowHoldHours}
+                    onChange={(e) => setCommissionRules({ ...commissionRules, escrowHoldHours: Number(e.target.value) })}
+                    style={{ width: "100%", padding: "8px 12px", borderRadius: "8px", border: "1px solid #334155", background: "#1E293B", color: "#F8FAFC", fontSize: "14px", fontWeight: 600 }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ fontSize: "12px", color: "#94A3B8", fontWeight: 600, display: "block", marginBottom: 4 }}>
+                    Minimum Artisan Withdrawal (NGN ₦)
+                  </label>
+                  <input
+                    type="number"
+                    value={commissionRules.minWithdrawalNgn}
+                    onChange={(e) => setCommissionRules({ ...commissionRules, minWithdrawalNgn: Number(e.target.value) })}
+                    style={{ width: "100%", padding: "8px 12px", borderRadius: "8px", border: "1px solid #334155", background: "#1E293B", color: "#F8FAFC", fontSize: "14px", fontWeight: 600 }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ fontSize: "12px", color: "#94A3B8", fontWeight: 600, display: "block", marginBottom: 4 }}>
+                    Max Daily Withdrawal Threshold (NGN ₦)
+                  </label>
+                  <input
+                    type="number"
+                    value={commissionRules.maxDailyWithdrawalNgn}
+                    onChange={(e) => setCommissionRules({ ...commissionRules, maxDailyWithdrawalNgn: Number(e.target.value) })}
+                    style={{ width: "100%", padding: "8px 12px", borderRadius: "8px", border: "1px solid #334155", background: "#1E293B", color: "#F8FAFC", fontSize: "14px", fontWeight: 600 }}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Category Commission Overrides */}
+            <div style={{ background: "#0F172A", border: "1px solid #334155", borderRadius: "12px", padding: "16px" }}>
+              <h4 style={{ margin: "0 0 12px 0", color: "#38BDF8", fontSize: "14px", fontWeight: 700 }}>
+                🏷️ Category-Specific Commission Overrides (%)
+              </h4>
+              <span style={{ fontSize: "11px", color: "#94A3B8", display: "block", marginBottom: "12px" }}>
+                Artisans keep 100% minus the platform rate.
+              </span>
+
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", maxHeight: "250px", overflowY: "auto", paddingRight: "4px" }}>
+                {[
+                  { slug: "cleaning", name: "Cleaning Services" },
+                  { slug: "plumbing", name: "Plumbing" },
+                  { slug: "electrical", name: "Electrical" },
+                  { slug: "painting", name: "Painting" },
+                  { slug: "hvac", name: "AC & Refrigeration" },
+                  { slug: "solar", name: "Solar & Inverter" },
+                  { slug: "carpentry", name: "Carpentry" },
+                  { slug: "security", name: "CCTV & Security" },
+                  { slug: "home-improvement", name: "Home Renovation" },
+                  { slug: "outdoor", name: "Gardening & Lawn" },
+                  { slug: "laundry", name: "Laundry Services" },
+                  { slug: "moving", name: "Relocation & Moving" },
+                ].map((cat) => {
+                  const currentRate = commissionRules.categoryRates[cat.slug] ?? commissionRules.defaultRatePercent;
+                  return (
+                    <div key={cat.slug} style={{ background: "#1E293B", border: "1px solid #334155", borderRadius: "8px", padding: "8px 10px" }}>
+                      <label style={{ fontSize: "11px", color: "#F8FAFC", fontWeight: 600, display: "block", marginBottom: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                        {cat.name}
+                      </label>
+                      <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                        <input
+                          type="number"
+                          min="0"
+                          max="40"
+                          value={currentRate}
+                          onChange={(e) => {
+                            setCommissionRules({
+                              ...commissionRules,
+                              categoryRates: {
+                                ...commissionRules.categoryRates,
+                                [cat.slug]: Number(e.target.value),
+                              },
+                            });
+                          }}
+                          style={{ width: "60px", padding: "4px 6px", borderRadius: "4px", border: "1px solid #475569", background: "#0F172A", color: "#10B981", fontSize: "13px", fontWeight: "bold" }}
+                        />
+                        <span style={{ fontSize: "12px", color: "#94A3B8" }}>% (Pro: {100 - currentRate}%)</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* Nigerian Pricing Rules & Regional Surcharge Matrix Editor */}
         <div className="card" style={{ background: "#1E293B", border: "1px solid #0EA5E9", padding: "24px", borderRadius: "16px" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px", flexWrap: "wrap", gap: "12px" }}>

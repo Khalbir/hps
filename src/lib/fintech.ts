@@ -57,6 +57,7 @@ const MONNIFY_CONTRACT_CODE = process.env.MONNIFY_CONTRACT_CODE || "1234567890";
 const FLUTTERWAVE_SECRET_KEY = process.env.FLW_SECRET_KEY || process.env.FLUTTERWAVE_SECRET_KEY || "FLWSECK_TEST_handyhub_flw_mock";
 
 import { paystack, PaystackService } from "@/lib/paystack";
+import { holdPaymentInEscrow, calculateCommissionBreakdown } from "@/lib/escrow";
 
 export const PLATFORM_COMMISSION_RATE = 0.20; // 20% Platform Escrow Commission
 
@@ -411,8 +412,15 @@ export async function verifyAndRecordPayment(reference: string, providerName?: s
           },
         });
 
-        // 3. Dispatch Multi-Channel Notifications (Only on first transition to SUCCESS)
+        // 3. Dispatch Multi-Channel Notifications & Hold Escrow (Only on first transition to SUCCESS)
         if (!alreadySuccessful) {
+          // Lock payment into Escrow Vault for assigned professional
+          await holdPaymentInEscrow({
+            bookingId: updatedBooking.id,
+            paymentReference: reference,
+            amountNgn: verifyRes.amountNgn,
+          }).catch((e) => console.warn("[Escrow Hold Warn]:", e));
+
           await notifyBookingStatusChange({
             id: updatedBooking.id,
             reference: updatedBooking.reference,
@@ -430,13 +438,13 @@ export async function verifyAndRecordPayment(reference: string, providerName?: s
             recipientPhone: updatedBooking.customer.phone || undefined,
             recipientName: `${updatedBooking.customer.firstName} ${updatedBooking.customer.lastName}`,
             type: "PAYMENT",
-            title: "Payment Confirmed — Booking Accepted",
-            message: `Your payment of ${formatNaira(verifyRes.amountNgn)} via ${verifyRes.gateway} for Booking #${updatedBooking.reference} (${updatedBooking.service.name}) was confirmed successfully!`,
+            title: "Payment Confirmed — Funds Protected in Escrow",
+            message: `Your payment of ${formatNaira(verifyRes.amountNgn)} via ${verifyRes.gateway} for Booking #${updatedBooking.reference} (${updatedBooking.service.name}) was confirmed and is 100% protected in HandyHub Escrow until job satisfaction.`,
             metadata: {
               "Payment Reference": reference,
               "Gateway": verifyRes.gateway,
               "Amount Paid": formatNaira(verifyRes.amountNgn),
-              "Status": "PAID",
+              "Status": "HELD_IN_ESCROW",
             },
           }).catch((e) => console.warn("[Notification Warn]:", e));
         }
@@ -482,6 +490,12 @@ export async function verifyAndRecordPayment(reference: string, providerName?: s
               paymentMethod: verifyRes.gateway.toLowerCase(),
             },
           });
+
+          await holdPaymentInEscrow({
+            bookingId: matchedBooking.id,
+            paymentReference: reference,
+            amountNgn: verifyRes.amountNgn,
+          }).catch((e) => console.warn("[Escrow Hold Warn]:", e));
         }
       }
     }

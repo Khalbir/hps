@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { notifyBookingStatusChange } from "@/lib/notifications";
+import { releaseEscrowPayout } from "@/lib/escrow";
 
 export async function POST(request: Request) {
   try {
@@ -43,28 +44,15 @@ export async function POST(request: Request) {
       updateData.completedAt = new Date();
       updateData.paymentStatus = "SUCCESS";
 
-      // Release Escrow funds to artisan wallet
+      // Release Escrow funds to artisan wallet using dynamic commission engine
       if (booking.professionalId) {
-        const artisanUser = await prisma.professional.findUnique({
-          where: { id: booking.professionalId },
-          select: { userId: true },
+        await releaseEscrowPayout({
+          bookingId: booking.id,
+          triggerSource: "JOB_COMPLETION",
+          notes: notes || "Released upon booking completion",
+        }).catch((escrowErr) => {
+          console.warn("[Escrow Release Warning]:", escrowErr);
         });
-
-        if (artisanUser?.userId) {
-          const jobPrice = booking.finalPrice || booking.estimatedPrice || 15000;
-          const artisanEarnings = Math.round(jobPrice * 0.80); // 80% payout after 20% platform commission
-
-          await prisma.wallet.upsert({
-            where: { userId: artisanUser.userId },
-            update: {
-              balance: { increment: artisanEarnings },
-            },
-            create: {
-              userId: artisanUser.userId,
-              balance: artisanEarnings,
-            },
-          }).catch(() => {});
-        }
       }
     }
 
