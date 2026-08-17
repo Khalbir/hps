@@ -1,11 +1,30 @@
 "use client";
 
 import { useState } from "react";
+import { usePathname } from "next/navigation";
 import { MessageSquare, X, Send, ShieldCheck, Clock } from "lucide-react";
 
+// Routes where live support concierge is necessary & helpful
+const allowedConciergeRoutes = [
+  "/book",
+  "/track",
+  "/receipt",
+  "/contact",
+  "/dashboard/wallet",
+  "/dashboard/bookings",
+];
+
 export function WhatsAppConciergeWidget() {
+  const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
   const [customQuery, setCustomQuery] = useState("");
+
+  // Only display concierge widget on necessary booking flow, tracking, receipt, and payment routes
+  const isAllowedRoute = allowedConciergeRoutes.some((route) => pathname?.startsWith(route));
+
+  if (!isAllowedRoute) {
+    return null;
+  }
 
   const supportPhone = process.env.NEXT_PUBLIC_SUPPORT_WHATSAPP || "2348122222936";
   const cleanPhone = supportPhone.replace(/[^0-9]/g, "");
