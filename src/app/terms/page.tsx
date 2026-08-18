@@ -107,7 +107,7 @@ export default function TermsPage() {
 
             <h4 style={{ color: "#F8FAFC", margin: "10px 0 0 0", fontSize: "15px" }}>2.2 Escrow & Payment Terms</h4>
             <p>
-              Clients pay booking amounts into HandyHub&apos;s regulated escrow account via CBN-licensed payment gateways (Paystack / Flutterwave). Escrow funds are disbursed to the Professional upon Client job completion approval or expiry of the 48-hour inspection window.
+              Clients pay booking amounts into HandyHub&apos;s regulated escrow account via CBN-licensed payment gateways (Paystack / Flutterwave). HandyHub charges <strong>0% commission on Client wallet top-ups</strong> (100% of the deposited amount is credited directly to the client&apos;s available escrow wallet with zero fee deductions). Escrow funds are disbursed to the Professional upon Client job completion approval or expiry of the 48-hour inspection window.
             </p>
 
             <h4 style={{ color: "#F8FAFC", margin: "10px 0 0 0", fontSize: "15px" }}>2.3 Premises Safety & Utilities</h4>

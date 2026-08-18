@@ -1110,7 +1110,10 @@ export default function DashboardPage() {
             onClick={(e) => e.stopPropagation()}
           >
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-              <h3 className="h4" style={{ margin: 0, color: "#F8FAFC" }}>Top Up Escrow Wallet</h3>
+              <div>
+                <h3 className="h4" style={{ margin: 0, color: "#F8FAFC" }}>Top Up Escrow Wallet</h3>
+                <span style={{ fontSize: "11.5px", color: "#10B981", fontWeight: 600 }}>0% Commission • 100% Value Credited</span>
+              </div>
               <button onClick={() => setShowTopUpModal(false)} style={{ background: "none", border: "none", color: "#94A3B8", cursor: "pointer", fontSize: 18 }}>✕</button>
             </div>
 

@@ -160,6 +160,11 @@ export default function CustomerWalletPage() {
               <Wallet size={20} color="#10B981" />
               <span style={{ fontSize: "13px", color: "#94A3B8", textTransform: "uppercase", letterSpacing: 1, fontWeight: "bold" }}>Available Escrow Balance</span>
             </div>
+            <div style={{ margin: "4px 0 10px 0" }}>
+              <span style={{ fontSize: "11px", color: "#10B981", background: "rgba(16,185,129,0.15)", padding: "2px 8px", borderRadius: 6, fontWeight: 600, border: "1px solid rgba(16,185,129,0.3)" }}>
+                0% Commission • 100% of Top-Up Credited to Balance
+              </span>
+            </div>
 
             <h2 className="h1" style={{ color: "#10B981", fontSize: 36, margin: "10px 0 20px" }}>₦{balance.toLocaleString("en-NG")}</h2>
 
@@ -210,7 +215,7 @@ export default function CustomerWalletPage() {
           <div className="card">
             <h3 className="h4" style={{ marginBottom: 12 }}>Escrow Protection Guarantee</h3>
             <p style={{ fontSize: "13px", color: "var(--text-secondary)", lineHeight: 1.6, marginBottom: 16 }}>
-              Funds topped up to your HandyHub Escrow Wallet are locked safely. Payments are only released to the artisan AFTER you inspect and approve the completed job using your 4-digit Security OTP.
+              HandyHub charges <strong>0% commission</strong> on client wallet deposits. 100% of your top-up is credited directly to your escrow balance. Funds are held safely and only released to the artisan AFTER you inspect and approve the completed job using your 4-digit Security OTP.
             </p>
             <div style={{ background: "var(--bg-tertiary)", padding: 12, borderRadius: 8, fontSize: 12, color: "#64748B", border: "1px solid var(--border-primary)" }}>
               🔒 Powered by Paystack Payment Infrastructure with 256-bit SSL Escrow Protection.
