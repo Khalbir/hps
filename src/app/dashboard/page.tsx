@@ -439,7 +439,7 @@ export default function DashboardPage() {
       <aside className={`${styles.sidebar} ${sidebarOpen ? styles.sidebarOpen : ""}`}>
         <div className={styles.sidebarHeader}>
           <Link href="/" className={styles.sidebarLogo} style={{ textDecoration: "none" }}>
-            <BrandLogo size="sm" lightText={true} />
+            <BrandLogo size="sm" lightText={false} />
           </Link>
           <button className={styles.closeSidebar} onClick={() => setSidebarOpen(false)}>
             <X size={20} />
@@ -524,7 +524,7 @@ export default function DashboardPage() {
         <div className={styles.content}>
           {/* TAB 1: OVERVIEW */}
           {activeTab === "overview" && (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+            <div className={styles.tabContainer}>
               {/* High-Confidence Platform Stats Banner */}
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "12px", background: "#1E293B", border: "1px solid #334155", borderRadius: "16px", padding: "16px 20px", marginBottom: "20px" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
@@ -660,12 +660,12 @@ export default function DashboardPage() {
                   <p>Add or update your service addresses</p>
                 </div>
               </div>
-            </motion.div>
+            </div>
           )}
 
           {/* TAB 2: BOOKINGS */}
           {activeTab === "bookings" && (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+            <div className={styles.tabContainer}>
               <div className={`card ${styles.tableCard}`}>
                 <div className={styles.tableHeader}>
                   <h2 className={styles.tableTitle}>My Service Booking History</h2>
@@ -718,19 +718,19 @@ export default function DashboardPage() {
                   </div>
                 )}
               </div>
-            </motion.div>
+            </div>
           )}
 
           {/* TAB 3: ADDRESSES */}
           {activeTab === "addresses" && (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+            <div className={styles.tabContainer}>
               <AddressVerificationModule userEmail={user?.email || "customer@test.com"} />
-            </motion.div>
+            </div>
           )}
 
           {/* TAB 4: WALLET */}
           {activeTab === "wallet" && (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ display: "flex", flexDirection: "column", gap: 20, maxWidth: 650, margin: "0 auto" }}>
+            <div className={styles.tabContainer} style={{ display: "flex", flexDirection: "column", gap: 20, maxWidth: 650, margin: "0 auto" }}>
               {topUpSuccessAlert && (
                 <div style={{ background: "rgba(16,185,129,0.15)", border: "1px solid #10B981", color: "#10B981", padding: 16, borderRadius: 12, fontSize: 14, fontWeight: 500, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                   <span>{topUpSuccessAlert}</span>
@@ -752,23 +752,23 @@ export default function DashboardPage() {
                   </button>
                 </div>
               </div>
-            </motion.div>
+            </div>
           )}
 
           {/* TAB 5: NOTIFICATIONS */}
           {activeTab === "notifications" && (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+            <div className={styles.tabContainer}>
               <div className="card" style={{ padding: "40px", textAlign: "center" }}>
                 <Bell size={40} color="#0EA5E9" style={{ opacity: 0.6, marginBottom: 12 }} />
                 <h4 className="h4">No New Notifications</h4>
                 <p style={{ fontSize: "14px", color: "var(--text-secondary)" }}>Live service tracking alerts and payment receipts will appear here.</p>
               </div>
-            </motion.div>
+            </div>
           )}
 
           {/* TAB 6: PROFILE */}
           {activeTab === "profile" && (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+            <div className={styles.tabContainer}>
               <div className="card" style={{ maxWidth: 600 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20, flexWrap: "wrap", gap: 10 }}>
                   <div>
@@ -871,12 +871,12 @@ export default function DashboardPage() {
                   </button>
                 </form>
               </div>
-            </motion.div>
+            </div>
           )}
 
           {/* TAB 7: SETTINGS */}
           {activeTab === "settings" && (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ display: "flex", flexDirection: "column", gap: 20, maxWidth: 750 }}>
+            <div className={styles.tabContainer} style={{ display: "flex", flexDirection: "column", gap: 20, maxWidth: 750 }}>
               {/* Card 1: Password & Security Hardening */}
               <div className="card">
                 <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
@@ -1083,7 +1083,7 @@ export default function DashboardPage() {
                   </button>
                 </div>
               </div>
-            </motion.div>
+            </div>
           )}
         </div>
       </main>

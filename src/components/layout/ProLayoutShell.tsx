@@ -69,7 +69,7 @@ export function ProLayoutShell({ children }: { children: ReactNode }) {
       <aside className={`${styles.sidebar} ${sidebarOpen ? styles.sidebarOpen : ""}`}>
         <div className={styles.sidebarHeader}>
           <Link href="/pro" className={styles.sidebarLogo} style={{ textDecoration: "none" }}>
-            <BrandLogo size="sm" lightText={true} />
+            <BrandLogo size="sm" lightText={false} />
           </Link>
           <button className={styles.closeSidebar} onClick={() => setSidebarOpen(false)}>
             <X size={20} />
