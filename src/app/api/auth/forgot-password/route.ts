@@ -64,8 +64,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       success: true,
-      message: `Password reset instructions have been dispatched to ${cleanEmail}.`,
-      resetUrlPreview: resetUrl,
+      message: `Password reset instructions have been dispatched to ${cleanEmail}. Please check your inbox.`,
     });
   } catch (error) {
     console.error("[Forgot Password API Error]:", error);

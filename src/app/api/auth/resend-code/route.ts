@@ -53,8 +53,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       success: true,
-      code,
-      message: `Confirmation code sent to ${user.email}`,
+      message: `A 6-digit confirmation code has been dispatched to ${user.email}. Please check your inbox.`,
     });
   } catch (error: any) {
     console.error("[Resend Code API Error]:", error);
