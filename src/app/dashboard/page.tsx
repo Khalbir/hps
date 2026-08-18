@@ -98,16 +98,6 @@ export default function DashboardPage() {
   const [profileSaving, setProfileSaving] = useState(false);
   const [profileSuccess, setProfileSuccess] = useState("");
 
-  // Settings & Password State
-  const [currentPass, setCurrentPass] = useState("");
-  const [newPass, setNewPass] = useState("");
-  const [confirmPass, setConfirmPass] = useState("");
-  const [showCurrentPass, setShowCurrentPass] = useState(false);
-  const [showNewPass, setShowNewPass] = useState(false);
-  const [passSaving, setPassSaving] = useState(false);
-  const [passSuccess, setPassSuccess] = useState("");
-  const [passError, setPassError] = useState("");
-
   // Notification Preferences State — restore from localStorage
   const savedNotifPrefs = typeof window !== "undefined" ? loadNotificationPrefs() : { emailNotifs: true, smsNotifs: true, securityAlerts: true };
   const [emailNotifs, setEmailNotifs] = useState(savedNotifPrefs.emailNotifs);
@@ -346,70 +336,6 @@ export default function DashboardPage() {
       clearUserDataCache();
       window.location.href = "/auth/login";
     }
-  };
-
-  const handlePasswordChange = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setPassError("");
-    setPassSuccess("");
-
-    if (!currentPass) {
-      setPassError("Please enter your current password.");
-      return;
-    }
-    if (newPass.length < 8) {
-      setPassError("New password must be at least 8 characters long.");
-      return;
-    }
-    if (newPass !== confirmPass) {
-      setPassError("New password and confirmation password do not match.");
-      return;
-    }
-
-    setPassSaving(true);
-    try {
-      const activeEmail = user?.email || (typeof window !== "undefined" ? JSON.parse(localStorage.getItem("handyhub_user") || "{}").email : "");
-      const res = await fetch("/api/user/settings", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: activeEmail,
-          currentPassword: currentPass,
-          newPassword: newPass,
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok || data.error) {
-        setPassError(data.error || "Failed to update password.");
-      } else {
-        setPassSuccess(data.message || "Password updated successfully! 🔒");
-        setCurrentPass("");
-        setNewPass("");
-        setConfirmPass("");
-      }
-    } catch {
-      setPassError("An unexpected error occurred while updating your password.");
-    } finally {
-      setPassSaving(false);
-    }
-  };
-
-  const handleExportData = () => {
-    const exportObject = {
-      userProfile: user,
-      addresses: addresses,
-      walletBalance: walletBalance,
-      bookings: bookings,
-      exportTimestamp: new Date().toISOString(),
-      platform: "HandyHub PRO Solutions",
-    };
-    const blob = new Blob([JSON.stringify(exportObject, null, 2)], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `handyhub_account_export_${Date.now()}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
   };
 
   const handleProfileSave = async (e: React.FormEvent) => {
@@ -896,114 +822,7 @@ export default function DashboardPage() {
           {/* TAB 7: SETTINGS */}
           {activeTab === "settings" && (
             <div className={styles.tabContainer} style={{ display: "flex", flexDirection: "column", gap: 20, maxWidth: 750 }}>
-              {/* Card 1: Password & Security Hardening */}
-              <div className="card">
-                <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
-                  <div style={{ width: 36, height: 36, borderRadius: 8, background: "rgba(14,165,233,0.15)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, color: "#0EA5E9" }}>
-                    🔒
-                  </div>
-                  <div>
-                    <h3 className="h4" style={{ margin: 0 }}>Password & Security Hardening</h3>
-                    <p style={{ fontSize: 13, color: "var(--text-secondary)", margin: 0 }}>Update your account password to maintain maximum security.</p>
-                  </div>
-                </div>
-
-                {passSuccess && (
-                  <div style={{ background: "rgba(16,185,129,0.12)", border: "1px solid #10B981", color: "#10B981", padding: 12, borderRadius: 8, fontSize: 14, marginBottom: 16 }}>
-                    ✓ {passSuccess}
-                  </div>
-                )}
-                {passError && (
-                  <div style={{ background: "rgba(239,68,68,0.12)", border: "1px solid #EF4444", color: "#EF4444", padding: 12, borderRadius: 8, fontSize: 14, marginBottom: 16 }}>
-                    ⚠️ {passError}
-                  </div>
-                )}
-
-                <form onSubmit={handlePasswordChange} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-                  <div>
-                    <label style={{ fontSize: 13, fontWeight: "bold", display: "block", marginBottom: 4 }}>Current Password</label>
-                    <div style={{ position: "relative" }}>
-                      <input
-                        type={showCurrentPass ? "text" : "password"}
-                        value={currentPass}
-                        onChange={(e) => setCurrentPass(e.target.value)}
-                        placeholder="Enter current password"
-                        style={{
-                          width: "100%",
-                          padding: "10px 40px 10px 12px",
-                          borderRadius: 8,
-                          border: "1px solid var(--border-primary)",
-                          background: "var(--bg-tertiary)",
-                          color: "var(--text-primary)",
-                        }}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowCurrentPass(!showCurrentPass)}
-                        style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", fontSize: 14 }}
-                      >
-                        {showCurrentPass ? "👁️" : "🙈"}
-                      </button>
-                    </div>
-                  </div>
-
-                  <div>
-                    <label style={{ fontSize: 13, fontWeight: "bold", display: "block", marginBottom: 4 }}>New Password</label>
-                    <div style={{ position: "relative" }}>
-                      <input
-                        type={showNewPass ? "text" : "password"}
-                        value={newPass}
-                        onChange={(e) => setNewPass(e.target.value)}
-                        placeholder="Enter new password (min. 8 characters)"
-                        style={{
-                          width: "100%",
-                          padding: "10px 40px 10px 12px",
-                          borderRadius: 8,
-                          border: "1px solid var(--border-primary)",
-                          background: "var(--bg-tertiary)",
-                          color: "var(--text-primary)",
-                        }}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowNewPass(!showNewPass)}
-                        style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", fontSize: 14 }}
-                      >
-                        {showNewPass ? "👁️" : "🙈"}
-                      </button>
-                    </div>
-                    {newPass && (
-                      <div style={{ fontSize: 12, marginTop: 4, color: newPass.length >= 8 ? "#10B981" : "#F59E0B" }}>
-                        {newPass.length >= 8 ? "✓ Password length criteria met (8+ chars)" : `⚠️ ${8 - newPass.length} more character(s) required`}
-                      </div>
-                    )}
-                  </div>
-
-                  <div>
-                    <label style={{ fontSize: 13, fontWeight: "bold", display: "block", marginBottom: 4 }}>Confirm New Password</label>
-                    <input
-                      type="password"
-                      value={confirmPass}
-                      onChange={(e) => setConfirmPass(e.target.value)}
-                      placeholder="Confirm new password"
-                      style={{
-                        width: "100%",
-                        padding: 10,
-                        borderRadius: 8,
-                        border: "1px solid var(--border-primary)",
-                        background: "var(--bg-tertiary)",
-                        color: "var(--text-primary)",
-                      }}
-                    />
-                  </div>
-
-                  <button type="submit" disabled={passSaving} className="btn btn-primary btn-sm" style={{ background: "#0EA5E9", alignSelf: "flex-start", marginTop: 4 }}>
-                    {passSaving ? "Updating Password..." : "Update Security Password ➔"}
-                  </button>
-                </form>
-              </div>
-
-              {/* Card 2: Active Sessions & Multi-Device Control */}
+              {/* Card 1: Active Sessions & Multi-Device Control */}
               <div className="card">
                 <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
                   <div style={{ width: 36, height: 36, borderRadius: 8, background: "rgba(16,185,129,0.15)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, color: "#10B981" }}>
@@ -1058,19 +877,19 @@ export default function DashboardPage() {
                 </div>
               </div>
 
-              {/* Card 3: Notification & Data Privacy Preferences */}
+              {/* Card 2: Notification Preferences */}
               <div className="card">
                 <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
                   <div style={{ width: 36, height: 36, borderRadius: 8, background: "rgba(245,158,11,0.15)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, color: "#F59E0B" }}>
                     🔔
                   </div>
                   <div>
-                    <h3 className="h4" style={{ margin: 0 }}>Notification & Data Privacy</h3>
-                    <p style={{ fontSize: 13, color: "var(--text-secondary)", margin: 0 }}>Control alert notifications and export your personal account data.</p>
+                    <h3 className="h4" style={{ margin: 0 }}>Notification Preferences</h3>
+                    <p style={{ fontSize: 13, color: "var(--text-secondary)", margin: 0 }}>Control service alert notifications and communication channels.</p>
                   </div>
                 </div>
 
-                <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 20 }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                   <label style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 14px", background: "var(--bg-tertiary)", borderRadius: 8 }}>
                     <div>
                       <div style={{ fontSize: 14, fontWeight: "bold" }}>📧 Email Service Notifications</div>
@@ -1090,16 +909,10 @@ export default function DashboardPage() {
                   <label style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 14px", background: "var(--bg-tertiary)", borderRadius: 8 }}>
                     <div>
                       <div style={{ fontSize: 14, fontWeight: "bold" }}>🛡️ Account Security Notices</div>
-                      <div style={{ fontSize: 12, color: "var(--text-secondary)" }}>Alerts for password changes and new device logins.</div>
+                      <div style={{ fontSize: 12, color: "var(--text-secondary)" }}>Alerts for new device logins and sensitive account activity.</div>
                     </div>
                     <input type="checkbox" checked={securityAlerts} onChange={(e) => { setSecurityAlerts(e.target.checked); saveNotificationPrefs({ emailNotifs, smsNotifs, securityAlerts: e.target.checked }); }} />
                   </label>
-                </div>
-
-                <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap", borderTop: "1px solid var(--border-primary)", paddingTop: 16 }}>
-                  <button type="button" onClick={handleExportData} className="btn btn-secondary btn-sm" style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                    <span>📥</span> Export My Account Data (.JSON)
-                  </button>
                 </div>
               </div>
             </div>
