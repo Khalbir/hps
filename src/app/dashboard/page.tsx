@@ -32,14 +32,35 @@ interface Address {
   isDefault?: boolean;
 }
 
+const VALID_TABS = ["overview", "bookings", "addresses", "wallet", "notifications", "profile", "settings"] as const;
+type DashboardTab = (typeof VALID_TABS)[number];
+
+function sanitizeTab(tab: any): DashboardTab {
+  if (!tab || typeof tab !== "string") return "overview";
+  const clean = tab.replace(/['"]+/g, "").trim().toLowerCase();
+  return (VALID_TABS as readonly string[]).includes(clean) ? (clean as DashboardTab) : "overview";
+}
+
 export default function DashboardPage() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState(() => {
+  const [activeTab, setActiveTab] = useState<DashboardTab>(() => {
     if (typeof window !== "undefined") {
-      return localStorage.getItem(STORAGE_KEYS.DASHBOARD_TAB) || "overview";
+      try {
+        const stored = loadFromStorage<string>(STORAGE_KEYS.DASHBOARD_TAB, "overview");
+        return sanitizeTab(stored);
+      } catch {
+        return "overview";
+      }
     }
     return "overview";
   });
+
+  const handleTabChange = (tabId: string) => {
+    const clean = sanitizeTab(tabId);
+    setActiveTab(clean);
+    saveToStorage(STORAGE_KEYS.DASHBOARD_TAB, clean);
+    setSidebarOpen(false);
+  };
 
   // User state
   const [user, setUser] = useState<any>({
@@ -235,12 +256,14 @@ export default function DashboardPage() {
       const amountParam = urlParams.get("amount");
 
       if (tabParam) {
-        setActiveTab(tabParam);
-        saveToStorage(STORAGE_KEYS.DASHBOARD_TAB, tabParam);
+        const clean = sanitizeTab(tabParam);
+        setActiveTab(clean);
+        saveToStorage(STORAGE_KEYS.DASHBOARD_TAB, clean);
       }
 
       if (paymentParam === "success" || topUpParam === "SUCCESS") {
         setActiveTab("wallet");
+        saveToStorage(STORAGE_KEYS.DASHBOARD_TAB, "wallet");
         const formattedAmount = amountParam ? `₦${Number(amountParam).toLocaleString("en-NG")}` : "Funds";
         setTopUpSuccessAlert(`🎉 Wallet Top-Up Successful! ${formattedAmount} has been credited to your available escrow balance in real-time.`);
       }
@@ -458,11 +481,7 @@ export default function DashboardPage() {
           ].map((link) => (
             <button
               key={link.id}
-              onClick={() => {
-                setActiveTab(link.id);
-                saveToStorage(STORAGE_KEYS.DASHBOARD_TAB, link.id);
-                setSidebarOpen(false);
-              }}
+              onClick={() => handleTabChange(link.id)}
               className={`${styles.navLink} ${activeTab === link.id ? styles.navLinkActive : ""}`}
               style={{ width: "100%", textAlign: "left", background: "none", border: "none", cursor: "pointer" }}
             >
@@ -523,7 +542,7 @@ export default function DashboardPage() {
         {/* Dashboard Content Tabs */}
         <div className={styles.content}>
           {/* TAB 1: OVERVIEW */}
-          {activeTab === "overview" && (
+          {(activeTab === "overview" || !VALID_TABS.includes(activeTab)) && (
             <div className={styles.tabContainer}>
               {/* High-Confidence Platform Stats Banner */}
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "12px", background: "#1E293B", border: "1px solid #334155", borderRadius: "16px", padding: "16px 20px", marginBottom: "20px" }}>
