@@ -88,12 +88,18 @@ export default function BookingsWorkflowPage() {
     return () => clearInterval(interval);
   }, []);
 
+  const unassignedCount = bookings.filter((b) => !b.pro || b.status === "PENDING").length;
+
   const filteredBookings = bookings.filter((b) => {
+    if (statusFilter === "UNASSIGNED") {
+      return !b.pro || b.status === "PENDING";
+    }
     const matchesStatus = statusFilter === "ALL" || b.status === statusFilter;
     const matchesSearch =
       b.reference.toLowerCase().includes(searchQuery.toLowerCase()) ||
       b.customer.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      b.service.toLowerCase().includes(searchQuery.toLowerCase());
+      b.service.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (b.pro?.name && b.pro.name.toLowerCase().includes(searchQuery.toLowerCase()));
     return matchesStatus && matchesSearch;
   });
 
@@ -180,12 +186,46 @@ export default function BookingsWorkflowPage() {
     <AdminLayoutShell>
       <header className={styles.adminTopBar} style={{ marginBottom: "var(--space-6)" }}>
         <div>
-          <h1 className="h3">Production 8-State Booking & Artisan Dispatch Engine</h1>
+          <h1 className="h3">Artisan Job Dispatch & Booking Operations Engine</h1>
           <p style={{ color: "var(--text-secondary)", fontSize: "var(--fs-sm)" }}>
-            Real Database Records: PENDING → ASSIGNED → ACCEPTED → EN_ROUTE → WORK_IN_PROGRESS → COMPLETED / CANCELLED / REFUNDED
+            Real-Time Bookings • Automated Artisan Matching • Manual Dispatch Gating
           </p>
         </div>
       </header>
+
+      {/* KPI Stats Bar */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 14, marginBottom: 20 }}>
+        <div style={{ background: "#1E293B", border: "1px solid #334155", borderRadius: 12, padding: "14px 18px" }}>
+          <span style={{ fontSize: 11, color: "#94A3B8", fontWeight: 700, textTransform: "uppercase" }}>Total Bookings</span>
+          <h2 style={{ fontSize: 24, fontWeight: 800, color: "#F8FAFC", margin: "4px 0 0" }}>{bookings.length}</h2>
+        </div>
+
+        <div
+          onClick={() => setStatusFilter("UNASSIGNED")}
+          style={{
+            background: unassignedCount > 0 ? "rgba(239, 68, 68, 0.12)" : "#1E293B",
+            border: `1.5px solid ${unassignedCount > 0 ? "#EF4444" : "#334155"}`,
+            borderRadius: 12,
+            padding: "14px 18px",
+            cursor: "pointer",
+          }}
+        >
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <span style={{ fontSize: 11, color: unassignedCount > 0 ? "#EF4444" : "#94A3B8", fontWeight: 700, textTransform: "uppercase" }}>
+              🚨 Unassigned (Needs Dispatch)
+            </span>
+            {unassignedCount > 0 && <AlertCircle size={16} color="#EF4444" />}
+          </div>
+          <h2 style={{ fontSize: 24, fontWeight: 800, color: unassignedCount > 0 ? "#EF4444" : "#F8FAFC", margin: "4px 0 0" }}>
+            {unassignedCount}
+          </h2>
+        </div>
+
+        <div style={{ background: "#1E293B", border: "1px solid #334155", borderRadius: 12, padding: "14px 18px" }}>
+          <span style={{ fontSize: 11, color: "#94A3B8", fontWeight: 700, textTransform: "uppercase" }}>Active Artisans in Network</span>
+          <h2 style={{ fontSize: 24, fontWeight: 800, color: "#38BDF8", margin: "4px 0 0" }}>{professionals.length}</h2>
+        </div>
+      </div>
 
       {toastMsg && (
         <div style={{ background: "rgba(16,185,129,0.2)", border: "1px solid #10B981", color: "#10B981", padding: "12px 16px", borderRadius: "8px", marginBottom: "20px", fontSize: "14px", fontWeight: "bold" }}>
@@ -199,7 +239,7 @@ export default function BookingsWorkflowPage() {
           <Search size={18} style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", color: "#94A3B8" }} />
           <input
             type="text"
-            placeholder="Search Ref, Customer name, or Service..."
+            placeholder="Search Ref, Customer name, Service, or Artisan..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             style={{
@@ -215,6 +255,22 @@ export default function BookingsWorkflowPage() {
         </div>
 
         <div style={{ display: "flex", gap: "6px", overflowX: "auto", paddingBottom: "4px" }}>
+          <button
+            onClick={() => setStatusFilter("UNASSIGNED")}
+            style={{
+              background: statusFilter === "UNASSIGNED" ? "#EF4444" : "rgba(239,68,68,0.12)",
+              color: statusFilter === "UNASSIGNED" ? "#FFFFFF" : "#EF4444",
+              border: "1px solid #EF4444",
+              borderRadius: "20px",
+              padding: "6px 14px",
+              fontSize: "12px",
+              fontWeight: 800,
+              cursor: "pointer",
+              whiteSpace: "nowrap",
+            }}
+          >
+            🚨 Unassigned ({unassignedCount})
+          </button>
           {ALL_STATUSES.map((st) => (
             <button
               key={st}
@@ -253,8 +309,9 @@ export default function BookingsWorkflowPage() {
                   <th style={{ padding: "12px 16px" }}>Ref</th>
                   <th style={{ padding: "12px 16px" }}>Customer</th>
                   <th style={{ padding: "12px 16px" }}>Service</th>
+                  <th style={{ padding: "12px 16px" }}>Assigned Artisan</th>
                   <th style={{ padding: "12px 16px" }}>Amount</th>
-                  <th style={{ padding: "12px 16px" }}>State</th>
+                  <th style={{ padding: "12px 16px" }}>Status</th>
                   <th style={{ padding: "12px 16px" }}>Action</th>
                 </tr>
               </thead>
@@ -272,6 +329,17 @@ export default function BookingsWorkflowPage() {
                     <td style={{ padding: "12px 16px", fontFamily: "monospace", color: "#0EA5E9", fontWeight: 700 }}>#{b.reference}</td>
                     <td style={{ padding: "12px 16px", fontWeight: 600, color: "#F8FAFC" }}>{b.customer.name}</td>
                     <td style={{ padding: "12px 16px", color: "#CBD5E1" }}>{b.service}</td>
+                    <td style={{ padding: "12px 16px" }}>
+                      {b.pro ? (
+                        <span style={{ color: "#38BDF8", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 4 }}>
+                          <UserCheck size={14} color="#10B981" /> {b.pro.name}
+                        </span>
+                      ) : (
+                        <span style={{ background: "rgba(239,68,68,0.15)", color: "#EF4444", border: "1px solid rgba(239,68,68,0.3)", padding: "3px 8px", borderRadius: 6, fontSize: 11, fontWeight: 800 }}>
+                          🚨 Unassigned (Needs Pro)
+                        </span>
+                      )}
+                    </td>
                     <td style={{ padding: "12px 16px", fontWeight: 700, color: "#10B981" }}>₦{b.amount.toLocaleString()}</td>
                     <td style={{ padding: "12px 16px" }}>
                       <span className="badge" style={{ background: getStatusColor(b.status) + "25", color: getStatusColor(b.status), fontSize: "11px", fontWeight: 700 }}>
@@ -279,8 +347,17 @@ export default function BookingsWorkflowPage() {
                       </span>
                     </td>
                     <td style={{ padding: "12px 16px" }}>
-                      <button className="btn btn-secondary btn-xs" onClick={(e) => { e.stopPropagation(); setSelectedBooking(b); }}>
-                        Manage & Assign
+                      <button
+                        className="btn btn-xs"
+                        style={{
+                          background: !b.pro ? "#EF4444" : "#1E293B",
+                          color: "#FFFFFF",
+                          border: !b.pro ? "none" : "1px solid #334155",
+                          fontWeight: 700,
+                        }}
+                        onClick={(e) => { e.stopPropagation(); setSelectedBooking(b); }}
+                      >
+                        {!b.pro ? "⚡ Assign Pro" : "Manage"}
                       </button>
                     </td>
                   </tr>

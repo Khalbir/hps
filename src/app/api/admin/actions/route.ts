@@ -48,11 +48,34 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: "Booking ID and Professional ID are required for manual assignment" }, { status: 400 });
       }
 
-      // Update Booking in DB with assigned professionalId and status ASSIGNED
+      // 1. Resolve target booking by id or reference
+      const existingBooking = await prisma.booking.findFirst({
+        where: {
+          OR: [{ id: targetBookingId }, { reference: targetBookingId }],
+        },
+      });
+
+      if (!existingBooking) {
+        return NextResponse.json({ error: `Booking not found for ID/Reference: ${targetBookingId}` }, { status: 404 });
+      }
+
+      // 2. Resolve professional by pro ID or user ID
+      const resolvedPro = await prisma.professional.findFirst({
+        where: {
+          OR: [{ id: targetProId }, { userId: targetProId }, { id: targetProId.replace(/^pro_/, "") }],
+        },
+        include: { user: true },
+      });
+
+      if (!resolvedPro) {
+        return NextResponse.json({ error: `Professional record not found for ID: ${targetProId}` }, { status: 404 });
+      }
+
+      // 3. Update Booking in DB with assigned professionalId and status ASSIGNED
       const updatedBooking = await prisma.booking.update({
-        where: { id: targetBookingId },
+        where: { id: existingBooking.id },
         data: {
-          professionalId: targetProId,
+          professionalId: resolvedPro.id,
           status: "ASSIGNED",
           assignedAt: new Date(),
         },
@@ -65,12 +88,12 @@ export async function POST(request: Request) {
         },
       });
 
-      // Dispatch notifications
+      // 4. Dispatch multi-channel notification to both customer and assigned artisan
       await notifyBookingStatusChange(updatedBooking).catch(() => {});
 
       return NextResponse.json({
         success: true,
-        message: `Manually assigned Artisan ${updatedBooking.professional?.user?.firstName || "Partner"} to Booking #${updatedBooking.reference}!`,
+        message: `Manually assigned Artisan ${resolvedPro.user?.firstName || "Partner"} (${resolvedPro.user?.phone || "Verified"}) to Booking #${updatedBooking.reference}!`,
         booking: updatedBooking,
       });
     }

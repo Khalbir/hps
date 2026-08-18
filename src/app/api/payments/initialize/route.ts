@@ -102,6 +102,149 @@ export async function POST(request: Request) {
       }
     }
 
+    let createdBooking: any = null;
+
+    // If this is a service booking (not a wallet topup), create the Booking record and run auto-dispatch
+    if (!sanitizedBookingId.includes("TOPUP")) {
+      try {
+        const serviceCategory = metadata?.serviceCategory || bookingId || "cleaning";
+        const serviceName = metadata?.serviceName || "Residential & Deep Cleaning";
+        const cleanCatSlug = String(serviceCategory).toLowerCase().replace(/\s+/g, "-");
+
+        // 1. Resolve or create Service Category & Service
+        let serviceCat = await prisma.serviceCategory.findFirst({
+          where: { slug: cleanCatSlug },
+        });
+
+        if (!serviceCat) {
+          serviceCat = await prisma.serviceCategory.create({
+            data: {
+              name: String(serviceCategory).charAt(0).toUpperCase() + String(serviceCategory).slice(1),
+              slug: cleanCatSlug,
+              description: `Verified professional ${serviceCategory} service`,
+            },
+          }).catch(() => null);
+        }
+
+        let dbService = null;
+        if (metadata?.serviceId) {
+          dbService = await prisma.service.findUnique({ where: { id: metadata.serviceId } });
+        }
+        if (!dbService && serviceCat) {
+          dbService = await prisma.service.findFirst({ where: { categoryId: serviceCat.id } });
+        }
+        if (!dbService) {
+          dbService = await prisma.service.findFirst();
+        }
+        if (!dbService && serviceCat) {
+          dbService = await prisma.service.create({
+            data: {
+              categoryId: serviceCat.id,
+              name: serviceName,
+              slug: String(serviceName).toLowerCase().replace(/\s+/g, "-"),
+              description: "Verified professional home service",
+              basePrice: Number(amountNgn),
+            },
+          });
+        }
+
+        // 2. RUN INTELLIGENT ARTISAN AUTO-ASSIGNMENT
+        let assignedProId: string | null = null;
+
+        // A. If client manually selected a specific artisan in Step 4
+        if (metadata?.technicianId && !metadata?.autoAssign) {
+          const selectedPro = await prisma.professional.findFirst({
+            where: {
+              OR: [{ id: metadata.technicianId }, { userId: metadata.technicianId }],
+              verificationStatus: { in: ["VERIFIED", "APPROVED"] },
+            },
+          });
+          if (selectedPro) {
+            assignedProId = selectedPro.id;
+          }
+        }
+
+        // B. Auto-assign: Match highest-rated verified artisan by skill category
+        if (!assignedProId) {
+          const allVerifiedPros = await prisma.professional.findMany({
+            where: {
+              verificationStatus: { in: ["VERIFIED", "APPROVED"] },
+              isAvailable: true,
+            },
+            include: { user: true },
+            orderBy: { rating: "desc" },
+          });
+
+          const catLower = String(serviceCategory).toLowerCase();
+          const matchingPro = allVerifiedPros.find((p) => {
+            try {
+              const skillsArr = JSON.parse(p.skills || "[]");
+              if (Array.isArray(skillsArr)) {
+                return skillsArr.some((s: string) => s.toLowerCase().includes(catLower) || catLower.includes(s.toLowerCase()));
+              }
+            } catch {}
+            return false;
+          });
+
+          if (matchingPro) {
+            assignedProId = matchingPro.id;
+          } else if (allVerifiedPros.length > 0) {
+            // Fallback to top verified pro in the city
+            assignedProId = allVerifiedPros[0].id;
+          }
+        }
+
+        const bookingStatus = assignedProId ? "ASSIGNED" : "PENDING";
+
+        // 3. Create the real Booking entity in the Prisma Database
+        createdBooking = await prisma.booking.create({
+          data: {
+            reference,
+            customerId: dbUser.id,
+            serviceId: dbService ? dbService.id : "svc_default",
+            professionalId: assignedProId,
+            status: bookingStatus,
+            propertyType: metadata?.propertyType || "HOME",
+            bedrooms: Number(metadata?.bedrooms) || 2,
+            bathrooms: Number(metadata?.bathrooms) || 1,
+            specialNotes: metadata?.specialNotes || null,
+            scheduledDate: metadata?.scheduledDate ? new Date(metadata.scheduledDate) : new Date(),
+            scheduledTime: metadata?.scheduledTime || "09:00 AM",
+            address: metadata?.address || dbUser.permanentAddress || "Abuja, FCT, Nigeria",
+            landmark: metadata?.landmark || null,
+            paymentMethod: "PAYSTACK",
+            paymentStatus: "PENDING",
+            estimatedPrice: Number(amountNgn),
+            finalPrice: Number(amountNgn),
+            promoCodeId: metadata?.promoCodeId || null,
+            discountAmount: Number(metadata?.discountAmount) || 0,
+            assignedAt: assignedProId ? new Date() : null,
+          },
+        });
+
+        // 4. Create Payment transaction record linked to this booking
+        await prisma.payment.create({
+          data: {
+            reference,
+            bookingId: createdBooking.id,
+            userId: dbUser.id,
+            amount: Number(amountNgn),
+            currency: "NGN",
+            provider: "PAYSTACK",
+            status: "PENDING",
+            metadata: JSON.stringify({
+              customerName: customerName || `${dbUser.firstName} ${dbUser.lastName}`,
+              customerPhone: customerPhone || dbUser.phone,
+              serviceName,
+              assignedProId,
+            }),
+          },
+        });
+      } catch (bookingCreationErr) {
+        console.warn("[Pre-Payment Booking Record Creation Warning]:", bookingCreationErr);
+      }
+    }
+
     // Initialize Paystack primary checkout
     const checkout = await initializeDualGatewayCheckout({
       email: cleanEmail,
@@ -110,9 +253,10 @@ export async function POST(request: Request) {
       callbackUrl: finalCallbackUrl,
       customerName: customerName || (dbUser ? `${dbUser.firstName} ${dbUser.lastName}` : "HandyHub Client"),
       customerPhone: customerPhone || dbUser?.phone || undefined,
-      bookingId: bookingId || undefined,
+      bookingId: createdBooking?.id || bookingId || undefined,
       metadata: {
-        bookingId,
+        bookingId: createdBooking?.id || bookingId,
+        bookingRef: reference,
         email: cleanEmail,
         userId,
         customerName: customerName || (dbUser ? `${dbUser.firstName} ${dbUser.lastName}` : "HandyHub Client"),
@@ -125,6 +269,7 @@ export async function POST(request: Request) {
       authorizationUrl: checkout.authorizationUrl,
       checkout,
       reference: checkout.reference,
+      bookingId: createdBooking?.id,
       message: checkout.isFallback
         ? "Payment route initialized via Failover Gateway"
         : "Payment route initialized via Paystack Primary Gateway",
