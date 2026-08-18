@@ -46,8 +46,8 @@ export default function ProProfilePage() {
         setProfile({
           fullName,
           initials,
-          specialty: data.serviceCategory || "Certified Artisan & Service Partner",
-          location: data.city || "Abuja & Expansion Cities, Nigeria",
+          specialty: data.specialty || data.serviceCategory || (data.skills && data.skills.length > 0 ? data.skills.join(", ") : "General Skilled Services"),
+          location: data.operatingState || data.location || data.city || "Abuja (FCT), Nigeria",
           verificationStatus: data.verificationStatus,
           ninStatus: isVerified ? "Government NIN Identity Verified ✅" : "NIN Document Pending Audit",
           tradeQuizStatus: isVerified ? "Trade Test Passed (100%) ✅" : "Trade Audit Pending Review",
@@ -102,11 +102,11 @@ export default function ProProfilePage() {
           >
             <ShieldCheck size={14} /> {isVerified ? "HandyHub Verified Pro" : "Verification Audit Pending"}
           </span>
-          <p style={{ fontSize: "var(--fs-xs)", color: "var(--text-secondary)", margin: 0 }}>
-            Specialty: <strong>{profile.specialty}</strong>
+          <p style={{ fontSize: "var(--fs-sm)", color: "var(--text-secondary)", margin: 0 }}>
+            Specialty: <strong style={{ color: "#38BDF8", fontWeight: 700 }}>{profile.specialty}</strong>
           </p>
-          <p style={{ fontSize: "var(--fs-xs)", color: "var(--text-tertiary)", marginTop: 4 }}>
-            Location: <strong>{profile.location}</strong>
+          <p style={{ fontSize: "var(--fs-sm)", color: "var(--text-tertiary)", marginTop: 6, display: "flex", alignItems: "center", justifyContent: "center", gap: 4 }}>
+            <MapPin size={14} color="#0EA5E9" /> Location: <strong style={{ color: "#F8FAFC" }}>{profile.location}</strong>
           </p>
         </div>
 

@@ -122,10 +122,56 @@ export async function GET(request: Request) {
       lifetimeEarnings = releasesTotal || (walletBalance + completedJobs * 15000);
     }
 
+    let docs: any = {};
+    try {
+      if (pro?.documents) {
+        docs = typeof pro.documents === "string" ? JSON.parse(pro.documents) : pro.documents;
+        if (typeof docs === "string") docs = JSON.parse(docs);
+      }
+    } catch {}
+
+    let skillsList: string[] = [];
+    try {
+      if (pro?.skills) {
+        const parsed = typeof pro.skills === "string" ? JSON.parse(pro.skills) : pro.skills;
+        if (Array.isArray(parsed)) skillsList = parsed;
+        else if (typeof parsed === "string") skillsList = [parsed];
+      }
+    } catch {
+      if (pro?.skills && typeof pro.skills === "string") skillsList = [pro.skills];
+    }
+
+    if (skillsList.length === 0 && docs.skills) {
+      if (Array.isArray(docs.skills)) skillsList = docs.skills;
+      else if (typeof docs.skills === "string") skillsList = [docs.skills];
+    }
+
+    // Capitalize and format skillset
+    const formattedSkills = skillsList
+      .map((s) => s.trim())
+      .filter(Boolean)
+      .map((s) => s.charAt(0).toUpperCase() + s.slice(1))
+      .join(", ");
+
+    const rawSpecialty = docs.serviceCategory || formattedSkills || "General Skilled Services";
+    const specialty = rawSpecialty.charAt(0).toUpperCase() + rawSpecialty.slice(1);
+
+    // Format location / operating state
+    const rawLocation = docs.operatingState || docs.city || user?.permanentAddress || "Abuja (FCT)";
+    const operatingState = rawLocation.includes("Nigeria") ? rawLocation : `${rawLocation}, Nigeria`;
+
     return NextResponse.json({
       success: true,
       proName,
       userEmail: user?.email || "",
+      specialty,
+      serviceCategory: specialty,
+      skills: skillsList,
+      operatingState,
+      city: operatingState,
+      location: operatingState,
+      lga: docs.lga || "AMAC",
+      homeAddress: docs.homeAddress || user?.permanentAddress || "",
       verificationStatus: calculatedStatus, // VERIFIED | PENDING_REVIEW | REJECTED | UNVERIFIED
       hasSubmittedDocs,
       verificationNotes: pro?.verificationNotes || "",
@@ -142,6 +188,12 @@ export async function GET(request: Request) {
     return NextResponse.json({
       success: true,
       proName: "Artisan Partner",
+      specialty: "General Skilled Services",
+      serviceCategory: "General Skilled Services",
+      skills: [],
+      operatingState: "Abuja (FCT), Nigeria",
+      city: "Abuja (FCT), Nigeria",
+      location: "Abuja (FCT), Nigeria",
       verificationStatus: "UNVERIFIED",
       hasSubmittedDocs: false,
       walletBalance: 0,
