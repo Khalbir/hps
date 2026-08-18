@@ -205,6 +205,50 @@ export function StepConfirmation({ booking }: Props) {
         </p>
       </motion.div>
 
+      {/* WHAT TO DO NEXT — CLIENT SERVICE ROADMAP */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 1.35 }}
+        style={{
+          background: "var(--bg-tertiary, #1E293B)",
+          border: "1px solid var(--border-primary, #334155)",
+          borderRadius: "16px",
+          padding: "24px 20px",
+          margin: "20px 0",
+          textAlign: "left",
+        }}
+      >
+        <h4 style={{ margin: "0 0 4px", color: "#F8FAFC", fontSize: "16px", fontWeight: 800, display: "flex", alignItems: "center", gap: 8 }}>
+          🧭 What to Do Next (Your Service Roadmap)
+        </h4>
+        <p style={{ margin: "0 0 16px", color: "#94A3B8", fontSize: "13px" }}>
+          Follow these 4 simple steps while our dispatch team prepares your verified artisan:
+        </p>
+
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 12 }}>
+          <div style={{ background: "#0F172A", border: "1px solid #334155", borderRadius: 10, padding: 12 }}>
+            <span style={{ fontSize: 11, fontWeight: 700, color: "#10B981", display: "block", marginBottom: 4 }}>1. PAYMENT ESCROWED ✅</span>
+            <span style={{ fontSize: 12, color: "#CBD5E1" }}>Your money is protected. The artisan is not paid until you inspect the work.</span>
+          </div>
+
+          <div style={{ background: "#0F172A", border: "1px solid rgba(14,165,233,0.4)", borderRadius: 10, padding: 12 }}>
+            <span style={{ fontSize: 11, fontWeight: 700, color: "#38BDF8", display: "block", marginBottom: 4 }}>2. ARTISAN MATCHING ⚡</span>
+            <span style={{ fontSize: 12, color: "#CBD5E1" }}>Top-rated verified technician dispatched to your location within 15 minutes.</span>
+          </div>
+
+          <div style={{ background: "#0F172A", border: "1px solid #334155", borderRadius: 10, padding: 12 }}>
+            <span style={{ fontSize: 11, fontWeight: 700, color: "#F59E0B", display: "block", marginBottom: 4 }}>3. VERIFY ID BADGE 📍</span>
+            <span style={{ fontSize: 12, color: "#CBD5E1" }}>The artisan will call before arriving. Check their official digital ID badge.</span>
+          </div>
+
+          <div style={{ background: "#0F172A", border: "1px solid #334155", borderRadius: 10, padding: 12 }}>
+            <span style={{ fontSize: 11, fontWeight: 700, color: "#A855F7", display: "block", marginBottom: 4 }}>4. RELEASE OTP 🛡️</span>
+            <span style={{ fontSize: 12, color: "#CBD5E1" }}>Provide your 4-digit completion OTP only when 100% satisfied with the work.</span>
+          </div>
+        </div>
+      </motion.div>
+
       {/* Actions */}
       <motion.div
         className={styles.confirmActions}
@@ -219,6 +263,15 @@ export function StepConfirmation({ booking }: Props) {
           Track Your Booking Live 📍
           <ArrowRight size={18} />
         </Link>
+        <a
+          href={`https://wa.me/2348122222936?text=${encodeURIComponent(`Hello HandyHub Support! I just booked service ${booking.serviceName} (Ref: ${bookingRef}). Please confirm dispatch details.`)}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="btn btn-secondary btn-lg"
+          style={{ background: "#22C55E", color: "#FFFFFF", border: "none" }}
+        >
+          WhatsApp Concierge 💬
+        </a>
         <Link href="/dashboard" className="btn btn-secondary btn-lg" style={{ border: "1.5px solid var(--border-primary)", background: "transparent" }}>
           Go to Dashboard
         </Link>

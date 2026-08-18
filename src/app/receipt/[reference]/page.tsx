@@ -297,6 +297,170 @@ export default function DigitalReceiptPage() {
             </div>
           </motion.div>
         )}
+
+        {/* WHAT HAPPENS NEXT — CLIENT NEXT STEPS & GUIDANCE */}
+        {receipt && !loading && (
+          <motion.div
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="no-print"
+            style={{
+              marginTop: 24,
+              background: "#1E293B",
+              border: "1px solid #334155",
+              borderRadius: 20,
+              padding: "32px 28px",
+              boxShadow: "0 20px 40px -15px rgba(0, 0, 0, 0.3)",
+              color: "#F8FAFC",
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 8 }}>
+              <div style={{ background: "rgba(14, 165, 233, 0.15)", color: "#0EA5E9", padding: 10, borderRadius: 12, display: "flex" }}>
+                <CheckCircle2 size={26} color="#0EA5E9" />
+              </div>
+              <div>
+                <h3 style={{ margin: 0, fontSize: 20, fontWeight: 800, color: "#F8FAFC" }}>
+                  What Happens Next? (Your Service Roadmap)
+                </h3>
+                <p style={{ margin: "3px 0 0", fontSize: 13, color: "#94A3B8" }}>
+                  Your booking is confirmed and paid. Here is what to expect next:
+                </p>
+              </div>
+            </div>
+
+            {/* 4-Step Interactive Timeline Grid */}
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 16, margin: "24px 0" }}>
+              {/* Step 1 */}
+              <div style={{ background: "#0F172A", border: "1px solid rgba(16, 185, 129, 0.3)", borderRadius: 14, padding: 18 }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+                  <span style={{ background: "rgba(16, 185, 129, 0.2)", color: "#10B981", fontSize: 11, fontWeight: 800, padding: "3px 10px", borderRadius: 12 }}>
+                    STEP 1 • COMPLETED ✅
+                  </span>
+                </div>
+                <h4 style={{ margin: "0 0 6px", fontSize: 15, fontWeight: 700, color: "#F8FAFC" }}>
+                  Payment Safely Escrowed
+                </h4>
+                <p style={{ margin: 0, fontSize: 13, color: "#94A3B8", lineHeight: 1.5 }}>
+                  Your funds are secured in HandyHub Escrow. Artisans receive payment only after you inspect and approve the job.
+                </p>
+              </div>
+
+              {/* Step 2 */}
+              <div style={{ background: "#0F172A", border: "1.5px solid rgba(14, 165, 233, 0.5)", borderRadius: 14, padding: 18 }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+                  <span style={{ background: "rgba(14, 165, 233, 0.2)", color: "#38BDF8", fontSize: 11, fontWeight: 800, padding: "3px 10px", borderRadius: 12 }}>
+                    STEP 2 • IN PROGRESS ⚡
+                  </span>
+                </div>
+                <h4 style={{ margin: "0 0 6px", fontSize: 15, fontWeight: 700, color: "#F8FAFC" }}>
+                  Artisan Dispatch & Assignment
+                </h4>
+                <p style={{ margin: 0, fontSize: 13, color: "#94A3B8", lineHeight: 1.5 }}>
+                  Our dispatch team is matching the top-rated verified artisan nearest to your location. Dispatch is confirmed within 15 minutes.
+                </p>
+              </div>
+
+              {/* Step 3 */}
+              <div style={{ background: "#0F172A", border: "1px solid #334155", borderRadius: 14, padding: 18 }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+                  <span style={{ background: "rgba(148, 163, 184, 0.15)", color: "#CBD5E1", fontSize: 11, fontWeight: 800, padding: "3px 10px", borderRadius: 12 }}>
+                    STEP 3 • UPCOMING 📍
+                  </span>
+                </div>
+                <h4 style={{ margin: "0 0 6px", fontSize: 15, fontWeight: 700, color: "#F8FAFC" }}>
+                  Arrival & ID Badge Verification
+                </h4>
+                <p style={{ margin: 0, fontSize: 13, color: "#94A3B8", lineHeight: 1.5 }}>
+                  The technician will contact you via phone or WhatsApp before arriving. Always verify their official HandyHub digital ID badge before work begins.
+                </p>
+              </div>
+
+              {/* Step 4 */}
+              <div style={{ background: "#0F172A", border: "1px solid #334155", borderRadius: 14, padding: 18 }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+                  <span style={{ background: "rgba(148, 163, 184, 0.15)", color: "#CBD5E1", fontSize: 11, fontWeight: 800, padding: "3px 10px", borderRadius: 12 }}>
+                    STEP 4 • COMPLETION 🛡️
+                  </span>
+                </div>
+                <h4 style={{ margin: "0 0 6px", fontSize: 15, fontWeight: 700, color: "#F8FAFC" }}>
+                  Inspection & 4-Digit OTP Release
+                </h4>
+                <p style={{ margin: 0, fontSize: 13, color: "#94A3B8", lineHeight: 1.5 }}>
+                  Inspect the completed job. Only share your 4-digit security completion OTP when you are 100% satisfied. Your 14-day workmanship warranty activates immediately!
+                </p>
+              </div>
+            </div>
+
+            {/* Direct Action Guidance Buttons */}
+            <div style={{ display: "flex", gap: 12, flexWrap: "wrap", justifyContent: "stretch", marginTop: 24, paddingTop: 20, borderTop: "1px solid #334155" }}>
+              <Link
+                href={`/track?ref=${encodeURIComponent(receipt.service.bookingRef || rawReference)}`}
+                className="btn btn-primary"
+                style={{
+                  flex: "1 1 220px",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 8,
+                  background: "#0EA5E9",
+                  color: "#FFFFFF",
+                  fontWeight: 700,
+                  fontSize: 14,
+                  padding: "14px 20px",
+                  borderRadius: 12,
+                  textDecoration: "none",
+                }}
+              >
+                <MapPin size={18} /> Track Dispatch Status Live 📍
+              </Link>
+
+              <a
+                href={`https://wa.me/2348122222936?text=${encodeURIComponent(`Hello HandyHub Concierge Support! I just completed payment for booking ${receipt.service.bookingRef || rawReference} (${receipt.service.name}). Please assist me with dispatch status.`)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn"
+                style={{
+                  flex: "1 1 220px",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 8,
+                  background: "#22C55E",
+                  color: "#FFFFFF",
+                  fontWeight: 700,
+                  fontSize: 14,
+                  padding: "14px 20px",
+                  borderRadius: 12,
+                  textDecoration: "none",
+                }}
+              >
+                Message Concierge on WhatsApp 💬
+              </a>
+
+              <Link
+                href="/dashboard"
+                className="btn btn-secondary"
+                style={{
+                  flex: "1 1 180px",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 8,
+                  background: "#334155",
+                  color: "#F8FAFC",
+                  fontWeight: 700,
+                  fontSize: 14,
+                  padding: "14px 20px",
+                  borderRadius: 12,
+                  textDecoration: "none",
+                }}
+              >
+                Go to Dashboard 👤
+              </Link>
+            </div>
+          </motion.div>
+        )}
       </div>
 
       {/* Print Styles */}

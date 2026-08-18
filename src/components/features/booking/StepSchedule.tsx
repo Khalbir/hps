@@ -4,6 +4,7 @@ import { useState } from "react";
 import { addDays, format, isSameDay, isToday, isTomorrow } from "date-fns";
 import { AlertTriangle } from "lucide-react";
 import type { BookingData } from "@/app/book/page";
+import { calculateJobPrice, PricingModel } from "@/lib/pricingEngine";
 import styles from "./Steps.module.css";
 
 interface StepProps {
@@ -42,10 +43,21 @@ export function StepSchedule({ booking, updateBooking, onNext, onBack }: StepPro
   const toggleEmergency = () => {
     const newVal = !isEmergency;
     setIsEmergency(newVal);
-    const basePrice = booking.totalPrice || booking.servicePrice;
+    const calc = calculateJobPrice({
+      serviceId: booking.serviceId || booking.serviceCategory || "cleaning",
+      pricingModel: (booking.pricingModel as PricingModel) || "FIXED",
+      basePrice: booking.servicePrice || 15000,
+      bedrooms: booking.bedrooms || 2,
+      bathrooms: booking.bathrooms || 1,
+      isFurnished: booking.isFurnished || false,
+      dirtLevel: booking.dirtLevel || "MODERATE",
+      quantity: booking.quantity || 1,
+      regionalZoneId: booking.regionalZoneId || "abuja-suburbs",
+      isExpressSchedule: newVal,
+    });
     updateBooking({
       isEmergency: newVal,
-      totalPrice: newVal ? Math.round(basePrice * 1.5) : booking.servicePrice,
+      totalPrice: calc.totalPriceNgn,
     });
   };
 

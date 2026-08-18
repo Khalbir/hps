@@ -7,6 +7,7 @@ import type { BookingData } from "@/app/book/page";
 import { BookingRiskGateModal } from "@/components/features/booking/BookingRiskGateModal";
 import { TrustBadge } from "@/components/common/TrustBadge";
 import { evaluateBookingRiskGate, isServiceHighRisk } from "@/lib/verification/verification-service";
+import { calculateJobPrice, DEFAULT_PRICING_RULES } from "@/lib/pricingEngine";
 import styles from "./Steps.module.css";
 
 interface StepProps {
@@ -143,14 +144,50 @@ export function StepPayment({ booking, updateBooking, onNext, onBack }: StepProp
     }
   }, []);
 
+  const [pricingRules, setPricingRules] = useState(DEFAULT_PRICING_RULES);
+
+  useEffect(() => {
+    async function loadPricingRules() {
+      try {
+        const res = await fetch("/api/admin/pricing-rules", {
+          cache: "no-store",
+          headers: { "Cache-Control": "no-cache, no-store, must-revalidate" },
+        });
+        const data = await res.json();
+        if (res.ok && data.rules) {
+          setPricingRules(data.rules);
+        }
+      } catch (err) {}
+    }
+    loadPricingRules();
+  }, []);
+
+  const jobCalculation = calculateJobPrice(
+    {
+      serviceId: booking.serviceId || booking.serviceCategory,
+      pricingModel: (booking.pricingModel as any) || "FIXED",
+      basePrice: booking.servicePrice || 15000,
+      bedrooms: booking.bedrooms || 2,
+      bathrooms: booking.bathrooms || 1,
+      isFurnished: booking.isFurnished || false,
+      dirtLevel: booking.dirtLevel || "MODERATE",
+      quantity: booking.quantity || 1,
+      regionalZoneId: booking.regionalZoneId || "abuja-suburbs",
+      isExpressSchedule: booking.isEmergency || false,
+    },
+    pricingRules
+  );
+
+  const finalPrice = Math.max(0, jobCalculation.totalPriceNgn - booking.discountAmount);
+
   const applyPromo = () => {
     setPromoError("");
     if (promoInput.toUpperCase() === "WELCOME50") {
-      const discount = Math.min((booking.totalPrice || booking.servicePrice) * 0.5, 5000);
+      const discount = Math.min(jobCalculation.totalPriceNgn * 0.5, 5000);
       updateBooking({ promoCode: promoInput.toUpperCase(), discountAmount: discount });
       setPromoApplied(true);
     } else if (promoInput.toUpperCase() === "HANDY2000") {
-      if ((booking.totalPrice || booking.servicePrice) >= 10000) {
+      if (jobCalculation.totalPriceNgn >= 10000) {
         updateBooking({ promoCode: promoInput.toUpperCase(), discountAmount: 2000 });
         setPromoApplied(true);
       } else {
@@ -167,8 +204,6 @@ export function StepPayment({ booking, updateBooking, onNext, onBack }: StepProp
     setPromoInput("");
   };
 
-  const finalPrice = (booking.totalPrice || booking.servicePrice) - booking.discountAmount;
-
   const handlePaymentProceed = async () => {
     // Check if user is logged in
     if (!offPlatformAgreed) {
@@ -176,11 +211,13 @@ export function StepPayment({ booking, updateBooking, onNext, onBack }: StepProp
       return;
     }
 
+    const payableAmount = Math.max(100, finalPrice);
+
     if (!activeUser || !activeUser.email) {
       // Save draft booking to localStorage and show Auth Modal
       localStorage.setItem("handyhub_pending_booking", JSON.stringify({
         ...booking,
-        totalPrice: Math.max(0, finalPrice || 15000),
+        totalPrice: payableAmount,
       }));
       setShowAuthModal(true);
       return;
@@ -191,7 +228,7 @@ export function StepPayment({ booking, updateBooking, onNext, onBack }: StepProp
     try {
       localStorage.setItem("handyhub_pending_booking", JSON.stringify({
         ...booking,
-        totalPrice: Math.max(0, finalPrice || 15000),
+        totalPrice: payableAmount,
       }));
 
       const res = await fetch("/api/payments/initialize", {
@@ -199,11 +236,23 @@ export function StepPayment({ booking, updateBooking, onNext, onBack }: StepProp
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           email: activeUser.email,
-          amountNgn: Math.max(100, finalPrice || 15000),
+          amountNgn: payableAmount,
           bookingId: booking.serviceCategory || "BKG",
           customerName: `${activeUser.firstName || "Client"} ${activeUser.lastName || ""}`.trim(),
           customerPhone: activeUser.phone || "+2348122222936",
           preferredGateway: "PAYSTACK",
+          metadata: {
+            serviceId: booking.serviceId,
+            serviceName: booking.serviceName,
+            serviceCategory: booking.serviceCategory,
+            propertyType: booking.propertyType,
+            bedrooms: booking.bedrooms,
+            bathrooms: booking.bathrooms,
+            scheduledDate: booking.scheduledDate,
+            scheduledTime: booking.scheduledTime,
+            address: booking.address,
+            isEmergency: booking.isEmergency,
+          },
         }),
       });
 

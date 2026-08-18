@@ -2,6 +2,7 @@
 
 import type { BookingData } from "@/app/book/page";
 import { Home, Building2, Briefcase, Store } from "lucide-react";
+import { calculateJobPrice, DEFAULT_PRICING_RULES, PricingModel } from "@/lib/pricingEngine";
 import styles from "./Steps.module.css";
 
 const propertyTypes = [
@@ -21,25 +22,35 @@ interface StepProps {
 export function StepDetails({ booking, updateBooking, onNext, onBack }: StepProps) {
   const isCleaning = booking.serviceCategory === "cleaning";
 
-  const calculatePrice = (bedrooms: number, bathrooms: number) => {
-    let price = booking.servicePrice;
-    if (isCleaning) {
-      price = booking.servicePrice + (bedrooms - 1) * 3000 + (bathrooms - 1) * 2000;
-    }
-    return price;
+  const getComputedPrice = (bedrooms: number, bathrooms: number) => {
+    const pModel: PricingModel = isCleaning ? "PROPERTY_BASED" : ((booking.pricingModel as PricingModel) || "FIXED");
+    const calc = calculateJobPrice({
+      serviceId: booking.serviceId || booking.serviceCategory || "cleaning",
+      pricingModel: pModel,
+      basePrice: booking.servicePrice || 15000,
+      bedrooms,
+      bathrooms,
+      isFurnished: booking.isFurnished || false,
+      dirtLevel: booking.dirtLevel || "MODERATE",
+      quantity: booking.quantity || 1,
+      regionalZoneId: booking.regionalZoneId || "abuja-suburbs",
+      isExpressSchedule: booking.isEmergency || false,
+    });
+    return calc.totalPriceNgn;
   };
 
   const handlePropertyType = (type: string) => {
-    updateBooking({ propertyType: type });
+    const total = getComputedPrice(booking.bedrooms || 2, booking.bathrooms || 1);
+    updateBooking({ propertyType: type, totalPrice: total });
   };
 
   const handleBedrooms = (n: number) => {
-    const total = calculatePrice(n, booking.bathrooms);
+    const total = getComputedPrice(n, booking.bathrooms || 1);
     updateBooking({ bedrooms: n, totalPrice: total });
   };
 
   const handleBathrooms = (n: number) => {
-    const total = calculatePrice(booking.bedrooms, n);
+    const total = getComputedPrice(booking.bedrooms || 2, n);
     updateBooking({ bathrooms: n, totalPrice: total });
   };
 
