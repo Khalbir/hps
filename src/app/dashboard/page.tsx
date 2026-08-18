@@ -2,12 +2,12 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import {
-  Home, Calendar, ClipboardList, User, Bell, Wallet,
-  MapPin, Settings, LogOut, Menu, X, Plus, Search,
+  Home, ClipboardList, User, Bell, Wallet,
+  MapPin, Settings, LogOut, Menu, X, Plus,
   ArrowRight, Star, Clock, CheckCircle, ShieldCheck,
-  CreditCard, Edit3, Trash2, Check, RefreshCw, UserCheck, Inbox
+  RefreshCw, Inbox
 } from "lucide-react";
 import { BrandLogo } from "@/components/common/BrandLogo";
 import { AddressVerificationModule } from "@/components/features/verification/AddressVerificationModule";
@@ -93,141 +93,6 @@ export default function DashboardPage() {
   const [smsNotifs, setSmsNotifs] = useState(savedNotifPrefs.smsNotifs);
   const [securityAlerts, setSecurityAlerts] = useState(savedNotifPrefs.securityAlerts);
   const [staySignedInState, setStaySignedInState] = useState(true);
-  const [prefSuccess, setPrefSuccess] = useState("");
-
-  // Client Address Verification States
-  const [permAddrStreet, setPermAddrStreet] = useState("");
-  const [permAddrUploading, setPermAddrUploading] = useState(false);
-  const [permAddrUploadUrl, setPermAddrUploadUrl] = useState("");
-  const [permAddrSubmitting, setPermAddrSubmitting] = useState(false);
-
-  const [secondaryAddrStreet, setSecondaryAddrStreet] = useState("");
-  const [secondaryAddrSaving, setSecondaryAddrSaving] = useState(false);
-
-  const [showChangeAddressForm, setShowChangeAddressForm] = useState(false);
-  const [changeAddrStreet, setChangeAddrStreet] = useState("");
-  const [changeAddrUploading, setChangeAddrUploading] = useState(false);
-  const [changeAddrUploadUrl, setChangeAddrUploadUrl] = useState("");
-  const [changeAddrSubmitting, setChangeAddrSubmitting] = useState(false);
-
-  const handleFileUpload = async (file: File, type: "perm" | "change") => {
-    if (type === "perm") setPermAddrUploading(true);
-    else setChangeAddrUploading(true);
-
-    try {
-      const formData = new FormData();
-      formData.append("file", file);
-
-      const res = await fetch("/api/upload", {
-        method: "POST",
-        body: formData,
-      });
-      const data = await res.json();
-      if (res.ok && data.url) {
-        if (type === "perm") setPermAddrUploadUrl(data.url);
-        else setChangeAddrUploadUrl(data.url);
-      } else {
-        alert(data.error || "Failed to upload file");
-      }
-    } catch (err) {
-      console.error("Upload error:", err);
-      alert("Failed to upload proof of address file.");
-    } finally {
-      if (type === "perm") setPermAddrUploading(false);
-      else setChangeAddrUploading(false);
-    }
-  };
-
-  const handlePermAddressSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!permAddrStreet.trim()) return alert("Address street is required.");
-    if (!permAddrUploadUrl) return alert("Proof of address document is required.");
-
-    setPermAddrSubmitting(true);
-    try {
-      const res = await fetch("/api/user/profile", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: user?.email,
-          permanentAddress: permAddrStreet.trim(),
-          permanentAddressProof: permAddrUploadUrl,
-        }),
-      });
-      const data = await res.json();
-      if (res.ok) {
-        alert("Permanent address submitted for admin verification! 🏡");
-        fetchCustomerDashboardData();
-      } else {
-        alert(data.error || "Submission failed");
-      }
-    } catch (err) {
-      console.error(err);
-      alert("Submission error.");
-    } finally {
-      setPermAddrSubmitting(false);
-    }
-  };
-
-  const handleChangeAddressSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!changeAddrStreet.trim()) return alert("New address is required.");
-    if (!changeAddrUploadUrl) return alert("New proof of address is required.");
-
-    setChangeAddrSubmitting(true);
-    try {
-      const res = await fetch("/api/user/profile", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: user?.email,
-          permanentAddress: changeAddrStreet.trim(),
-          permanentAddressProof: changeAddrUploadUrl,
-          requestAddressChange: true,
-        }),
-      });
-      const data = await res.json();
-      if (res.ok) {
-        alert("Change of address application submitted to admin! 📩");
-        setShowChangeAddressForm(false);
-        fetchCustomerDashboardData();
-      } else {
-        alert(data.error || "Change submission failed");
-      }
-    } catch (err) {
-      console.error(err);
-      alert("Change request error.");
-    } finally {
-      setChangeAddrSubmitting(false);
-    }
-  };
-
-  const handleSecondaryAddressSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSecondaryAddrSaving(true);
-    try {
-      const res = await fetch("/api/user/profile", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: user?.email,
-          secondaryAddress: secondaryAddrStreet.trim(),
-        }),
-      });
-      const data = await res.json();
-      if (res.ok) {
-        alert("Secondary booking address updated! 🏢");
-        fetchCustomerDashboardData();
-      } else {
-        alert(data.error || "Failed to update secondary address");
-      }
-    } catch (err) {
-      console.error(err);
-      alert("Failed to update secondary address.");
-    } finally {
-      setSecondaryAddrSaving(false);
-    }
-  };
 
   const fetchCustomerDashboardData = async () => {
     setLoading(true);
@@ -268,26 +133,24 @@ export default function DashboardPage() {
             }
           }
         }
-      } catch (e) { }
+      } catch { }
     }
 
-    // Multi-Window Auto-Logout Security Guard
+    // Self-Healing Session & Cookie Restoration Guard
     if (typeof window !== "undefined") {
-      const staySignedIn = localStorage.getItem("handyhub_stay_signed_in") === "true";
-      const activeWindowSession = sessionStorage.getItem("handyhub_active_session") || sessionStorage.getItem("handyhub_user_session");
-
-      // If user did NOT check "Stay signed in on this device" and opened HandyHub from another window or tab
-      if (!staySignedIn && !activeWindowSession) {
-        document.cookie = "handyhub_user_session=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
-        localStorage.removeItem("handyhub_user_session");
-        window.location.href = "/auth/login?reason=multi_window_logout";
-        return;
+      localStorage.setItem("handyhub_stay_signed_in", "true");
+      if (localUserPayload || activeEmail || activeUserId) {
+        document.cookie = "handyhub_user_session=authenticated; path=/; max-age=2592000; SameSite=Lax";
+        if (localUserPayload) {
+          document.cookie = `handyhub_user_data=${encodeURIComponent(JSON.stringify(localUserPayload))}; path=/; max-age=2592000; SameSite=Lax`;
+        }
       }
     }
 
     if (!activeUserId && !activeEmail && typeof window !== "undefined") {
+      const stored = localStorage.getItem("handyhub_user");
       const hasCookie = document.cookie.includes("handyhub_user_session") || document.cookie.includes("handyhub_user_data");
-      if (!hasCookie) {
+      if (!stored && !hasCookie) {
         window.location.href = "/auth/login?unauthorized=1";
         return;
       }
@@ -328,7 +191,6 @@ export default function DashboardPage() {
         setEditFirstName(mergedUser.firstName || "");
         setEditLastName(mergedUser.lastName || "");
         setEditPhone(mergedUser.phone || "");
-        setSecondaryAddrStreet(mergedUser.secondaryAddress || "");
         let freshWallet = data.walletBalance || 0;
         try {
           const walletRes = await fetch(`/api/wallet/balance?email=${encodeURIComponent(mergedUser.email || activeEmail)}`);
@@ -385,36 +247,6 @@ export default function DashboardPage() {
     }
   }, []);
 
-  const handleRealTimeTopUp = async (amountToTopUp: number) => {
-    setTopUpLoading(true);
-    try {
-      const activeEmail = user?.email || (typeof window !== "undefined" ? JSON.parse(localStorage.getItem("handyhub_user") || "{}").email : "");
-      const res = await fetch("/api/wallet/topup", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: activeEmail,
-          amount: amountToTopUp,
-          provider: "PAYSTACK",
-        }),
-      });
-      const data = await res.json();
-
-      if (res.ok && data.success) {
-        setWalletBalance(data.newBalance);
-        setShowTopUpModal(false);
-        setTopUpSuccessAlert(data.message || `🎉 Wallet successfully credited with ₦${amountToTopUp.toLocaleString("en-NG")} in real-time!`);
-        fetchCustomerDashboardData();
-      } else {
-        alert(data.error || "Failed to process real-time wallet top up.");
-      }
-    } catch {
-      alert("Network error processing wallet top up.");
-    } finally {
-      setTopUpLoading(false);
-    }
-  };
-
   const handleTopUpSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setTopUpLoading(true);
@@ -433,7 +265,7 @@ export default function DashboardPage() {
             targetName = targetName || `${parsed.firstName || ""} ${parsed.lastName || ""}`.trim();
             targetPhone = targetPhone || parsed.phone;
           }
-        } catch (e) { }
+        } catch { }
       }
 
       const res = await fetch("/api/payments/initialize", {

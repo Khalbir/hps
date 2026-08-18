@@ -306,7 +306,7 @@ export default function UsersRoleManagementPage() {
       </div>
 
       {/* Staff & Users Table */}
-      <div className="card" style={{ background: "#1E293B", border: "1px solid #334155", padding: 0, overflow: "hidden" }}>
+      <div className="card" style={{ background: "#1E293B", border: "1px solid #334155", padding: 0, overflow: "hidden", overflowX: "auto" }}>
         {loading ? (
           <div style={{ padding: "40px", textAlign: "center", color: "#94A3B8" }}>Loading live staff & user directory...</div>
         ) : filteredUsers.length === 0 ? (
@@ -316,16 +316,16 @@ export default function UsersRoleManagementPage() {
             <p style={{ margin: 0, fontSize: "13px" }}>Click &quot;Assign / Promote New Staff Member&quot; to grant staff privileges.</p>
           </div>
         ) : (
-          <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left", fontSize: "14px" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left", fontSize: "13px" }}>
             <thead>
-              <tr style={{ background: "#0F172A", borderBottom: "1px solid #334155", color: "#94A3B8" }}>
-                <th style={{ padding: "12px 16px" }}>Staff / User Name</th>
-                <th style={{ padding: "12px 16px" }}>Email Address</th>
-                <th style={{ padding: "12px 16px" }}>Phone Number</th>
-                <th style={{ padding: "12px 16px" }}>Designated Role & Access Level</th>
-                <th style={{ padding: "12px 16px" }}>Address Verification</th>
-                <th style={{ padding: "12px 16px" }}>Date Joined</th>
-                <th style={{ padding: "12px 16px" }}>{isChiefCommander ? "Chief Commander Action" : "Staff Action"}</th>
+              <tr style={{ background: "#0F172A", borderBottom: "1px solid #334155", color: "#94A3B8", fontSize: "12px", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+                <th style={{ padding: "10px 12px", whiteSpace: "nowrap" }}>Staff / User Name</th>
+                <th style={{ padding: "10px 12px", maxWidth: "200px" }}>Email Address</th>
+                <th style={{ padding: "10px 12px", whiteSpace: "nowrap" }}>Phone Number</th>
+                <th style={{ padding: "10px 12px", whiteSpace: "nowrap" }}>Designated Role</th>
+                <th style={{ padding: "10px 12px", whiteSpace: "nowrap" }}>Address Status</th>
+                <th style={{ padding: "10px 12px", whiteSpace: "nowrap" }}>Date Joined</th>
+                <th style={{ padding: "10px 12px", textAlign: "right", whiteSpace: "nowrap" }}>Action</th>
               </tr>
             </thead>
             <tbody>
@@ -337,37 +337,50 @@ export default function UsersRoleManagementPage() {
                 if (u.role === "CUSTOMER") {
                   const status = u.permanentAddressStatus || "NOT_SUBMITTED";
                   if (status === "VERIFIED") addrBadge = { label: "Verified 🏡", color: "#10B981" };
-                  else if (status === "PENDING") addrBadge = { label: "Pending Audit ⏳", color: "#F59E0B" };
+                  else if (status === "PENDING") addrBadge = { label: "Pending ⏳", color: "#F59E0B" };
                   else if (status === "REJECTED") addrBadge = { label: "Rejected ❌", color: "#EF4444" };
                 }
 
                 return (
                   <tr key={u.id} style={{ borderBottom: "1px solid #334155" }}>
-                    <td style={{ padding: "12px 16px" }}>
-                      <strong style={{ color: "#F8FAFC", display: "block" }}>{u.name}</strong>
+                    <td style={{ padding: "10px 12px", whiteSpace: "nowrap" }}>
+                      <strong style={{ color: "#F8FAFC", display: "block", fontSize: "13px" }}>{u.name}</strong>
                     </td>
-                    <td style={{ padding: "12px 16px", color: "#CBD5E1" }}>{u.email}</td>
-                    <td style={{ padding: "12px 16px", color: "#94A3B8" }}>{u.phone}</td>
-                    <td style={{ padding: "12px 16px" }}>
-                      <span className="badge" style={{ background: `${labelInfo.badgeColor}20`, color: labelInfo.badgeColor, fontSize: "11px", fontWeight: "bold", border: `1px solid ${labelInfo.badgeColor}40` }}>
+                    <td style={{ padding: "10px 12px", maxWidth: "210px", color: "#CBD5E1" }}>
+                      <div
+                        title={u.email}
+                        style={{
+                          maxWidth: "190px",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          whiteSpace: "nowrap",
+                          fontSize: "12.5px",
+                        }}
+                      >
+                        {u.email}
+                      </div>
+                    </td>
+                    <td style={{ padding: "10px 12px", color: "#94A3B8", whiteSpace: "nowrap", fontSize: "12.5px" }}>{u.phone}</td>
+                    <td style={{ padding: "10px 12px", whiteSpace: "nowrap" }}>
+                      <span className="badge" style={{ background: `${labelInfo.badgeColor}20`, color: labelInfo.badgeColor, fontSize: "10.5px", fontWeight: "bold", border: `1px solid ${labelInfo.badgeColor}40`, padding: "2px 8px" }}>
                         {labelInfo.label}
                       </span>
                     </td>
-                    <td style={{ padding: "12px 16px" }}>
+                    <td style={{ padding: "10px 12px", whiteSpace: "nowrap" }}>
                       {u.role === "CUSTOMER" ? (
-                        <span className="badge" style={{ background: `${addrBadge.color}20`, color: addrBadge.color, fontSize: "11px", fontWeight: "bold", border: `1px solid ${addrBadge.color}40` }}>
+                        <span className="badge" style={{ background: `${addrBadge.color}20`, color: addrBadge.color, fontSize: "10.5px", fontWeight: "bold", border: `1px solid ${addrBadge.color}40`, padding: "2px 8px" }}>
                           {addrBadge.label}
                         </span>
                       ) : u.role === "PROFESSIONAL" ? (
-                        <span className="badge" style={{ background: u.isVerified ? "#10B98120" : "#F59E0B20", color: u.isVerified ? "#10B981" : "#F59E0B", fontSize: "11px", fontWeight: "bold", border: `1px solid ${u.isVerified ? "#10B98140" : "#F59E0B40"}` }}>
+                        <span className="badge" style={{ background: u.isVerified ? "#10B98120" : "#F59E0B20", color: u.isVerified ? "#10B981" : "#F59E0B", fontSize: "10.5px", fontWeight: "bold", border: `1px solid ${u.isVerified ? "#10B98140" : "#F59E0B40"}`, padding: "2px 8px" }}>
                           {u.isVerified ? "Verified Artisan 🛡️" : "Artisan Partner ⏳"}
                         </span>
                       ) : (
-                        <span style={{ color: "#475569", fontSize: "12px" }}>— (Staff Account)</span>
+                        <span style={{ color: "#475569", fontSize: "11px" }}>— (Staff Account)</span>
                       )}
                     </td>
-                    <td style={{ padding: "12px 16px", color: "#94A3B8", fontSize: "13px" }}>{u.createdAt}</td>
-                    <td style={{ padding: "12px 16px" }}>
+                    <td style={{ padding: "10px 12px", color: "#94A3B8", fontSize: "12px", whiteSpace: "nowrap" }}>{u.createdAt}</td>
+                    <td style={{ padding: "10px 12px", textAlign: "right", whiteSpace: "nowrap" }}>
                       {u.role === "CUSTOMER" ? (
                         <button
                           className="btn btn-secondary btn-xs"
@@ -377,6 +390,8 @@ export default function UsersRoleManagementPage() {
                             display: "inline-flex",
                             alignItems: "center",
                             gap: "4px",
+                            padding: "3px 8px",
+                            fontSize: "11px",
                           }}
                           onClick={() => {
                             setAuditingUserAddress(u);
@@ -384,26 +399,26 @@ export default function UsersRoleManagementPage() {
                             setManualAddressInput(u.permanentAddress || "");
                           }}
                         >
-                          <MapPin size={12} /> {u.permanentAddressStatus === "VERIFIED" ? "Manage Address" : u.permanentAddressStatus === "PENDING" ? "Audit Address ⏳" : "Set/Verify Address"}
+                          <MapPin size={11} /> {u.permanentAddressStatus === "VERIFIED" ? "Manage Address" : u.permanentAddressStatus === "PENDING" ? "Audit Address ⏳" : "Set Address"}
                         </button>
                       ) : u.role === "PROFESSIONAL" ? (
                         <a
                           href="/admin/dashboard/professionals"
                           className="btn btn-secondary btn-xs"
-                          style={{ color: "#F59E0B", borderColor: "#F59E0B", display: "inline-flex", alignItems: "center", gap: "4px", textDecoration: "none" }}
+                          style={{ color: "#F59E0B", borderColor: "#F59E0B", display: "inline-flex", alignItems: "center", gap: "4px", textDecoration: "none", padding: "3px 8px", fontSize: "11px" }}
                         >
-                          <Shield size={12} /> Audit Artisan Dossier
+                          <Shield size={11} /> Audit Dossier
                         </a>
                       ) : (
                         <button
                           className="btn btn-secondary btn-xs"
-                          style={{ color: "#0EA5E9", borderColor: "#0EA5E9" }}
+                          style={{ color: "#0EA5E9", borderColor: "#0EA5E9", padding: "3px 8px", fontSize: "11px" }}
                           onClick={() => {
                             setEditingUser(u);
                             setSelectedRole(u.role);
                           }}
                         >
-                          <Edit size={12} /> {isChiefCommander ? "Change Staff Role" : "Request Role Change"}
+                          <Edit size={11} /> {isChiefCommander ? "Change Role" : "Request Change"}
                         </button>
                       )}
                     </td>

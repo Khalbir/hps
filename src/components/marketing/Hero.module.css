@@ -57,8 +57,8 @@
     linear-gradient(90deg, var(--border-secondary) 1px, transparent 1px);
   background-size: 60px 60px;
   opacity: 0.4;
-  mask-image: radial-gradient(ellipse at center, transparent 30%, black 100%);
   -webkit-mask-image: radial-gradient(ellipse at center, transparent 30%, black 100%);
+  mask-image: radial-gradient(ellipse at center, transparent 30%, black 100%);
 }
 
 /* Container */
@@ -421,7 +421,6 @@
 @media (max-width: 640px) {
   .hero {
     padding-top: calc(var(--header-height) + var(--space-8));
-    min-height: auto;
     padding-bottom: var(--space-12);
   }
 
@@ -476,9 +475,7 @@
     justify-content: flex-start;
     overflow-x: auto;
     white-space: nowrap;
-    -webkit-overflow-scrolling: touch;
     padding-bottom: 6px;
-    scrollbar-width: none;
   }
 
   .suggestions::-webkit-scrollbar {

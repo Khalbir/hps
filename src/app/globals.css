@@ -398,6 +398,7 @@ ul, ol {
   transition: all var(--duration-short) var(--ease-default);
   cursor: pointer;
   white-space: nowrap;
+  -webkit-user-select: none;
   user-select: none;
   position: relative;
   overflow: hidden;
@@ -546,8 +547,8 @@ ul, ol {
 
 .card-glass {
   background: var(--bg-glass);
-  backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(20px);
   border: 1px solid var(--bg-glass-border);
 }
 
@@ -954,6 +955,7 @@ ul, ol {
   box-sizing: border-box;
   max-width: 100%;
   letter-spacing: -0.01em;
+  -webkit-user-select: none;
   user-select: none;
   position: relative;
   overflow: hidden;
@@ -1174,7 +1176,6 @@ body, #__next, main {
 .table-responsive {
   width: 100%;
   overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
   margin-bottom: var(--space-4);
   border-radius: var(--radius-lg);
 }
@@ -1248,7 +1249,6 @@ body, #__next, main {
   [class*="modal"], [class*="Modal"], [class*="overlay"], [class*="Overlay"], [class*="drawer"], [class*="Drawer"] {
     max-height: 95dvh !important;
     overflow-y: auto !important;
-    -webkit-overflow-scrolling: touch;
   }
 }
 
@@ -1283,11 +1283,9 @@ body, #__next, main {
   .mobile-touch-scroll {
     display: flex;
     overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
     scroll-snap-type: x mandatory;
     gap: 12px;
     padding-bottom: 8px;
-    scrollbar-width: none;
   }
   .mobile-touch-scroll::-webkit-scrollbar {
     display: none;
@@ -1320,7 +1318,6 @@ body, #__next, main {
   [class*="modal"], [class*="Modal"], [class*="overlay"], [class*="Overlay"] {
     max-height: 90dvh !important;
     overflow-y: auto !important;
-    -webkit-overflow-scrolling: touch;
   }
 }
 

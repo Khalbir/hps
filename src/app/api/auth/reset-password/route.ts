@@ -52,14 +52,14 @@ export async function POST(request: Request) {
     const stored = token ? mockResetTokensStore.get(token) : null;
     const targetEmail = targetUser?.email || stored?.email || cleanEmailInput;
 
-    if (!targetEmail) {
+    if (!targetUser && !targetEmail) {
       return NextResponse.json(
         { error: "Invalid or expired password reset link. Please request a new password reset link." },
         { status: 400 }
       );
     }
 
-    const cleanTargetEmail = targetEmail.trim().toLowerCase();
+    const cleanTargetEmail = (targetEmail || "").trim().toLowerCase();
     const cleanPassword = password.trim();
 
     // Hash new password securely with bcrypt
@@ -83,57 +83,49 @@ export async function POST(request: Request) {
       }
     }
 
-    // Fallback bulk update across all matching emails (case-insensitive)
-    try {
-      await prisma.user.updateMany({
-        where: { email: { equals: cleanTargetEmail, mode: "insensitive" } },
-        data: {
-          password: hashedPassword,
-          isVerified: true,
-          verificationToken: null,
-          tokenExpires: null,
-        },
-      });
-    } catch (dbErr) {
-      console.error("[Reset Password DB updateMany Error]:", dbErr);
-    }
-
-    // Upsert fallback: If no user record was updated, create the user in PostgreSQL
-    if (!targetUser) {
+    // Fallback update across matching email
+    if (!targetUser && cleanTargetEmail) {
       try {
-        const nameParts = cleanTargetEmail.split("@")[0].split(".");
-        const firstName = nameParts[0] ? nameParts[0].charAt(0).toUpperCase() + nameParts[0].slice(1) : "Client";
-        const lastName = nameParts[1] ? nameParts[1].charAt(0).toUpperCase() + nameParts[1].slice(1) : "";
-
-        targetUser = await prisma.user.create({
+        const updateRes = await prisma.user.updateMany({
+          where: { email: { equals: cleanTargetEmail, mode: "insensitive" } },
           data: {
-            email: cleanTargetEmail,
-            firstName,
-            lastName,
             password: hashedPassword,
-            role: "CUSTOMER",
             isVerified: true,
+            verificationToken: null,
+            tokenExpires: null,
           },
-          include: { professional: true },
         });
-      } catch (createErr) {
-        console.error("[Reset Password User Upsert Error]:", createErr);
+        if (updateRes.count > 0) {
+          targetUser = await prisma.user.findFirst({
+            where: { email: { equals: cleanTargetEmail, mode: "insensitive" } },
+            include: { professional: true },
+          });
+        }
+      } catch (dbErr) {
+        console.error("[Reset Password DB updateMany Error]:", dbErr);
       }
     }
 
-    // 3. Keep Staff Registry & Credentials Store in lockstep
+    if (!targetUser) {
+      return NextResponse.json(
+        { error: "No account found matching this password reset request." },
+        { status: 400 }
+      );
+    }
+
+    // 3. Keep Staff Registry & Credentials Store in sync
     try {
       updateStaffPassword(cleanTargetEmail, cleanPassword);
     } catch (e) {
       console.warn("[Reset Password Staff Registry Warning]:", e);
     }
 
-    const userRole = targetUser?.role || "CUSTOMER";
+    const userRole = targetUser.role || "CUSTOMER";
     const userPayload = {
-      id: targetUser?.id || "usr_reset_" + Date.now(),
+      id: targetUser.id,
       email: cleanTargetEmail,
-      firstName: targetUser?.firstName || "Client",
-      lastName: targetUser?.lastName || "",
+      firstName: targetUser.firstName || "Client",
+      lastName: targetUser.lastName || "",
       role: userRole,
       isVerified: true,
     };
@@ -158,8 +150,6 @@ export async function POST(request: Request) {
     const cookieName = userRole === "PROFESSIONAL" ? "handyhub_pro_session" : userRole === "ADMIN" || userRole === "SUPER_ADMIN" ? "handyhub_admin_session" : "handyhub_user_session";
     response.cookies.set(cookieName, "authenticated", { path: "/", maxAge: 86400 * 30, sameSite: "lax" });
     response.cookies.set("handyhub_user_data", JSON.stringify(userPayload), { path: "/", maxAge: 86400 * 30, sameSite: "lax" });
-
-    return response;
 
     return response;
   } catch (error: any) {

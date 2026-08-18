@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { hash } from "bcryptjs";
-import { purgeDemoRecordsFromDB, DEMO_EMAILS } from "@/lib/purge-demo-utility";
 import { cookies } from "next/headers";
 
 export const dynamic = "force-dynamic";
@@ -19,7 +18,7 @@ async function getRequestingUser() {
   return null;
 }
 
-export async function GET(request: Request) {
+export async function GET() {
   try {
     // 1. Auto-reconcile orphan bookings and payments into User table
     try {
@@ -64,7 +63,7 @@ export async function GET(request: Request) {
       console.warn("[Admin Users Reconcile Warning]:", reconcileErr);
     }
 
-    // 2. Fetch all users from PostgreSQL
+    // 2. Fetch all users directly from PostgreSQL database
     const users = await prisma.user.findMany({
       orderBy: { createdAt: "desc" },
       select: {

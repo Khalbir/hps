@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Protect Admin Dashboard routes
   if (pathname.startsWith("/admin/dashboard")) {
-    const adminCookie = request.cookies.get("handyhub_admin_session")?.value;
+    const adminCookie = request.cookies.get("handyhub_admin_session")?.value || request.cookies.get("handyhub_user_data")?.value;
 
     if (!adminCookie) {
       const loginUrl = new URL("/admin", request.url);

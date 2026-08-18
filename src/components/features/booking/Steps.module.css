@@ -410,7 +410,6 @@
   gap: var(--space-3);
   overflow-x: auto;
   padding-bottom: var(--space-2);
-  scrollbar-width: none;
 }
 
 .dateScroll::-webkit-scrollbar {

@@ -41,7 +41,7 @@ export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [offPlatformAgreed, setOffPlatformAgreed] = useState(false);
-  const [staySignedIn, setStaySignedIn] = useState(false);
+  const [staySignedIn, setStaySignedIn] = useState(true);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -104,11 +104,8 @@ export default function RegisterPage() {
         return;
       }
 
-      if (staySignedIn) {
-        localStorage.setItem("handyhub_stay_signed_in", "true");
-      } else {
-        localStorage.removeItem("handyhub_stay_signed_in");
-      }
+      // Always enforce persistent sign-in by default for seamless multi-window & restart support
+      localStorage.setItem("handyhub_stay_signed_in", "true");
 
       // If email verification is required, navigate to verify-email page
       if (data.redirect || data.requiresVerification || data.unverified) {
@@ -123,22 +120,14 @@ export default function RegisterPage() {
       sessionStorage.setItem("handyhub_active_session", JSON.stringify(sessionPayload));
 
       if (form.role === "PROFESSIONAL") {
-        if (staySignedIn) {
-          localStorage.setItem("handyhub_pro_session", JSON.stringify(sessionPayload));
-          document.cookie = "handyhub_pro_session=authenticated; path=/; max-age=2592000; SameSite=Lax";
-        } else {
-          sessionStorage.setItem("handyhub_pro_session", JSON.stringify(sessionPayload));
-          document.cookie = "handyhub_pro_session=authenticated; path=/; SameSite=Lax";
-        }
+        localStorage.setItem("handyhub_pro_session", JSON.stringify(sessionPayload));
+        document.cookie = "handyhub_pro_session=authenticated; path=/; max-age=2592000; SameSite=Lax";
+        document.cookie = `handyhub_user_data=${encodeURIComponent(JSON.stringify(userPayload))}; path=/; max-age=2592000; SameSite=Lax`;
         router.push("/pro");
       } else {
-        if (staySignedIn) {
-          localStorage.setItem("handyhub_user_session", JSON.stringify(sessionPayload));
-          document.cookie = "handyhub_user_session=authenticated; path=/; max-age=2592000; SameSite=Lax";
-        } else {
-          sessionStorage.setItem("handyhub_user_session", JSON.stringify(sessionPayload));
-          document.cookie = "handyhub_user_session=authenticated; path=/; SameSite=Lax";
-        }
+        localStorage.setItem("handyhub_user_session", JSON.stringify(sessionPayload));
+        document.cookie = "handyhub_user_session=authenticated; path=/; max-age=2592000; SameSite=Lax";
+        document.cookie = `handyhub_user_data=${encodeURIComponent(JSON.stringify(userPayload))}; path=/; max-age=2592000; SameSite=Lax`;
         router.push("/dashboard");
       }
     } catch {

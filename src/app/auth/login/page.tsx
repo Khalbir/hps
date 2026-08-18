@@ -29,7 +29,7 @@ export default function LoginPage() {
       const urlParams = new URLSearchParams(window.location.search);
       const reason = urlParams.get("reason");
       if (reason === "multi_window_logout") {
-        setError("Signed out automatically for security: Opening HandyHub from a different window requires 'Stay signed in on this device' to be checked.");
+        setError("Signed out automatically for security.");
       }
     }
   }, []);
@@ -58,12 +58,8 @@ export default function LoginPage() {
         return;
       }
 
-      // Store Stay Signed In preference
-      if (staySignedIn) {
-        localStorage.setItem("handyhub_stay_signed_in", "true");
-      } else {
-        localStorage.removeItem("handyhub_stay_signed_in");
-      }
+      // Always enforce persistent sign-in by default for seamless multi-window & restart support
+      localStorage.setItem("handyhub_stay_signed_in", "true");
 
       const sessionPayload = {
         authenticated: true,
@@ -73,35 +69,23 @@ export default function LoginPage() {
 
       // Always save active session to sessionStorage for single-window context scoping
       sessionStorage.setItem("handyhub_active_session", JSON.stringify(sessionPayload));
+      localStorage.setItem("handyhub_user", JSON.stringify(data.user));
 
       const ADMIN_ROLES = ["SUPER_ADMIN", "ADMIN", "OPERATIONS_MANAGER", "VERIFICATION_OFFICER", "CUSTOMER_SUPPORT", "FINANCE"];
       if (ADMIN_ROLES.includes(data.user.role)) {
-        if (staySignedIn) {
-          localStorage.setItem("handyhub_admin_session", JSON.stringify(sessionPayload));
-          document.cookie = "handyhub_admin_session=authenticated; path=/; max-age=2592000; SameSite=Lax";
-        } else {
-          sessionStorage.setItem("handyhub_admin_session", JSON.stringify(sessionPayload));
-          document.cookie = "handyhub_admin_session=authenticated; path=/; SameSite=Lax";
-        }
+        localStorage.setItem("handyhub_admin_session", JSON.stringify(sessionPayload));
+        document.cookie = "handyhub_admin_session=authenticated; path=/; max-age=2592000; SameSite=Lax";
+        document.cookie = `handyhub_user_data=${encodeURIComponent(JSON.stringify(data.user))}; path=/; max-age=2592000; SameSite=Lax`;
         window.location.href = data.redirect || "/admin/dashboard";
       } else if (data.user.role === "PROFESSIONAL") {
-        if (staySignedIn) {
-          localStorage.setItem("handyhub_pro_session", JSON.stringify(sessionPayload));
-          document.cookie = "handyhub_pro_session=authenticated; path=/; max-age=2592000; SameSite=Lax";
-        } else {
-          sessionStorage.setItem("handyhub_pro_session", JSON.stringify(sessionPayload));
-          document.cookie = "handyhub_pro_session=authenticated; path=/; SameSite=Lax";
-        }
+        localStorage.setItem("handyhub_pro_session", JSON.stringify(sessionPayload));
+        document.cookie = "handyhub_pro_session=authenticated; path=/; max-age=2592000; SameSite=Lax";
+        document.cookie = `handyhub_user_data=${encodeURIComponent(JSON.stringify(data.user))}; path=/; max-age=2592000; SameSite=Lax`;
         router.push("/pro");
       } else {
-        localStorage.setItem("handyhub_user", JSON.stringify(data.user));
-        if (staySignedIn) {
-          localStorage.setItem("handyhub_user_session", JSON.stringify(sessionPayload));
-          document.cookie = "handyhub_user_session=authenticated; path=/; max-age=2592000; SameSite=Lax";
-        } else {
-          sessionStorage.setItem("handyhub_user_session", JSON.stringify(sessionPayload));
-          document.cookie = "handyhub_user_session=authenticated; path=/; SameSite=Lax";
-        }
+        localStorage.setItem("handyhub_user_session", JSON.stringify(sessionPayload));
+        document.cookie = "handyhub_user_session=authenticated; path=/; max-age=2592000; SameSite=Lax";
+        document.cookie = `handyhub_user_data=${encodeURIComponent(JSON.stringify(data.user))}; path=/; max-age=2592000; SameSite=Lax`;
         router.push("/dashboard");
       }
     } catch {

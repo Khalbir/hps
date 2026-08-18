@@ -6,8 +6,8 @@
   height: var(--header-height);
   z-index: 1000;
   background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(20px);
   border-bottom: 1px solid var(--border-primary);
   transition: all var(--duration-medium) var(--ease-default);
 }
@@ -241,7 +241,6 @@
   background: var(--bg-primary);
   z-index: var(--z-modal);
   overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
   box-shadow: var(--shadow-2xl);
 }
 
