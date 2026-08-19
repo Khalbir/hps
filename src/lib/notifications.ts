@@ -395,9 +395,10 @@ export async function notifyBookingStatusChange(booking: {
   customer?: { email: string; phone?: string | null; firstName: string; lastName: string } | null;
   professional?: {
     id?: string;
+    userId?: string;
     yearsExperience?: number;
     rating?: number;
-    user: { email: string; phone?: string | null; firstName: string; lastName: string };
+    user: { id?: string; email: string; phone?: string | null; firstName: string; lastName: string };
   } | null;
   service?: { name: string } | null;
   estimatedPrice: number;
@@ -528,23 +529,38 @@ export async function notifyBookingStatusChange(booking: {
 
   // 2. Notify Professional (Artisan)
   if (booking.professional && config.proMsg) {
-    await sendMultiChannelNotification({
-      userId: booking.professional.id || booking.professional.user.email,
-      recipientEmail: booking.professional.user.email,
-      recipientPhone: booking.professional.user.phone || undefined,
-      recipientName: proName,
-      type: "BOOKING",
-      title: config.title,
-      message: config.proMsg,
-      bookingRef: booking.reference,
-      stageName: config.stageName,
-      metadata: {
-        "Booking Reference": `#${booking.reference}`,
-        Service: serviceName,
-        "Job Price": amountStr,
-        "Current Stage": config.stageName,
-        "Customer Name": customerName,
-      },
-    });
+    let proUserId = booking.professional.user?.id || (booking.professional as any)?.userId;
+    if (!proUserId && booking.professional.user?.email) {
+      try {
+        const u = await prisma.user.findUnique({
+          where: { email: booking.professional.user.email.toLowerCase().trim() },
+          select: { id: true },
+        });
+        if (u) proUserId = u.id;
+      } catch {}
+    }
+
+    if (proUserId) {
+      await sendMultiChannelNotification({
+        userId: proUserId,
+        recipientEmail: booking.professional.user.email,
+        recipientPhone: booking.professional.user.phone || undefined,
+        recipientName: proName,
+        type: "BOOKING",
+        title: config.title,
+        message: config.proMsg,
+        bookingRef: booking.reference,
+        stageName: config.stageName,
+        metadata: {
+          "Booking Reference": `#${booking.reference}`,
+          Service: serviceName,
+          "Job Price": amountStr,
+          "Current Stage": config.stageName,
+          "Customer Name": customerName,
+          "Customer Phone": booking.customer?.phone || undefined,
+          "Job Action": stage === "ASSIGNED" ? "ACCEPT_REQUIRED" : "UPDATE",
+        },
+      });
+    }
   }
 }

@@ -64,7 +64,7 @@ export async function GET(request: Request) {
       const dbBookings = await prisma.booking.findMany({
         where: {
           professionalId: pro.id,
-          status: { in: ["PENDING", "ASSIGNED", "ACCEPTED", "EN_ROUTE", "WORK_IN_PROGRESS"] },
+          status: { in: ["PENDING", "ASSIGNED", "ACCEPTED", "EN_ROUTE", "WORK_IN_PROGRESS", "IN_PROGRESS"] },
         },
         orderBy: { createdAt: "desc" },
         include: {

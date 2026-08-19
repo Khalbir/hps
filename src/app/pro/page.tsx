@@ -68,6 +68,8 @@ export default function ProDashboard() {
   const isPendingReview = status === "PENDING_REVIEW";
   const isRejected = status === "REJECTED";
 
+  const pendingAcceptanceJobs = (proData.activeJobs || []).filter((j: any) => j.status === "ASSIGNED" || j.status === "PENDING");
+
   return (
     <ProLayoutShell>
       {/* Header Banner */}
@@ -99,6 +101,49 @@ export default function ProDashboard() {
           Welcome back, <strong style={{ color: "var(--text-primary)" }}>{proData.proName}</strong>! Here is your live job dispatch overview and earnings.
         </p>
       </div>
+
+      {/* Urgent Pending Dispatch Acceptance Banner */}
+      {pendingAcceptanceJobs.length > 0 && (
+        <div style={{
+          background: "linear-gradient(135deg, rgba(239, 68, 68, 0.15) 0%, rgba(245, 158, 11, 0.15) 100%)",
+          border: "2px solid #EF4444",
+          borderRadius: "16px",
+          padding: "16px 20px",
+          marginBottom: "var(--space-6)",
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          flexWrap: "wrap",
+          gap: "14px",
+        }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+            <span style={{ fontSize: "28px" }}>⚡</span>
+            <div>
+              <strong style={{ color: "#EF4444", fontSize: "16px", display: "block", fontWeight: 800 }}>
+                🚨 {pendingAcceptanceJobs.length} New Job Dispatch Awaiting Your Acceptance!
+              </strong>
+              <span style={{ color: "var(--text-secondary)", fontSize: "13px" }}>
+                {pendingAcceptanceJobs[0].service} • {pendingAcceptanceJobs[0].customer} • {pendingAcceptanceJobs[0].price}
+              </span>
+            </div>
+          </div>
+          <Link
+            href="/pro/jobs"
+            className="btn btn-primary btn-md"
+            style={{
+              background: "linear-gradient(135deg, #10B981 0%, #059669 100%)",
+              fontWeight: 800,
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              boxShadow: "0 4px 14px rgba(16, 185, 129, 0.4)",
+              textDecoration: "none",
+            }}
+          >
+            Review & Accept Dispatch Now ➔
+          </Link>
+        </div>
+      )}
 
       {/* Anti-Circumvention Mandate Banner */}
       <div style={{ background: "rgba(239,68,68,0.12)", border: "1.5px solid #EF4444", borderRadius: "14px", padding: "14px 20px", marginBottom: "var(--space-6)", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "12px" }}>

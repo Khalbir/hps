@@ -70,6 +70,67 @@ export default function ProJobsPage() {
     fetchRealActiveJobs();
   }, []);
 
+  const handleAcceptJob = async (jobId: string) => {
+    setSubmitting(true);
+    try {
+      const res = await fetch("/api/pro/jobs", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "ACCEPT_JOB",
+          bookingReference: jobId,
+        }),
+      });
+
+      if (res.ok) {
+        setJobs((prev) =>
+          prev.map((j) => (j.id === jobId ? { ...j, status: "ACCEPTED" } : j))
+        );
+        if (selectedJob) {
+          setSelectedJob({ ...selectedJob, status: "ACCEPTED" });
+        }
+        setSuccessMessage("✅ Job accepted! Customer notified live on WhatsApp & Email.");
+        setTimeout(() => setSuccessMessage(""), 4000);
+      } else {
+        const errData = await res.json();
+        setOtpError(errData.error || "Failed to accept job.");
+      }
+    } catch (err) {
+      setOtpError("Network error accepting job.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleEnRoute = async (jobId: string) => {
+    setSubmitting(true);
+    try {
+      const res = await fetch("/api/pro/jobs", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "EN_ROUTE",
+          bookingReference: jobId,
+        }),
+      });
+
+      if (res.ok) {
+        setJobs((prev) =>
+          prev.map((j) => (j.id === jobId ? { ...j, status: "EN_ROUTE" } : j))
+        );
+        if (selectedJob) {
+          setSelectedJob({ ...selectedJob, status: "EN_ROUTE" });
+        }
+        setSuccessMessage("🛵 Status updated to EN ROUTE! Customer tracking live GPS arrival.");
+        setTimeout(() => setSuccessMessage(""), 4000);
+      }
+    } catch (err) {
+      setOtpError("Network error updating status.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   const handleStartJob = async (jobId: string) => {
     if (!beforeUploaded) return;
     setSubmitting(true);
@@ -157,19 +218,36 @@ export default function ProJobsPage() {
     }
   };
 
+  const getStatusBadgeStyle = (st: string) => {
+    switch (st) {
+      case "COMPLETED": return { bg: "rgba(16,185,129,0.15)", color: "#10B981" };
+      case "IN_PROGRESS": case "WORK_IN_PROGRESS": return { bg: "rgba(139,92,246,0.15)", color: "#8B5CF6" };
+      case "EN_ROUTE": return { bg: "rgba(14,165,233,0.15)", color: "#0EA5E9" };
+      case "ACCEPTED": return { bg: "rgba(59,130,246,0.15)", color: "#3B82F6" };
+      case "ASSIGNED": return { bg: "rgba(239,68,68,0.15)", color: "#EF4444" };
+      default: return { bg: "rgba(245,158,11,0.15)", color: "#F59E0B" };
+    }
+  };
+
   return (
     <ProLayoutShell>
       <div style={{ marginBottom: "var(--space-6)", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
         <div>
           <h1 className="h2">My Active Jobs & Execution Proof</h1>
           <p style={{ color: "var(--text-secondary)", fontSize: "var(--fs-md)" }}>
-            Upload before/after photos and input customer completion OTP to unlock escrow payout.
+            Accept job dispatches, update live arrival status, and verify completion OTP to unlock escrow payout.
           </p>
         </div>
         <button onClick={fetchRealActiveJobs} className="btn btn-secondary btn-sm" style={{ display: "flex", alignItems: "center", gap: 6 }}>
           <RefreshCw size={14} /> Refresh Jobs
         </button>
       </div>
+
+      {successMessage && (
+        <div style={{ background: "rgba(16,185,129,0.2)", border: "1px solid #10B981", color: "#10B981", padding: 14, borderRadius: 10, marginBottom: 20, fontSize: 14, fontWeight: "bold" }}>
+          {successMessage}
+        </div>
+      )}
 
       {loading ? (
         <div style={{ padding: "40px", textAlign: "center", color: "var(--text-tertiary)" }}>Loading assigned jobs...</div>
@@ -178,39 +256,75 @@ export default function ProJobsPage() {
           <Inbox size={48} color="#0EA5E9" style={{ opacity: 0.6, marginBottom: 16 }} />
           <h3 className="h3" style={{ margin: "0 0 8px 0", color: "var(--text-primary)" }}>No Active Job Dispatches Assigned</h3>
           <p style={{ margin: 0, fontSize: "var(--fs-sm)", color: "var(--text-secondary)", maxWidth: "480px", marginLeft: "auto", marginRight: "auto" }}>
-            When customers book your category services in your region, new dispatch requests will assign to you here for execution proof & OTP payout verification.
+            When customers book your category services in your region, new dispatch requests will assign to you here for 1-click acceptance & execution proof.
           </p>
         </div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
-          {jobs.map((job) => (
-            <div key={job.id} className="card" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "var(--space-4)" }}>
-              <div>
-                <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)", marginBottom: "var(--space-2)" }}>
-                  <h3 className="h4" style={{ margin: 0 }}>{job.service}</h3>
-                  <span className="badge" style={{ background: job.status === "COMPLETED" ? "rgba(16,185,129,0.15)" : job.status === "IN_PROGRESS" ? "rgba(14,165,233,0.15)" : "rgba(245,158,11,0.15)", color: job.status === "COMPLETED" ? "#10B981" : job.status === "IN_PROGRESS" ? "#0EA5E9" : "#F59E0B", fontSize: "11px", fontWeight: 700 }}>
-                    {job.status}
-                  </span>
+          {jobs.map((job) => {
+            const badgeStyle = getStatusBadgeStyle(job.status);
+            return (
+              <div key={job.id} className="card" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "var(--space-4)" }}>
+                <div>
+                  <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)", marginBottom: "var(--space-2)" }}>
+                    <h3 className="h4" style={{ margin: 0 }}>{job.service}</h3>
+                    <span className="badge" style={{ background: badgeStyle.bg, color: badgeStyle.color, fontSize: "11px", fontWeight: 700 }}>
+                      {job.status === "ASSIGNED" ? "🚨 Awaiting Your Acceptance" : job.status}
+                    </span>
+                  </div>
+                  <div style={{ display: "flex", gap: "var(--space-4)", fontSize: "var(--fs-xs)", color: "var(--text-secondary)", flexWrap: "wrap" }}>
+                    <span style={{ display: "flex", alignItems: "center", gap: 4 }}><User size={14} /> Client: {job.customer} ({job.phone})</span>
+                    <span style={{ display: "flex", alignItems: "center", gap: 4 }}><MapPin size={14} /> {job.address}</span>
+                    <span style={{ display: "flex", alignItems: "center", gap: 4 }}><Clock size={14} /> {job.date} • {job.time}</span>
+                  </div>
                 </div>
-                <div style={{ display: "flex", gap: "var(--space-4)", fontSize: "var(--fs-xs)", color: "var(--text-secondary)", flexWrap: "wrap" }}>
-                  <span style={{ display: "flex", alignItems: "center", gap: 4 }}><User size={14} /> Client: {job.customer} ({job.phone})</span>
-                  <span style={{ display: "flex", alignItems: "center", gap: 4 }}><MapPin size={14} /> {job.address}</span>
-                  <span style={{ display: "flex", alignItems: "center", gap: 4 }}><Clock size={14} /> {job.date} • {job.time}</span>
-                </div>
-              </div>
 
-              <div style={{ display: "flex", alignItems: "center", gap: "var(--space-4)" }}>
-                <strong style={{ fontSize: "var(--fs-lg)", color: "var(--color-primary-400)" }}>{job.price}</strong>
-                <button
-                  className="btn btn-primary btn-md"
-                  style={{ background: "#0EA5E9" }}
-                  onClick={() => setSelectedJob(job)}
-                >
-                  {job.status === "IN_PROGRESS" ? "Verify Completion OTP ➔" : "Start & Upload Before Photo ➔"}
-                </button>
+                <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
+                  <strong style={{ fontSize: "var(--fs-lg)", color: "var(--color-primary-400)" }}>{job.price}</strong>
+
+                  {job.status === "ASSIGNED" || job.status === "PENDING" ? (
+                    <button
+                      className="btn btn-primary btn-md"
+                      style={{ background: "linear-gradient(135deg, #10B981 0%, #059669 100%)", fontWeight: 800 }}
+                      onClick={() => handleAcceptJob(job.id)}
+                      disabled={submitting}
+                    >
+                      ✅ Accept Job Dispatch
+                    </button>
+                  ) : job.status === "ACCEPTED" ? (
+                    <button
+                      className="btn btn-primary btn-md"
+                      style={{ background: "#0EA5E9", fontWeight: 700 }}
+                      onClick={() => handleEnRoute(job.id)}
+                      disabled={submitting}
+                    >
+                      🛵 Mark On The Way
+                    </button>
+                  ) : job.status === "EN_ROUTE" ? (
+                    <button
+                      className="btn btn-primary btn-md"
+                      style={{ background: "#8B5CF6", fontWeight: 700 }}
+                      onClick={() => setSelectedJob(job)}
+                    >
+                      🛠️ Start Job & Before Photo ➔
+                    </button>
+                  ) : job.status === "IN_PROGRESS" ? (
+                    <button
+                      className="btn btn-primary btn-md"
+                      style={{ background: "#10B981", fontWeight: 700 }}
+                      onClick={() => setSelectedJob(job)}
+                    >
+                      🌟 Verify Completion OTP ➔
+                    </button>
+                  ) : (
+                    <span className="badge" style={{ background: "rgba(16,185,129,0.15)", color: "#10B981", fontWeight: 700, padding: "8px 14px" }}>
+                      ✓ Completed & Paid
+                    </span>
+                  )}
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
@@ -255,8 +369,31 @@ export default function ProJobsPage() {
               </div>
             )}
 
+            {/* Accept Job State in Modal */}
+            {(selectedJob.status === "ASSIGNED" || selectedJob.status === "PENDING") && (
+              <div>
+                <strong style={{ fontSize: 14, color: "#F59E0B", textTransform: "uppercase", display: "block", marginBottom: 8 }}>
+                  Job Dispatch Awaiting Your Confirmation
+                </strong>
+                <p style={{ fontSize: 13, color: "#CBD5E1", marginBottom: 16 }}>
+                  Clicking Accept confirms you will arrive at the designated date & address with tools ready.
+                </p>
+                <div className="modal-actions">
+                  <button className="btn btn-secondary btn-sm" onClick={() => setSelectedJob(null)}>Close</button>
+                  <button
+                    className="btn btn-primary btn-sm"
+                    style={{ background: "#10B981", fontWeight: 800 }}
+                    onClick={() => handleAcceptJob(selectedJob.id)}
+                    disabled={submitting}
+                  >
+                    {submitting ? "Accepting..." : "Accept Job Dispatch ✅"}
+                  </button>
+                </div>
+              </div>
+            )}
+
             {/* Step 1: Start Job & Upload Before Photo */}
-            {selectedJob.status !== "IN_PROGRESS" && selectedJob.status !== "COMPLETED" && (
+            {(selectedJob.status === "ACCEPTED" || selectedJob.status === "EN_ROUTE") && (
               <div>
                 <strong style={{ fontSize: 13, color: "#0EA5E9", textTransform: "uppercase", display: "block", marginBottom: 8 }}>
                   Step 1: Upload Before-Job Photo Evidence
