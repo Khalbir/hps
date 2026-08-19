@@ -120,6 +120,25 @@ export async function GET(request: Request) {
 
     const proDigitalId = formatDigitalId(dbBooking?.professional);
 
+    let beforePhoto: string | null = null;
+    let afterPhoto: string | null = null;
+    try {
+      if (dbBooking?.beforePhotos) {
+        const parsed = JSON.parse(dbBooking.beforePhotos);
+        beforePhoto = Array.isArray(parsed) ? parsed[0] : parsed;
+      }
+    } catch {
+      if (dbBooking?.beforePhotos) beforePhoto = dbBooking.beforePhotos;
+    }
+    try {
+      if (dbBooking?.afterPhotos) {
+        const parsed = JSON.parse(dbBooking.afterPhotos);
+        afterPhoto = Array.isArray(parsed) ? parsed[0] : parsed;
+      }
+    } catch {
+      if (dbBooking?.afterPhotos) afterPhoto = dbBooking.afterPhotos;
+    }
+
     const formattedBooking = {
       id: dbBooking?.reference || cleanQuery,
       serviceName: resolvedServiceName,
@@ -134,6 +153,8 @@ export async function GET(request: Request) {
       currentStep,
       etaMinutes: bookingStatus === "EN_ROUTE" || !dbBooking ? 30 : 0,
       otpCode,
+      beforePhoto,
+      afterPhoto,
       artisan: {
         id: dbBooking?.professionalId || "art_stationed_lead",
         digitalId: proDigitalId,

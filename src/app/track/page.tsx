@@ -6,7 +6,7 @@ import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Search, MapPin, Clock, ShieldCheck, Phone, MessageSquare, CheckCircle2,
-  Navigation, AlertTriangle, Key, Star, Car, ArrowRight, UserCheck, Shield, Award
+  Navigation, AlertTriangle, Key, Star, Car, ArrowRight, UserCheck, Shield, Award, Camera
 } from "lucide-react";
 import { RateReviewModal } from "@/components/common/RateReviewModal";
 
@@ -347,6 +347,43 @@ function TrackContent() {
                 <div style={{ padding: "var(--space-3) var(--space-4)", background: "var(--bg-tertiary)", borderRadius: "var(--radius-lg)", fontSize: "var(--fs-xs)", color: "var(--text-secondary)", display: "flex", alignItems: "center", gap: 8 }}>
                   <Navigation size={16} color="#0EA5E9" />
                   <span>Artisan Live GPS Hub: <strong>{booking.artisan.locationName}</strong></span>
+                </div>
+              </div>
+            )}
+
+            {/* Verified Job Execution Proof Photos (Before & After) */}
+            {(booking.beforePhoto || booking.afterPhoto) && (
+              <div className="card" style={{ background: "rgba(15, 23, 42, 0.95)", border: "1.5px solid rgba(14, 165, 233, 0.35)" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14, flexWrap: "wrap", gap: 8 }}>
+                  <h3 className="h4" style={{ margin: 0, color: "#F8FAFC", display: "flex", alignItems: "center", gap: 8 }}>
+                    <Camera size={18} color="#0EA5E9" /> Verified Work Execution Evidence
+                  </h3>
+                  <span style={{ fontSize: "11px", color: "#10B981", fontWeight: 700, background: "rgba(16,185,129,0.15)", padding: "3px 8px", borderRadius: 6 }}>
+                    🛡️ Escrow Cloud Verified
+                  </span>
+                </div>
+
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 14 }}>
+                  {booking.beforePhoto && (
+                    <div style={{ background: "rgba(30, 41, 59, 0.7)", borderRadius: 12, padding: 12, border: "1px solid rgba(255,255,255,0.08)" }}>
+                      <span style={{ fontSize: "11px", color: "#38BDF8", fontWeight: 700, textTransform: "uppercase", display: "block", marginBottom: 6 }}>
+                        📸 Before-Work Inspection
+                      </span>
+                      <div style={{ width: "100%", height: "160px", borderRadius: 8, overflow: "hidden", border: "1px solid rgba(14,165,233,0.3)" }}>
+                        <img src={booking.beforePhoto} alt="Before Work Inspection" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                      </div>
+                    </div>
+                  )}
+                  {booking.afterPhoto && (
+                    <div style={{ background: "rgba(30, 41, 59, 0.7)", borderRadius: 12, padding: 12, border: "1px solid rgba(255,255,255,0.08)" }}>
+                      <span style={{ fontSize: "11px", color: "#10B981", fontWeight: 700, textTransform: "uppercase", display: "block", marginBottom: 6 }}>
+                        ✨ Completed Work Proof
+                      </span>
+                      <div style={{ width: "100%", height: "160px", borderRadius: 8, overflow: "hidden", border: "1px solid rgba(16,185,129,0.3)" }}>
+                        <img src={booking.afterPhoto} alt="Completed Work Proof" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             )}

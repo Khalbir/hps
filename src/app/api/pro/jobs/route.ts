@@ -53,6 +53,26 @@ export async function GET(request: Request) {
         }
       } catch {}
 
+      let beforePhoto = null;
+      let afterPhoto = null;
+      try {
+        if (b.beforePhotos) {
+          const parsed = JSON.parse(b.beforePhotos);
+          beforePhoto = Array.isArray(parsed) ? parsed[0] : parsed;
+        }
+      } catch {
+        if (b.beforePhotos) beforePhoto = b.beforePhotos;
+      }
+
+      try {
+        if (b.afterPhotos) {
+          const parsed = JSON.parse(b.afterPhotos);
+          afterPhoto = Array.isArray(parsed) ? parsed[0] : parsed;
+        }
+      } catch {
+        if (b.afterPhotos) afterPhoto = b.afterPhotos;
+      }
+
       return {
         id: b.reference,
         service: b.service?.name || "Service Dispatch",
@@ -64,8 +84,8 @@ export async function GET(request: Request) {
         price: `₦${b.estimatedPrice.toLocaleString()}`,
         status: b.status,
         otpCode: b.completionNote || "4819",
-        beforePhoto: b.beforePhotos ? JSON.parse(b.beforePhotos)[0] : null,
-        afterPhoto: b.afterPhotos ? JSON.parse(b.afterPhotos)[0] : null,
+        beforePhoto,
+        afterPhoto,
       };
     });
 
@@ -160,11 +180,16 @@ export async function POST(request: Request) {
 
     // 3. START JOB / ARRIVED
     if (action === "START_JOB") {
+      const existingBefore = booking.beforePhotos ? JSON.parse(booking.beforePhotos) : [];
+      const updatedBefore = beforePhotoUrl
+        ? [beforePhotoUrl, ...existingBefore.filter((u: string) => u !== beforePhotoUrl)]
+        : existingBefore;
+
       const updated = await prisma.booking.update({
         where: { reference: bookingReference },
         data: {
           status: "IN_PROGRESS",
-          beforePhotos: JSON.stringify([beforePhotoUrl || "https://handyhub.ng/photos/before_sample.jpg"]),
+          beforePhotos: JSON.stringify(updatedBefore.length > 0 ? updatedBefore : (beforePhotoUrl ? [beforePhotoUrl] : [])),
         },
         include: { customer: true, service: true, professional: { include: { user: true } } },
       });
@@ -184,7 +209,7 @@ export async function POST(request: Request) {
 
       return NextResponse.json({
         success: true,
-        message: "Job started! Customer notified on work progress.",
+        message: "Job started! Customer notified on work progress with before photos.",
         booking: updated,
       });
     }
@@ -196,11 +221,16 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: "Invalid completion OTP. Please enter correct 4-digit customer OTP." }, { status: 400 });
       }
 
+      const existingAfter = booking.afterPhotos ? JSON.parse(booking.afterPhotos) : [];
+      const updatedAfter = afterPhotoUrl
+        ? [afterPhotoUrl, ...existingAfter.filter((u: string) => u !== afterPhotoUrl)]
+        : existingAfter;
+
       const updated = await prisma.booking.update({
         where: { reference: bookingReference },
         data: {
           status: "COMPLETED",
-          afterPhotos: JSON.stringify([afterPhotoUrl || "https://handyhub.ng/photos/after_sample.jpg"]),
+          afterPhotos: JSON.stringify(updatedAfter.length > 0 ? updatedAfter : (afterPhotoUrl ? [afterPhotoUrl] : [])),
           completedAt: new Date(),
         },
         include: { customer: true, service: true, professional: { include: { user: true } } },
