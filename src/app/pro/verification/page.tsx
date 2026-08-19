@@ -20,26 +20,27 @@ const steps = [
   { id: 4, label: "Trade Skill Assessment", desc: "Technical Competency Quiz" },
 ];
 
+export const PRO_VERIFICATION_CATEGORIES = [
+  { value: "cleaning", label: "Cleaning (Residential, Commercial, Deep Clean, Post-Construction)" },
+  { value: "plumbing", label: "Plumbing (Pipe Repairs, Drainage & Sewage, Water Heaters)" },
+  { value: "electrical", label: "Electrical (Wiring & Rewiring, Sockets, Lighting Installation)" },
+  { value: "hvac", label: "AC & HVAC (Split Unit Installation, Servicing, Gas Refill, Repairs)" },
+  { value: "painting", label: "Painting (Interior, Exterior, Screeding & POP Surface Finish)" },
+  { value: "carpentry", label: "Carpentry (Custom Furniture, Assembly, Cabinets & Woodwork)" },
+  { value: "security", label: "Security & CCTV (CCTV Camera Installation & Surveillance)" },
+  { value: "solar", label: "Solar, Inverter & Generator (Panels, Inverters, Generator Repairs)" },
+  { value: "home-improvement", label: "Home Improvement (Interior Decoration & Home Renovation)" },
+  { value: "outdoor", label: "Gardening (Lawn Care, Landscaping & Plant Maintenance)" },
+  { value: "laundry", label: "Laundry & Garment Care (Washing, Ironing & Dry Cleaning)" },
+  { value: "moving", label: "Moving (Home & Office Relocation Services)" },
+  { value: "general", label: "General Handyman (Odd Jobs, Fittings & Minor Repairs)" },
+  { value: "others", label: "Others (Custom Skillset Request)" },
+];
+
 const formatCategoryTitle = (cat: string) => {
-  const map: Record<string, string> = {
-    plumbing: "Plumbing",
-    electrical: "Electrical",
-    cleaning: "Cleaning",
-    hvac: "AC & HVAC",
-    painting: "Painting",
-    carpentry: "Carpentry",
-    security: "Security & CCTV",
-    solar: "Solar & Inverter",
-    "home-improvement": "Home Improvement",
-    outdoor: "Gardening & Outdoor",
-    laundry: "Laundry",
-    moving: "Moving & Relocation",
-    automotive: "Automotive Repair",
-    "smart-home": "Smart Home",
-    general: "General Handyman",
-    others: "Custom Skillset",
-  };
-  return map[cat] || (cat ? cat.charAt(0).toUpperCase() + cat.slice(1) : "General Skilled Services");
+  const match = PRO_VERIFICATION_CATEGORIES.find((c) => c.value === cat);
+  if (match) return match.label;
+  return cat ? cat.charAt(0).toUpperCase() + cat.slice(1) : "General Skilled Services";
 };
 
 export default function ProVerificationPage() {
@@ -110,11 +111,9 @@ export default function ProVerificationPage() {
             }
 
             if (registeredSkill) {
-              const matchedOption = [
-                "plumbing", "electrical", "cleaning", "hvac", "painting", "carpentry",
-                "security", "solar", "home-improvement", "outdoor", "laundry", "moving",
-                "automotive", "smart-home", "general", "others"
-              ].find((opt) => registeredSkill.includes(opt));
+              const matchedOption = PRO_VERIFICATION_CATEGORIES
+                .map((c) => c.value)
+                .find((opt) => registeredSkill.includes(opt));
 
               const finalSlug = matchedOption || (registeredSkill.startsWith("other") ? "others" : "plumbing");
               setInitialCategory(finalSlug);
@@ -439,23 +438,13 @@ export default function ProVerificationPage() {
                         setCategoryConfirmed(false);
                       }}
                       required
+                      style={{ cursor: "pointer" }}
                     >
-                      <option value="plumbing">Plumbing (Pipes, Drainage, Water Heaters)</option>
-                      <option value="electrical">Electrical Repairs & Wiring</option>
-                      <option value="cleaning">Cleaning Services (Residential, Commercial, Deep Clean)</option>
-                      <option value="hvac">AC & HVAC Technical (Servicing, Gas Refill, Repair)</option>
-                      <option value="painting">Painting & Surface Finish (POP, Screeding)</option>
-                      <option value="carpentry">Carpentry & Custom Furniture</option>
-                      <option value="security">Security & CCTV Camera Installation</option>
-                      <option value="solar">Solar & Inverter Power Systems</option>
-                      <option value="home-improvement">Home Improvement & Building Renovation</option>
-                      <option value="outdoor">Gardening, Lawn Care & Landscaping</option>
-                      <option value="laundry">Laundry & Garment Care</option>
-                      <option value="moving">Moving & Relocation Services</option>
-                      <option value="automotive">Auto Repair & Mobile Mechanic</option>
-                      <option value="smart-home">Smart Home & Automation Systems</option>
-                      <option value="general">General Handyman Maintenance</option>
-                      <option value="others">Others (Custom Skillset Request)</option>
+                      {PRO_VERIFICATION_CATEGORIES.map((cat) => (
+                        <option key={cat.value} value={cat.value}>
+                          {cat.label}
+                        </option>
+                      ))}
                     </select>
 
                     {/* Category Mismatch / Reset Request Notification */}

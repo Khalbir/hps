@@ -12,20 +12,20 @@ import { BrandLogo } from "@/components/common/BrandLogo";
 import styles from "../auth.module.css";
 
 const PRO_SERVICE_OPTIONS = [
-  { value: "cleaning", label: "Cleaning (Residential, Commercial, Deep Cleaning)" },
-  { value: "plumbing", label: "Plumbing (Pipes, Drainage, Water Heaters)" },
-  { value: "electrical", label: "Electrical (Wiring, Sockets, Lighting)" },
-  { value: "hvac", label: "AC & HVAC (Installation, Servicing, Repairs)" },
-  { value: "painting", label: "Painting (Interior & Exterior)" },
-  { value: "carpentry", label: "Carpentry & Furniture Assembly" },
-  { value: "security", label: "Security & CCTV Installation" },
-  { value: "solar", label: "Solar & Power (Panels, Inverters, Generators)" },
-  { value: "home-improvement", label: "Home Improvement & Renovation" },
-  { value: "outdoor", label: "Gardening & Landscaping" },
-  { value: "laundry", label: "Laundry & Garment Care" },
-  { value: "moving", label: "Moving & Relocation Services" },
-  { value: "general", label: "General Handyman" },
-  { value: "others", label: "Others (Skillset Not Listed)" },
+  { value: "cleaning", label: "Cleaning (Residential, Commercial, Deep Clean, Post-Construction)" },
+  { value: "plumbing", label: "Plumbing (Pipe Repairs, Drainage & Sewage, Water Heaters)" },
+  { value: "electrical", label: "Electrical (Wiring & Rewiring, Sockets, Lighting Installation)" },
+  { value: "hvac", label: "AC & HVAC (Split Unit Installation, Servicing, Gas Refill, Repairs)" },
+  { value: "painting", label: "Painting (Interior, Exterior, Screeding & POP Surface Finish)" },
+  { value: "carpentry", label: "Carpentry (Custom Furniture, Assembly, Cabinets & Woodwork)" },
+  { value: "security", label: "Security & CCTV (CCTV Camera Installation & Surveillance)" },
+  { value: "solar", label: "Solar, Inverter & Generator (Panels, Inverters, Generator Repairs)" },
+  { value: "home-improvement", label: "Home Improvement (Interior Decoration & Home Renovation)" },
+  { value: "outdoor", label: "Gardening (Lawn Care, Landscaping & Plant Maintenance)" },
+  { value: "laundry", label: "Laundry & Garment Care (Washing, Ironing & Dry Cleaning)" },
+  { value: "moving", label: "Moving (Home & Office Relocation Services)" },
+  { value: "general", label: "General Handyman (Odd Jobs, Fittings & Minor Repairs)" },
+  { value: "others", label: "Others (Custom Skillset Request)" },
 ];
 
 export default function RegisterPage() {
