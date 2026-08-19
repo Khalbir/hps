@@ -7,8 +7,6 @@ import {
   Plus, Edit, Trash2, CheckCircle2, Clock, DollarSign, ArrowUpRight,
   RefreshCw, X, ShieldAlert, BarChart3, MapPin
 } from "lucide-react";
-import Header from "@/components/layout/Header";
-import Footer from "@/components/layout/Footer";
 
 export default function MerchantDashboardPage() {
   const [activeTab, setActiveTab] = useState<"INVENTORY" | "ORDERS" | "SUBSCRIPTION">("INVENTORY");
@@ -168,7 +166,6 @@ export default function MerchantDashboardPage() {
 
   return (
     <div style={{ background: "#0B1120", minHeight: "100vh", color: "#F8FAFC" }}>
-      <Header />
 
       {/* Toast Alert */}
       {toast && (
@@ -688,8 +685,6 @@ export default function MerchantDashboardPage() {
           </div>
         </div>
       )}
-
-      <Footer />
     </div>
   );
 }

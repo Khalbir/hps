@@ -7,8 +7,6 @@ import {
   Store, ShieldCheck, CreditCard, ArrowRight, CheckCircle2,
   AlertCircle, Building2, MapPin, Phone, Mail, Lock
 } from "lucide-react";
-import Header from "@/components/layout/Header";
-import Footer from "@/components/layout/Footer";
 
 export default function MerchantRegisterPage() {
   const router = useRouter();
@@ -60,7 +58,6 @@ export default function MerchantRegisterPage() {
 
   return (
     <div style={{ background: "#0B1120", minHeight: "100vh", color: "#F8FAFC" }}>
-      <Header />
 
       {/* Toast Alert */}
       {toast && (
@@ -283,8 +280,6 @@ export default function MerchantRegisterPage() {
           </button>
         </form>
       </div>
-
-      <Footer />
     </div>
   );
 }

@@ -7,8 +7,6 @@ import {
   ShieldCheck, Wrench, CheckCircle2, ShoppingBag, ArrowLeft,
   Truck, Star, RefreshCw, AlertCircle, Check, MapPin, Phone
 } from "lucide-react";
-import Header from "@/components/layout/Header";
-import Footer from "@/components/layout/Footer";
 
 export default function ProductDetailPage() {
   const params = useParams();
@@ -93,12 +91,10 @@ export default function ProductDetailPage() {
   if (loading) {
     return (
       <div style={{ background: "#0B1120", minHeight: "100vh", color: "#F8FAFC" }}>
-        <Header />
         <div style={{ textAlign: "center", padding: "120px 20px" }}>
           <RefreshCw size={36} className="animate-spin" style={{ margin: "0 auto 12px" }} />
           <p>Loading part specifications & merchant verification...</p>
         </div>
-        <Footer />
       </div>
     );
   }
@@ -106,7 +102,6 @@ export default function ProductDetailPage() {
   if (!product) {
     return (
       <div style={{ background: "#0B1120", minHeight: "100vh", color: "#F8FAFC" }}>
-        <Header />
         <div style={{ textAlign: "center", padding: "120px 20px" }}>
           <AlertCircle size={40} color="#EF4444" style={{ margin: "0 auto 12px" }} />
           <h2>Replacement Part Not Found</h2>
@@ -115,14 +110,12 @@ export default function ProductDetailPage() {
             Back to Marketplace Catalog
           </Link>
         </div>
-        <Footer />
       </div>
     );
   }
 
   return (
     <div style={{ background: "#0B1120", minHeight: "100vh", color: "#F8FAFC" }}>
-      <Header />
 
       {/* Toast Alert */}
       {toast && (
@@ -327,8 +320,6 @@ export default function ProductDetailPage() {
           </div>
         </div>
       </div>
-
-      <Footer />
     </div>
   );
 }

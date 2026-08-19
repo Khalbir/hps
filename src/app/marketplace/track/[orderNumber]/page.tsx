@@ -7,8 +7,6 @@ import {
   Truck, ShieldCheck, CheckCircle2, Clock, MapPin, Phone,
   Package, AlertCircle, RefreshCw, KeyRound, ArrowLeft, AlertTriangle, X, ShieldAlert
 } from "lucide-react";
-import Header from "@/components/layout/Header";
-import Footer from "@/components/layout/Footer";
 
 export default function OrderTrackingPage() {
   const params = useParams();
@@ -115,12 +113,10 @@ export default function OrderTrackingPage() {
   if (loading) {
     return (
       <div style={{ background: "#0B1120", minHeight: "100vh", color: "#F8FAFC" }}>
-        <Header />
         <div style={{ textAlign: "center", padding: "120px 20px" }}>
           <RefreshCw size={36} className="animate-spin" style={{ margin: "0 auto 12px" }} />
           <p>Loading real-time dispatch tracking...</p>
         </div>
-        <Footer />
       </div>
     );
   }
@@ -128,7 +124,6 @@ export default function OrderTrackingPage() {
   if (!order) {
     return (
       <div style={{ background: "#0B1120", minHeight: "100vh", color: "#F8FAFC" }}>
-        <Header />
         <div style={{ textAlign: "center", padding: "120px 20px" }}>
           <AlertCircle size={40} color="#EF4444" style={{ margin: "0 auto 12px" }} />
           <h2>Order Not Found</h2>
@@ -137,7 +132,6 @@ export default function OrderTrackingPage() {
             Back to Marketplace
           </Link>
         </div>
-        <Footer />
       </div>
     );
   }
@@ -166,7 +160,6 @@ export default function OrderTrackingPage() {
 
   return (
     <div style={{ background: "#0B1120", minHeight: "100vh", color: "#F8FAFC" }}>
-      <Header />
 
       {/* Toast Alert */}
       {toast && (
@@ -554,8 +547,6 @@ export default function OrderTrackingPage() {
           </div>
         </div>
       )}
-
-      <Footer />
     </div>
   );
 }

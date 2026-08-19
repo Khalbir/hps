@@ -7,8 +7,6 @@ import {
   ShoppingBag, ShieldCheck, Truck, ArrowLeft, Clock,
   CreditCard, CheckCircle2, AlertCircle, MapPin, Zap
 } from "lucide-react";
-import Header from "@/components/layout/Header";
-import Footer from "@/components/layout/Footer";
 
 export default function MarketplaceCheckoutPage() {
   const router = useRouter();
@@ -151,7 +149,6 @@ export default function MarketplaceCheckoutPage() {
 
   return (
     <div style={{ background: "#0B1120", minHeight: "100vh", color: "#F8FAFC" }}>
-      <Header />
 
       {/* Toast Alert */}
       {toast && (
@@ -459,8 +456,6 @@ export default function MarketplaceCheckoutPage() {
           </div>
         </div>
       </div>
-
-      <Footer />
     </div>
   );
 }

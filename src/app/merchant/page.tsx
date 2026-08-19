@@ -5,13 +5,10 @@ import {
   Store, ShieldCheck, CreditCard, Truck, ArrowRight, Zap,
   CheckCircle2, Users, DollarSign, Award, Clock
 } from "lucide-react";
-import Header from "@/components/layout/Header";
-import Footer from "@/components/layout/Footer";
 
 export default function MerchantLandingPage() {
   return (
     <div style={{ background: "#0B1120", minHeight: "100vh", color: "#F8FAFC" }}>
-      <Header />
 
       {/* Hero Section */}
       <section
@@ -147,8 +144,6 @@ export default function MerchantLandingPage() {
           </Link>
         </div>
       </section>
-
-      <Footer />
     </div>
   );
 }
