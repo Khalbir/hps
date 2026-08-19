@@ -187,11 +187,26 @@ export function Header() {
             <Link href="/about" className={styles.navLink}>
               About
             </Link>
-            <Link href="/contact" className={styles.navLink}>
-              Contact
-            </Link>
             <Link href="/track" className={styles.navLink} style={{ color: "#10B981", fontWeight: "bold" }}>
               Track Booking
+            </Link>
+            <Link
+              href="/auth/register?role=PROFESSIONAL"
+              className={styles.navLink}
+              style={{
+                color: "#8B5CF6",
+                fontWeight: 700,
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 5,
+                background: "rgba(139, 92, 246, 0.1)",
+                padding: "5px 12px",
+                borderRadius: "99px",
+                border: "1px solid rgba(139, 92, 246, 0.25)",
+              }}
+              title="Sign up as an Artisan / Verified Professional"
+            >
+              <Wrench size={13} color="#8B5CF6" /> Become a Pro
             </Link>
           </nav>
 
@@ -411,13 +426,34 @@ export function Header() {
                       </button>
                     </div>
                   ) : (
-                    <Link
-                      href="/auth/login"
-                      className={styles.mobileLink}
-                      onClick={() => setMobileOpen(false)}
-                    >
-                      Log In
-                    </Link>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                      <Link
+                        href="/auth/login"
+                        className={styles.mobileLink}
+                        onClick={() => setMobileOpen(false)}
+                      >
+                        Log In
+                      </Link>
+                      <Link
+                        href="/auth/register?role=PROFESSIONAL"
+                        className={styles.mobileLink}
+                        onClick={() => setMobileOpen(false)}
+                        style={{
+                          color: "#8B5CF6",
+                          fontWeight: "bold",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 8,
+                          background: "rgba(139, 92, 246, 0.08)",
+                          padding: "10px 14px",
+                          borderRadius: "10px",
+                          border: "1.5px solid rgba(139, 92, 246, 0.25)",
+                        }}
+                      >
+                        <Wrench size={18} color="#8B5CF6" />
+                        <span>Join as a Pro (Artisan Sign Up)</span>
+                      </Link>
+                    </div>
                   )}
                 </div>
                 <div className={styles.mobileMenuFooter}>

@@ -34,7 +34,7 @@ const serviceLinks = [
 
 const companyLinks = [
   { name: "About Us", href: "/about" },
-  { name: "Careers & Artisans", href: "/pro/onboarding" },
+  { name: "🛠️ Join as an Artisan / Pro", href: "/auth/register?role=PROFESSIONAL" },
   { name: "Track Active Booking", href: "/track" },
   { name: "Contact Dispatch", href: "/contact" },
   { name: "Frequently Asked Questions", href: "/faq" },

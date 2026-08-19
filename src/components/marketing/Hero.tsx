@@ -4,7 +4,7 @@ import { useState, useRef, FormEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion, useInView } from "framer-motion";
-import { Search, ArrowRight, Shield, Star, Clock, Sparkles } from "lucide-react";
+import { Search, ArrowRight, Shield, Star, Clock, Sparkles, Wrench } from "lucide-react";
 import { POPULAR_SUGGESTIONS, getBookingUrl } from "@/lib/services";
 import styles from "./Hero.module.css";
 
@@ -118,6 +118,36 @@ export function Hero() {
             </Link>
             <Link href="#how-it-works" className="btn btn-secondary btn-xl">
               See How It Works
+            </Link>
+          </motion.div>
+
+          {/* Artisan / Pro Quick Onboarding Link */}
+          <motion.div
+            initial={{ opacity: 0, y: 15 }}
+            animate={isInView ? { opacity: 1, y: 0 } : {}}
+            transition={{ duration: 0.5, delay: 0.55 }}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              marginTop: 14,
+              fontSize: "13.5px",
+              color: "var(--text-secondary)",
+            }}
+          >
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 5, color: "#8B5CF6", fontWeight: 600 }}>
+              <Wrench size={15} color="#8B5CF6" /> Skilled artisan or technician?
+            </span>
+            <Link
+              href="/auth/register?role=PROFESSIONAL"
+              style={{
+                color: "#00A8B5",
+                fontWeight: 700,
+                textDecoration: "underline",
+                textUnderlineOffset: "3px",
+              }}
+            >
+              Sign up as a Verified Pro &rarr;
             </Link>
           </motion.div>
 
