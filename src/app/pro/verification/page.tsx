@@ -502,7 +502,7 @@ export default function ProVerificationPage() {
   // Step Validation Flags
   const isStep1Valid = Boolean(
     idType &&
-    idNumber.trim().length >= 4 &&
+    (idType === "NIN" ? idNumber.length === 11 : idNumber.trim().length >= 4) &&
     operatingState.trim() &&
     homeAddress.trim().length >= 5 &&
     idDocumentUrl &&
@@ -522,11 +522,11 @@ export default function ProVerificationPage() {
 
   const isStep3Valid = Boolean(
     g1.name.trim().length >= 3 &&
-    g1.phone.trim().length >= 7 &&
-    g1.nin.trim().length >= 6 &&
+    g1.phone.length === 11 &&
+    g1.nin.length === 11 &&
     g2.name.trim().length >= 3 &&
-    g2.phone.trim().length >= 7 &&
-    g2.nin.trim().length >= 6
+    g2.phone.length === 11 &&
+    g2.nin.length === 11
   );
 
   const isStep4Valid = Boolean(
@@ -758,13 +758,25 @@ export default function ProVerificationPage() {
                   <div className={styles.fieldGroup}>
                     <label className={styles.label}>
                       {idType === "NIN" ? "11-Digit NIN Number" : `${idType} Number`} <span style={{ color: "#EF4444" }}>*</span>
+                      {idType === "NIN" && (
+                        <span style={{ fontSize: "11px", color: idNumber.length === 11 ? "#10B981" : "#94A3B8", marginLeft: 6 }}>
+                          ({idNumber.length}/11 digits)
+                        </span>
+                      )}
                     </label>
                     <input
                       type="text"
                       className={styles.input}
                       placeholder={idType === "NIN" ? "Enter 11-digit NIN Number" : `Enter ${idType} Number`}
                       value={idNumber}
-                      onChange={(e) => setIdNumber(e.target.value)}
+                      maxLength={idType === "NIN" ? 11 : 30}
+                      inputMode={idType === "NIN" ? "numeric" : "text"}
+                      pattern={idType === "NIN" ? "[0-9]{11}" : undefined}
+                      onChange={(e) => {
+                        const sanitized = idType === "NIN" ? e.target.value.replace(/\D/g, "").slice(0, 11) : e.target.value;
+                        setIdNumber(sanitized);
+                        saveDraftState(1, { idNumber: sanitized });
+                      }}
                       required
                     />
                   </div>
@@ -1159,7 +1171,13 @@ export default function ProVerificationPage() {
 
                 <div className={styles.formGrid}>
                   <div className={styles.guarantorCard}>
-                    <h4>Guarantor #1 (Landlord / Community Leader) <span style={{ color: "#EF4444" }}>*</span></h4>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                      <h4 style={{ margin: 0 }}>Guarantor #1 (Landlord / Community Leader) <span style={{ color: "#EF4444" }}>*</span></h4>
+                      <div style={{ fontSize: "11px", display: "flex", gap: 8 }}>
+                        <span style={{ color: g1.phone.length === 11 ? "#10B981" : "#94A3B8" }}>Phone: {g1.phone.length}/11</span>
+                        <span style={{ color: g1.nin.length === 11 ? "#10B981" : "#94A3B8" }}>NIN: {g1.nin.length}/11</span>
+                      </div>
+                    </div>
                     <div className={styles.gRow}>
                       <input
                         type="text"
@@ -1176,10 +1194,14 @@ export default function ProVerificationPage() {
                       <input
                         type="tel"
                         className={styles.input}
-                        placeholder="Phone Number (+234) *"
+                        placeholder="11-digit Phone (080...) *"
                         value={g1.phone}
+                        maxLength={11}
+                        inputMode="numeric"
+                        pattern="[0-9]{11}"
                         onChange={(e) => {
-                          const updated = { ...g1, phone: e.target.value };
+                          const digits = e.target.value.replace(/\D/g, "").slice(0, 11);
+                          const updated = { ...g1, phone: digits };
                           setG1(updated);
                           saveDraftState(3, { g1: updated });
                         }}
@@ -1190,8 +1212,12 @@ export default function ProVerificationPage() {
                         className={styles.input}
                         placeholder="11-digit NIN Number *"
                         value={g1.nin}
+                        maxLength={11}
+                        inputMode="numeric"
+                        pattern="[0-9]{11}"
                         onChange={(e) => {
-                          const updated = { ...g1, nin: e.target.value };
+                          const digits = e.target.value.replace(/\D/g, "").slice(0, 11);
+                          const updated = { ...g1, nin: digits };
                           setG1(updated);
                           saveDraftState(3, { g1: updated });
                         }}
@@ -1201,7 +1227,13 @@ export default function ProVerificationPage() {
                   </div>
 
                   <div className={styles.guarantorCard}>
-                    <h4>Guarantor #2 (Former Employer / Master Craftsman) <span style={{ color: "#EF4444" }}>*</span></h4>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                      <h4 style={{ margin: 0 }}>Guarantor #2 (Former Employer / Master Craftsman) <span style={{ color: "#EF4444" }}>*</span></h4>
+                      <div style={{ fontSize: "11px", display: "flex", gap: 8 }}>
+                        <span style={{ color: g2.phone.length === 11 ? "#10B981" : "#94A3B8" }}>Phone: {g2.phone.length}/11</span>
+                        <span style={{ color: g2.nin.length === 11 ? "#10B981" : "#94A3B8" }}>NIN: {g2.nin.length}/11</span>
+                      </div>
+                    </div>
                     <div className={styles.gRow}>
                       <input
                         type="text"
@@ -1218,10 +1250,14 @@ export default function ProVerificationPage() {
                       <input
                         type="tel"
                         className={styles.input}
-                        placeholder="Phone Number (+234) *"
+                        placeholder="11-digit Phone (080...) *"
                         value={g2.phone}
+                        maxLength={11}
+                        inputMode="numeric"
+                        pattern="[0-9]{11}"
                         onChange={(e) => {
-                          const updated = { ...g2, phone: e.target.value };
+                          const digits = e.target.value.replace(/\D/g, "").slice(0, 11);
+                          const updated = { ...g2, phone: digits };
                           setG2(updated);
                           saveDraftState(3, { g2: updated });
                         }}
@@ -1232,8 +1268,12 @@ export default function ProVerificationPage() {
                         className={styles.input}
                         placeholder="11-digit NIN Number *"
                         value={g2.nin}
+                        maxLength={11}
+                        inputMode="numeric"
+                        pattern="[0-9]{11}"
                         onChange={(e) => {
-                          const updated = { ...g2, nin: e.target.value };
+                          const digits = e.target.value.replace(/\D/g, "").slice(0, 11);
+                          const updated = { ...g2, nin: digits };
                           setG2(updated);
                           saveDraftState(3, { g2: updated });
                         }}
@@ -1246,7 +1286,7 @@ export default function ProVerificationPage() {
                 {/* Step 3 Mandatory Completion Notice */}
                 {!isStep3Valid && (
                   <div style={{ background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.25)", borderRadius: "8px", padding: "10px 14px", marginTop: "16px", fontSize: "12px", color: "#FCA5A5" }}>
-                    <strong>Step 3 Requirements:</strong> Please provide complete details (Full Name, Phone Number, and NIN) for both Guarantors before proceeding.
+                    <strong>Step 3 Requirements:</strong> Please provide complete 11-digit Phone numbers and 11-digit NIN numbers for both Guarantor #1 and Guarantor #2.
                   </div>
                 )}
 

@@ -87,6 +87,10 @@ export default function RegisterPage() {
         setError("Government ID type is mandatory before signing up.");
         return;
       }
+      if (form.idType === "NIN" && form.idNumber.length !== 11) {
+        setError("National Identification Number (NIN) must be exactly 11 digits.");
+        return;
+      }
       if (!form.idNumber.trim()) {
         setError(`Please enter your ${form.idType === "NIN" ? "11-digit NIN" : "Government ID"} number.`);
         return;
@@ -99,6 +103,11 @@ export default function RegisterPage() {
         setError("Home & workshop residential address is mandatory.");
         return;
       }
+    }
+
+    if (form.phone && form.phone.length !== 11) {
+      setError("Phone number must be exactly 11 digits (e.g. 08012345678).");
+      return;
     }
 
     setLoading(true);
@@ -399,6 +408,11 @@ export default function RegisterPage() {
                   <div className={styles.inputGroup}>
                     <label className={styles.label}>
                       {form.idType === "NIN" ? "11-Digit NIN Number" : `${form.idType} Number`} <span style={{ color: "#EF4444" }}>*</span>
+                      {form.idType === "NIN" && (
+                        <span style={{ fontSize: "11px", color: form.idNumber.length === 11 ? "#10B981" : "var(--text-tertiary)", marginLeft: 6 }}>
+                          ({form.idNumber.length}/11 digits)
+                        </span>
+                      )}
                     </label>
                     <div className={styles.inputWrap}>
                       <FileText size={18} className={styles.inputIcon} />
@@ -407,7 +421,13 @@ export default function RegisterPage() {
                         className={styles.input}
                         placeholder={form.idType === "NIN" ? "Enter 11-digit NIN" : `Enter ${form.idType} number`}
                         value={form.idNumber}
-                        onChange={(e) => update("idNumber", e.target.value)}
+                        maxLength={form.idType === "NIN" ? 11 : 30}
+                        inputMode={form.idType === "NIN" ? "numeric" : "text"}
+                        pattern={form.idType === "NIN" ? "[0-9]{11}" : undefined}
+                        onChange={(e) => {
+                          const sanitized = form.idType === "NIN" ? e.target.value.replace(/\D/g, "").slice(0, 11) : e.target.value;
+                          update("idNumber", sanitized);
+                        }}
                         required
                       />
                     </div>
@@ -479,7 +499,14 @@ export default function RegisterPage() {
             </div>
 
             <div className={styles.inputGroup}>
-              <label htmlFor="phone" className={styles.label}>Phone Number</label>
+              <label htmlFor="phone" className={styles.label}>
+                Phone Number
+                {form.phone && (
+                  <span style={{ fontSize: "11px", color: form.phone.length === 11 ? "#10B981" : "var(--text-tertiary)", marginLeft: 6 }}>
+                    ({form.phone.length}/11 digits)
+                  </span>
+                )}
+              </label>
               <div className={styles.inputWrap}>
                 <Phone size={18} className={styles.inputIcon} />
                 <input
@@ -488,9 +515,12 @@ export default function RegisterPage() {
                   type="tel"
                   autoComplete="tel"
                   className={styles.input}
-                  placeholder="+234 800 000 0000"
+                  placeholder="11-digit Phone (e.g. 08012345678)"
                   value={form.phone}
-                  onChange={(e) => update("phone", e.target.value)}
+                  maxLength={11}
+                  inputMode="numeric"
+                  pattern="[0-9]{11}"
+                  onChange={(e) => update("phone", e.target.value.replace(/\D/g, "").slice(0, 11))}
                 />
               </div>
             </div>
