@@ -143,31 +143,96 @@ export default function ProVerificationPage() {
     useRef<HTMLInputElement>(null),
   ];
 
-  // Request Native Device Camera Authorization
+  // Request Native Device Camera Authorization with multi-level fallback
   const startLiveFacialCamera = async () => {
     setShowCameraModal(true);
     setCameraError("");
 
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: {
-          facingMode: "user",
-          width: { ideal: 1280 },
-          height: { ideal: 720 },
-        },
-        audio: false,
-      });
+      let stream: MediaStream | null = null;
 
-      setCameraStream(stream);
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        videoRef.current.play();
+      // 1. Try standard getUserMedia with front-facing camera
+      if (typeof navigator !== "undefined" && navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+        try {
+          stream = await navigator.mediaDevices.getUserMedia({
+            video: {
+              facingMode: "user",
+              width: { ideal: 1280 },
+              height: { ideal: 720 },
+            },
+            audio: false,
+          });
+        } catch (e1) {
+          console.warn("Front-facing HD constraint failed, trying basic facingMode: user...", e1);
+          try {
+            stream = await navigator.mediaDevices.getUserMedia({
+              video: { facingMode: "user" },
+              audio: false,
+            });
+          } catch (e2) {
+            console.warn("facingMode user failed, trying generic video: true...", e2);
+            try {
+              stream = await navigator.mediaDevices.getUserMedia({
+                video: true,
+                audio: false,
+              });
+            } catch (e3) {
+              console.warn("Generic video: true failed:", e3);
+            }
+          }
+        }
+      }
+
+      // 2. Legacy navigator.getUserMedia fallback (for older Android WebViews or legacy browsers)
+      if (!stream && typeof navigator !== "undefined") {
+        const n: any = navigator;
+        const legacyGUM = n.getUserMedia || n.webkitGetUserMedia || n.mozGetUserMedia || n.msGetUserMedia;
+        if (legacyGUM) {
+          try {
+            stream = await new Promise((resolve, reject) => {
+              legacyGUM.call(n, { video: true, audio: false }, resolve, reject);
+            });
+          } catch (legErr) {
+            console.warn("Legacy getUserMedia failed:", legErr);
+          }
+        }
+      }
+
+      if (stream) {
+        setCameraStream(stream);
+        setCameraError("");
+      } else {
+        throw new Error("Unable to establish camera video stream.");
       }
     } catch (err: any) {
       console.error("[Camera Authorization Error]:", err);
-      setCameraError("Camera permission was denied or is unavailable. Please click 'Grant Camera Permission' or use your device camera.");
+      const isPermissionDenied =
+        err?.name === "NotAllowedError" ||
+        err?.name === "PermissionDeniedError" ||
+        err?.message?.includes("Permission") ||
+        err?.message?.includes("denied");
+
+      if (isPermissionDenied) {
+        setCameraError(
+          "Camera access was blocked by your browser. Please allow camera permissions in your browser URL bar (or site settings), then click 'Grant / Retry Camera', or tap 'Open Device Camera App' below."
+        );
+      } else {
+        setCameraError(
+          "Camera device is initializing or unavailable. Please click 'Grant / Retry Camera' to request browser permission, or tap 'Open Device Camera App' to snap your photo directly."
+        );
+      }
     }
   };
+
+  // Bind camera stream to video element when modal is mounted
+  useEffect(() => {
+    if (showCameraModal && cameraStream && videoRef.current) {
+      videoRef.current.srcObject = cameraStream;
+      videoRef.current.play().catch((playErr) => {
+        console.warn("Video autoPlay warning:", playErr);
+      });
+    }
+  }, [showCameraModal, cameraStream]);
 
   const stopCamera = () => {
     if (cameraStream) {
@@ -632,26 +697,48 @@ export default function ProVerificationPage() {
                         }
                       }}
                     />
-                    <div
-                      className={`${styles.uploadBox} ${selfieUrl ? styles.uploadBoxDone : ""}`}
-                      onClick={startLiveFacialCamera}
-                      style={{ cursor: "pointer", position: "relative" }}
-                    >
-                      {selfieUploading ? (
-                        <>
-                          <Loader2 size={24} className="animate-spin" color="#0EA5E9" />
-                          <span>Uploading Facial Verification...</span>
-                        </>
-                      ) : selfieUrl ? (
-                        <>
-                          <CheckCircle size={24} color="#10B981" />
-                          <span style={{ color: "#10B981" }}>✓ Live Facial Verification Complete</span>
-                        </>
-                      ) : (
-                        <>
-                          <Camera size={24} />
-                          <span>Take Live Facial Verification Photo</span>
-                        </>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 6, width: "100%" }}>
+                      <div
+                        className={`${styles.uploadBox} ${selfieUrl ? styles.uploadBoxDone : ""}`}
+                        onClick={startLiveFacialCamera}
+                        style={{ cursor: "pointer", position: "relative" }}
+                      >
+                        {selfieUploading ? (
+                          <>
+                            <Loader2 size={24} className="animate-spin" color="#0EA5E9" />
+                            <span>Uploading Facial Verification...</span>
+                          </>
+                        ) : selfieUrl ? (
+                          <>
+                            <CheckCircle size={24} color="#10B981" />
+                            <span style={{ color: "#10B981" }}>✓ Live Facial Verification Complete</span>
+                          </>
+                        ) : (
+                          <>
+                            <Camera size={24} />
+                            <span>Take Live Facial Verification Photo</span>
+                          </>
+                        )}
+                      </div>
+
+                      {!selfieUrl && (
+                        <div style={{ textAlign: "center", marginTop: 2 }}>
+                          <button
+                            type="button"
+                            onClick={() => selfieInputRef.current?.click()}
+                            style={{
+                              background: "none",
+                              border: "none",
+                              color: "#38BDF8",
+                              fontSize: "12px",
+                              cursor: "pointer",
+                              textDecoration: "underline",
+                              padding: "2px 6px",
+                            }}
+                          >
+                            📷 Or Snap Photo with Native Device Camera
+                          </button>
+                        </div>
                       )}
                     </div>
 
@@ -1050,17 +1137,34 @@ export default function ProVerificationPage() {
             <div style={{ padding: 20, position: "relative" }}>
               {cameraError ? (
                 <div style={{ padding: "24px 16px", textAlign: "center" }}>
-                  <AlertTriangle size={40} color="#EF4444" style={{ margin: "0 auto 12px" }} />
-                  <p style={{ fontSize: "13px", color: "white", marginBottom: 16 }}>{cameraError}</p>
-                  <button
-                    className="btn btn-primary btn-md"
-                    onClick={() => {
-                      stopCamera();
-                      selfieInputRef.current?.click();
-                    }}
-                  >
-                    Open Camera App Directly
-                  </button>
+                  <AlertTriangle size={44} color="#EF4444" style={{ margin: "0 auto 12px" }} />
+                  <h4 style={{ color: "#F8FAFC", fontSize: "16px", fontWeight: 700, margin: "0 0 8px" }}>
+                    Camera Access Required
+                  </h4>
+                  <p style={{ fontSize: "13px", color: "#94A3B8", marginBottom: 20, lineHeight: 1.5 }}>
+                    {cameraError}
+                  </p>
+                  <div style={{ display: "flex", gap: 10, justifyContent: "center", flexWrap: "wrap" }}>
+                    <button
+                      type="button"
+                      className="btn btn-primary btn-md"
+                      onClick={startLiveFacialCamera}
+                      style={{ background: "#0EA5E9", fontWeight: 700 }}
+                    >
+                      <RefreshCw size={16} /> Grant / Retry Camera Access
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn-secondary btn-md"
+                      onClick={() => {
+                        stopCamera();
+                        selfieInputRef.current?.click();
+                      }}
+                      style={{ background: "rgba(255,255,255,0.1)", color: "#FFFFFF", fontWeight: 700 }}
+                    >
+                      <Camera size={16} /> Open Device Camera App
+                    </button>
+                  </div>
                 </div>
               ) : (
                 <>
