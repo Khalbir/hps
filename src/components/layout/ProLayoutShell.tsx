@@ -124,51 +124,76 @@ export function ProLayoutShell({ children }: { children: ReactNode }) {
         </nav>
 
         <div className={styles.sidebarFooter} style={{ padding: "var(--space-4)", borderTop: "1px solid var(--border-primary)" }}>
-          <Link href="/dashboard" className={styles.navLink} style={{ color: "#0284C7", fontWeight: 700 }}>
+          <Link href="/dashboard" className={styles.navLink} style={{ color: "#38BDF8", fontWeight: 700 }}>
             <LogOut size={18} />
-            <span>Switch to Customer Dashboard</span>
+            <span>Switch to Client Mode</span>
           </Link>
         </div>
       </aside>
 
       {/* Main Content */}
       <main className={styles.main}>
-        <div style={{ padding: "0 0 16px 0", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <div style={{ padding: "0 0 16px 0", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
           <button className={styles.menuBtn} onClick={() => setSidebarOpen(true)}>
             <Menu size={24} />
           </button>
+
+          {!isCustomerAccount && (
+            <div style={{ display: "flex", alignItems: "center", gap: 10, marginLeft: "auto" }}>
+              <span style={{ fontSize: "11.5px", color: "var(--text-tertiary)" }}>
+                🛠️ Verified Artisan Account
+              </span>
+              <Link
+                href="/dashboard"
+                className="btn btn-secondary btn-sm"
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 6,
+                  fontSize: "12px",
+                  color: "#38BDF8",
+                  borderColor: "rgba(14,165,233,0.3)",
+                  background: "rgba(14,165,233,0.1)",
+                  textDecoration: "none",
+                }}
+                title="Switch to Client Portal to book services for your own property"
+              >
+                🔄 Switch to Client Mode (Book Services)
+              </Link>
+            </div>
+          )}
         </div>
 
         {isCustomerAccount && (
           <div style={{
-            background: "linear-gradient(135deg, rgba(2, 132, 199, 0.12) 0%, rgba(99, 102, 241, 0.12) 100%)",
-            border: "1.5px solid #0284C7",
+            background: "linear-gradient(135deg, rgba(239, 68, 68, 0.1) 0%, rgba(14, 165, 233, 0.1) 100%)",
+            border: "1.5px solid rgba(239, 68, 68, 0.4)",
             borderRadius: "14px",
-            padding: "14px 20px",
+            padding: "16px 20px",
             marginBottom: "24px",
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
             flexWrap: "wrap",
-            gap: 12,
+            gap: 14,
           }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-              <span style={{ fontSize: "24px" }}>👤</span>
+            <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+              <span style={{ fontSize: "28px" }}>🔒</span>
               <div>
-                <strong style={{ color: "var(--text-primary)", fontSize: "14px", display: "block" }}>
-                  Customer Account Active: {customerName || "Customer"}
+                <strong style={{ color: "#F8FAFC", fontSize: "14.5px", display: "block" }}>
+                  Artisan Workspace Restricted: Client Account ({customerName || "Customer"})
                 </strong>
-                <span style={{ color: "var(--text-secondary)", fontSize: "12px" }}>
-                  You are logged in with a Customer Account. To manage your service bookings and wallet, use your Customer Dashboard.
+                <span style={{ color: "var(--text-secondary)", fontSize: "12.5px", display: "block", marginTop: 2, maxWidth: 650 }}>
+                  You are signed in as a <strong>Client / Customer</strong>. Access to artisan job dispatches, earnings, and procurement tools is reserved for verified trade professionals. Client accounts cannot switch to an artisan account without completing professional verification.
                 </span>
               </div>
             </div>
             <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-              <Link href="/dashboard" className="btn btn-primary btn-sm" style={{ background: "#0284C7", fontWeight: 700, textDecoration: "none" }}>
-                ➔ Go to Customer Dashboard
+              <Link href="/dashboard" className="btn btn-primary btn-sm" style={{ background: "#0EA5E9", borderColor: "#0EA5E9", fontWeight: 700, textDecoration: "none" }}>
+                ➔ Return to Client Dashboard
               </Link>
-              <Link href="/pro/verification" className="btn btn-secondary btn-sm" style={{ fontSize: "12px", textDecoration: "none" }}>
-                Become a Verified Pro
+              <Link href="/auth/register" className="btn btn-secondary btn-sm" style={{ fontSize: "12px", textDecoration: "none" }}>
+                Apply as an Artisan
               </Link>
             </div>
           </div>

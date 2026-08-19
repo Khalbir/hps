@@ -232,10 +232,14 @@ export async function POST(request: Request) {
     return NextResponse.json({
       success: true,
       requiresVerification: true,
-      message: "Account created! We've sent a 6-digit confirmation code and link to your email address.",
+      message: `Account created as ${userRole === "PROFESSIONAL" ? "Artisan / Professional" : "Client / Customer"}! We've sent a 6-digit confirmation code and link to your email address.`,
       redirect: `/auth/verify-email?email=${encodeURIComponent(cleanEmail)}&role=${encodeURIComponent(userRole)}`,
       email: cleanEmail,
       role: userRole,
+      roleLabel: userRole === "PROFESSIONAL" ? "Artisan / Professional" : "Client / Customer",
+      isProfessional: userRole === "PROFESSIONAL",
+      canSwitchToClient: userRole === "PROFESSIONAL",
+      canSwitchToPro: false,
     });
   } catch (error: any) {
     console.error("[Registration Exception]:", error);

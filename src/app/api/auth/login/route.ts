@@ -214,10 +214,19 @@ export async function POST(request: Request) {
           }
         }
 
-        const { password: _, ...userWithoutPassword } = dbUser;
+        const isPro = dbUser.role === "PROFESSIONAL" || Boolean(dbUser.professional);
+        const isAdminRole = ADMIN_ROLES.includes(dbUser.role);
+        const { password: _, ...rawUser } = dbUser;
+        const userWithoutPassword = {
+          ...rawUser,
+          isProfessional: isPro,
+          canSwitchToClient: isPro,
+          canSwitchToPro: isPro,
+          roleLabel: dbUser.role === "PROFESSIONAL" ? "Artisan / Professional" : isAdminRole ? "Platform Administrator" : "Client / Customer",
+          digitalId: dbUser.professional?.digitalId || (isPro ? "HHP-PRO-VERIFIED" : undefined),
+        };
         storeCredential(cleanEmail, cleanPassword, userWithoutPassword);
 
-        const isAdminRole = ADMIN_ROLES.includes(dbUser.role);
         const redirectUrl = dbUser.role === "PROFESSIONAL" ? "/pro" : isAdminRole ? "/admin/dashboard" : "/dashboard";
 
         const response = NextResponse.json({
@@ -229,6 +238,10 @@ export async function POST(request: Request) {
 
         const cookieName = dbUser.role === "PROFESSIONAL" ? "handyhub_pro_session" : isAdminRole ? "handyhub_admin_session" : "handyhub_user_session";
         response.cookies.set(cookieName, "authenticated", { path: "/", maxAge: 86400 * 30, sameSite: "lax" });
+        if (isPro) {
+          // Pros have verified credentials and can switch to client view anytime
+          response.cookies.set("handyhub_user_session", "authenticated", { path: "/", maxAge: 86400 * 30, sameSite: "lax" });
+        }
         response.cookies.set("handyhub_user_data", JSON.stringify(userWithoutPassword), { path: "/", maxAge: 86400 * 30, sameSite: "lax" });
         return response;
       }

@@ -7,7 +7,7 @@ import {
   Home, ClipboardList, User, Bell, Wallet,
   MapPin, Settings, LogOut, Menu, X, Plus,
   ArrowRight, Star, Clock, CheckCircle, ShieldCheck,
-  RefreshCw, Inbox
+  RefreshCw, Inbox, Wrench
 } from "lucide-react";
 import { BrandLogo } from "@/components/common/BrandLogo";
 import { AddressVerificationModule } from "@/components/features/verification/AddressVerificationModule";
@@ -106,6 +106,7 @@ export default function DashboardPage() {
   const [smsNotifs, setSmsNotifs] = useState(savedNotifPrefs.smsNotifs);
   const [securityAlerts, setSecurityAlerts] = useState(savedNotifPrefs.securityAlerts);
   const [staySignedInState, setStaySignedInState] = useState(true);
+  const [clientNotice, setClientNotice] = useState<string | null>(null);
 
   const fetchCustomerDashboardData = async () => {
     setLoading(true);
@@ -246,6 +247,11 @@ export default function DashboardPage() {
       const paymentParam = urlParams.get("payment");
       const topUpParam = urlParams.get("topup");
       const amountParam = urlParams.get("amount");
+      const noticeParam = urlParams.get("notice");
+
+      if (noticeParam === "client_cannot_access_pro") {
+        setClientNotice("Client Account Notice: Client accounts cannot switch to an Artisan account. If you are a skilled artisan, you can apply to register as a verified professional.");
+      }
 
       if (tabParam) {
         const clean = sanitizeTab(tabParam);
@@ -420,6 +426,12 @@ export default function DashboardPage() {
         </nav>
 
         <div className={styles.sidebarFooter}>
+          {(user.role === "PROFESSIONAL" || Boolean(user.isProfessional)) && (
+            <Link href="/pro" className={styles.navLink} style={{ color: "#C084FC", fontWeight: 700, marginBottom: 6 }}>
+              <Wrench size={20} color="#A855F7" />
+              <span>Artisan Portal</span>
+            </Link>
+          )}
           <Link href="/auth/login" className={styles.navLink}>
             <LogOut size={20} />
             <span>Log Out</span>
@@ -437,10 +449,33 @@ export default function DashboardPage() {
             </button>
             <div>
               <h1 className={styles.greeting}>Welcome back, {user.firstName || "Valued Client"}! 👋</h1>
-              <p className={styles.greetingSub}>Here&apos;s what&apos;s happening with your property</p>
+              <p className={styles.greetingSub}>
+                {(user.role === "PROFESSIONAL" || Boolean(user.isProfessional))
+                  ? "Artisan Account • Browsing in Client Mode"
+                  : "Here's what's happening with your property"}
+              </p>
             </div>
           </div>
           <div className={styles.topBarRight}>
+            {(user.role === "PROFESSIONAL" || Boolean(user.isProfessional)) && (
+              <Link
+                href="/pro"
+                className="btn btn-secondary btn-sm"
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 6,
+                  color: "#C084FC",
+                  borderColor: "rgba(139,92,246,0.4)",
+                  background: "rgba(139,92,246,0.1)",
+                  textDecoration: "none",
+                  fontWeight: 600,
+                }}
+                title="Return to your Artisan Workspace"
+              >
+                <Wrench size={14} color="#A855F7" /> Artisan Portal
+              </Link>
+            )}
             <button onClick={fetchCustomerDashboardData} className="btn btn-secondary btn-sm" style={{ display: "flex", alignItems: "center", gap: 6 }}>
               <RefreshCw size={14} /> Refresh
             </button>
@@ -450,6 +485,39 @@ export default function DashboardPage() {
             </Link>
           </div>
         </header>
+
+        {/* Client Access Restriction Alert (if client tried to access /pro) */}
+        {clientNotice && (
+          <div style={{ background: "rgba(239, 68, 68, 0.12)", border: "1.5px solid #EF4444", borderRadius: "14px", padding: "14px 20px", marginBottom: "20px", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "12px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+              <span style={{ fontSize: "20px" }}>🔒</span>
+              <span style={{ color: "#FCA5A5", fontSize: "13px", fontWeight: 600 }}>
+                {clientNotice}
+              </span>
+            </div>
+            <button onClick={() => setClientNotice(null)} style={{ background: "none", border: "none", color: "#F87171", cursor: "pointer", fontSize: "12px", fontWeight: 700 }}>
+              Dismiss ✕
+            </button>
+          </div>
+        )}
+
+        {/* Banner if Pro is Browsing in Client Mode */}
+        {(user.role === "PROFESSIONAL" || Boolean(user.isProfessional)) && (
+          <div style={{ background: "linear-gradient(135deg, rgba(139, 92, 246, 0.12) 0%, rgba(14, 165, 233, 0.12) 100%)", border: "1.5px solid #8B5CF6", borderRadius: "14px", padding: "14px 20px", marginBottom: "20px", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "12px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+              <span style={{ fontSize: "20px" }}>🛠️</span>
+              <div>
+                <strong style={{ color: "#F8FAFC", fontSize: "14px", display: "block" }}>Artisan Account Active in Client Mode</strong>
+                <span style={{ color: "var(--text-secondary)", fontSize: "12px" }}>
+                  As a verified professional with complete documents on file, you can book any service for your property and manage customer bookings here.
+                </span>
+              </div>
+            </div>
+            <Link href="/pro" style={{ fontSize: "12px", color: "#C084FC", fontWeight: 700, textDecoration: "none", background: "#0F172A", padding: "6px 14px", borderRadius: "8px", border: "1px solid #8B5CF6", whiteSpace: "nowrap" }}>
+              Return to Artisan Portal ➔
+            </Link>
+          </div>
+        )}
 
         {/* Prominent On-Platform Security Warning Banner */}
         <div style={{ background: "rgba(245,158,11,0.12)", border: "1.5px solid #F59E0B", borderRadius: "14px", padding: "14px 20px", marginBottom: "20px", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "12px" }}>

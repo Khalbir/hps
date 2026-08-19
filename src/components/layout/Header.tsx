@@ -31,6 +31,8 @@ export function Header() {
   const [mobileServicesOpen, setMobileServicesOpen] = useState(true);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userRole, setUserRole] = useState<string | null>(null);
+  const [isProfessional, setIsProfessional] = useState(false);
+  const [userName, setUserName] = useState<string>("");
 
   useEffect(() => {
     const handleScroll = () => {
@@ -63,12 +65,18 @@ export function Header() {
             const rawUser = localStorage.getItem("handyhub_user");
             const rawSession = localStorage.getItem("handyhub_user_session") || sessionStorage.getItem("handyhub_active_session");
             const parsed = rawUser ? JSON.parse(rawUser) : rawSession ? JSON.parse(rawSession).user : null;
-            if (parsed?.role) setUserRole(parsed.role);
+            if (parsed?.role) {
+              setUserRole(parsed.role);
+              setIsProfessional(parsed.role === "PROFESSIONAL" || Boolean(parsed.isProfessional));
+              if (parsed.firstName) setUserName(parsed.firstName);
+            }
           } catch {}
         }
       } else {
         setIsLoggedIn(false);
         setUserRole(null);
+        setIsProfessional(false);
+        setUserName("");
       }
     };
     
@@ -212,15 +220,28 @@ export function Header() {
               </AnimatePresence>
             </button>
             {isLoggedIn ? (
-              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                <Link
-                  href={userRole === "SUPER_ADMIN" || userRole === "ADMIN" ? "/admin/dashboard" : userRole === "PROFESSIONAL" ? "/pro" : "/dashboard"}
-                  className={styles.profileBtn}
-                  title="My Profile & Dashboard"
-                >
-                  <User size={16} />
-                  <span className={styles.profileText}>My Profile</span>
-                </Link>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                {userRole === "SUPER_ADMIN" || userRole === "ADMIN" ? (
+                  <Link href="/admin/dashboard" className={styles.profileBtn} title="Admin Control Center">
+                    <User size={16} />
+                    <span className={styles.profileText}>Admin Portal</span>
+                  </Link>
+                ) : isProfessional ? (
+                  <>
+                    <Link href="/pro" className={styles.profileBtn} style={{ background: "rgba(139, 92, 246, 0.15)", borderColor: "#8B5CF6", color: "#C084FC" }} title="Artisan Workspace">
+                      <Wrench size={15} color="#A855F7" />
+                      <span className={styles.profileText}>Artisan Portal</span>
+                    </Link>
+                    <Link href="/dashboard" className="btn btn-ghost btn-sm" style={{ fontSize: "12px", color: "#38BDF8", padding: "4px 8px", display: "flex", alignItems: "center", gap: 4 }} title="Switch to Client Mode">
+                      <User size={14} /> Switch to Client View
+                    </Link>
+                  </>
+                ) : (
+                  <Link href="/dashboard" className={styles.profileBtn} title="Client Dashboard">
+                    <User size={16} />
+                    <span className={styles.profileText}>Client Dashboard</span>
+                  </Link>
+                )}
                 <button onClick={handleLogout} className={`${styles.loginBtn}`} style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "inherit", opacity: 0.8 }}>
                   Log Out
                 </button>
@@ -333,15 +354,48 @@ export function Header() {
                   <div className={styles.mobileDivider} />
                   {isLoggedIn ? (
                     <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                      <Link
-                        href={userRole === "SUPER_ADMIN" || userRole === "ADMIN" ? "/admin/dashboard" : userRole === "PROFESSIONAL" ? "/pro" : "/dashboard"}
-                        className={styles.mobileLink}
-                        onClick={() => setMobileOpen(false)}
-                        style={{ color: "#0EA5E9", fontWeight: "bold", display: "flex", alignItems: "center", gap: 8 }}
-                      >
-                        <User size={18} />
-                        <span>My Profile & Dashboard</span>
-                      </Link>
+                      {userRole === "SUPER_ADMIN" || userRole === "ADMIN" ? (
+                        <Link
+                          href="/admin/dashboard"
+                          className={styles.mobileLink}
+                          onClick={() => setMobileOpen(false)}
+                          style={{ color: "#8B5CF6", fontWeight: "bold", display: "flex", alignItems: "center", gap: 8 }}
+                        >
+                          <User size={18} />
+                          <span>Admin Control Center</span>
+                        </Link>
+                      ) : isProfessional ? (
+                        <>
+                          <Link
+                            href="/pro"
+                            className={styles.mobileLink}
+                            onClick={() => setMobileOpen(false)}
+                            style={{ color: "#C084FC", fontWeight: "bold", display: "flex", alignItems: "center", gap: 8 }}
+                          >
+                            <Wrench size={18} />
+                            <span>Artisan Workspace (Pro)</span>
+                          </Link>
+                          <Link
+                            href="/dashboard"
+                            className={styles.mobileLink}
+                            onClick={() => setMobileOpen(false)}
+                            style={{ color: "#38BDF8", display: "flex", alignItems: "center", gap: 8 }}
+                          >
+                            <User size={18} />
+                            <span>Switch to Client Mode (Book Services)</span>
+                          </Link>
+                        </>
+                      ) : (
+                        <Link
+                          href="/dashboard"
+                          className={styles.mobileLink}
+                          onClick={() => setMobileOpen(false)}
+                          style={{ color: "#0EA5E9", fontWeight: "bold", display: "flex", alignItems: "center", gap: 8 }}
+                        >
+                          <User size={18} />
+                          <span>Client Dashboard</span>
+                        </Link>
+                      )}
                       <button
                         onClick={() => {
                           setMobileOpen(false);
