@@ -393,3 +393,77 @@ export async function sendClientCompletionOtpAlert(params: {
     isUrgent: true,
   });
 }
+
+/**
+ * Send alert to Client when Artisan requests replacement part authorization
+ */
+export async function sendClientPartAuthorizationAlert(params: {
+  clientPhone: string;
+  clientName: string;
+  artisanName: string;
+  serviceName: string;
+  bookingRef: string;
+  partName: string;
+  reason: string;
+  estimatedCost: number;
+  quantity: number;
+}) {
+  const body =
+    `⚙️ *REPLACEMENT PART AUTHORIZATION REQUIRED*\n\n` +
+    `Your artisan *${params.artisanName}* has inspected your installation and identified a faulty component requiring replacement.\n\n` +
+    `🔧 *Part Required:* ${params.partName} (Qty: ${params.quantity})\n` +
+    `📋 *Reason / Diagnosis:* ${params.reason}\n` +
+    `💵 *Estimated Cost:* ${formatNairaText(params.estimatedCost)}\n\n` +
+    `🛡️ *HANDYHUB ZERO-CASH GUARANTEE:*\n` +
+    `Do NOT pay cash to the artisan! Payment is made securely to HandyHub Pro Solutions and a one-time digital purchase voucher is issued to our verified supplier.`;
+
+  return sendWhatsAppAlert({
+    recipientPhone: params.clientPhone,
+    recipientName: params.clientName,
+    title: "Part Replacement Authorization ⚙️",
+    body,
+    bookingRef: params.bookingRef,
+    actionUrl: `https://handyhubpro.ng/track?ref=${encodeURIComponent(params.bookingRef)}`,
+    actionLabel: "Review Photo Evidence & Authorize",
+    isUrgent: true,
+  });
+}
+
+/**
+ * Send alert to Artisan when Client approves replacement part and issues purchase voucher
+ */
+export async function sendArtisanPartVoucherAlert(params: {
+  artisanPhone: string;
+  artisanName: string;
+  bookingRef: string;
+  partName: string;
+  approvedCost: number;
+  voucherCode: string;
+  supplierName: string;
+  supplierAddress: string;
+}) {
+  const body =
+    `🎟️ *REPLACEMENT PART APPROVED — PROCUREMENT VOUCHER ISSUED*\n\n` +
+    `The customer has authorized the replacement part and funded the purchase to HandyHub Escrow.\n\n` +
+    `🔧 *Part Approved:* ${params.partName}\n` +
+    `💵 *Authorized Amount:* ${formatNairaText(params.approvedCost)}\n\n` +
+    `🎫 *ONE-TIME PURCHASE VOUCHER CODE:* \n` +
+    `👉 *[ ${params.voucherCode} ]*\n\n` +
+    `🏬 *Authorized Supplier:* ${params.supplierName}\n` +
+    `📍 *Collection Location:* ${params.supplierAddress}\n\n` +
+    `⚠️ *INSTRUCTIONS:*\n` +
+    `1. Present this code at the authorized supplier to collect the part.\n` +
+    `2. Retain the merchant invoice and take a clear photo of the receipt and the installed part in the app.`;
+
+  return sendWhatsAppAlert({
+    recipientPhone: params.artisanPhone,
+    recipientName: params.artisanName,
+    title: "Part Voucher Ready 🎟️",
+    body,
+    bookingRef: params.bookingRef,
+    actionUrl: `https://handyhubpro.ng/pro/jobs`,
+    actionLabel: "View Voucher in Artisan Portal",
+    isUrgent: true,
+  });
+}
+

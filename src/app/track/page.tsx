@@ -6,7 +6,8 @@ import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Search, MapPin, Clock, ShieldCheck, Phone, MessageSquare, CheckCircle2,
-  Navigation, AlertTriangle, Key, Star, Car, ArrowRight, UserCheck, Shield, Award, Camera
+  Navigation, AlertTriangle, Key, Star, Car, ArrowRight, UserCheck, Shield, Award, Camera,
+  Wrench, DollarSign, Wallet, CreditCard, ExternalLink, RefreshCw, X
 } from "lucide-react";
 import { RateReviewModal } from "@/components/common/RateReviewModal";
 
@@ -20,7 +21,56 @@ function TrackContent() {
   const [previewPhotoUrl, setPreviewPhotoUrl] = useState<string | null>(null);
   const [brokenImages, setBrokenImages] = useState<Record<string, boolean>>({});
 
+  // Replacement Part Authorization State
+  const [partModalOpen, setPartModalOpen] = useState(false);
+  const [selectedPart, setSelectedPart] = useState<any>(null);
+  const [partAction, setPartAction] = useState<"APPROVE" | "REJECT">("APPROVE");
+  const [partPaymentMethod, setPartPaymentMethod] = useState<"PAYSTACK" | "WALLET">("WALLET");
+  const [rejectionNote, setRejectionNote] = useState("");
+  const [processingPart, setProcessingPart] = useState(false);
+  const [partFeedback, setPartFeedback] = useState<{ type: "success" | "error"; msg: string } | null>(null);
+
   const initialRef = searchParams.get("reference") || searchParams.get("ref") || searchParams.get("id") || "";
+
+  const handleAuthorizePart = async () => {
+    if (!selectedPart) return;
+    setProcessingPart(true);
+    setPartFeedback(null);
+
+    try {
+      const res = await fetch("/api/parts/authorize", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          partId: selectedPart.id,
+          action: partAction,
+          rejectionReason: rejectionNote,
+          paymentMethod: partPaymentMethod,
+          paymentReference: `PAY-PART-${Date.now()}`,
+        }),
+      });
+
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setPartFeedback({
+          type: "success",
+          msg: partAction === "APPROVE"
+            ? `Part authorized successfully! Purchase voucher issued: ${data.part?.voucherCode || ""}`
+            : "Part replacement request declined.",
+        });
+        setTimeout(() => {
+          setPartModalOpen(false);
+          fetchBookingTrack(query);
+        }, 1800);
+      } else {
+        setPartFeedback({ type: "error", msg: data.error || "Failed to process authorization." });
+      }
+    } catch (err: any) {
+      setPartFeedback({ type: "error", msg: "Network connection error. Please try again." });
+    } finally {
+      setProcessingPart(false);
+    }
+  };
 
   const fetchBookingTrack = async (searchQuery: string) => {
     if (!searchQuery) return;
@@ -229,6 +279,186 @@ function TrackContent() {
                 </div>
               </div>
             </div>
+
+            {/* Replacement Parts Management & Authorization Module */}
+            {booking.replacementParts && booking.replacementParts.length > 0 && (
+              <div className="card" style={{ background: "rgba(15, 23, 42, 0.95)", border: "2px solid #8B5CF6", boxShadow: "0 10px 30px rgba(139, 92, 246, 0.15)" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16, flexWrap: "wrap", gap: 10 }}>
+                  <div>
+                    <h3 className="h4" style={{ margin: 0, color: "#C084FC", display: "flex", alignItems: "center", gap: 8 }}>
+                      <Wrench size={22} color="#A855F7" /> Replacement Parts & Procurement
+                    </h3>
+                    <p style={{ fontSize: "13px", color: "var(--text-secondary)", margin: "4px 0 0" }}>
+                      Artisan on-site diagnosed replacement components for your property.
+                    </p>
+                  </div>
+                  <span style={{ fontSize: "11px", color: "#38BDF8", fontWeight: 700, background: "rgba(14,165,233,0.15)", padding: "4px 10px", borderRadius: 8, border: "1px solid rgba(14,165,233,0.3)" }}>
+                    🛡️ Zero-Cash Escrow Guarantee
+                  </span>
+                </div>
+
+                {/* Zero Cash Safety Banner */}
+                <div style={{ background: "rgba(245, 158, 11, 0.1)", border: "1px solid rgba(245, 158, 11, 0.3)", borderRadius: 10, padding: "10px 14px", marginBottom: 16, display: "flex", alignItems: "flex-start", gap: 10 }}>
+                  <AlertTriangle size={18} color="#F59E0B" style={{ flexShrink: 0, marginTop: 2 }} />
+                  <span style={{ fontSize: "12px", color: "#FDE68A", lineHeight: 1.5 }}>
+                    <strong>Strict Platform Policy:</strong> Never give cash or direct bank transfers to artisans for parts. All legitimate replacements must be authorized through HandyHub Pro to issue authentic supplier vouchers and protect your warranty.
+                  </span>
+                </div>
+
+                {/* List of Parts */}
+                <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                  {booking.replacementParts.map((part: any) => {
+                    let parsedEvidence: string[] = [];
+                    try {
+                      parsedEvidence = JSON.parse(part.evidencePhotos || "[]");
+                    } catch {
+                      if (part.evidencePhotos) parsedEvidence = [part.evidencePhotos];
+                    }
+
+                    return (
+                      <div
+                        key={part.id}
+                        style={{
+                          background: "var(--bg-tertiary)",
+                          border: "1px solid var(--border-primary)",
+                          borderRadius: "var(--radius-lg)",
+                          padding: "16px",
+                        }}
+                      >
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 12, marginBottom: 12 }}>
+                          <div>
+                            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                              <strong style={{ fontSize: "15px", color: "var(--text-primary)" }}>{part.partName}</strong>
+                              <span style={{ fontSize: "11px", color: "#A855F7", background: "rgba(168,85,247,0.15)", padding: "2px 8px", borderRadius: 6, fontWeight: 700 }}>
+                                {part.category}
+                              </span>
+                            </div>
+                            <span style={{ fontSize: "12px", color: "var(--text-tertiary)", display: "block", marginTop: 2 }}>
+                              Ref: {part.reference} • Qty: {part.quantity}
+                            </span>
+                          </div>
+
+                          <div style={{ textAlign: "right" }}>
+                            <div style={{ fontSize: "16px", fontWeight: 800, color: "#10B981" }}>
+                              ₦{Number(part.approvedCost || part.estimatedCost || 0).toLocaleString()}
+                            </div>
+                            <span
+                              style={{
+                                fontSize: "11px",
+                                fontWeight: 700,
+                                padding: "2px 8px",
+                                borderRadius: 6,
+                                display: "inline-block",
+                                marginTop: 4,
+                                background:
+                                  part.status === "REQUESTED"
+                                    ? "rgba(245,158,11,0.2)"
+                                    : part.status === "VOUCHER_ISSUED" || part.status === "PURCHASED"
+                                    ? "rgba(14,165,233,0.2)"
+                                    : part.status === "INSTALLED_VERIFIED"
+                                    ? "rgba(16,185,129,0.2)"
+                                    : "rgba(239,68,68,0.2)",
+                                color:
+                                  part.status === "REQUESTED"
+                                    ? "#F59E0B"
+                                    : part.status === "VOUCHER_ISSUED" || part.status === "PURCHASED"
+                                    ? "#38BDF8"
+                                    : part.status === "INSTALLED_VERIFIED"
+                                    ? "#10B981"
+                                    : "#EF4444",
+                              }}
+                            >
+                              {part.status === "REQUESTED" && "⏳ Pending Your Authorization"}
+                              {part.status === "VOUCHER_ISSUED" && "🎟️ Voucher Issued to Supplier"}
+                              {part.status === "PURCHASED" && "🛒 Collected from Supplier"}
+                              {part.status === "INSTALLED_VERIFIED" && "✨ Installed & Verified"}
+                              {part.status === "REJECTED" && "❌ Rejected by Customer"}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Reason / Diagnosis */}
+                        <div style={{ fontSize: "12.5px", color: "var(--text-secondary)", marginBottom: 12, background: "rgba(0,0,0,0.2)", padding: "8px 12px", borderRadius: 6 }}>
+                          <strong>Artisan Diagnosis:</strong> {part.reason}
+                          {part.description && <span style={{ display: "block", marginTop: 2 }}>{part.description}</span>}
+                        </div>
+
+                        {/* Damaged Part Photo Preview */}
+                        {parsedEvidence.length > 0 && (
+                          <div style={{ marginBottom: 12 }}>
+                            <span style={{ fontSize: "11px", color: "#94A3B8", display: "block", marginBottom: 6, fontWeight: 600 }}>
+                              📸 Damaged Component Photo Evidence:
+                            </span>
+                            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                              {parsedEvidence.map((photoUrl, idx) => (
+                                <div
+                                  key={idx}
+                                  onClick={() => setPreviewPhotoUrl(photoUrl)}
+                                  style={{
+                                    width: 70,
+                                    height: 70,
+                                    borderRadius: 8,
+                                    overflow: "hidden",
+                                    border: "1px solid rgba(139,92,246,0.4)",
+                                    cursor: "pointer",
+                                    background: "#000",
+                                  }}
+                                >
+                                  <img src={photoUrl} alt="Damaged Part Evidence" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Voucher Code info if issued */}
+                        {part.voucherCode && (
+                          <div style={{ background: "rgba(14,165,233,0.1)", border: "1px dashed #0EA5E9", borderRadius: 8, padding: "8px 12px", marginBottom: 12, display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8 }}>
+                            <div>
+                              <span style={{ fontSize: "10.5px", color: "#38BDF8", display: "block", fontWeight: 700 }}>AUTHORIZED PROCUREMENT VOUCHER</span>
+                              <strong style={{ fontSize: "14px", color: "#F8FAFC", fontFamily: "monospace", letterSpacing: 1 }}>{part.voucherCode}</strong>
+                            </div>
+                            <div style={{ fontSize: "11px", color: "#94A3B8" }}>
+                              Supplier: <strong>{part.supplier?.name || "Verified Partner Hub"}</strong>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Actions for Pending Requests */}
+                        {part.status === "REQUESTED" && (
+                          <div style={{ display: "flex", gap: 10, marginTop: 12, flexWrap: "wrap" }}>
+                            <button
+                              onClick={() => {
+                                setSelectedPart(part);
+                                setPartAction("APPROVE");
+                                setPartModalOpen(true);
+                                setPartFeedback(null);
+                              }}
+                              className="btn btn-primary btn-sm"
+                              style={{ background: "#10B981", borderColor: "#10B981", color: "#FFFFFF", fontWeight: 700, display: "flex", alignItems: "center", gap: 6 }}
+                            >
+                              <CheckCircle2 size={16} /> Approve & Fund Part (₦{Number(part.estimatedCost).toLocaleString()})
+                            </button>
+                            <button
+                              onClick={() => {
+                                setSelectedPart(part);
+                                setPartAction("REJECT");
+                                setPartModalOpen(true);
+                                setPartFeedback(null);
+                              }}
+                              className="btn btn-secondary btn-sm"
+                              style={{ color: "#EF4444", borderColor: "rgba(239,68,68,0.4)" }}
+                            >
+                              <X size={16} /> Decline Request
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
             {/* Assigned Artisan Card */}
             {booking.artisan && (
@@ -509,7 +739,191 @@ function TrackContent() {
           onReviewSubmitted={() => fetchBookingTrack(query)}
         />
       )}
+
+      {/* Replacement Part Authorization & Rejection Modal */}
+      {partModalOpen && selectedPart && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 9999,
+            background: "rgba(0, 0, 0, 0.85)",
+            backdropFilter: "blur(6px)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: 16,
+          }}
+          onClick={() => !processingPart && setPartModalOpen(false)}
+        >
+          <div
+            style={{
+              background: "var(--bg-elevated)",
+              borderRadius: 16,
+              border: `1.5px solid ${partAction === "APPROVE" ? "#10B981" : "#EF4444"}`,
+              padding: 24,
+              maxWidth: 500,
+              width: "100%",
+              boxShadow: "0 20px 40px rgba(0,0,0,0.5)",
+              color: "var(--text-primary)",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+              <h3 className="h4" style={{ margin: 0, display: "flex", alignItems: "center", gap: 8, color: partAction === "APPROVE" ? "#10B981" : "#EF4444" }}>
+                {partAction === "APPROVE" ? <CheckCircle2 size={22} /> : <AlertTriangle size={22} />}
+                {partAction === "APPROVE" ? "Authorize Part Replacement" : "Decline Part Request"}
+              </h3>
+              <button
+                onClick={() => setPartModalOpen(false)}
+                disabled={processingPart}
+                style={{ background: "none", border: "none", color: "var(--text-tertiary)", cursor: "pointer" }}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Part summary */}
+            <div style={{ background: "var(--bg-tertiary)", padding: 14, borderRadius: 10, marginBottom: 16 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+                <strong style={{ fontSize: "15px" }}>{selectedPart.partName}</strong>
+                <span style={{ fontSize: "15px", fontWeight: 800, color: "#10B981" }}>
+                  ₦{Number(selectedPart.estimatedCost).toLocaleString()}
+                </span>
+              </div>
+              <span style={{ fontSize: "12px", color: "var(--text-secondary)", display: "block" }}>
+                Ref: {selectedPart.reference} • Qty: {selectedPart.quantity} • Category: {selectedPart.category}
+              </span>
+              <p style={{ fontSize: "12px", color: "var(--text-tertiary)", margin: "6px 0 0" }}>
+                Diagnosis: {selectedPart.reason}
+              </p>
+            </div>
+
+            {partAction === "APPROVE" ? (
+              <div>
+                <div style={{ background: "rgba(14,165,233,0.1)", border: "1px solid rgba(14,165,233,0.3)", borderRadius: 10, padding: 12, marginBottom: 16 }}>
+                  <span style={{ fontSize: "12px", color: "#38BDF8", display: "block", lineHeight: 1.5 }}>
+                    🛡️ <strong>Zero-Cash Security:</strong> Payment is held in HandyHub Escrow and a <strong>single-use digital voucher</strong> will be issued to our verified supplier. No cash is given to the artisan.
+                  </span>
+                </div>
+
+                <label style={{ fontSize: "13px", fontWeight: 600, display: "block", marginBottom: 8 }}>
+                  Select Payment Method:
+                </label>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 16 }}>
+                  <button
+                    type="button"
+                    onClick={() => setPartPaymentMethod("WALLET")}
+                    style={{
+                      padding: 12,
+                      borderRadius: 10,
+                      border: `2px solid ${partPaymentMethod === "WALLET" ? "#10B981" : "var(--border-primary)"}`,
+                      background: partPaymentMethod === "WALLET" ? "rgba(16,185,129,0.15)" : "var(--bg-tertiary)",
+                      color: "var(--text-primary)",
+                      cursor: "pointer",
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      gap: 4,
+                      fontSize: "12px",
+                      fontWeight: 600,
+                    }}
+                  >
+                    <Wallet size={20} color={partPaymentMethod === "WALLET" ? "#10B981" : "var(--text-secondary)"} />
+                    HandyHub Wallet
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setPartPaymentMethod("PAYSTACK")}
+                    style={{
+                      padding: 12,
+                      borderRadius: 10,
+                      border: `2px solid ${partPaymentMethod === "PAYSTACK" ? "#0EA5E9" : "var(--border-primary)"}`,
+                      background: partPaymentMethod === "PAYSTACK" ? "rgba(14,165,233,0.15)" : "var(--bg-tertiary)",
+                      color: "var(--text-primary)",
+                      cursor: "pointer",
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      gap: 4,
+                      fontSize: "12px",
+                      fontWeight: 600,
+                    }}
+                  >
+                    <CreditCard size={20} color={partPaymentMethod === "PAYSTACK" ? "#0EA5E9" : "var(--text-secondary)"} />
+                    Paystack / Card
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div style={{ marginBottom: 16 }}>
+                <label style={{ fontSize: "13px", fontWeight: 600, display: "block", marginBottom: 6 }}>
+                  Reason for Rejection:
+                </label>
+                <textarea
+                  value={rejectionNote}
+                  onChange={(e) => setRejectionNote(e.target.value)}
+                  placeholder="e.g. Existing part is still functional, will provide own part, price too high..."
+                  rows={3}
+                  style={{
+                    width: "100%",
+                    padding: 10,
+                    background: "var(--bg-tertiary)",
+                    border: "1px solid var(--border-primary)",
+                    borderRadius: 8,
+                    color: "var(--text-primary)",
+                    fontSize: "13px",
+                  }}
+                />
+              </div>
+            )}
+
+            {/* Feedback Message */}
+            {partFeedback && (
+              <div
+                style={{
+                  padding: 10,
+                  borderRadius: 8,
+                  marginBottom: 14,
+                  fontSize: "12px",
+                  background: partFeedback.type === "success" ? "rgba(16,185,129,0.15)" : "rgba(239,68,68,0.15)",
+                  color: partFeedback.type === "success" ? "#10B981" : "#EF4444",
+                  border: `1px solid ${partFeedback.type === "success" ? "#10B981" : "#EF4444"}`,
+                }}
+              >
+                {partFeedback.msg}
+              </div>
+            )}
+
+            {/* Submit Button */}
+            <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
+              <button
+                type="button"
+                onClick={() => setPartModalOpen(false)}
+                disabled={processingPart}
+                className="btn btn-secondary btn-md"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleAuthorizePart}
+                disabled={processingPart}
+                className="btn btn-primary btn-md"
+                style={{
+                  background: partAction === "APPROVE" ? "#10B981" : "#EF4444",
+                  borderColor: partAction === "APPROVE" ? "#10B981" : "#EF4444",
+                }}
+              >
+                {processingPart ? "Processing..." : partAction === "APPROVE" ? `Confirm & Pay ₦${Number(selectedPart.estimatedCost).toLocaleString()}` : "Confirm Rejection"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
+
   );
 }
 

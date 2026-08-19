@@ -5,12 +5,14 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ProLayoutShell } from "@/components/layout/ProLayoutShell";
 import {
   Camera, Key, Clock, MapPin, User, ArrowRight, UploadCloud, CheckCircle, X,
-  Inbox, RefreshCw, AlertCircle, Loader2, Image as ImageIcon, RotateCcw, Check, Sparkles, Eye
+  Inbox, RefreshCw, AlertCircle, Loader2, Image as ImageIcon, RotateCcw, Check, Sparkles, Eye,
+  Wrench, Ticket, ShieldCheck, DollarSign, FileText, CheckCircle2
 } from "lucide-react";
 import styles from "../pro.module.css";
 
 export interface ActiveJob {
   id: string;
+  dbBookingId?: string;
   service: string;
   customer: string;
   phone: string;
@@ -22,6 +24,7 @@ export interface ActiveJob {
   otpCode: string;
   beforePhoto: string | null;
   afterPhoto: string | null;
+  replacementParts?: any[];
 }
 
 export default function ProJobsPage() {
@@ -42,8 +45,38 @@ export default function ProJobsPage() {
   const [successMessage, setSuccessMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
+  // Replacement Parts Request State
+  const [partModalOpen, setPartModalOpen] = useState(false);
+  const [targetJobForPart, setTargetJobForPart] = useState<ActiveJob | null>(null);
+  const [partName, setPartName] = useState("");
+  const [partCategory, setPartCategory] = useState("GENERAL");
+  const [partReason, setPartReason] = useState("BURNT_OUT");
+  const [partQuantity, setPartQuantity] = useState(1);
+  const [partEstimatedCost, setPartEstimatedCost] = useState("");
+  const [partEvidencePhoto, setPartEvidencePhoto] = useState<string | null>(null);
+  const [partDescription, setPartDescription] = useState("");
+  const [uploadingEvidence, setUploadingEvidence] = useState(false);
+  const [submittingPart, setSubmittingPart] = useState(false);
+  const [partError, setPartError] = useState("");
+  const [partSuccess, setPartSuccess] = useState("");
+
+  // Replacement Parts Install & Receipt State
+  const [installModalOpen, setInstallModalOpen] = useState(false);
+  const [selectedPartForInstall, setSelectedPartForInstall] = useState<any>(null);
+  const [receiptPhotoUrl, setReceiptPhotoUrl] = useState<string | null>(null);
+  const [installedPhotoUrl, setInstalledPhotoUrl] = useState<string | null>(null);
+  const [installNotes, setInstallNotes] = useState("");
+  const [uploadingReceipt, setUploadingReceipt] = useState(false);
+  const [uploadingInstalled, setUploadingInstalled] = useState(false);
+  const [submittingInstall, setSubmittingInstall] = useState(false);
+  const [installError, setInstallError] = useState("");
+  const [installSuccess, setInstallSuccess] = useState("");
+
   const beforeFileInputRef = useRef<HTMLInputElement>(null);
   const afterFileInputRef = useRef<HTMLInputElement>(null);
+  const evidenceFileInputRef = useRef<HTMLInputElement>(null);
+  const receiptFileInputRef = useRef<HTMLInputElement>(null);
+  const installedFileInputRef = useRef<HTMLInputElement>(null);
 
   const fetchRealActiveJobs = async () => {
     setLoading(true);
@@ -139,6 +172,181 @@ export default function ProJobsPage() {
       setUploadProgress("");
       // Reset input value so same file can be re-selected if needed
       e.target.value = "";
+    }
+  };
+
+  // Upload photo evidence of damaged part
+  const handleEvidenceUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingEvidence(true);
+    setPartError("");
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("folder", "damaged-part-evidence");
+      const res = await fetch("/api/upload", { method: "POST", body: formData });
+      const data = await res.json();
+      if (res.ok && data.url) {
+        setPartEvidencePhoto(data.url);
+      } else {
+        setPartError(data.error || "Failed to upload part photo.");
+      }
+    } catch {
+      setPartError("Network error uploading photo.");
+    } finally {
+      setUploadingEvidence(false);
+      e.target.value = "";
+    }
+  };
+
+  // Submit Part Request to Backend
+  const handleSubmitPartRequest = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!targetJobForPart) return;
+    if (!partName.trim()) {
+      setPartError("Please specify the exact replacement part name.");
+      return;
+    }
+    const cost = parseFloat(partEstimatedCost.replace(/[^0-9.]/g, ""));
+    if (isNaN(cost) || cost <= 0) {
+      setPartError("Please enter a valid estimated cost in Naira.");
+      return;
+    }
+
+    setSubmittingPart(true);
+    setPartError("");
+    setPartSuccess("");
+
+    try {
+      const res = await fetch("/api/parts/request", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          bookingId: targetJobForPart.dbBookingId || targetJobForPart.id,
+          partName,
+          category: partCategory,
+          reason: partReason,
+          quantity: partQuantity,
+          estimatedCost: cost,
+          evidencePhotos: partEvidencePhoto ? [partEvidencePhoto] : [],
+          description: partDescription,
+        }),
+      });
+
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setPartSuccess("✅ Replacement part requested! Customer has been alerted on WhatsApp and in-app for authorization.");
+        setTimeout(() => {
+          setPartModalOpen(false);
+          setPartSuccess("");
+          setPartName("");
+          setPartEstimatedCost("");
+          setPartEvidencePhoto(null);
+          setPartDescription("");
+          fetchRealActiveJobs();
+        }, 2000);
+      } else {
+        setPartError(data.error || "Failed to submit part request.");
+      }
+    } catch {
+      setPartError("Network error submitting request.");
+    } finally {
+      setSubmittingPart(false);
+    }
+  };
+
+  // Upload receipt & installed photo
+  const handleReceiptUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingReceipt(true);
+    setInstallError("");
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("folder", "part-receipts");
+      const res = await fetch("/api/upload", { method: "POST", body: formData });
+      const data = await res.json();
+      if (res.ok && data.url) {
+        setReceiptPhotoUrl(data.url);
+      } else {
+        setInstallError(data.error || "Failed to upload receipt.");
+      }
+    } catch {
+      setInstallError("Network error uploading receipt.");
+    } finally {
+      setUploadingReceipt(false);
+      e.target.value = "";
+    }
+  };
+
+  const handleInstalledUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingInstalled(true);
+    setInstallError("");
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("folder", "installed-parts");
+      const res = await fetch("/api/upload", { method: "POST", body: formData });
+      const data = await res.json();
+      if (res.ok && data.url) {
+        setInstalledPhotoUrl(data.url);
+      } else {
+        setInstallError(data.error || "Failed to upload installed photo.");
+      }
+    } catch {
+      setInstallError("Network error uploading installed photo.");
+    } finally {
+      setUploadingInstalled(false);
+      e.target.value = "";
+    }
+  };
+
+  const handleSubmitInstall = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedPartForInstall) return;
+    if (!installedPhotoUrl) {
+      setInstallError("Please upload a photo of the newly installed part.");
+      return;
+    }
+
+    setSubmittingInstall(true);
+    setInstallError("");
+    setInstallSuccess("");
+
+    try {
+      const res = await fetch("/api/parts/install", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          partId: selectedPartForInstall.id,
+          receiptPhotos: receiptPhotoUrl ? [receiptPhotoUrl] : [],
+          installedPhotos: [installedPhotoUrl],
+          notes: installNotes,
+        }),
+      });
+
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setInstallSuccess("✨ Part marked as installed & verified! Client notified.");
+        setTimeout(() => {
+          setInstallModalOpen(false);
+          setInstallSuccess("");
+          setReceiptPhotoUrl(null);
+          setInstalledPhotoUrl(null);
+          setInstallNotes("");
+          fetchRealActiveJobs();
+        }, 1800);
+      } else {
+        setInstallError(data.error || "Failed to record installation.");
+      }
+    } catch {
+      setInstallError("Network error recording installation.");
+    } finally {
+      setSubmittingInstall(false);
     }
   };
 
@@ -327,6 +535,30 @@ export default function ProJobsPage() {
         style={{ display: "none" }}
         onChange={(e) => handleFileUpload(e, "after")}
       />
+      <input
+        ref={evidenceFileInputRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        style={{ display: "none" }}
+        onChange={handleEvidenceUpload}
+      />
+      <input
+        ref={receiptFileInputRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        style={{ display: "none" }}
+        onChange={handleReceiptUpload}
+      />
+      <input
+        ref={installedFileInputRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        style={{ display: "none" }}
+        onChange={handleInstalledUpload}
+      />
 
       <div style={{ marginBottom: "var(--space-6)", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
         <div>
@@ -420,10 +652,81 @@ export default function ProJobsPage() {
                       )}
                     </div>
                   )}
+
+                  {/* Active Replacement Parts for this Job */}
+                  {job.replacementParts && job.replacementParts.length > 0 && (
+                    <div style={{ marginTop: 12, background: "rgba(15, 23, 42, 0.7)", border: "1px solid rgba(139, 92, 246, 0.3)", borderRadius: 8, padding: "8px 12px" }}>
+                      <span style={{ fontSize: "11px", color: "#C084FC", fontWeight: 700, display: "flex", alignItems: "center", gap: 5, marginBottom: 6 }}>
+                        <Wrench size={12} /> Replacement Components ({job.replacementParts.length})
+                      </span>
+                      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                        {job.replacementParts.map((p: any) => (
+                          <div key={p.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "11.5px", background: "rgba(255,255,255,0.03)", padding: "4px 8px", borderRadius: 6, flexWrap: "wrap", gap: 6 }}>
+                            <span>
+                              <strong>{p.partName}</strong> (₦{Number(p.approvedCost || p.estimatedCost).toLocaleString()})
+                            </span>
+                            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                              <span style={{
+                                padding: "2px 6px",
+                                borderRadius: 4,
+                                fontSize: "10px",
+                                fontWeight: 700,
+                                background: p.status === "VOUCHER_ISSUED" ? "rgba(14,165,233,0.2)" : p.status === "INSTALLED_VERIFIED" ? "rgba(16,185,129,0.2)" : "rgba(245,158,11,0.2)",
+                                color: p.status === "VOUCHER_ISSUED" ? "#38BDF8" : p.status === "INSTALLED_VERIFIED" ? "#10B981" : "#F59E0B"
+                              }}>
+                                {p.status === "VOUCHER_ISSUED" && `🎟️ Voucher: ${p.voucherCode}`}
+                                {p.status === "REQUESTED" && "⏳ Pending Client"}
+                                {p.status === "INSTALLED_VERIFIED" && "✅ Installed"}
+                                {p.status === "FLAGGED_FRAUD" && "⚠️ Flagged"}
+                              </span>
+                              {(p.status === "VOUCHER_ISSUED" || p.status === "PURCHASED") && (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setSelectedPartForInstall(p);
+                                    setInstallModalOpen(true);
+                                    setReceiptPhotoUrl(null);
+                                    setInstalledPhotoUrl(null);
+                                    setInstallError("");
+                                    setInstallSuccess("");
+                                  }}
+                                  className="btn btn-primary btn-sm"
+                                  style={{ padding: "2px 8px", fontSize: "10px", background: "#8B5CF6", borderColor: "#8B5CF6" }}
+                                >
+                                  Upload Receipt & Installed Proof
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
 
-                <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)", flexWrap: "wrap" }}>
                   <strong style={{ fontSize: "var(--fs-lg)", color: "var(--color-primary-400)" }}>{job.price}</strong>
+
+                  {/* Request Replacement Part Button */}
+                  {(job.status === "IN_PROGRESS" || job.status === "ACCEPTED" || job.status === "EN_ROUTE") && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setTargetJobForPart(job);
+                        setPartName("");
+                        setPartEstimatedCost("");
+                        setPartEvidencePhoto(null);
+                        setPartDescription("");
+                        setPartError("");
+                        setPartSuccess("");
+                        setPartModalOpen(true);
+                      }}
+                      className="btn btn-secondary btn-sm"
+                      style={{ color: "#A855F7", borderColor: "rgba(168,85,247,0.4)", display: "inline-flex", alignItems: "center", gap: 5 }}
+                    >
+                      <Wrench size={14} /> Request Part
+                    </button>
+                  )}
 
                   {job.status === "ASSIGNED" || job.status === "PENDING" ? (
                     <button
@@ -774,6 +1077,405 @@ export default function ProJobsPage() {
                 )}
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Modal 1: Request Replacement Part */}
+      {partModalOpen && targetJobForPart && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 9999,
+            background: "rgba(0, 0, 0, 0.85)",
+            backdropFilter: "blur(6px)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: 16,
+          }}
+          onClick={() => !submittingPart && setPartModalOpen(false)}
+        >
+          <div
+            style={{
+              background: "#0F172A",
+              borderRadius: 16,
+              border: "1.5px solid #8B5CF6",
+              padding: 24,
+              maxWidth: 550,
+              width: "100%",
+              boxShadow: "0 20px 40px rgba(0,0,0,0.5)",
+              color: "#F8FAFC",
+              maxHeight: "90vh",
+              overflowY: "auto",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+              <h3 className="h4" style={{ margin: 0, display: "flex", alignItems: "center", gap: 8, color: "#C084FC" }}>
+                <Wrench size={22} color="#A855F7" /> Request Replacement Component
+              </h3>
+              <button
+                onClick={() => setPartModalOpen(false)}
+                disabled={submittingPart}
+                style={{ background: "none", border: "none", color: "#94A3B8", cursor: "pointer" }}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Zero Cash Safety Alert for Artisan */}
+            <div style={{ background: "rgba(139,92,246,0.12)", border: "1px solid rgba(139,92,246,0.3)", borderRadius: 10, padding: 12, marginBottom: 16 }}>
+              <span style={{ fontSize: "12px", color: "#DDD6FE", lineHeight: 1.5 }}>
+                🛡️ <strong>Zero-Cash Procurement Policy:</strong> Do NOT collect cash from the customer. Once approved, the client pays HandyHub directly and you will receive an authorized <strong>single-use voucher code</strong> to collect the genuine component from our partner merchant.
+              </span>
+            </div>
+
+            <form onSubmit={handleSubmitPartRequest}>
+              <div style={{ marginBottom: 14 }}>
+                <label style={{ fontSize: "12px", color: "#94A3B8", fontWeight: 700, display: "block", marginBottom: 6 }}>
+                  Replacement Part Name *
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. 1.5HP AC Compressor Capacitor, 32A Breaker, Gate Valve 3/4"
+                  value={partName}
+                  onChange={(e) => setPartName(e.target.value)}
+                  required
+                  style={{ width: "100%", padding: 10, background: "#1E293B", border: "1px solid #334155", borderRadius: 8, color: "#F8FAFC", fontSize: "13px" }}
+                />
+              </div>
+
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 14 }}>
+                <div>
+                  <label style={{ fontSize: "12px", color: "#94A3B8", fontWeight: 700, display: "block", marginBottom: 6 }}>
+                    Category
+                  </label>
+                  <select
+                    value={partCategory}
+                    onChange={(e) => setPartCategory(e.target.value)}
+                    style={{ width: "100%", padding: 10, background: "#1E293B", border: "1px solid #334155", borderRadius: 8, color: "#F8FAFC", fontSize: "13px" }}
+                  >
+                    <option value="GENERAL">General Hardware</option>
+                    <option value="HVAC">HVAC & AC Parts</option>
+                    <option value="ELECTRICAL">Electrical & Power</option>
+                    <option value="PLUMBING">Plumbing & Drainage</option>
+                    <option value="CARPENTRY">Carpentry & Locks</option>
+                    <option value="APPLIANCE">Appliance Components</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label style={{ fontSize: "12px", color: "#94A3B8", fontWeight: 700, display: "block", marginBottom: 6 }}>
+                    Quantity
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="50"
+                    value={partQuantity}
+                    onChange={(e) => setPartQuantity(parseInt(e.target.value) || 1)}
+                    style={{ width: "100%", padding: 10, background: "#1E293B", border: "1px solid #334155", borderRadius: 8, color: "#F8FAFC", fontSize: "13px" }}
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 14 }}>
+                <div>
+                  <label style={{ fontSize: "12px", color: "#94A3B8", fontWeight: 700, display: "block", marginBottom: 6 }}>
+                    Estimated Cost (₦) *
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. 18,500"
+                    value={partEstimatedCost}
+                    onChange={(e) => setPartEstimatedCost(e.target.value)}
+                    required
+                    style={{ width: "100%", padding: 10, background: "#1E293B", border: "1px solid #334155", borderRadius: 8, color: "#10B981", fontWeight: 700, fontSize: "14px" }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ fontSize: "12px", color: "#94A3B8", fontWeight: 700, display: "block", marginBottom: 6 }}>
+                    Diagnosis Reason *
+                  </label>
+                  <select
+                    value={partReason}
+                    onChange={(e) => setPartReason(e.target.value)}
+                    style={{ width: "100%", padding: 10, background: "#1E293B", border: "1px solid #334155", borderRadius: 8, color: "#F8FAFC", fontSize: "13px" }}
+                  >
+                    <option value="BURNT_OUT">Burnt Out / Short-Circuited</option>
+                    <option value="CORRODED_LEAKING">Corroded / Leaking</option>
+                    <option value="MECHANICAL_WEAR">Mechanical Wear & Tear</option>
+                    <option value="MISSING">Missing Component</option>
+                    <option value="INCOMPATIBLE">Incompatible Specification</option>
+                    <option value="UPGRADE_REQUIRED">Safety Upgrade Required</option>
+                    <option value="OTHER">Other Technical Reason</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Photo Evidence Upload */}
+              <div style={{ marginBottom: 14 }}>
+                <label style={{ fontSize: "12px", color: "#94A3B8", fontWeight: 700, display: "block", marginBottom: 6 }}>
+                  Photo of Damaged Component (Mandatory Evidence)
+                </label>
+                {partEvidencePhoto ? (
+                  <div style={{ display: "flex", alignItems: "center", gap: 12, background: "#1E293B", padding: 10, borderRadius: 8 }}>
+                    <img src={partEvidencePhoto} alt="Damaged Part Preview" style={{ width: 60, height: 60, borderRadius: 6, objectFit: "cover" }} />
+                    <div style={{ flex: 1 }}>
+                      <span style={{ fontSize: "12px", color: "#10B981", display: "block", fontWeight: 600 }}>✓ Evidence Photo Uploaded</span>
+                      <button
+                        type="button"
+                        onClick={() => evidenceFileInputRef.current?.click()}
+                        style={{ background: "none", border: "none", color: "#38BDF8", fontSize: "11px", cursor: "pointer", padding: 0 }}
+                      >
+                        Change Photo
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div
+                    onClick={() => evidenceFileInputRef.current?.click()}
+                    style={{
+                      border: "2px dashed #475569",
+                      padding: 16,
+                      borderRadius: 8,
+                      textAlign: "center",
+                      cursor: "pointer",
+                      background: "rgba(30, 41, 59, 0.5)",
+                    }}
+                  >
+                    {uploadingEvidence ? (
+                      <Loader2 size={24} color="#8B5CF6" className="animate-spin" style={{ margin: "0 auto 6px" }} />
+                    ) : (
+                      <Camera size={24} color="#8B5CF6" style={{ margin: "0 auto 6px" }} />
+                    )}
+                    <strong style={{ fontSize: "12px", color: "#F8FAFC", display: "block" }}>
+                      {uploadingEvidence ? "Uploading photo..." : "📸 Tap to Snap or Select Photo of Damaged Part"}
+                    </strong>
+                  </div>
+                )}
+              </div>
+
+              <div style={{ marginBottom: 16 }}>
+                <label style={{ fontSize: "12px", color: "#94A3B8", fontWeight: 700, display: "block", marginBottom: 6 }}>
+                  Additional Diagnosis Notes (Optional)
+                </label>
+                <textarea
+                  rows={2}
+                  placeholder="Provide technical diagnosis for client explanation..."
+                  value={partDescription}
+                  onChange={(e) => setPartDescription(e.target.value)}
+                  style={{ width: "100%", padding: 10, background: "#1E293B", border: "1px solid #334155", borderRadius: 8, color: "#F8FAFC", fontSize: "12px" }}
+                />
+              </div>
+
+              {partError && (
+                <div style={{ background: "rgba(239,68,68,0.2)", color: "#EF4444", padding: 10, borderRadius: 8, fontSize: "12px", marginBottom: 14, border: "1px solid #EF4444" }}>
+                  {partError}
+                </div>
+              )}
+              {partSuccess && (
+                <div style={{ background: "rgba(16,185,129,0.2)", color: "#10B981", padding: 10, borderRadius: 8, fontSize: "12px", marginBottom: 14, border: "1px solid #10B981" }}>
+                  {partSuccess}
+                </div>
+              )}
+
+              <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
+                <button type="button" onClick={() => setPartModalOpen(false)} disabled={submittingPart} className="btn btn-secondary btn-md">
+                  Cancel
+                </button>
+                <button type="submit" disabled={submittingPart || uploadingEvidence} className="btn btn-primary btn-md" style={{ background: "#8B5CF6", borderColor: "#8B5CF6" }}>
+                  {submittingPart ? "Submitting & Alerting Client..." : "Submit Part Request ➔"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal 2: Confirm Installation & Upload Receipt */}
+      {installModalOpen && selectedPartForInstall && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 9999,
+            background: "rgba(0, 0, 0, 0.85)",
+            backdropFilter: "blur(6px)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: 16,
+          }}
+          onClick={() => !submittingInstall && setInstallModalOpen(false)}
+        >
+          <div
+            style={{
+              background: "#0F172A",
+              borderRadius: 16,
+              border: "1.5px solid #10B981",
+              padding: 24,
+              maxWidth: 550,
+              width: "100%",
+              boxShadow: "0 20px 40px rgba(0,0,0,0.5)",
+              color: "#F8FAFC",
+              maxHeight: "90vh",
+              overflowY: "auto",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+              <h3 className="h4" style={{ margin: 0, display: "flex", alignItems: "center", gap: 8, color: "#10B981" }}>
+                <CheckCircle2 size={22} color="#10B981" /> Verify Part Installation
+              </h3>
+              <button
+                onClick={() => setInstallModalOpen(false)}
+                disabled={submittingInstall}
+                style={{ background: "none", border: "none", color: "#94A3B8", cursor: "pointer" }}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Voucher Card details */}
+            <div style={{ background: "rgba(14,165,233,0.1)", border: "1px dashed #0EA5E9", borderRadius: 10, padding: 14, marginBottom: 16 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+                <strong style={{ fontSize: "14px" }}>{selectedPartForInstall.partName}</strong>
+                <span style={{ fontSize: "14px", fontWeight: 800, color: "#10B981" }}>
+                  ₦{Number(selectedPartForInstall.approvedCost || selectedPartForInstall.estimatedCost).toLocaleString()}
+                </span>
+              </div>
+              <div style={{ fontSize: "12px", color: "#38BDF8", fontFamily: "monospace", marginTop: 4 }}>
+                Voucher Code: <strong>{selectedPartForInstall.voucherCode}</strong>
+              </div>
+              <div style={{ fontSize: "11px", color: "#94A3B8", marginTop: 2 }}>
+                Supplier: {selectedPartForInstall.supplier?.name || "Verified Partner Hub"} ({selectedPartForInstall.supplier?.address || "Abuja"})
+              </div>
+            </div>
+
+            <form onSubmit={handleSubmitInstall}>
+              {/* Photo 1: Merchant Receipt Photo */}
+              <div style={{ marginBottom: 14 }}>
+                <label style={{ fontSize: "12px", color: "#94A3B8", fontWeight: 700, display: "block", marginBottom: 6 }}>
+                  1. Merchant Invoice / Receipt Photo (Duplicate Checked)
+                </label>
+                {receiptPhotoUrl ? (
+                  <div style={{ display: "flex", alignItems: "center", gap: 12, background: "#1E293B", padding: 10, borderRadius: 8 }}>
+                    <img src={receiptPhotoUrl} alt="Receipt Preview" style={{ width: 60, height: 60, borderRadius: 6, objectFit: "cover" }} />
+                    <div style={{ flex: 1 }}>
+                      <span style={{ fontSize: "12px", color: "#10B981", display: "block", fontWeight: 600 }}>✓ Receipt Photo Attached</span>
+                      <button
+                        type="button"
+                        onClick={() => receiptFileInputRef.current?.click()}
+                        style={{ background: "none", border: "none", color: "#38BDF8", fontSize: "11px", cursor: "pointer", padding: 0 }}
+                      >
+                        Change Receipt
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div
+                    onClick={() => receiptFileInputRef.current?.click()}
+                    style={{
+                      border: "2px dashed #475569",
+                      padding: 14,
+                      borderRadius: 8,
+                      textAlign: "center",
+                      cursor: "pointer",
+                      background: "rgba(30, 41, 59, 0.5)",
+                    }}
+                  >
+                    {uploadingReceipt ? (
+                      <Loader2 size={22} color="#0EA5E9" className="animate-spin" style={{ margin: "0 auto 4px" }} />
+                    ) : (
+                      <Camera size={22} color="#0EA5E9" style={{ margin: "0 auto 4px" }} />
+                    )}
+                    <strong style={{ fontSize: "12px", color: "#F8FAFC", display: "block" }}>
+                      {uploadingReceipt ? "Uploading receipt..." : "📸 Tap to Upload Merchant Receipt / Invoice"}
+                    </strong>
+                  </div>
+                )}
+              </div>
+
+              {/* Photo 2: Newly Installed Part Photo */}
+              <div style={{ marginBottom: 14 }}>
+                <label style={{ fontSize: "12px", color: "#94A3B8", fontWeight: 700, display: "block", marginBottom: 6 }}>
+                  2. Photo of Newly Installed Component *
+                </label>
+                {installedPhotoUrl ? (
+                  <div style={{ display: "flex", alignItems: "center", gap: 12, background: "#1E293B", padding: 10, borderRadius: 8 }}>
+                    <img src={installedPhotoUrl} alt="Installed Part Preview" style={{ width: 60, height: 60, borderRadius: 6, objectFit: "cover" }} />
+                    <div style={{ flex: 1 }}>
+                      <span style={{ fontSize: "12px", color: "#10B981", display: "block", fontWeight: 600 }}>✓ Installed Photo Attached</span>
+                      <button
+                        type="button"
+                        onClick={() => installedFileInputRef.current?.click()}
+                        style={{ background: "none", border: "none", color: "#38BDF8", fontSize: "11px", cursor: "pointer", padding: 0 }}
+                      >
+                        Change Photo
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div
+                    onClick={() => installedFileInputRef.current?.click()}
+                    style={{
+                      border: "2px dashed #10B981",
+                      padding: 14,
+                      borderRadius: 8,
+                      textAlign: "center",
+                      cursor: "pointer",
+                      background: "rgba(16, 185, 129, 0.08)",
+                    }}
+                  >
+                    {uploadingInstalled ? (
+                      <Loader2 size={22} color="#10B981" className="animate-spin" style={{ margin: "0 auto 4px" }} />
+                    ) : (
+                      <Camera size={22} color="#10B981" style={{ margin: "0 auto 4px" }} />
+                    )}
+                    <strong style={{ fontSize: "12px", color: "#F8FAFC", display: "block" }}>
+                      {uploadingInstalled ? "Uploading photo..." : "📸 Tap to Capture Installed Part in Place"}
+                    </strong>
+                  </div>
+                )}
+              </div>
+
+              <div style={{ marginBottom: 16 }}>
+                <label style={{ fontSize: "12px", color: "#94A3B8", fontWeight: 700, display: "block", marginBottom: 6 }}>
+                  Installation Notes (Optional)
+                </label>
+                <textarea
+                  rows={2}
+                  placeholder="e.g. Component fitted and tested with client..."
+                  value={installNotes}
+                  onChange={(e) => setInstallNotes(e.target.value)}
+                  style={{ width: "100%", padding: 10, background: "#1E293B", border: "1px solid #334155", borderRadius: 8, color: "#F8FAFC", fontSize: "12px" }}
+                />
+              </div>
+
+              {installError && (
+                <div style={{ background: "rgba(239,68,68,0.2)", color: "#EF4444", padding: 10, borderRadius: 8, fontSize: "12px", marginBottom: 14, border: "1px solid #EF4444" }}>
+                  {installError}
+                </div>
+              )}
+              {installSuccess && (
+                <div style={{ background: "rgba(16,185,129,0.2)", color: "#10B981", padding: 10, borderRadius: 8, fontSize: "12px", marginBottom: 14, border: "1px solid #10B981" }}>
+                  {installSuccess}
+                </div>
+              )}
+
+              <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
+                <button type="button" onClick={() => setInstallModalOpen(false)} disabled={submittingInstall} className="btn btn-secondary btn-md">
+                  Cancel
+                </button>
+                <button type="submit" disabled={submittingInstall || !installedPhotoUrl} className="btn btn-primary btn-md" style={{ background: "#10B981", borderColor: "#10B981" }}>
+                  {submittingInstall ? "Verifying & Saving..." : "Confirm Part Installed ✅"}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

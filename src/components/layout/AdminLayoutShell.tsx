@@ -6,7 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard, Users, ClipboardList, CreditCard, Star,
   Settings, Shield, ShieldCheck, BarChart3, Tag, Bell, LogOut, Menu, X,
-  MapPin, Lock, Search, AlertCircle, Download, HelpCircle
+  MapPin, Lock, Search, AlertCircle, Download, HelpCircle, Wrench
 } from "lucide-react";
 import styles from "@/app/admin/admin.module.css";
 import { GlobalSearchModal } from "@/components/admin/GlobalSearchModal";
@@ -24,6 +24,7 @@ const adminNav: NavItem[] = [
   { href: "/admin/dashboard", label: "KPI Command Center", icon: LayoutDashboard, permissionKey: "dashboard" },
   { href: "/admin/dashboard/map", label: "Live Map & Radius", icon: MapPin, permissionKey: "map" },
   { href: "/admin/dashboard/bookings", label: "Bookings Workflow", icon: ClipboardList, permissionKey: "bookings" },
+  { href: "/admin/dashboard/parts", label: "Replacement Parts & Vouchers", icon: Wrench, permissionKey: "parts" },
   { href: "/admin/dashboard/users", label: "Users & Staff Roles", icon: Users, permissionKey: "users" },
   { href: "/admin/dashboard/verification", label: "Client Address Verification", icon: ShieldCheck, permissionKey: "verification" },
   { href: "/admin/dashboard/professionals", label: "Artisan Verification", icon: Shield, permissionKey: "professionals" },

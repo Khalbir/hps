@@ -60,6 +60,7 @@ model User {
   sessions      Session[]
   disputesRaised   Dispute[]  @relation("CustomerDisputes")
   disputesAssigned Dispute[]  @relation("AdminDisputes")
+  replacementParts ReplacementPart[] @relation("CustomerParts")
 }
 
 model Session {
@@ -113,6 +114,7 @@ model Professional {
   reviews  Review[]  @relation("ProfessionalReviews")
   services ProfessionalService[]
   disputes Dispute[]  @relation("ProfessionalDisputes")
+  replacementParts ReplacementPart[] @relation("ProfessionalParts")
 }
 
 model ProfessionalService {
@@ -228,6 +230,7 @@ model Booking {
   payments     Payment[]
   review       Review?
   dispute      Dispute?
+  replacementParts ReplacementPart[]
 }
 
 // ============================================
@@ -424,5 +427,97 @@ model Setting {
   value     String
   updatedAt DateTime @updatedAt
 }
+
+// ============================================
+// REPLACEMENT PARTS & PROCUREMENT
+// ============================================
+
+model ReplacementPart {
+  id                      String    @id @default(cuid())
+  reference               String    @unique @default(cuid()) // e.g. HHP-PART-8492
+  bookingId               String
+  customerId              String
+  professionalId          String
+  supplierId              String?
+
+  partName                String
+  partNumber              String?
+  category                String    @default("GENERAL") // PLUMBING, ELECTRICAL, HVAC, CARPENTRY, APPLIANCE, GENERAL
+  description             String?
+  reason                  String    // BURNT_OUT, CORRODED_LEAKING, MECHANICAL_WEAR, MISSING, INCOMPATIBLE, UPGRADE_REQUIRED, OTHER
+  quantity                Int       @default(1)
+  estimatedCost           Float
+  approvedCost            Float?
+
+  // Media Evidence
+  evidencePhotos          String    @default("[]") // JSON array of damaged part photos
+  receiptPhotos           String    @default("[]") // JSON array of merchant receipt photos
+  receiptHash             String?   // SHA-256 hash to prevent duplicate receipt fraud
+  installedPhotos         String    @default("[]") // JSON array of installed part photos
+
+  // Lifecycle & Status
+  status                  String    @default("REQUESTED") 
+  // REQUESTED, APPROVED, REJECTED, VOUCHER_ISSUED, PURCHASED, INSTALLED_VERIFIED, CANCELLED, FLAGGED_FRAUD
+
+  customerRejectionReason String?
+  adminNotes              String?
+
+  // Payment & Escrow
+  paymentStatus           String    @default("PENDING") // PENDING, PAID_ESCROW, DISBURSED_MERCHANT, REFUNDED
+  paymentMethod           String?   // PAYSTACK, WALLET
+  paymentReference        String?
+
+  // One-Time Purchase Voucher
+  voucherCode             String?   @unique // Cryptographic redemption code e.g. HHP-VOUCH-94821
+  voucherExpiresAt        DateTime?
+  voucherRedeemedAt       DateTime?
+  voucherRedeemedBy       String?
+
+  createdAt               DateTime  @default(now())
+  updatedAt               DateTime  @updatedAt
+
+  // Relations
+  booking                 Booking       @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  customer                User          @relation("CustomerParts", fields: [customerId], references: [id])
+  professional            Professional  @relation("ProfessionalParts", fields: [professionalId], references: [id])
+  supplier                PartSupplier? @relation(fields: [supplierId], references: [id])
+  auditLogs               PartAuditLog[]
+}
+
+model PartSupplier {
+  id             String    @id @default(cuid())
+  name           String
+  category       String    @default("GENERAL") // PLUMBING, ELECTRICAL, HVAC, CARPENTRY, GENERAL
+  contactPerson  String?
+  phone          String
+  email          String?
+  address        String
+  city           String    @default("Abuja")
+  state          String    @default("FCT")
+  bankName       String?
+  bankAccount    String?
+  accountName    String?
+  isVerified     Boolean   @default(true)
+  rating         Float     @default(5.0)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  replacementParts ReplacementPart[]
+}
+
+model PartAuditLog {
+  id             String    @id @default(cuid())
+  partId         String
+  actorId        String?
+  actorRole      String    // ARTISAN, CUSTOMER, ADMIN, SYSTEM
+  action         String    // REQUESTED, APPROVED, REJECTED, PAID, VOUCHER_ISSUED, VOUCHER_REDEEMED, INSTALLED, FLAGGED_FRAUD
+  notes          String?
+  metadata       String?   // JSON
+  ipAddress      String?
+  createdAt      DateTime  @default(now())
+
+  replacementPart ReplacementPart @relation(fields: [partId], references: [id], onDelete: Cascade)
+}
+
 
 

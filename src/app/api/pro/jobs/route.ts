@@ -42,6 +42,7 @@ export async function GET(request: Request) {
       include: {
         customer: { select: { firstName: true, lastName: true, phone: true } },
         service: { select: { name: true } },
+        replacementParts: { include: { supplier: true }, orderBy: { createdAt: "desc" } },
       },
     });
 
@@ -97,6 +98,8 @@ export async function GET(request: Request) {
         otpCode: getBookingOtp(b),
         beforePhoto,
         afterPhoto,
+        dbBookingId: b.id,
+        replacementParts: b.replacementParts || [],
       };
     });
 

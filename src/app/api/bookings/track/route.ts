@@ -49,6 +49,10 @@ export async function GET(request: Request) {
             user: { select: { firstName: true, lastName: true, phone: true, avatar: true, ninStatus: true } },
           },
         },
+        replacementParts: {
+          include: { supplier: true, auditLogs: { orderBy: { createdAt: "asc" } } },
+          orderBy: { createdAt: "desc" },
+        },
       },
     });
 
@@ -70,6 +74,10 @@ export async function GET(request: Request) {
               service: true,
               customer: true,
               professional: { include: { user: { select: { firstName: true, lastName: true, phone: true, avatar: true, ninStatus: true } } } },
+              replacementParts: {
+                include: { supplier: true, auditLogs: { orderBy: { createdAt: "asc" } } },
+                orderBy: { createdAt: "desc" },
+              },
             },
           },
         },
@@ -169,6 +177,7 @@ export async function GET(request: Request) {
       otpCode,
       beforePhoto,
       afterPhoto,
+      replacementParts: dbBooking?.replacementParts || [],
       artisan: {
         id: dbBooking?.professionalId || "art_stationed_lead",
         digitalId: proDigitalId,

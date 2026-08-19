@@ -17,6 +17,7 @@ export interface RolePermissions {
   dashboard: boolean;
   map: boolean;
   bookings: boolean;
+  parts: boolean;
   users: boolean;
   professionals: boolean;
   verification: boolean;
@@ -36,6 +37,7 @@ export const ROLE_PERMISSIONS: Record<string, RolePermissions> = {
     dashboard: true,
     map: true,
     bookings: true,
+    parts: true,
     users: true,
     professionals: true,
     verification: true,
@@ -53,6 +55,7 @@ export const ROLE_PERMISSIONS: Record<string, RolePermissions> = {
     dashboard: true,
     map: true,
     bookings: true,
+    parts: true,
     users: true,
     professionals: true,
     verification: true,
@@ -70,6 +73,7 @@ export const ROLE_PERMISSIONS: Record<string, RolePermissions> = {
     dashboard: true,
     map: true,
     bookings: true,
+    parts: true,
     users: true,
     professionals: true,
     verification: false,
@@ -87,6 +91,7 @@ export const ROLE_PERMISSIONS: Record<string, RolePermissions> = {
     dashboard: true,
     map: false,
     bookings: false,
+    parts: false,
     users: false,
     professionals: true,
     verification: true,
@@ -104,6 +109,7 @@ export const ROLE_PERMISSIONS: Record<string, RolePermissions> = {
     dashboard: true,
     map: false,
     bookings: true,
+    parts: true,
     users: true,
     professionals: true,
     verification: false,
@@ -121,6 +127,7 @@ export const ROLE_PERMISSIONS: Record<string, RolePermissions> = {
     dashboard: true,
     map: false,
     bookings: true,
+    parts: true,
     users: false,
     professionals: false,
     verification: false,
