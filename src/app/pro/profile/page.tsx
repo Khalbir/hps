@@ -102,11 +102,12 @@ export default function ProProfilePage() {
           >
             <ShieldCheck size={14} /> {isVerified ? "HandyHub Verified Pro" : "Verification Audit Pending"}
           </span>
-          <p style={{ fontSize: "var(--fs-sm)", color: "var(--text-secondary)", margin: 0 }}>
-            Specialty: <strong style={{ color: "#38BDF8", fontWeight: 700 }}>{profile.specialty}</strong>
+          <p style={{ fontSize: "var(--fs-sm)", color: "var(--text-secondary)", margin: "0 0 8px 0" }}>
+            Specialty: <strong style={{ color: "var(--color-primary, #0284C7)", fontWeight: 700 }}>{profile.specialty}</strong>
           </p>
-          <p style={{ fontSize: "var(--fs-sm)", color: "var(--text-tertiary)", marginTop: 6, display: "flex", alignItems: "center", justifyContent: "center", gap: 4 }}>
-            <MapPin size={14} color="#0EA5E9" /> Location: <strong style={{ color: "#F8FAFC" }}>{profile.location}</strong>
+          <p style={{ fontSize: "var(--fs-sm)", color: "var(--text-secondary)", margin: 0, display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+            <MapPin size={16} color="#0284C7" />
+            <span>Location: <strong style={{ color: "var(--text-primary, #0F172A)", fontWeight: 700 }}>{profile.location}</strong></span>
           </p>
         </div>
 
