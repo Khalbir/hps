@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import {
   Mail, Lock, Eye, EyeOff, User, Phone, ArrowRight, Wrench, Sparkles, HeartHandshake,
-  FileText, MapPin, Home
+  FileText, MapPin, Home, Check
 } from "lucide-react";
 import { BrandLogo } from "@/components/common/BrandLogo";
 import styles from "../auth.module.css";
@@ -212,75 +212,66 @@ export default function RegisterPage() {
           </p>
 
           {/* Role Toggle - Explicitly Client/Customer vs Artisan/Professional */}
-          <div style={{ marginBottom: "var(--space-6)" }}>
-            <label style={{ fontSize: "12px", fontWeight: 700, color: "var(--text-secondary)", textTransform: "uppercase", letterSpacing: "0.5px", display: "block", marginBottom: 8 }}>
-              Select Account Type *
+          <div className={styles.roleSelectorContainer}>
+            <label className={styles.roleSelectorLabel}>
+              Select Account Type <span style={{ color: "#EF4444" }}>*</span>
             </label>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "var(--space-3)" }}>
+            <div className={styles.roleGrid}>
               {/* Option 1: Client / Customer */}
               <button
                 type="button"
-                className={`btn ${form.role === "CUSTOMER" ? "btn-primary" : "btn-secondary"}`}
-                style={{
-                  padding: "14px 12px",
-                  borderRadius: "12px",
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: "flex-start",
-                  textAlign: "left",
-                  border: form.role === "CUSTOMER" ? "2px solid #0EA5E9" : "1px solid var(--border-primary)",
-                  background: form.role === "CUSTOMER" ? "rgba(14, 165, 233, 0.12)" : "var(--bg-tertiary)",
-                  color: form.role === "CUSTOMER" ? "#38BDF8" : "var(--text-secondary)",
-                  cursor: "pointer",
-                  transition: "all 0.2s ease",
-                }}
+                className={`${styles.roleCard} ${form.role === "CUSTOMER" ? styles.roleCardClientActive : ""}`}
                 onClick={() => update("role", "CUSTOMER")}
               >
-                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-                  <User size={18} color={form.role === "CUSTOMER" ? "#0EA5E9" : "var(--text-tertiary)"} />
-                  <strong style={{ fontSize: "13.5px", color: form.role === "CUSTOMER" ? "#F8FAFC" : "var(--text-primary)" }}>
-                    Client / Customer
-                  </strong>
+                <div className={styles.roleCardHeader}>
+                  <div className={styles.roleCardTitleWrap}>
+                    <User size={18} className={form.role === "CUSTOMER" ? styles.roleCardIconClient : styles.roleCardIconInactive} />
+                    <span className={styles.roleCardTitle}>
+                      Client / Customer
+                    </span>
+                  </div>
+                  {form.role === "CUSTOMER" && (
+                    <div className={styles.roleCardBadgeActive}>
+                      <Check size={12} strokeWidth={3} />
+                    </div>
+                  )}
                 </div>
-                <span style={{ fontSize: "11px", color: "var(--text-tertiary)", lineHeight: 1.4 }}>
-                  Book verified artisans for your home or business.
-                </span>
+                <p className={styles.roleCardSubtitle}>
+                  Book verified artisans for your home or business with escrow protection.
+                </p>
               </button>
 
               {/* Option 2: Artisan / Professional */}
               <button
                 type="button"
-                className={`btn ${form.role === "PROFESSIONAL" ? "btn-primary" : "btn-secondary"}`}
-                style={{
-                  padding: "14px 12px",
-                  borderRadius: "12px",
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: "flex-start",
-                  textAlign: "left",
-                  border: form.role === "PROFESSIONAL" ? "2px solid #8B5CF6" : "1px solid var(--border-primary)",
-                  background: form.role === "PROFESSIONAL" ? "rgba(139, 92, 246, 0.12)" : "var(--bg-tertiary)",
-                  color: form.role === "PROFESSIONAL" ? "#C084FC" : "var(--text-secondary)",
-                  cursor: "pointer",
-                  transition: "all 0.2s ease",
-                }}
+                className={`${styles.roleCard} ${form.role === "PROFESSIONAL" ? styles.roleCardProActive : ""}`}
                 onClick={() => update("role", "PROFESSIONAL")}
               >
-                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-                  <Wrench size={18} color={form.role === "PROFESSIONAL" ? "#8B5CF6" : "var(--text-tertiary)"} />
-                  <strong style={{ fontSize: "13.5px", color: form.role === "PROFESSIONAL" ? "#F8FAFC" : "var(--text-primary)" }}>
-                    Artisan / Professional
-                  </strong>
+                <div className={styles.roleCardHeader}>
+                  <div className={styles.roleCardTitleWrap}>
+                    <Wrench size={18} className={form.role === "PROFESSIONAL" ? styles.roleCardIconPro : styles.roleCardIconInactive} />
+                    <span className={styles.roleCardTitle}>
+                      Artisan / Professional
+                    </span>
+                  </div>
+                  {form.role === "PROFESSIONAL" && (
+                    <div className={styles.roleCardBadgeProActive}>
+                      <Check size={12} strokeWidth={3} />
+                    </div>
+                  )}
                 </div>
-                <span style={{ fontSize: "11px", color: "var(--text-tertiary)", lineHeight: 1.4 }}>
-                  Get jobs, earn, & switch to client mode anytime.
-                </span>
+                <p className={styles.roleCardSubtitle}>
+                  Get matched jobs, earn guaranteed payouts & switch to client mode anytime.
+                </p>
               </button>
             </div>
 
             {/* Explanatory Policy Callout */}
-            <div style={{ marginTop: 10, padding: "8px 12px", borderRadius: 8, background: "rgba(255,255,255,0.03)", border: "1px solid var(--border-primary)", fontSize: "11px", color: "var(--text-tertiary)", lineHeight: 1.4 }}>
-              💡 <strong>Account Privilege Policy:</strong> Verified Artisans can switch to Client mode to book services. Client accounts cannot switch to an Artisan account without formal verification.
+            <div className={styles.rolePolicyNotice}>
+              <span style={{ fontSize: "14px" }}>💡</span>
+              <div>
+                <strong style={{ color: "var(--text-primary)" }}>Account Privilege Policy:</strong> Verified Artisans can switch to Client mode to book services. Client accounts cannot switch to an Artisan account without formal verification.
+              </div>
             </div>
           </div>
 

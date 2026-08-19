@@ -6,7 +6,7 @@
 
 /* Left Panel */
 .leftPanel {
-  background: linear-gradient(135deg, #0C4A6E 0%, #0284C7 100%);
+  background: linear-gradient(135deg, #0C4A6E 0%, #00A8B5 50%, #0284C7 100%);
   padding: var(--space-12);
   display: flex;
   align-items: center;
@@ -20,26 +20,26 @@
   position: absolute;
   inset: 0;
   background-image:
-    linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
-  background-size: 50px 50px;
+    linear-gradient(rgba(255,255,255,0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.04) 1px, transparent 1px);
+  background-size: 40px 40px;
 }
 
 .leftPanel::after {
   content: "";
   position: absolute;
-  top: -30%;
-  right: -30%;
-  width: 500px;
-  height: 500px;
+  top: -20%;
+  right: -20%;
+  width: 550px;
+  height: 550px;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(249,115,22,0.15) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(0, 168, 181, 0.25) 0%, transparent 70%);
 }
 
 .leftContent {
   position: relative;
   z-index: 1;
-  max-width: 400px;
+  max-width: 440px;
 }
 
 .logo {
@@ -66,11 +66,12 @@
   color: white;
   line-height: var(--lh-tight);
   margin-bottom: var(--space-5);
+  letter-spacing: -0.5px;
 }
 
 .leftDesc {
   font-size: var(--fs-lg);
-  color: rgba(255,255,255,0.75);
+  color: rgba(255,255,255,0.85);
   line-height: var(--lh-relaxed);
   margin-bottom: var(--space-10);
 }
@@ -94,7 +95,7 @@
 
 .leftStatLabel {
   font-size: var(--fs-sm);
-  color: rgba(255,255,255,0.6);
+  color: rgba(255,255,255,0.7);
 }
 
 /* Right Panel */
@@ -102,48 +103,175 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: var(--space-8);
+  padding: var(--space-10) var(--space-8);
   background: var(--bg-primary);
 }
 
 .formCard {
   width: 100%;
-  max-width: 420px;
+  max-width: 460px;
 }
 
 .formTitle {
   font-family: var(--font-display);
-  font-size: var(--fs-2xl);
-  font-weight: var(--fw-bold);
+  font-size: var(--fs-3xl);
+  font-weight: var(--fw-extrabold);
   color: var(--text-primary);
   margin-bottom: var(--space-2);
+  letter-spacing: -0.5px;
 }
 
 .formSubtitle {
   font-size: var(--fs-sm);
   color: var(--text-secondary);
-  margin-bottom: var(--space-8);
+  margin-bottom: var(--space-6);
 }
 
 .formLink {
-  color: var(--color-primary-500);
-  font-weight: var(--fw-semibold);
+  color: #00A8B5;
+  font-weight: var(--fw-bold);
+  text-decoration: none;
+  transition: color var(--duration-short) ease;
 }
 
 .formLink:hover {
+  color: #0EA5E9;
   text-decoration: underline;
+}
+
+/* Modern Account Type Role Selector */
+.roleSelectorContainer {
+  margin-bottom: var(--space-6);
+}
+
+.roleSelectorLabel {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  display: block;
+  margin-bottom: 10px;
+}
+
+.roleGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.roleCard {
+  position: relative;
+  padding: 16px 14px;
+  border-radius: 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
+  background: var(--bg-tertiary, #F8FAFC);
+  border: 1.5px solid var(--border-primary, #E2E8F0);
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.roleCard:hover {
+  border-color: #00A8B5;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 168, 181, 0.1);
+}
+
+/* Active Client Card */
+.roleCardClientActive {
+  background: linear-gradient(135deg, rgba(0, 168, 181, 0.08) 0%, rgba(14, 165, 233, 0.12) 100%) !important;
+  border: 2px solid #00A8B5 !important;
+  box-shadow: 0 0 0 3px rgba(0, 168, 181, 0.18), 0 4px 14px rgba(0, 168, 181, 0.12) !important;
+}
+
+/* Active Artisan Card */
+.roleCardProActive {
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.08) 0%, rgba(124, 58, 237, 0.12) 100%) !important;
+  border: 2px solid #8B5CF6 !important;
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.18), 0 4px 14px rgba(139, 92, 246, 0.12) !important;
+}
+
+.roleCardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  margin-bottom: 6px;
+}
+
+.roleCardTitleWrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.roleCardTitle {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-primary) !important;
+  letter-spacing: -0.2px;
+}
+
+.roleCardBadgeActive {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #00A8B5;
+  color: #FFFFFF;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.roleCardBadgeProActive {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #8B5CF6;
+  color: #FFFFFF;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.roleCardSubtitle {
+  font-size: 11.5px;
+  color: var(--text-secondary) !important;
+  line-height: 1.45;
+  margin: 0;
+}
+
+.rolePolicyNotice {
+  margin-top: 12px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: rgba(0, 168, 181, 0.05);
+  border: 1px solid rgba(0, 168, 181, 0.2);
+  font-size: 11.5px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
 }
 
 .form {
   display: flex;
   flex-direction: column;
-  gap: var(--space-5);
+  gap: var(--space-4);
 }
 
 .errorBanner {
   padding: var(--space-3) var(--space-4);
-  background: var(--color-error-light);
-  color: #991B1B;
+  background: rgba(239, 68, 68, 0.1);
+  color: #DC2626;
+  border: 1px solid rgba(239, 68, 68, 0.3);
   border-radius: var(--radius-lg);
   font-size: var(--fs-sm);
   font-weight: var(--fw-medium);
@@ -152,12 +280,12 @@
 .inputGroup {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
+  gap: 6px;
 }
 
 .label {
-  font-size: var(--fs-sm);
-  font-weight: var(--fw-medium);
+  font-size: 12.5px;
+  font-weight: 600;
   color: var(--text-primary);
 }
 
@@ -168,9 +296,10 @@
 }
 
 .forgotLink {
-  font-size: var(--fs-sm);
-  color: var(--color-primary-500);
-  font-weight: var(--fw-medium);
+  font-size: var(--fs-xs);
+  color: #00A8B5;
+  font-weight: var(--fw-semibold);
+  text-decoration: none;
 }
 
 .forgotLink:hover {
@@ -206,8 +335,8 @@
 
 .input:focus {
   outline: none;
-  border-color: var(--color-primary-500);
-  box-shadow: 0 0 0 3px rgba(14,165,233,0.15);
+  border-color: #00A8B5;
+  box-shadow: 0 0 0 3px rgba(0, 168, 181, 0.15);
   background: var(--bg-primary);
 }
 
@@ -338,6 +467,10 @@
   .rightPanel {
     padding: var(--space-4);
   }
+  .roleGrid {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
   .nameRow {
     grid-template-columns: 1fr;
   }
@@ -345,6 +478,6 @@
     flex-direction: column;
   }
   .formTitle {
-    font-size: var(--fs-xl);
+    font-size: var(--fs-2xl);
   }
 }
