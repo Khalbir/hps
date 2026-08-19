@@ -5,7 +5,7 @@ import Link from "next/link";
 import {
   Store, ShieldCheck, CreditCard, Package, Truck, AlertTriangle,
   Plus, Edit, Trash2, CheckCircle2, Clock, DollarSign, ArrowUpRight,
-  RefreshCw, X, ShieldAlert, BarChart3
+  RefreshCw, X, ShieldAlert, BarChart3, MapPin
 } from "lucide-react";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
@@ -212,6 +212,22 @@ export default function MerchantDashboardPage() {
               >
                 {merchant?.verificationStatus || "PENDING AUDIT"}
               </span>
+              {merchant?.isGpsVerified && (
+                <span
+                  className="badge"
+                  style={{
+                    background: "rgba(14,165,233,0.15)",
+                    color: "#38BDF8",
+                    fontSize: "12px",
+                    fontWeight: 700,
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 4,
+                  }}
+                >
+                  <MapPin size={12} /> GPS Verified Storefront
+                </span>
+              )}
             </div>
             <span style={{ fontSize: "13px", color: "#94A3B8" }}>
               {merchant?.businessAddress || "Abuja Central, FCT"} • Settlement: {merchant?.bankName || "GTBank"} ({merchant?.bankAccount || "0123984756"})

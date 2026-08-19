@@ -277,6 +277,7 @@ export async function autoProcureBestMerchant(params: {
   product?: any;
   merchant?: any;
   score?: number;
+  distanceKm?: number;
   reason?: string;
 }> {
   const { categorySlug, partKeyword, deliveryCoords, requiredQuantity = 1 } = params;
@@ -334,13 +335,20 @@ export async function autoProcureBestMerchant(params: {
     const distanceScore = Math.max(0, 100 - distanceKm * 4); // 0km = 100, 25km = 0
     const ratingScore = (item.merchant.rating / 5) * 100; // 5.0 = 100
     const priceScore = Math.max(0, 100 - (item.price / 1000)); // Lower price gets higher score
+    const gpsScore = item.merchant.isGpsVerified ? 100 : 60; // Verified GPS bonus
+    const stockScore = Math.min(100, item.stockQuantity * 5); // Stock depth score
 
-    const totalScore = distanceScore * 0.5 + priceScore * 0.3 + ratingScore * 0.2;
+    const totalScore =
+      distanceScore * 0.4 +
+      priceScore * 0.25 +
+      ratingScore * 0.15 +
+      gpsScore * 0.1 +
+      stockScore * 0.1;
 
     return {
       product: item,
       merchant: item.merchant,
-      distanceKm,
+      distanceKm: Math.round(distanceKm * 10) / 10,
       score: Math.round(totalScore * 10) / 10,
     };
   });
@@ -354,5 +362,6 @@ export async function autoProcureBestMerchant(params: {
     product: bestMatch.product,
     merchant: bestMatch.merchant,
     score: bestMatch.score,
+    distanceKm: bestMatch.distanceKm,
   };
 }

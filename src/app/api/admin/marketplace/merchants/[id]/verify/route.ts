@@ -8,9 +8,9 @@ export async function POST(
   try {
     const { id } = await params;
     const body = await req.json();
-    const { status, notes, adminId } = body;
+    const { status, notes, adminId, isGpsVerified, storefrontVerified, serviceZoneId, latitude, longitude } = body;
 
-    if (!["VERIFIED", "REJECTED", "SUSPENDED"].includes(status)) {
+    if (status && !["VERIFIED", "REJECTED", "SUSPENDED"].includes(status)) {
       return NextResponse.json({ error: "Invalid verification status." }, { status: 400 });
     }
 
@@ -19,12 +19,21 @@ export async function POST(
       return NextResponse.json({ error: "Merchant not found." }, { status: 404 });
     }
 
+    const targetStatus = status || merchant.verificationStatus;
+    const isGps = isGpsVerified !== undefined ? Boolean(isGpsVerified) : merchant.isGpsVerified;
+
     const updated = await prisma.merchant.update({
       where: { id },
       data: {
-        verificationStatus: status,
+        verificationStatus: targetStatus,
         verificationNotes: notes || merchant.verificationNotes,
-        verifiedAt: status === "VERIFIED" ? new Date() : merchant.verifiedAt,
+        verifiedAt: targetStatus === "VERIFIED" ? new Date() : merchant.verifiedAt,
+        isGpsVerified: isGps,
+        gpsVerifiedAt: isGps ? new Date() : merchant.gpsVerifiedAt,
+        storefrontVerified: storefrontVerified !== undefined ? Boolean(storefrontVerified) : merchant.storefrontVerified,
+        serviceZoneId: serviceZoneId || merchant.serviceZoneId,
+        latitude: latitude ? parseFloat(latitude) : merchant.latitude,
+        longitude: longitude ? parseFloat(longitude) : merchant.longitude,
       },
     });
 
@@ -33,14 +42,14 @@ export async function POST(
         merchantId: id,
         actorId: adminId || "SYSTEM_ADMIN",
         actorRole: "ADMIN",
-        action: `MERCHANT_${status}`,
-        details: JSON.stringify({ status, notes, timestamp: new Date().toISOString() }),
+        action: `MERCHANT_VERIFY_UPDATE`,
+        details: JSON.stringify({ status: targetStatus, isGpsVerified: isGps, notes, timestamp: new Date().toISOString() }),
       },
     });
 
     return NextResponse.json({
       success: true,
-      message: `Merchant verification status updated to ${status}.`,
+      message: `Merchant verification details updated successfully.`,
       merchant: updated,
     });
   } catch (error: any) {

@@ -4,7 +4,8 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import {
   ShoppingBag, Search, Filter, ShieldCheck, Wrench, CheckCircle2,
-  Truck, ArrowRight, Zap, RefreshCw, AlertCircle, Plus, Minus, X, Star
+  Truck, ArrowRight, Zap, RefreshCw, AlertCircle, Plus, Minus, X, Star,
+  MapPin, Building2, Globe, ShieldAlert
 } from "lucide-react";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
@@ -51,6 +52,12 @@ export default function MarketplaceStorefrontPage() {
   const [cartOpen, setCartOpen] = useState(false);
   const [toast, setToast] = useState("");
   const [reserving, setReserving] = useState<string | null>(null);
+
+  // Region State & Waitlist
+  const [showWaitlistModal, setShowWaitlistModal] = useState(false);
+  const [waitlistEmail, setWaitlistEmail] = useState("");
+  const [waitlistState, setWaitlistState] = useState("Lagos State");
+  const [waitlistSubmitted, setWaitlistSubmitted] = useState(false);
 
   // Auto-Procurement "Smart Select" State
   const [showAutoProcureModal, setShowAutoProcureModal] = useState(false);
@@ -209,6 +216,47 @@ export default function MarketplaceStorefrontPage() {
   return (
     <div style={{ background: "#0B1120", minHeight: "100vh", color: "#F8FAFC" }}>
       <Header />
+
+      {/* Region Scope Notice: Abuja Only (Phase 1) */}
+      <div
+        style={{
+          background: "linear-gradient(90deg, rgba(14,165,233,0.18) 0%, rgba(16,185,129,0.18) 100%)",
+          borderBottom: "1px solid rgba(14,165,233,0.3)",
+          padding: "10px 20px",
+          textAlign: "center",
+          fontSize: "13px",
+          color: "#E2E8F0",
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          flexWrap: "wrap",
+          gap: 12,
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: 6, fontWeight: 700 }}>
+          <MapPin size={15} color="#38BDF8" />
+          <span style={{ color: "#38BDF8" }}>Active Delivery Region:</span> Abuja (FCT) Phase 1 Only
+        </div>
+        <span style={{ color: "#64748B" }}>•</span>
+        <span style={{ color: "#94A3B8" }}>
+          Same-Day Dispatch across <strong>Maitama, Wuse, Garki, Jabi, Utako, Gwarinpa, Apo, Kubwa & Lugbe</strong>.
+        </span>
+        <button
+          onClick={() => setShowWaitlistModal(true)}
+          style={{
+            background: "rgba(255,255,255,0.08)",
+            border: "1px solid rgba(255,255,255,0.15)",
+            borderRadius: "6px",
+            padding: "2px 10px",
+            color: "#CBD5E1",
+            fontSize: "11.5px",
+            fontWeight: 600,
+            cursor: "pointer",
+          }}
+        >
+          Outside Abuja? Join State Waitlist 📍
+        </button>
+      </div>
 
       {/* Toast Feedback */}
       {toast && (
@@ -810,6 +858,125 @@ export default function MarketplaceStorefrontPage() {
                 >
                   View Procurement Order & Real-Time Tracking 📦
                 </Link>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* State Expansion Waitlist Modal */}
+      {showWaitlistModal && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 10000,
+            background: "rgba(11, 17, 32, 0.85)",
+            backdropFilter: "blur(8px)",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            padding: "20px",
+          }}
+          onClick={() => setShowWaitlistModal(false)}
+        >
+          <div
+            style={{
+              width: "100%",
+              maxWidth: "500px",
+              background: "#1E293B",
+              border: "1px solid #334155",
+              borderRadius: "16px",
+              padding: "26px",
+              boxShadow: "0 20px 50px rgba(0,0,0,0.6)",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid #334155", paddingBottom: "12px", marginBottom: "16px" }}>
+              <h3 style={{ margin: 0, fontSize: "18px", color: "#F8FAFC", display: "flex", alignItems: "center", gap: 8 }}>
+                <Globe size={18} color="#0EA5E9" /> HandyHub State Expansion Waitlist
+              </h3>
+              <button onClick={() => setShowWaitlistModal(false)} style={{ background: "none", border: "none", color: "#94A3B8", cursor: "pointer" }}>
+                <X size={18} />
+              </button>
+            </div>
+
+            {waitlistSubmitted ? (
+              <div style={{ textAlign: "center", padding: "20px 0" }}>
+                <CheckCircle2 size={40} color="#10B981" style={{ margin: "0 auto 12px" }} />
+                <h4 style={{ color: "#F8FAFC", fontSize: "16px", margin: "0 0 6px 0" }}>You&apos;re on the list!</h4>
+                <p style={{ color: "#94A3B8", fontSize: "13px", margin: 0 }}>
+                  We will notify you at <strong style={{ color: "#38BDF8" }}>{waitlistEmail}</strong> as soon as HandyHub Marketplace fulfillment launches in <strong>{waitlistState}</strong>.
+                </p>
+                <button
+                  onClick={() => {
+                    setShowWaitlistModal(false);
+                    setWaitlistSubmitted(false);
+                  }}
+                  className="btn btn-primary btn-sm"
+                  style={{ marginTop: "16px", background: "#0EA5E9" }}
+                >
+                  Back to Marketplace
+                </button>
+              </div>
+            ) : (
+              <div>
+                <p style={{ fontSize: "13px", color: "#94A3B8", marginBottom: "16px" }}>
+                  HandyHub Marketplace physical parts fulfillment is currently operating in <strong>Abuja (FCT)</strong>. Select your state below to be notified first when verified merchants launch in your area.
+                </p>
+
+                <div style={{ marginBottom: "14px" }}>
+                  <label style={{ fontSize: "11px", color: "#64748B", textTransform: "uppercase", fontWeight: 700, display: "block", marginBottom: "4px" }}>
+                    Select Your State
+                  </label>
+                  <select
+                    value={waitlistState}
+                    onChange={(e) => setWaitlistState(e.target.value)}
+                    style={{ width: "100%", background: "#0F172A", border: "1px solid #334155", borderRadius: "8px", padding: "10px", color: "#F8FAFC", fontSize: "13.5px" }}
+                  >
+                    <option value="Lagos State">Lagos State (Ikeja, Island, Lekki)</option>
+                    <option value="Rivers State">Rivers State (Port Harcourt)</option>
+                    <option value="Kano State">Kano State (Kano Central, Bompai)</option>
+                    <option value="Oyo State">Oyo State (Ibadan)</option>
+                    <option value="Kaduna State">Kaduna State (Kaduna, Zaria)</option>
+                    <option value="Delta State">Delta State (Warri, Asaba)</option>
+                    <option value="Edo State">Edo State (Benin City)</option>
+                    <option value="Enugu State">Enugu State (Enugu Urban)</option>
+                    <option value="Anambra State">Anambra State (Onitsha, Awka)</option>
+                    <option value="Ogun State">Ogun State (Abeokuta, Sagamu)</option>
+                  </select>
+                </div>
+
+                <div style={{ marginBottom: "18px" }}>
+                  <label style={{ fontSize: "11px", color: "#64748B", textTransform: "uppercase", fontWeight: 700, display: "block", marginBottom: "4px" }}>
+                    Your Email Address
+                  </label>
+                  <input
+                    type="email"
+                    placeholder="name@example.com"
+                    value={waitlistEmail}
+                    onChange={(e) => setWaitlistEmail(e.target.value)}
+                    style={{ width: "100%", background: "#0F172A", border: "1px solid #334155", borderRadius: "8px", padding: "10px", color: "#F8FAFC", fontSize: "13.5px" }}
+                  />
+                </div>
+
+                <div style={{ display: "flex", justifyContent: "flex-end", gap: 10 }}>
+                  <button onClick={() => setShowWaitlistModal(false)} className="btn btn-secondary btn-sm">
+                    Close
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (waitlistEmail.includes("@")) {
+                        setWaitlistSubmitted(true);
+                      }
+                    }}
+                    disabled={!waitlistEmail.includes("@")}
+                    className="btn btn-primary btn-sm"
+                    style={{ background: "#0EA5E9", fontWeight: 700 }}
+                  >
+                    Join Priority Launch Waitlist 🚀
+                  </button>
+                </div>
               </div>
             )}
           </div>

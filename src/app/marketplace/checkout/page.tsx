@@ -28,9 +28,11 @@ export default function MarketplaceCheckoutPage() {
   const [customerNotes, setCustomerNotes] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("PAYSTACK");
 
-  // Calculated Logistics Fee
+  // Calculated Logistics Fee & Dynamic Service Zones
+  const [serviceZones, setServiceZones] = useState<any[]>([]);
+  const [selectedZoneId, setSelectedZoneId] = useState("");
   const [logisticsFee, setLogisticsFee] = useState(1500);
-  const [selectedZone, setSelectedZone] = useState("Central Area");
+  const [selectedZone, setSelectedZone] = useState("Maitama / Wuse 2 / Central");
 
   useEffect(() => {
     try {
@@ -40,6 +42,26 @@ export default function MarketplaceCheckoutPage() {
         setCart(parsed);
       }
     } catch {}
+
+    // Load active regions & service zones from DB
+    const fetchZones = async () => {
+      try {
+        const res = await fetch("/api/marketplace/regions");
+        const data = await res.json();
+        if (res.ok && data.activeRegions?.[0]?.serviceZones) {
+          const zones = data.activeRegions[0].serviceZones;
+          setServiceZones(zones);
+          if (zones.length > 0) {
+            setSelectedZoneId(zones[0].id);
+            setSelectedZone(zones[0].name);
+            setLogisticsFee(zones[0].baseLogisticsFee || 1500);
+          }
+        }
+      } catch (err) {
+        console.error("Failed to load active service zones:", err);
+      }
+    };
+    fetchZones();
 
     // Load active session user if present
     try {
@@ -61,11 +83,12 @@ export default function MarketplaceCheckoutPage() {
     return () => clearInterval(timer);
   }, []);
 
-  const handleZoneSelect = (zoneName: string, fee: number) => {
-    setSelectedZone(zoneName);
-    setLogisticsFee(fee);
+  const handleZoneSelect = (zone: any) => {
+    setSelectedZoneId(zone.id);
+    setSelectedZone(zone.name);
+    setLogisticsFee(zone.baseLogisticsFee || 1500);
     if (!deliveryAddress) {
-      setDeliveryAddress(`${zoneName}, Abuja, FCT`);
+      setDeliveryAddress(`${zone.name}, Abuja, FCT`);
     }
   };
 
@@ -91,7 +114,9 @@ export default function MarketplaceCheckoutPage() {
         procurementType: "DIRECT_PURCHASE",
         items: cart.map((i) => ({ productId: i.product.id, quantity: i.quantity })),
         deliveryAddress,
-        deliveryCity,
+        deliveryCity: "Abuja",
+        deliveryState: "FCT",
+        serviceZoneId: selectedZoneId,
         customerName,
         customerEmail,
         customerPhone,
@@ -223,21 +248,25 @@ export default function MarketplaceCheckoutPage() {
               {/* Quick Zone Selector */}
               <div style={{ marginBottom: "16px" }}>
                 <label style={{ fontSize: "11px", color: "#94A3B8", textTransform: "uppercase", display: "block", marginBottom: "6px", fontWeight: 700 }}>
-                  Select Delivery Zone (Abuja)
+                  Select Delivery Zone (Abuja FCT Service Network)
                 </label>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-                  {[
-                    { name: "Central / Wuse / Maitama", fee: 1500 },
-                    { name: "Garki / Asokoro / Jabi", fee: 1500 },
-                    { name: "Gwarinpa / Utako", fee: 2000 },
-                    { name: "Apo / Guzape", fee: 2000 },
-                    { name: "Kubwa / Bwari", fee: 2500 },
-                    { name: "Lugbe / Airport Road", fee: 2500 },
-                  ].map((z) => (
+                  {(serviceZones.length > 0
+                    ? serviceZones
+                    : [
+                        { id: "z1", name: "Maitama / Wuse 2 / Central", baseLogisticsFee: 1500 },
+                        { id: "z2", name: "Garki / Asokoro / Guzape", baseLogisticsFee: 1500 },
+                        { id: "z3", name: "Jabi / Utako / Jahi", baseLogisticsFee: 1500 },
+                        { id: "z4", name: "Gwarinpa / Life Camp", baseLogisticsFee: 2000 },
+                        { id: "z5", name: "Apo / Durumi / Lokogoma", baseLogisticsFee: 2000 },
+                        { id: "z6", name: "Kubwa / Dutse / Bwari", baseLogisticsFee: 2500 },
+                        { id: "z7", name: "Lugbe / Airport Road", baseLogisticsFee: 2500 },
+                      ]
+                  ).map((z: any) => (
                     <button
                       type="button"
-                      key={z.name}
-                      onClick={() => handleZoneSelect(z.name, z.fee)}
+                      key={z.id || z.name}
+                      onClick={() => handleZoneSelect(z)}
                       style={{
                         padding: "6px 12px",
                         borderRadius: "6px",
@@ -245,12 +274,12 @@ export default function MarketplaceCheckoutPage() {
                         fontWeight: 600,
                         cursor: "pointer",
                         border: "1px solid",
-                        background: selectedZone === z.name ? "#0EA5E9" : "#0F172A",
-                        borderColor: selectedZone === z.name ? "#0EA5E9" : "#334155",
-                        color: selectedZone === z.name ? "#FFFFFF" : "#94A3B8",
+                        background: selectedZoneId === z.id || selectedZone === z.name ? "#0EA5E9" : "#0F172A",
+                        borderColor: selectedZoneId === z.id || selectedZone === z.name ? "#0EA5E9" : "#334155",
+                        color: selectedZoneId === z.id || selectedZone === z.name ? "#FFFFFF" : "#94A3B8",
                       }}
                     >
-                      {z.name} (₦{z.fee.toLocaleString()})
+                      {z.name} (₦{(z.baseLogisticsFee || 1500).toLocaleString()})
                     </button>
                   ))}
                 </div>

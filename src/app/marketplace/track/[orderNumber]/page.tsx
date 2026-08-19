@@ -5,7 +5,7 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import {
   Truck, ShieldCheck, CheckCircle2, Clock, MapPin, Phone,
-  Package, AlertCircle, RefreshCw, KeyRound, ArrowLeft
+  Package, AlertCircle, RefreshCw, KeyRound, ArrowLeft, AlertTriangle, X, ShieldAlert
 } from "lucide-react";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
@@ -19,6 +19,13 @@ export default function OrderTrackingPage() {
   const [otpInput, setOtpInput] = useState("");
   const [submittingOtp, setSubmittingOtp] = useState(false);
   const [toast, setToast] = useState("");
+
+  // Dispute Filing State
+  const [showDisputeModal, setShowDisputeModal] = useState(false);
+  const [disputeReason, setDisputeReason] = useState("DAMAGED_IN_TRANSIT");
+  const [disputeDescription, setDisputeDescription] = useState("");
+  const [disputePhotoUrl, setDisputePhotoUrl] = useState("");
+  const [submittingDispute, setSubmittingDispute] = useState(false);
 
   const fetchOrder = async () => {
     if (!orderNumber) return;
@@ -66,6 +73,42 @@ export default function OrderTrackingPage() {
       setToast("Failed to verify delivery PIN.");
     } finally {
       setSubmittingOtp(false);
+    }
+  };
+
+  const handleSubmitDispute = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!disputeDescription.trim()) {
+      setToast("Please describe the issue with your replacement part.");
+      return;
+    }
+
+    setSubmittingDispute(true);
+    try {
+      const res = await fetch("/api/marketplace/disputes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          orderId: order.id,
+          customerId: order.customerId,
+          reason: disputeReason,
+          description: disputeDescription.trim(),
+          evidencePhotos: disputePhotoUrl ? [disputePhotoUrl] : [],
+        }),
+      });
+
+      const data = await res.json();
+      if (res.ok) {
+        setToast("Dispute opened. Merchant payout has been held in escrow ⚠️");
+        setShowDisputeModal(false);
+        fetchOrder();
+      } else {
+        setToast(data.error || "Failed to submit dispute");
+      }
+    } catch {
+      setToast("Failed to submit dispute claim.");
+    } finally {
+      setSubmittingDispute(false);
     }
   };
 
@@ -316,9 +359,43 @@ export default function OrderTrackingPage() {
         <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr", gap: "24px" }}>
           {/* Items Card */}
           <div className="card" style={{ background: "#1E293B", border: "1px solid #334155", borderRadius: "14px", padding: "20px" }}>
-            <h3 style={{ fontSize: "15px", fontWeight: 700, margin: "0 0 14px 0", color: "#F8FAFC" }}>
-              Procured Replacement Parts ({order.items.length})
-            </h3>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "14px" }}>
+              <h3 style={{ fontSize: "15px", fontWeight: 700, margin: 0, color: "#F8FAFC" }}>
+                Procured Replacement Parts ({order.items.length})
+              </h3>
+              {order.status !== "DISPUTED" && order.status !== "REFUNDED" && (
+                <button
+                  onClick={() => setShowDisputeModal(true)}
+                  className="btn btn-secondary btn-xs"
+                  style={{ color: "#F59E0B", borderColor: "rgba(245,158,11,0.4)", display: "inline-flex", alignItems: "center", gap: 4 }}
+                >
+                  <AlertTriangle size={12} /> Report Issue / Dispute
+                </button>
+              )}
+            </div>
+
+            {order.status === "DISPUTED" && (
+              <div
+                style={{
+                  background: "rgba(245,158,11,0.15)",
+                  border: "1px solid rgba(245,158,11,0.4)",
+                  borderRadius: "8px",
+                  padding: "10px 14px",
+                  marginBottom: "14px",
+                  fontSize: "12.5px",
+                  color: "#FCD34D",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 8,
+                }}
+              >
+                <AlertCircle size={16} />
+                <span>
+                  <strong>Dispute Under Review:</strong> Merchant payout has been held in HandyHub Procurement Escrow while our compliance team investigates.
+                </span>
+              </div>
+            )}
+
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
               {order.items.map((item: any) => (
                 <div key={item.id} style={{ background: "#0F172A", border: "1px solid #334155", borderRadius: "8px", padding: "12px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -376,6 +453,107 @@ export default function OrderTrackingPage() {
           </div>
         </div>
       </div>
+
+      {/* Customer Dispute Filing Modal */}
+      {showDisputeModal && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 10000,
+            background: "rgba(11, 17, 32, 0.85)",
+            backdropFilter: "blur(8px)",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            padding: "20px",
+          }}
+          onClick={() => setShowDisputeModal(false)}
+        >
+          <div
+            style={{
+              width: "100%",
+              maxWidth: "520px",
+              background: "#1E293B",
+              border: "1px solid #334155",
+              borderRadius: "16px",
+              padding: "26px",
+              boxShadow: "0 20px 50px rgba(0,0,0,0.6)",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid #334155", paddingBottom: "12px", marginBottom: "16px" }}>
+              <h3 style={{ margin: 0, fontSize: "18px", color: "#F8FAFC", display: "flex", alignItems: "center", gap: 8 }}>
+                <AlertTriangle size={18} color="#F59E0B" /> Report an Issue / Open Dispute
+              </h3>
+              <button onClick={() => setShowDisputeModal(false)} style={{ background: "none", border: "none", color: "#94A3B8", cursor: "pointer" }}>
+                <X size={18} />
+              </button>
+            </div>
+
+            <form onSubmit={handleSubmitDispute}>
+              <div style={{ marginBottom: "14px" }}>
+                <label style={{ fontSize: "12px", color: "#64748B", fontWeight: 700, textTransform: "uppercase", display: "block", marginBottom: "4px" }}>
+                  Dispute Reason <span style={{ color: "#EF4444" }}>*</span>
+                </label>
+                <select
+                  value={disputeReason}
+                  onChange={(e) => setDisputeReason(e.target.value)}
+                  style={{ width: "100%", background: "#0F172A", border: "1px solid #334155", borderRadius: "8px", padding: "10px", color: "#F8FAFC", fontSize: "13.5px" }}
+                >
+                  <option value="DAMAGED_IN_TRANSIT">Part Damaged During Delivery Transit</option>
+                  <option value="ITEM_NOT_AS_DESCRIBED">Part Does Not Match Ordered Specifications</option>
+                  <option value="WRONG_PART_DELIVERED">Wrong Brand / Model Received</option>
+                  <option value="MISSING_COMPONENTS">Missing Components / Accessories</option>
+                  <option value="MERCHANT_UNRESPONSIVE">Merchant Unresponsive / Defective Part</option>
+                  <option value="OTHER">Other Compliance Issue</option>
+                </select>
+              </div>
+
+              <div style={{ marginBottom: "14px" }}>
+                <label style={{ fontSize: "12px", color: "#64748B", fontWeight: 700, textTransform: "uppercase", display: "block", marginBottom: "4px" }}>
+                  Describe the Issue in Detail <span style={{ color: "#EF4444" }}>*</span>
+                </label>
+                <textarea
+                  rows={3}
+                  placeholder="Explain what is wrong with the replacement component..."
+                  value={disputeDescription}
+                  onChange={(e) => setDisputeDescription(e.target.value)}
+                  required
+                  style={{ width: "100%", background: "#0F172A", border: "1px solid #334155", borderRadius: "8px", padding: "10px", color: "#F8FAFC", fontSize: "13px" }}
+                />
+              </div>
+
+              <div style={{ marginBottom: "18px" }}>
+                <label style={{ fontSize: "12px", color: "#64748B", fontWeight: 700, textTransform: "uppercase", display: "block", marginBottom: "4px" }}>
+                  Photo Evidence URL (Optional)
+                </label>
+                <input
+                  type="url"
+                  placeholder="https://images.unsplash.com/..."
+                  value={disputePhotoUrl}
+                  onChange={(e) => setDisputePhotoUrl(e.target.value)}
+                  style={{ width: "100%", background: "#0F172A", border: "1px solid #334155", borderRadius: "8px", padding: "10px", color: "#F8FAFC", fontSize: "13px" }}
+                />
+              </div>
+
+              <div style={{ display: "flex", justifyContent: "flex-end", gap: 10 }}>
+                <button type="button" onClick={() => setShowDisputeModal(false)} className="btn btn-secondary btn-sm">
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={submittingDispute}
+                  className="btn btn-primary btn-sm"
+                  style={{ background: "#EF4444", fontWeight: 700 }}
+                >
+                  {submittingDispute ? "Submitting Claim..." : "Submit Dispute & Freeze Payout 🔒"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       <Footer />
     </div>

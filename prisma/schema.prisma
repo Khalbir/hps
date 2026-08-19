@@ -63,6 +63,7 @@ model User {
   replacementParts ReplacementPart[] @relation("CustomerParts")
   merchant         Merchant?
   marketplaceOrders MarketplaceOrder[]
+  marketplaceDisputes MarketplaceDispute[]
 }
 
 model Session {
@@ -565,16 +566,24 @@ model Merchant {
   subscriptionExpiresAt DateTime?
   lastPaymentReference  String?
 
+  // Location, Service Zone & GPS Verification
+  serviceZoneId         String?
+  isGpsVerified         Boolean   @default(false)
+  gpsVerifiedAt         DateTime?
+  storefrontVerified    Boolean   @default(false)
+
   rating                Float     @default(5.0)
   totalOrders           Int       @default(0)
   isActive              Boolean   @default(true)
   createdAt             DateTime  @default(now())
   updatedAt             DateTime  @updatedAt
 
-  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user                  User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  serviceZone           MarketplaceServiceZone? @relation(fields: [serviceZoneId], references: [id])
   products              MarketplaceProduct[]
   subscriptionInvoices  MerchantSubscriptionInvoice[]
   orderItems            MarketplaceOrderItem[]
+  disputes              MarketplaceDispute[]
 }
 
 model MerchantSubscriptionInvoice {
@@ -589,6 +598,40 @@ model MerchantSubscriptionInvoice {
   createdAt         DateTime  @default(now())
 
   merchant          Merchant  @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+}
+
+model MarketplaceRegion {
+  id                  String   @id @default(cuid())
+  name                String   @unique // e.g. "Federal Capital Territory (Abuja)", "Lagos State", "Rivers State"
+  code                String   @unique // e.g. "FCT", "LA", "RI", "KN", "OY", "KD", "DE"
+  country             String   @default("Nigeria")
+  isMarketplaceActive Boolean  @default(false) // FCT is true, all other states default false
+  description         String?
+  order               Int      @default(0)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  serviceZones        MarketplaceServiceZone[]
+  orders              MarketplaceOrder[]
+}
+
+model MarketplaceServiceZone {
+  id                     String   @id @default(cuid())
+  regionId               String
+  name                   String   // e.g. "Maitama / Wuse 2", "Garki / Asokoro", "Jabi / Utako"
+  slug                   String   @unique
+  centerLatitude         Float    // Zone centroid GPS
+  centerLongitude        Float
+  coverageRadiusKm       Float    @default(8.0) // Dispatch radius in KM
+  baseLogisticsFee       Float    @default(1500)
+  estimatedDeliveryHours Float    @default(2.0)
+  isActive               Boolean  @default(true)
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+
+  region                 MarketplaceRegion @relation(fields: [regionId], references: [id], onDelete: Cascade)
+  merchants              Merchant[]
+  orders                 MarketplaceOrder[]
 }
 
 model MarketplaceCategory {
@@ -658,9 +701,11 @@ model MarketplaceOrder {
   id                    String    @id @default(cuid())
   orderNumber           String    @unique // e.g. HHP-MKT-94821
   customerId            String
+  regionId              String?
+  serviceZoneId         String?
   procurementType       String    @default("DIRECT_PURCHASE") // DIRECT_PURCHASE, AUTO_PROCUREMENT
   status                String    @default("PENDING_PAYMENT") 
-  // PENDING_PAYMENT, PAID, PROCESSING, READY_FOR_PICKUP, IN_TRANSIT, DELIVERED, CANCELLED, REFUNDED
+  // PENDING_PAYMENT, PAID, PROCESSING, READY_FOR_PICKUP, IN_TRANSIT, DELIVERED, DISPUTED, CANCELLED, REFUNDED
 
   subtotal              Float
   logisticsFee          Float     @default(0)
@@ -690,10 +735,13 @@ model MarketplaceOrder {
   createdAt             DateTime  @default(now())
   updatedAt             DateTime  @updatedAt
 
-  customer              User      @relation(fields: [customerId], references: [id])
+  customer              User                 @relation(fields: [customerId], references: [id])
+  region                MarketplaceRegion?   @relation(fields: [regionId], references: [id])
+  serviceZone           MarketplaceServiceZone? @relation(fields: [serviceZoneId], references: [id])
   items                 MarketplaceOrderItem[]
   logisticsTrackings    MarketplaceLogisticsTracking[]
   auditLogs             MarketplaceAuditLog[]
+  disputes              MarketplaceDispute[]
 }
 
 model MarketplaceOrderItem {
@@ -705,14 +753,42 @@ model MarketplaceOrderItem {
   quantity              Int
   totalPrice            Float
   
-  merchantPayoutStatus  String    @default("ESCROW_HOLD") // PENDING, ESCROW_HOLD, DISBURSED, REFUNDED
+  merchantPayoutStatus  String    @default("ESCROW_HOLD") // PENDING, ESCROW_HOLD, DISBURSED, FROZEN_DISPUTE, REFUNDED
   merchantPayoutAmount  Float
   disbursedAt           DateTime?
   disbursementReference String?
 
-  order                 MarketplaceOrder   @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  product               MarketplaceProduct @relation(fields: [productId], references: [id])
-  merchant              Merchant           @relation(fields: [merchantId], references: [id])
+  order                 MarketplaceOrder     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product               MarketplaceProduct   @relation(fields: [productId], references: [id])
+  merchant              Merchant             @relation(fields: [merchantId], references: [id])
+  disputes              MarketplaceDispute[]
+}
+
+model MarketplaceDispute {
+  id                  String    @id @default(cuid())
+  disputeNumber       String    @unique // e.g. DISP-MKT-84920
+  orderId             String
+  orderItemId         String?
+  customerId          String
+  merchantId          String
+  reason              String    // ITEM_NOT_AS_DESCRIBED, DAMAGED_IN_TRANSIT, WRONG_PART_DELIVERED, MERCHANT_UNRESPONSIVE, MISSING_COMPONENTS, OTHER
+  description         String
+  evidencePhotos      String    @default("[]") // JSON array of photo URLs
+  claimAmount         Float
+  
+  status              String    @default("OPEN") // OPEN, UNDER_REVIEW, RESOLVED_REFUND_CUSTOMER, RESOLVED_PAYOUT_MERCHANT, REJECTED
+  resolutionNotes     String?
+  refundAmount        Float?
+  resolvedByAdminId   String?
+  resolvedAt          DateTime?
+
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  order               MarketplaceOrder      @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  orderItem           MarketplaceOrderItem? @relation(fields: [orderItemId], references: [id])
+  customer            User                  @relation(fields: [customerId], references: [id])
+  merchant            Merchant              @relation(fields: [merchantId], references: [id])
 }
 
 model MarketplaceLogisticsTracking {
@@ -735,7 +811,7 @@ model MarketplaceAuditLog {
   productId String?
   actorId   String?
   actorRole String   // CUSTOMER, MERCHANT, ADMIN, SYSTEM
-  action    String   // ORDER_PLACED, INVENTORY_RESERVED, AUTO_PROCURED, DELIVERY_CONFIRMED, PRICE_FLAGGED, SUBSCRIPTION_RENEWED
+  action    String   // ORDER_PLACED, INVENTORY_RESERVED, AUTO_PROCURED, DELIVERY_CONFIRMED, PRICE_FLAGGED, SUBSCRIPTION_RENEWED, DISPUTE_OPENED, DISPUTE_RESOLVED
   details   String?  // JSON
   ipAddress String?
   createdAt DateTime @default(now())

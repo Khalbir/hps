@@ -3,6 +3,7 @@ import crypto from "crypto";
 import { prisma } from "@/lib/prisma";
 import { calculateLogisticsFee, generateDeliveryOtp, addLogisticsTrackingMilestone } from "@/lib/logistics";
 import { autoProcureBestMerchant, commitInventoryReservation } from "@/lib/marketplace";
+import { validateDeliveryRegionAndZone } from "@/lib/regions";
 import { initializePaystackTransaction } from "@/lib/paystack";
 
 export const dynamic = "force-dynamic";
@@ -18,6 +19,7 @@ export async function POST(req: NextRequest) {
       deliveryAddress,
       deliveryCity = "Abuja",
       deliveryState = "FCT",
+      serviceZoneId,
       deliveryCoords,
       customerNotes,
       paymentMethod = "PAYSTACK", // PAYSTACK or WALLET
@@ -29,6 +31,22 @@ export async function POST(req: NextRequest) {
     if (!deliveryAddress || !customerEmail) {
       return NextResponse.json(
         { error: "Delivery address and customer email are required for marketplace checkout." },
+        { status: 400 }
+      );
+    }
+
+    // Validate Region & Service Zone (Abuja Only Phase 1 Enforcement)
+    const regionValidation = await validateDeliveryRegionAndZone({
+      state: deliveryState,
+      city: deliveryCity,
+      latitude: deliveryCoords?.lat,
+      longitude: deliveryCoords?.lng,
+      serviceZoneId,
+    });
+
+    if (!regionValidation.isValid) {
+      return NextResponse.json(
+        { error: regionValidation.reason, isOutsideActiveRegion: true },
         { status: 400 }
       );
     }
@@ -165,6 +183,8 @@ export async function POST(req: NextRequest) {
       data: {
         orderNumber,
         customerId: user.id,
+        regionId: regionValidation.region?.id || null,
+        serviceZoneId: regionValidation.zone?.id || null,
         procurementType,
         status: "PENDING_PAYMENT",
         subtotal,
