@@ -37,6 +37,18 @@ export const PRO_VERIFICATION_CATEGORIES = [
   { value: "others", label: "Others (Custom Skillset Request)" },
 ];
 
+export const GUARANTOR_ROLE_OPTIONS = [
+  "Landlord / Property Owner",
+  "Community Leader / Village Head / CDA Chairman",
+  "Former Employer / Work Supervisor",
+  "Master Craftsman / Apprenticeship Mentor",
+  "Religious Leader / Clergy (Pastor / Imam)",
+  "Civil Servant / Public Officer",
+  "Family Head / Elder / Relative",
+  "Senior Colleague / Registered Professional",
+  "Other / Custom Role",
+];
+
 const formatCategoryTitle = (cat: string) => {
   const match = PRO_VERIFICATION_CATEGORIES.find((c) => c.value === cat);
   if (match) return match.label;
@@ -402,8 +414,20 @@ export default function ProVerificationPage() {
   };
 
   // Step 3 State
-  const [g1, setG1] = useState({ name: "", phone: "", relationship: "Landlord / Community Leader", nin: "" });
-  const [g2, setG2] = useState({ name: "", phone: "", relationship: "Former Employer / Master Craftsman", nin: "" });
+  const [g1, setG1] = useState({
+    name: "",
+    phone: "",
+    relationship: "Landlord / Property Owner",
+    customRelationship: "",
+    nin: "",
+  });
+  const [g2, setG2] = useState({
+    name: "",
+    phone: "",
+    relationship: "Former Employer / Master Craftsman",
+    customRelationship: "",
+    nin: "",
+  });
 
   // Step 4 Quiz State
   const quizQuestions: QuizQuestion[] = getQuizForCategory(category);
@@ -469,8 +493,22 @@ export default function ProVerificationPage() {
           homeAddress: homeAddress || "Plot 104, Aminu Kano Crescent, Wuse 2",
           lga: lga || "AMAC",
           addressProofUrl: getValidMediaUrl(addressProofUrl, "address"),
-          guarantor1: g1,
-          guarantor2: g2,
+          guarantor1: {
+            name: g1.name.trim(),
+            phone: g1.phone.trim(),
+            relationship: g1.relationship === "Other / Custom Role" && g1.customRelationship?.trim()
+              ? g1.customRelationship.trim()
+              : g1.relationship || "Landlord / Property Owner",
+            nin: g1.nin.trim(),
+          },
+          guarantor2: {
+            name: g2.name.trim(),
+            phone: g2.phone.trim(),
+            relationship: g2.relationship === "Other / Custom Role" && g2.customRelationship?.trim()
+              ? g2.customRelationship.trim()
+              : g2.relationship || "Former Employer / Master Craftsman",
+            nin: g2.nin.trim(),
+          },
         }),
       });
 
@@ -522,9 +560,11 @@ export default function ProVerificationPage() {
 
   const isStep3Valid = Boolean(
     g1.name.trim().length >= 3 &&
+    (g1.relationship === "Other / Custom Role" ? Boolean(g1.customRelationship?.trim()) : Boolean(g1.relationship?.trim())) &&
     g1.phone.length === 11 &&
     g1.nin.length === 11 &&
     g2.name.trim().length >= 3 &&
+    (g2.relationship === "Other / Custom Role" ? Boolean(g2.customRelationship?.trim()) : Boolean(g2.relationship?.trim())) &&
     g2.phone.length === 11 &&
     g2.nin.length === 11
   );
@@ -1171,114 +1211,250 @@ export default function ProVerificationPage() {
 
                 <div className={styles.formGrid}>
                   <div className={styles.guarantorCard}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-                      <h4 style={{ margin: 0 }}>Guarantor #1 (Landlord / Community Leader) <span style={{ color: "#EF4444" }}>*</span></h4>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12, flexWrap: "wrap", gap: 6 }}>
+                      <h4 style={{ margin: 0, fontSize: "14px", color: "var(--text-primary)" }}>
+                        Guarantor #1 Details <span style={{ color: "#EF4444" }}>*</span>
+                      </h4>
                       <div style={{ fontSize: "11px", display: "flex", gap: 8 }}>
                         <span style={{ color: g1.phone.length === 11 ? "#10B981" : "#94A3B8" }}>Phone: {g1.phone.length}/11</span>
                         <span style={{ color: g1.nin.length === 11 ? "#10B981" : "#94A3B8" }}>NIN: {g1.nin.length}/11</span>
                       </div>
                     </div>
-                    <div className={styles.gRow}>
-                      <input
-                        type="text"
-                        className={styles.input}
-                        placeholder="Full Name *"
-                        value={g1.name}
-                        onChange={(e) => {
-                          const updated = { ...g1, name: e.target.value };
-                          setG1(updated);
-                          saveDraftState(3, { g1: updated });
-                        }}
-                        required
-                      />
-                      <input
-                        type="tel"
-                        className={styles.input}
-                        placeholder="11-digit Phone (080...) *"
-                        value={g1.phone}
-                        maxLength={11}
-                        inputMode="numeric"
-                        pattern="[0-9]{11}"
-                        onChange={(e) => {
-                          const digits = e.target.value.replace(/\D/g, "").slice(0, 11);
-                          const updated = { ...g1, phone: digits };
-                          setG1(updated);
-                          saveDraftState(3, { g1: updated });
-                        }}
-                        required
-                      />
-                      <input
-                        type="text"
-                        className={styles.input}
-                        placeholder="11-digit NIN Number *"
-                        value={g1.nin}
-                        maxLength={11}
-                        inputMode="numeric"
-                        pattern="[0-9]{11}"
-                        onChange={(e) => {
-                          const digits = e.target.value.replace(/\D/g, "").slice(0, 11);
-                          const updated = { ...g1, nin: digits };
-                          setG1(updated);
-                          saveDraftState(3, { g1: updated });
-                        }}
-                        required
-                      />
+
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 12 }}>
+                      {/* Full Name */}
+                      <div className={styles.fieldGroup} style={{ margin: 0 }}>
+                        <label className={styles.label} style={{ fontSize: "12px", marginBottom: 4 }}>
+                          Full Legal Name <span style={{ color: "#EF4444" }}>*</span>
+                        </label>
+                        <input
+                          type="text"
+                          className={styles.input}
+                          placeholder="e.g. Chief James Okon"
+                          value={g1.name}
+                          onChange={(e) => {
+                            const updated = { ...g1, name: e.target.value };
+                            setG1(updated);
+                            saveDraftState(3, { g1: updated });
+                          }}
+                          required
+                        />
+                      </div>
+
+                      {/* Role / Relationship of Guarantor to Pro */}
+                      <div className={styles.fieldGroup} style={{ margin: 0 }}>
+                        <label className={styles.label} style={{ fontSize: "12px", marginBottom: 4 }}>
+                          Role / Relationship to You <span style={{ color: "#EF4444" }}>*</span>
+                        </label>
+                        <select
+                          className={styles.input}
+                          value={g1.relationship}
+                          onChange={(e) => {
+                            const updated = { ...g1, relationship: e.target.value };
+                            setG1(updated);
+                            saveDraftState(3, { g1: updated });
+                          }}
+                          style={{ cursor: "pointer" }}
+                          required
+                        >
+                          {GUARANTOR_ROLE_OPTIONS.map((role) => (
+                            <option key={role} value={role}>
+                              {role}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      {/* Custom Relationship input if Other is selected */}
+                      {g1.relationship === "Other / Custom Role" && (
+                        <div className={styles.fieldGroup} style={{ margin: 0, gridColumn: "1 / -1" }}>
+                          <label className={styles.label} style={{ fontSize: "12px", marginBottom: 4 }}>
+                            Specify Relationship / Role <span style={{ color: "#EF4444" }}>*</span>
+                          </label>
+                          <input
+                            type="text"
+                            className={styles.input}
+                            placeholder="Specify role to you (e.g. Workshop Supervisor, Uncle)"
+                            value={g1.customRelationship || ""}
+                            onChange={(e) => {
+                              const updated = { ...g1, customRelationship: e.target.value };
+                              setG1(updated);
+                              saveDraftState(3, { g1: updated });
+                            }}
+                            required
+                          />
+                        </div>
+                      )}
+
+                      {/* Phone Number */}
+                      <div className={styles.fieldGroup} style={{ margin: 0 }}>
+                        <label className={styles.label} style={{ fontSize: "12px", marginBottom: 4 }}>
+                          11-Digit Phone Number <span style={{ color: "#EF4444" }}>*</span>
+                        </label>
+                        <input
+                          type="tel"
+                          className={styles.input}
+                          placeholder="080... (11 Digits)"
+                          value={g1.phone}
+                          maxLength={11}
+                          inputMode="numeric"
+                          pattern="[0-9]{11}"
+                          onChange={(e) => {
+                            const digits = e.target.value.replace(/\D/g, "").slice(0, 11);
+                            const updated = { ...g1, phone: digits };
+                            setG1(updated);
+                            saveDraftState(3, { g1: updated });
+                          }}
+                          required
+                        />
+                      </div>
+
+                      {/* 11-digit NIN */}
+                      <div className={styles.fieldGroup} style={{ margin: 0 }}>
+                        <label className={styles.label} style={{ fontSize: "12px", marginBottom: 4 }}>
+                          11-Digit NIN Number <span style={{ color: "#EF4444" }}>*</span>
+                        </label>
+                        <input
+                          type="text"
+                          className={styles.input}
+                          placeholder="11-digit NIN Number"
+                          value={g1.nin}
+                          maxLength={11}
+                          inputMode="numeric"
+                          pattern="[0-9]{11}"
+                          onChange={(e) => {
+                            const digits = e.target.value.replace(/\D/g, "").slice(0, 11);
+                            const updated = { ...g1, nin: digits };
+                            setG1(updated);
+                            saveDraftState(3, { g1: updated });
+                          }}
+                          required
+                        />
+                      </div>
                     </div>
                   </div>
 
                   <div className={styles.guarantorCard}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-                      <h4 style={{ margin: 0 }}>Guarantor #2 (Former Employer / Master Craftsman) <span style={{ color: "#EF4444" }}>*</span></h4>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12, flexWrap: "wrap", gap: 6 }}>
+                      <h4 style={{ margin: 0, fontSize: "14px", color: "var(--text-primary)" }}>
+                        Guarantor #2 Details <span style={{ color: "#EF4444" }}>*</span>
+                      </h4>
                       <div style={{ fontSize: "11px", display: "flex", gap: 8 }}>
                         <span style={{ color: g2.phone.length === 11 ? "#10B981" : "#94A3B8" }}>Phone: {g2.phone.length}/11</span>
                         <span style={{ color: g2.nin.length === 11 ? "#10B981" : "#94A3B8" }}>NIN: {g2.nin.length}/11</span>
                       </div>
                     </div>
-                    <div className={styles.gRow}>
-                      <input
-                        type="text"
-                        className={styles.input}
-                        placeholder="Full Name *"
-                        value={g2.name}
-                        onChange={(e) => {
-                          const updated = { ...g2, name: e.target.value };
-                          setG2(updated);
-                          saveDraftState(3, { g2: updated });
-                        }}
-                        required
-                      />
-                      <input
-                        type="tel"
-                        className={styles.input}
-                        placeholder="11-digit Phone (080...) *"
-                        value={g2.phone}
-                        maxLength={11}
-                        inputMode="numeric"
-                        pattern="[0-9]{11}"
-                        onChange={(e) => {
-                          const digits = e.target.value.replace(/\D/g, "").slice(0, 11);
-                          const updated = { ...g2, phone: digits };
-                          setG2(updated);
-                          saveDraftState(3, { g2: updated });
-                        }}
-                        required
-                      />
-                      <input
-                        type="text"
-                        className={styles.input}
-                        placeholder="11-digit NIN Number *"
-                        value={g2.nin}
-                        maxLength={11}
-                        inputMode="numeric"
-                        pattern="[0-9]{11}"
-                        onChange={(e) => {
-                          const digits = e.target.value.replace(/\D/g, "").slice(0, 11);
-                          const updated = { ...g2, nin: digits };
-                          setG2(updated);
-                          saveDraftState(3, { g2: updated });
-                        }}
-                        required
-                      />
+
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 12 }}>
+                      {/* Full Name */}
+                      <div className={styles.fieldGroup} style={{ margin: 0 }}>
+                        <label className={styles.label} style={{ fontSize: "12px", marginBottom: 4 }}>
+                          Full Legal Name <span style={{ color: "#EF4444" }}>*</span>
+                        </label>
+                        <input
+                          type="text"
+                          className={styles.input}
+                          placeholder="e.g. Engr. Aliyu Hassan"
+                          value={g2.name}
+                          onChange={(e) => {
+                            const updated = { ...g2, name: e.target.value };
+                            setG2(updated);
+                            saveDraftState(3, { g2: updated });
+                          }}
+                          required
+                        />
+                      </div>
+
+                      {/* Role / Relationship of Guarantor to Pro */}
+                      <div className={styles.fieldGroup} style={{ margin: 0 }}>
+                        <label className={styles.label} style={{ fontSize: "12px", marginBottom: 4 }}>
+                          Role / Relationship to You <span style={{ color: "#EF4444" }}>*</span>
+                        </label>
+                        <select
+                          className={styles.input}
+                          value={g2.relationship}
+                          onChange={(e) => {
+                            const updated = { ...g2, relationship: e.target.value };
+                            setG2(updated);
+                            saveDraftState(3, { g2: updated });
+                          }}
+                          style={{ cursor: "pointer" }}
+                          required
+                        >
+                          {GUARANTOR_ROLE_OPTIONS.map((role) => (
+                            <option key={role} value={role}>
+                              {role}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      {/* Custom Relationship input if Other is selected */}
+                      {g2.relationship === "Other / Custom Role" && (
+                        <div className={styles.fieldGroup} style={{ margin: 0, gridColumn: "1 / -1" }}>
+                          <label className={styles.label} style={{ fontSize: "12px", marginBottom: 4 }}>
+                            Specify Relationship / Role <span style={{ color: "#EF4444" }}>*</span>
+                          </label>
+                          <input
+                            type="text"
+                            className={styles.input}
+                            placeholder="Specify role to you (e.g. Former Supervisor, Master Trainer)"
+                            value={g2.customRelationship || ""}
+                            onChange={(e) => {
+                              const updated = { ...g2, customRelationship: e.target.value };
+                              setG2(updated);
+                              saveDraftState(3, { g2: updated });
+                            }}
+                            required
+                          />
+                        </div>
+                      )}
+
+                      {/* Phone Number */}
+                      <div className={styles.fieldGroup} style={{ margin: 0 }}>
+                        <label className={styles.label} style={{ fontSize: "12px", marginBottom: 4 }}>
+                          11-Digit Phone Number <span style={{ color: "#EF4444" }}>*</span>
+                        </label>
+                        <input
+                          type="tel"
+                          className={styles.input}
+                          placeholder="080... (11 Digits)"
+                          value={g2.phone}
+                          maxLength={11}
+                          inputMode="numeric"
+                          pattern="[0-9]{11}"
+                          onChange={(e) => {
+                            const digits = e.target.value.replace(/\D/g, "").slice(0, 11);
+                            const updated = { ...g2, phone: digits };
+                            setG2(updated);
+                            saveDraftState(3, { g2: updated });
+                          }}
+                          required
+                        />
+                      </div>
+
+                      {/* 11-digit NIN */}
+                      <div className={styles.fieldGroup} style={{ margin: 0 }}>
+                        <label className={styles.label} style={{ fontSize: "12px", marginBottom: 4 }}>
+                          11-Digit NIN Number <span style={{ color: "#EF4444" }}>*</span>
+                        </label>
+                        <input
+                          type="text"
+                          className={styles.input}
+                          placeholder="11-digit NIN Number"
+                          value={g2.nin}
+                          maxLength={11}
+                          inputMode="numeric"
+                          pattern="[0-9]{11}"
+                          onChange={(e) => {
+                            const digits = e.target.value.replace(/\D/g, "").slice(0, 11);
+                            const updated = { ...g2, nin: digits };
+                            setG2(updated);
+                            saveDraftState(3, { g2: updated });
+                          }}
+                          required
+                        />
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -1286,7 +1462,7 @@ export default function ProVerificationPage() {
                 {/* Step 3 Mandatory Completion Notice */}
                 {!isStep3Valid && (
                   <div style={{ background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.25)", borderRadius: "8px", padding: "10px 14px", marginTop: "16px", fontSize: "12px", color: "#FCA5A5" }}>
-                    <strong>Step 3 Requirements:</strong> Please provide complete 11-digit Phone numbers and 11-digit NIN numbers for both Guarantor #1 and Guarantor #2.
+                    <strong>Step 3 Requirements:</strong> Please provide complete details (Full Legal Name, Role/Relationship, 11-digit Phone Number, and 11-digit NIN) for both Guarantor #1 and Guarantor #2.
                   </div>
                 )}
 
