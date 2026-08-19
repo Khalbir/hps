@@ -462,10 +462,14 @@ model ReplacementPart {
   customerRejectionReason String?
   adminNotes              String?
 
-  // Payment & Escrow
-  paymentStatus           String    @default("PENDING") // PENDING, PAID_ESCROW, DISBURSED_MERCHANT, REFUNDED
+  // Dedicated Procurement & Fast Supplier Disbursement (Second Account)
+  destinationAccount      String    @default("PROCUREMENT_ACCOUNT") // PROCUREMENT_ACCOUNT (Decoupled from Service Escrow)
+  paymentStatus           String    @default("PENDING") // PENDING, DIRECT_PROCUREMENT_PAID, DISBURSED_TO_SUPPLIER, REFUNDED
   paymentMethod           String?   // PAYSTACK, WALLET
   paymentReference        String?
+  disbursementStatus      String    @default("PENDING_DISBURSEMENT") // PENDING_DISBURSEMENT, DISBURSED_TO_SUPPLIER, SETTLED
+  disbursementReference   String?
+  disbursedAt             DateTime?
 
   // One-Time Purchase Voucher
   voucherCode             String?   @unique // Cryptographic redemption code e.g. HHP-VOUCH-94821
@@ -485,22 +489,25 @@ model ReplacementPart {
 }
 
 model PartSupplier {
-  id             String    @id @default(cuid())
-  name           String
-  category       String    @default("GENERAL") // PLUMBING, ELECTRICAL, HVAC, CARPENTRY, GENERAL
-  contactPerson  String?
-  phone          String
-  email          String?
-  address        String
-  city           String    @default("Abuja")
-  state          String    @default("FCT")
-  bankName       String?
-  bankAccount    String?
-  accountName    String?
-  isVerified     Boolean   @default(true)
-  rating         Float     @default(5.0)
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
+  id                    String    @id @default(cuid())
+  name                  String
+  category              String    @default("GENERAL") // PLUMBING, ELECTRICAL, HVAC, CARPENTRY, GENERAL
+  contactPerson         String?
+  phone                 String
+  email                 String?
+  address               String
+  city                  String    @default("Abuja")
+  state                 String    @default("FCT")
+  bankName              String?
+  bankAccount           String?
+  accountName           String?
+  paystackRecipientCode String?   // Paystack transfer recipient code for instant disbursement
+  totalDisbursedNgn     Float     @default(0)
+  settlementType        String    @default("INSTANT_TRANSFER") // INSTANT_TRANSFER, DIRECT_SETTLEMENT
+  isVerified            Boolean   @default(true)
+  rating                Float     @default(5.0)
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
 
   replacementParts ReplacementPart[]
 }

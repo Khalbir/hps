@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { generateVoucherCode, logPartAudit, findSupplierForCategory } from "@/lib/parts";
+import { generateVoucherCode, logPartAudit, findSupplierForCategory, disburseFundsToSupplier } from "@/lib/parts";
 import { sendArtisanPartVoucherAlert } from "@/lib/whatsapp";
 import { sendMultiChannelNotification } from "@/lib/notifications";
 
@@ -123,14 +123,14 @@ export async function POST(req: Request) {
             walletId: userWallet.id,
             type: "DEBIT",
             amount: amountToPay,
-            description: `Part Procurement Escrow: ${part.partName} (#${part.reference})`,
+            description: `Part Direct Procurement: ${part.partName} (#${part.reference})`,
             reference: `WALLET-PART-${part.reference}-${Date.now()}`,
             gateway: "WALLET",
           },
         });
       }
 
-      // Record platform payment in HandyHub Escrow
+      // Record platform payment in HandyHub Dedicated Procurement Account (Second Account)
       const effectivePaymentRef =
         paymentReference || `PAY-PART-${part.reference}-${Date.now()}`;
 
@@ -145,6 +145,7 @@ export async function POST(req: Request) {
           status: "SUCCESS",
           metadata: JSON.stringify({
             type: "REPLACEMENT_PART_PROCUREMENT",
+            destinationAccount: "PROCUREMENT_ACCOUNT",
             partId: part.id,
             partRef: part.reference,
             partName: part.partName,
@@ -162,12 +163,15 @@ export async function POST(req: Request) {
       const voucherCode = generateVoucherCode();
       const voucherExpiresAt = new Date(Date.now() + 48 * 60 * 60 * 1000); // 48 hours validity
 
-      const updatedPart = await prisma.replacementPart.update({
+      // Update part with Dedicated Procurement Account details
+      let updatedPart = await prisma.replacementPart.update({
         where: { id: partId },
         data: {
           status: "VOUCHER_ISSUED",
           approvedCost: amountToPay,
-          paymentStatus: "PAID_ESCROW",
+          destinationAccount: "PROCUREMENT_ACCOUNT",
+          paymentStatus: "DIRECT_PROCUREMENT_PAID",
+          disbursementStatus: "PENDING_DISBURSEMENT",
           paymentMethod,
           paymentReference: effectivePaymentRef,
           supplierId: supplier?.id || null,
@@ -187,9 +191,23 @@ export async function POST(req: Request) {
         actorId: part.customerId,
         actorRole: "CUSTOMER",
         action: "APPROVED",
-        notes: `Customer approved replacement part for ₦${amountToPay.toLocaleString()} via ${paymentMethod}.`,
-        metadata: { amount: amountToPay, paymentMethod, paymentReference: effectivePaymentRef },
+        notes: `Customer approved replacement part for ₦${amountToPay.toLocaleString()} via ${paymentMethod}. Credited to Dedicated Procurement Account.`,
+        metadata: { amount: amountToPay, paymentMethod, paymentReference: effectivePaymentRef, destinationAccount: "PROCUREMENT_ACCOUNT" },
       });
+
+      // Trigger Fast Direct Merchant Disbursement from Dedicated Procurement Account
+      try {
+        const disbRes = await disburseFundsToSupplier(
+          part.id,
+          "SYSTEM",
+          "Automatic instant disbursement from Dedicated Procurement Account upon customer authorization."
+        );
+        if (disbRes?.part) {
+          updatedPart = disbRes.part as any;
+        }
+      } catch (disbErr) {
+        console.warn("[Supplier Instant Disbursement Notice]:", disbErr);
+      }
 
       await logPartAudit({
         partId: part.id,

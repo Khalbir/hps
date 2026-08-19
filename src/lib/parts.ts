@@ -31,6 +31,8 @@ export async function ensureDefaultSuppliers() {
       bankName: "Guaranty Trust Bank",
       bankAccount: "0123984756",
       accountName: "Abuja Electro Hub Ltd",
+      paystackRecipientCode: "RCP_electro_abuja_01",
+      settlementType: "INSTANT_TRANSFER",
       isVerified: true,
       rating: 4.9,
     },
@@ -46,6 +48,8 @@ export async function ensureDefaultSuppliers() {
       bankName: "Zenith Bank",
       bankAccount: "1019283746",
       accountName: "Maitama Sanitary Mart Nig",
+      paystackRecipientCode: "RCP_maitama_plumb_02",
+      settlementType: "INSTANT_TRANSFER",
       isVerified: true,
       rating: 4.8,
     },
@@ -61,6 +65,8 @@ export async function ensureDefaultSuppliers() {
       bankName: "Access Bank",
       bankAccount: "0088776655",
       accountName: "Wuse Power Systems Ltd",
+      paystackRecipientCode: "RCP_wuse_power_03",
+      settlementType: "INSTANT_TRANSFER",
       isVerified: true,
       rating: 5.0,
     },
@@ -76,6 +82,8 @@ export async function ensureDefaultSuppliers() {
       bankName: "First Bank of Nigeria",
       bankAccount: "2039485761",
       accountName: "Apo Hardware Supplies",
+      paystackRecipientCode: "RCP_apo_timber_04",
+      settlementType: "INSTANT_TRANSFER",
       isVerified: true,
       rating: 4.7,
     },
@@ -98,7 +106,6 @@ export function computeReceiptHash(receiptPayload: string): string {
  * e.g., HHP-VOUCH-7892
  */
 export function generateVoucherCode(): string {
-  const randomHex = crypto.randomBytes(2).toString("hex").toUpperCase();
   const randomNum = Math.floor(1000 + Math.random() * 9000);
   return `HHP-VOUCH-${randomNum}`;
 }
@@ -153,4 +160,73 @@ export async function findSupplierForCategory(category: string, city: string = "
     where: { isVerified: true },
     orderBy: { rating: "desc" },
   });
+}
+
+/**
+ * Dedicated Fast Supplier Disbursement Engine (Second Account)
+ * Immediately records / initiates direct payout to partner merchant bank account
+ * completely decoupled from the customer's on-site job completion OTP escrow.
+ */
+export async function disburseFundsToSupplier(
+  partId: string,
+  actorRole: "SYSTEM" | "ADMIN" = "SYSTEM",
+  adminNotes?: string
+) {
+  const part = await prisma.replacementPart.findUnique({
+    where: { id: partId },
+    include: { supplier: true, booking: true },
+  });
+
+  if (!part) throw new Error("Replacement part not found");
+  if (!part.supplier) throw new Error("No supplier assigned for direct disbursement");
+
+  const amount = Number(part.approvedCost || part.estimatedCost);
+  const disbRef = `DISB-MERCHANT-${part.supplier.category}-${Date.now().toString().slice(-6)}`;
+
+  // Update replacement part record
+  const updatedPart = await prisma.replacementPart.update({
+    where: { id: part.id },
+    data: {
+      destinationAccount: "PROCUREMENT_ACCOUNT",
+      paymentStatus: "DISBURSED_TO_SUPPLIER",
+      disbursementStatus: "DISBURSED_TO_SUPPLIER",
+      disbursementReference: disbRef,
+      disbursedAt: new Date(),
+      adminNotes: adminNotes ? `${part.adminNotes || ""}\n${adminNotes}`.trim() : part.adminNotes,
+    },
+  });
+
+  // Update running disbursement volume for supplier
+  await prisma.partSupplier.update({
+    where: { id: part.supplier.id },
+    data: {
+      totalDisbursedNgn: { increment: amount },
+    },
+  });
+
+  // Record immutable audit entry
+  await logPartAudit({
+    partId: part.id,
+    actorRole,
+    action: "DISBURSED_TO_SUPPLIER",
+    notes: `⚡ Instant direct procurement disbursement of ₦${amount.toLocaleString()} sent to ${part.supplier.name} (${part.supplier.bankName}: ${part.supplier.bankAccount}). Ref: ${disbRef}. Bypasses labor service escrow.`,
+    metadata: {
+      amount,
+      supplierId: part.supplier.id,
+      supplierName: part.supplier.name,
+      bankName: part.supplier.bankName,
+      bankAccount: part.supplier.bankAccount,
+      accountName: part.supplier.accountName,
+      disbursementReference: disbRef,
+      destinationAccount: "PROCUREMENT_ACCOUNT",
+    },
+  });
+
+  return {
+    success: true,
+    disbursementReference: disbRef,
+    amount,
+    supplier: part.supplier,
+    part: updatedPart,
+  };
 }

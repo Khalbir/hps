@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { logPartAudit, ensureDefaultSuppliers } from "@/lib/parts";
+import { logPartAudit, ensureDefaultSuppliers, disburseFundsToSupplier } from "@/lib/parts";
 
 export async function GET(req: Request) {
   try {
@@ -11,7 +11,11 @@ export async function GET(req: Request) {
 
     const where: any = {};
     if (status && status !== "ALL") {
-      where.status = status;
+      if (status === "PROCUREMENT_PAID") {
+        where.destinationAccount = "PROCUREMENT_ACCOUNT";
+      } else {
+        where.status = status;
+      }
     }
 
     if (search) {
@@ -19,56 +23,84 @@ export async function GET(req: Request) {
         { reference: { contains: search, mode: "insensitive" } },
         { partName: { contains: search, mode: "insensitive" } },
         { voucherCode: { contains: search, mode: "insensitive" } },
+        { disbursementReference: { contains: search, mode: "insensitive" } },
         { booking: { reference: { contains: search, mode: "insensitive" } } },
         { customer: { firstName: { contains: search, mode: "insensitive" } } },
         { customer: { lastName: { contains: search, mode: "insensitive" } } },
       ];
     }
 
-    const [parts, suppliers, totalCount, fraudCount, totalEscrowAmount, pendingApprovalCount, activeVouchersCount] =
-      await Promise.all([
-        prisma.replacementPart.findMany({
-          where,
-          include: {
-            customer: { select: { id: true, firstName: true, lastName: true, email: true, phone: true } },
-            professional: {
-              include: {
-                user: { select: { id: true, firstName: true, lastName: true, phone: true } },
-              },
+    const [
+      parts,
+      suppliers,
+      totalCount,
+      fraudCount,
+      totalProcurementVolume,
+      totalDisbursedToSuppliers,
+      pendingSupplierDisbursement,
+      pendingApprovalCount,
+      activeVouchersCount,
+    ] = await Promise.all([
+      prisma.replacementPart.findMany({
+        where,
+        include: {
+          customer: { select: { id: true, firstName: true, lastName: true, email: true, phone: true } },
+          professional: {
+            include: {
+              user: { select: { id: true, firstName: true, lastName: true, phone: true } },
             },
-            supplier: true,
-            booking: {
-              select: {
-                id: true,
-                reference: true,
-                status: true,
-                address: true,
-                service: { select: { name: true } },
-              },
-            },
-            auditLogs: { orderBy: { createdAt: "asc" } },
           },
-          orderBy: { createdAt: "desc" },
-        }),
-        prisma.partSupplier.findMany({
-          orderBy: { rating: "desc" },
-        }),
-        prisma.replacementPart.count(),
-        prisma.replacementPart.count({ where: { status: "FLAGGED_FRAUD" } }),
-        prisma.replacementPart.aggregate({
-          where: { paymentStatus: "PAID_ESCROW" },
-          _sum: { approvedCost: true },
-        }),
-        prisma.replacementPart.count({ where: { status: "REQUESTED" } }),
-        prisma.replacementPart.count({ where: { status: "VOUCHER_ISSUED" } }),
-      ]);
+          supplier: true,
+          booking: {
+            select: {
+              id: true,
+              reference: true,
+              status: true,
+              address: true,
+              service: { select: { name: true } },
+            },
+          },
+          auditLogs: { orderBy: { createdAt: "asc" } },
+        },
+        orderBy: { createdAt: "desc" },
+      }),
+      prisma.partSupplier.findMany({
+        orderBy: { rating: "desc" },
+      }),
+      prisma.replacementPart.count(),
+      prisma.replacementPart.count({ where: { status: "FLAGGED_FRAUD" } }),
+      // Dedicated Account 2 Total Procurement Volume
+      prisma.replacementPart.aggregate({
+        where: {
+          OR: [
+            { destinationAccount: "PROCUREMENT_ACCOUNT" },
+            { paymentStatus: { in: ["DIRECT_PROCUREMENT_PAID", "DISBURSED_TO_SUPPLIER", "PAID_ESCROW"] } },
+          ],
+        },
+        _sum: { approvedCost: true },
+      }),
+      // Total Disbursed directly to Merchant Bank accounts
+      prisma.replacementPart.aggregate({
+        where: { disbursementStatus: "DISBURSED_TO_SUPPLIER" },
+        _sum: { approvedCost: true },
+      }),
+      // Pending direct merchant disbursement
+      prisma.replacementPart.aggregate({
+        where: { disbursementStatus: "PENDING_DISBURSEMENT", paymentStatus: "DIRECT_PROCUREMENT_PAID" },
+        _sum: { approvedCost: true },
+      }),
+      prisma.replacementPart.count({ where: { status: "REQUESTED" } }),
+      prisma.replacementPart.count({ where: { status: "VOUCHER_ISSUED" } }),
+    ]);
 
     return NextResponse.json({
       success: true,
       stats: {
         totalCount,
         fraudCount,
-        totalEscrowAmount: totalEscrowAmount._sum.approvedCost || 0,
+        totalProcurementVolumeNgn: totalProcurementVolume._sum.approvedCost || 0,
+        totalDisbursedToSuppliersNgn: totalDisbursedToSuppliers._sum.approvedCost || 0,
+        pendingSupplierDisbursementNgn: pendingSupplierDisbursement._sum.approvedCost || 0,
         pendingApprovalCount,
         activeVouchersCount,
       },
@@ -87,11 +119,11 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { action, partId, supplierId, adminNotes, supplierData } = body;
+    const { action, partId, supplierData, adminNotes } = body;
 
     // 1. ADD / UPDATE SUPPLIER
     if (action === "SAVE_SUPPLIER") {
-      const { id, name, category, contactPerson, phone, email, address, city, state, bankName, bankAccount, accountName, isVerified } =
+      const { id, name, category, contactPerson, phone, email, address, city, state, bankName, bankAccount, accountName, paystackRecipientCode, settlementType, isVerified } =
         supplierData || {};
 
       if (!name || !phone || !address) {
@@ -116,6 +148,8 @@ export async function POST(req: Request) {
             bankName,
             bankAccount,
             accountName,
+            paystackRecipientCode: paystackRecipientCode || null,
+            settlementType: settlementType || "INSTANT_TRANSFER",
             isVerified: isVerified !== undefined ? isVerified : true,
           },
         });
@@ -134,6 +168,8 @@ export async function POST(req: Request) {
             bankName,
             bankAccount,
             accountName,
+            paystackRecipientCode: paystackRecipientCode || null,
+            settlementType: settlementType || "INSTANT_TRANSFER",
             isVerified: true,
           },
         });
@@ -141,7 +177,24 @@ export async function POST(req: Request) {
       }
     }
 
-    // 2. REDEEM VOUCHER (Admin/Merchant redemption confirmation)
+    // 2. DISBURSE FUNDS TO SUPPLIER BANK (Account 2 Fast Direct Payout)
+    if (action === "DISBURSE_SUPPLIER") {
+      if (!partId) return NextResponse.json({ error: "Part ID is required." }, { status: 400 });
+
+      const disbResult = await disburseFundsToSupplier(
+        partId,
+        "ADMIN",
+        adminNotes || "Manual administrative instant disbursement from Dedicated Procurement Account."
+      );
+
+      return NextResponse.json({
+        success: true,
+        message: `⚡ Successfully disbursed ₦${disbResult.amount.toLocaleString()} to ${disbResult.supplier.name} (${disbResult.supplier.bankName}: ${disbResult.supplier.bankAccount}). Ref: ${disbResult.disbursementReference}`,
+        disbursement: disbResult,
+      });
+    }
+
+    // 3. REDEEM VOUCHER (Merchant Confirmation)
     if (action === "REDEEM_VOUCHER") {
       if (!partId) {
         return NextResponse.json({ error: "Part ID is required." }, { status: 400 });
@@ -170,7 +223,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: true, message: "Voucher marked as redeemed.", part: updated });
     }
 
-    // 3. RESOLVE FRAUD FLAG
+    // 4. RESOLVE FRAUD FLAG
     if (action === "RESOLVE_FRAUD") {
       if (!partId) return NextResponse.json({ error: "Part ID is required." }, { status: 400 });
 

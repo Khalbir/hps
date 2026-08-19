@@ -292,16 +292,16 @@ function TrackContent() {
                       Artisan on-site diagnosed replacement components for your property.
                     </p>
                   </div>
-                  <span style={{ fontSize: "11px", color: "#38BDF8", fontWeight: 700, background: "rgba(14,165,233,0.15)", padding: "4px 10px", borderRadius: 8, border: "1px solid rgba(14,165,233,0.3)" }}>
-                    🛡️ Zero-Cash Escrow Guarantee
+                  <span style={{ fontSize: "11px", color: "#10B981", fontWeight: 700, background: "rgba(16,185,129,0.15)", padding: "4px 10px", borderRadius: 8, border: "1px solid rgba(16,185,129,0.3)" }}>
+                    ⚡ Direct Supplier Settlement (Second Account)
                   </span>
                 </div>
 
                 {/* Zero Cash Safety Banner */}
-                <div style={{ background: "rgba(245, 158, 11, 0.1)", border: "1px solid rgba(245, 158, 11, 0.3)", borderRadius: 10, padding: "10px 14px", marginBottom: 16, display: "flex", alignItems: "flex-start", gap: 10 }}>
-                  <AlertTriangle size={18} color="#F59E0B" style={{ flexShrink: 0, marginTop: 2 }} />
-                  <span style={{ fontSize: "12px", color: "#FDE68A", lineHeight: 1.5 }}>
-                    <strong>Strict Platform Policy:</strong> Never give cash or direct bank transfers to artisans for parts. All legitimate replacements must be authorized through HandyHub Pro to issue authentic supplier vouchers and protect your warranty.
+                <div style={{ background: "rgba(16, 185, 129, 0.08)", border: "1px solid rgba(16, 185, 129, 0.25)", borderRadius: 10, padding: "10px 14px", marginBottom: 16, display: "flex", alignItems: "flex-start", gap: 10 }}>
+                  <Shield size={18} color="#10B981" style={{ flexShrink: 0, marginTop: 2 }} />
+                  <span style={{ fontSize: "12px", color: "#A7F3D0", lineHeight: 1.5 }}>
+                    <strong>Direct Merchant Settlement:</strong> Never pay artisans cash. When authorized, funds are credited directly to the verified supplier's merchant account, issuing an instant voucher so the artisan collects the authentic part without delay.
                   </span>
                 </div>
 
@@ -801,9 +801,9 @@ function TrackContent() {
 
             {partAction === "APPROVE" ? (
               <div>
-                <div style={{ background: "rgba(14,165,233,0.1)", border: "1px solid rgba(14,165,233,0.3)", borderRadius: 10, padding: 12, marginBottom: 16 }}>
-                  <span style={{ fontSize: "12px", color: "#38BDF8", display: "block", lineHeight: 1.5 }}>
-                    🛡️ <strong>Zero-Cash Security:</strong> Payment is held in HandyHub Escrow and a <strong>single-use digital voucher</strong> will be issued to our verified supplier. No cash is given to the artisan.
+                <div style={{ background: "rgba(16,185,129,0.1)", border: "1px solid rgba(16,185,129,0.3)", borderRadius: 10, padding: 12, marginBottom: 16 }}>
+                  <span style={{ fontSize: "12px", color: "#34D399", display: "block", lineHeight: 1.5 }}>
+                    ⚡ <strong>Direct Supplier Settlement:</strong> Payment is routed to our <strong>Dedicated Procurement Account</strong> for instant disbursement to the verified merchant. A <strong>single-use digital voucher</strong> is issued so your artisan collects the part immediately. Zero cash to artisan.
                   </span>
                 </div>
 

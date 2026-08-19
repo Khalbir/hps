@@ -1126,9 +1126,9 @@ export default function ProJobsPage() {
             </div>
 
             {/* Zero Cash Safety Alert for Artisan */}
-            <div style={{ background: "rgba(139,92,246,0.12)", border: "1px solid rgba(139,92,246,0.3)", borderRadius: 10, padding: 12, marginBottom: 16 }}>
-              <span style={{ fontSize: "12px", color: "#DDD6FE", lineHeight: 1.5 }}>
-                🛡️ <strong>Zero-Cash Procurement Policy:</strong> Do NOT collect cash from the customer. Once approved, the client pays HandyHub directly and you will receive an authorized <strong>single-use voucher code</strong> to collect the genuine component from our partner merchant.
+            <div style={{ background: "rgba(16,185,129,0.12)", border: "1px solid rgba(16,185,129,0.3)", borderRadius: 10, padding: 12, marginBottom: 16 }}>
+              <span style={{ fontSize: "12px", color: "#A7F3D0", lineHeight: 1.5 }}>
+                ⚡ <strong>Direct Supplier Settlement (Zero-Cash):</strong> Do NOT collect cash from the customer. Once approved, payment is disbursed directly to our partner supplier from HandyHub's Dedicated Procurement Account, issuing you a <strong>single-use pickup voucher</strong> for instant collection.
               </span>
             </div>
 

@@ -5,7 +5,7 @@ import { AdminLayoutShell } from "@/components/layout/AdminLayoutShell";
 import {
   Wrench, Shield, AlertTriangle, CheckCircle2, Clock, Search, Filter,
   RefreshCw, DollarSign, Store, Ticket, FileText, Eye, ChevronRight,
-  Plus, X, AlertCircle, Check, MapPin, Phone, Building2, Lock
+  Plus, X, AlertCircle, Check, MapPin, Phone, Building2, Lock, Zap, ArrowUpRight
 } from "lucide-react";
 import styles from "../../admin.module.css";
 
@@ -16,7 +16,9 @@ export default function AdminPartsPage() {
   const [stats, setStats] = useState<any>({
     totalCount: 0,
     fraudCount: 0,
-    totalEscrowAmount: 0,
+    totalProcurementVolumeNgn: 0,
+    totalDisbursedToSuppliersNgn: 0,
+    pendingSupplierDisbursementNgn: 0,
     pendingApprovalCount: 0,
     activeVouchersCount: 0,
   });
@@ -41,6 +43,8 @@ export default function AdminPartsPage() {
     bankName: "",
     bankAccount: "",
     accountName: "",
+    paystackRecipientCode: "",
+    settlementType: "INSTANT_TRANSFER",
   });
 
   const [actionFeedback, setActionFeedback] = useState<{ type: "success" | "error"; msg: string } | null>(null);
@@ -71,6 +75,30 @@ export default function AdminPartsPage() {
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     fetchPartsData();
+  };
+
+  const handleDisburseSupplier = async (partId: string) => {
+    if (!confirm("⚡ Initiate direct procurement bank settlement to partner merchant? Funds will be disbursed immediately to the merchant's bank account.")) return;
+    setProcessingAction(true);
+    try {
+      const res = await fetch("/api/admin/parts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "DISBURSE_SUPPLIER", partId }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setActionFeedback({ type: "success", msg: data.message || "Direct bank transfer disbursed to merchant!" });
+        fetchPartsData();
+      } else {
+        setActionFeedback({ type: "error", msg: data.error || "Failed to disburse to supplier." });
+      }
+    } catch {
+      setActionFeedback({ type: "error", msg: "Network error executing instant disbursement." });
+    } finally {
+      setProcessingAction(false);
+      setTimeout(() => setActionFeedback(null), 5000);
+    }
   };
 
   const handleRedeemVoucher = async (partId: string) => {
@@ -156,13 +184,13 @@ export default function AdminPartsPage() {
       <div className={styles.adminHeader}>
         <div>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <h1 className={styles.adminTitle}>Replacement Parts & Procurement Oversight</h1>
-            <span style={{ fontSize: "11px", color: "#38BDF8", background: "rgba(14,165,233,0.15)", padding: "3px 10px", borderRadius: 99, fontWeight: 700, border: "1px solid rgba(14,165,233,0.3)" }}>
-              🛡️ Zero-Cash Escrow
+            <h1 className={styles.adminTitle}>Replacement Parts & Direct Procurement Oversight</h1>
+            <span style={{ fontSize: "11px", color: "#10B981", background: "rgba(16,185,129,0.15)", padding: "3px 10px", borderRadius: 99, fontWeight: 700, border: "1px solid rgba(16,185,129,0.3)" }}>
+              ⚡ Dedicated Account 2 (Direct Merchant Settlement)
             </span>
           </div>
           <p className={styles.adminSubtitle}>
-            Audit artisan parts diagnosis, track Paystack escrow procurement, verify single-use supplier vouchers, and monitor duplicate receipt fraud safeguards.
+            Manages the <strong>Dedicated Procurement Account</strong> for fast merchant payouts. Parts payments bypass the slow labor service escrow, allowing instant bank settlement directly to verified supplier stores.
           </p>
         </div>
         <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
@@ -181,6 +209,8 @@ export default function AdminPartsPage() {
                 bankName: "",
                 bankAccount: "",
                 accountName: "",
+                paystackRecipientCode: "",
+                settlementType: "INSTANT_TRANSFER",
               });
               setSupplierModalOpen(true);
             }}
@@ -193,6 +223,21 @@ export default function AdminPartsPage() {
             <RefreshCw size={14} /> Refresh
           </button>
         </div>
+      </div>
+
+      {/* Account Architecture Callout Banner */}
+      <div style={{ background: "linear-gradient(135deg, rgba(16,185,129,0.12) 0%, rgba(14,165,233,0.12) 100%)", border: "1.5px solid rgba(16,185,129,0.4)", borderRadius: 12, padding: "14px 18px", marginBottom: 20, display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
+        <div>
+          <strong style={{ color: "#34D399", fontSize: "13.5px", display: "flex", alignItems: "center", gap: 6 }}>
+            <Zap size={16} /> Two-Account Security Model Active
+          </strong>
+          <span style={{ fontSize: "12px", color: "#E2E8F0", marginTop: 2, display: "block" }}>
+            <strong>Account 1 (Service Escrow)</strong>: Holds artisan labor fees until job OTP verification. • <strong>Account 2 (Direct Procurement)</strong>: Direct instant settlement to merchant bank accounts for parts.
+          </span>
+        </div>
+        <span style={{ fontSize: "11.5px", color: "#38BDF8", fontWeight: 700, background: "rgba(15,23,42,0.6)", padding: "4px 10px", borderRadius: 6 }}>
+          ⚡ Zero-Delay Supplier Pickup
+        </span>
       </div>
 
       {/* Global Feedback Banner */}
@@ -217,34 +262,34 @@ export default function AdminPartsPage() {
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 14, marginBottom: 24 }}>
         <div className="card" style={{ background: "#0F172A", border: "1px solid #1E293B", padding: 16 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-            <span style={{ fontSize: "11px", color: "#94A3B8", fontWeight: 700, textTransform: "uppercase" }}>Total Requests</span>
-            <Wrench size={18} color="#8B5CF6" />
+            <span style={{ fontSize: "11px", color: "#94A3B8", fontWeight: 700, textTransform: "uppercase" }}>Procurement Account Vol</span>
+            <DollarSign size={18} color="#10B981" />
           </div>
-          <strong style={{ fontSize: "24px", color: "#F8FAFC" }}>{stats.totalCount || 0}</strong>
-          <span style={{ fontSize: "11px", color: "#64748B", display: "block", marginTop: 4 }}>All-time diagnosed parts</span>
+          <strong style={{ fontSize: "24px", color: "#10B981" }}>₦{Number(stats.totalProcurementVolumeNgn || 0).toLocaleString()}</strong>
+          <span style={{ fontSize: "11px", color: "#64748B", display: "block", marginTop: 4 }}>Account 2: Parts volume</span>
         </div>
 
         <div className="card" style={{ background: "#0F172A", border: "1px solid #1E293B", padding: 16 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-            <span style={{ fontSize: "11px", color: "#94A3B8", fontWeight: 700, textTransform: "uppercase" }}>Escrow Procurement</span>
-            <DollarSign size={18} color="#10B981" />
+            <span style={{ fontSize: "11px", color: "#94A3B8", fontWeight: 700, textTransform: "uppercase" }}>Disbursed to Suppliers</span>
+            <ArrowUpRight size={18} color="#38BDF8" />
           </div>
-          <strong style={{ fontSize: "24px", color: "#10B981" }}>₦{Number(stats.totalEscrowAmount || 0).toLocaleString()}</strong>
-          <span style={{ fontSize: "11px", color: "#64748B", display: "block", marginTop: 4 }}>Funded into HandyHub Escrow</span>
+          <strong style={{ fontSize: "24px", color: "#38BDF8" }}>₦{Number(stats.totalDisbursedToSuppliersNgn || 0).toLocaleString()}</strong>
+          <span style={{ fontSize: "11px", color: "#64748B", display: "block", marginTop: 4 }}>Settled to merchant bank accounts</span>
         </div>
 
         <div className="card" style={{ background: "#0F172A", border: "1px solid #1E293B", padding: 16 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
             <span style={{ fontSize: "11px", color: "#94A3B8", fontWeight: 700, textTransform: "uppercase" }}>Active Vouchers</span>
-            <Ticket size={18} color="#0EA5E9" />
+            <Ticket size={18} color="#C084FC" />
           </div>
-          <strong style={{ fontSize: "24px", color: "#38BDF8" }}>{stats.activeVouchersCount || 0}</strong>
-          <span style={{ fontSize: "11px", color: "#64748B", display: "block", marginTop: 4 }}>Issued to verified merchants</span>
+          <strong style={{ fontSize: "24px", color: "#C084FC" }}>{stats.activeVouchersCount || 0}</strong>
+          <span style={{ fontSize: "11px", color: "#64748B", display: "block", marginTop: 4 }}>Ready for store pickup</span>
         </div>
 
         <div className="card" style={{ background: "#0F172A", border: "1px solid #1E293B", padding: 16 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-            <span style={{ fontSize: "11px", color: "#94A3B8", fontWeight: 700, textTransform: "uppercase" }}>Pending Client Auth</span>
+            <span style={{ fontSize: "11px", color: "#94A3B8", fontWeight: 700, textTransform: "uppercase" }}>Pending Authorization</span>
             <Clock size={18} color="#F59E0B" />
           </div>
           <strong style={{ fontSize: "24px", color: "#F59E0B" }}>{stats.pendingApprovalCount || 0}</strong>
@@ -295,7 +340,7 @@ export default function AdminPartsPage() {
           <form onSubmit={handleSearchSubmit} style={{ display: "flex", gap: 8 }}>
             <input
               type="text"
-              placeholder="Search reference, part, customer, voucher..."
+              placeholder="Search ref, part, customer, voucher, bank ref..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               style={{
@@ -341,15 +386,18 @@ export default function AdminPartsPage() {
                   <Phone size={14} color="#10B981" /> {s.phone} • {s.contactPerson || "Manager"}
                 </div>
                 {s.bankAccount && (
-                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                    <Building2 size={14} color="#F59E0B" /> {s.bankName}: {s.bankAccount} ({s.accountName})
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, color: "#34D399" }}>
+                    <Building2 size={14} color="#10B981" /> {s.bankName}: <strong>{s.bankAccount}</strong> ({s.accountName})
                   </div>
                 )}
+                <div style={{ fontSize: "11px", color: "#38BDF8", marginTop: 4 }}>
+                  ⚡ Total Disbursed: <strong>₦{Number(s.totalDisbursedNgn || 0).toLocaleString()}</strong>
+                </div>
               </div>
 
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderTop: "1px solid #1E293B", paddingTop: 12 }}>
                 <span style={{ fontSize: "11px", color: "#64748B" }}>
-                  Procurement Partner
+                  Settlement: {s.settlementType || "INSTANT_TRANSFER"}
                 </span>
                 <button
                   type="button"
@@ -367,6 +415,8 @@ export default function AdminPartsPage() {
                       bankName: s.bankName || "",
                       bankAccount: s.bankAccount || "",
                       accountName: s.accountName || "",
+                      paystackRecipientCode: s.paystackRecipientCode || "",
+                      settlementType: s.settlementType || "INSTANT_TRANSFER",
                     });
                     setSupplierModalOpen(true);
                   }}
@@ -397,8 +447,8 @@ export default function AdminPartsPage() {
                     <th style={{ padding: "12px 16px" }}>Part Ref & Item</th>
                     <th style={{ padding: "12px 16px" }}>Booking / Customer</th>
                     <th style={{ padding: "12px 16px" }}>Assigned Artisan</th>
-                    <th style={{ padding: "12px 16px" }}>Amount & Escrow</th>
-                    <th style={{ padding: "12px 16px" }}>Voucher & Supplier</th>
+                    <th style={{ padding: "12px 16px" }}>Amount & Account Routing</th>
+                    <th style={{ padding: "12px 16px" }}>Voucher & Supplier Bank</th>
                     <th style={{ padding: "12px 16px" }}>Evidence & Receipts</th>
                     <th style={{ padding: "12px 16px" }}>Status</th>
                     <th style={{ padding: "12px 16px", textAlign: "right" }}>Actions</th>
@@ -412,6 +462,8 @@ export default function AdminPartsPage() {
                     try { evidence = JSON.parse(p.evidencePhotos || "[]"); } catch {}
                     try { receipts = JSON.parse(p.receiptPhotos || "[]"); } catch {}
                     try { installed = JSON.parse(p.installedPhotos || "[]"); } catch {}
+
+                    const isDisbursed = p.disbursementStatus === "DISBURSED_TO_SUPPLIER" || p.paymentStatus === "DISBURSED_TO_SUPPLIER";
 
                     return (
                       <tr key={p.id} style={{ borderBottom: "1px solid #1E293B" }}>
@@ -439,8 +491,11 @@ export default function AdminPartsPage() {
                           <strong style={{ color: "#10B981", fontSize: "13.5px", display: "block" }}>
                             ₦{Number(p.approvedCost || p.estimatedCost).toLocaleString()}
                           </strong>
-                          <span style={{ fontSize: "10.5px", color: p.paymentStatus === "PAID_ESCROW" ? "#38BDF8" : "#F59E0B" }}>
-                            {p.paymentStatus === "PAID_ESCROW" ? "🛡️ Held in Escrow" : "⏳ Unfunded"}
+                          <span style={{ fontSize: "10px", color: "#34D399", background: "rgba(16,185,129,0.12)", padding: "1px 6px", borderRadius: 4, display: "inline-block", marginTop: 2, fontWeight: 700 }}>
+                            ⚡ Dedicated Procurement Acct
+                          </span>
+                          <span style={{ fontSize: "10.5px", color: isDisbursed ? "#38BDF8" : "#F59E0B", display: "block", marginTop: 2 }}>
+                            {isDisbursed ? `✓ Disbursed to Bank` : "⏳ Pending Supplier Transfer"}
                           </span>
                         </td>
 
@@ -453,6 +508,11 @@ export default function AdminPartsPage() {
                               <span style={{ fontSize: "10.5px", color: "#94A3B8", display: "block", marginTop: 2 }}>
                                 {p.supplier?.name || "Verified Hub"}
                               </span>
+                              {p.supplier?.bankAccount && (
+                                <span style={{ fontSize: "10px", color: "#64748B", display: "block" }}>
+                                  {p.supplier.bankName}: {p.supplier.bankAccount}
+                                </span>
+                              )}
                             </div>
                           ) : (
                             <span style={{ color: "#64748B", fontSize: "11px" }}>None</span>
@@ -528,7 +588,19 @@ export default function AdminPartsPage() {
                         </td>
 
                         <td style={{ padding: "12px 16px", textAlign: "right" }}>
-                          <div style={{ display: "flex", gap: 6, justifyContent: "flex-end" }}>
+                          <div style={{ display: "flex", gap: 6, justifyContent: "flex-end", flexWrap: "wrap" }}>
+                            {/* Instant Supplier Bank Settlement Action Button */}
+                            {!isDisbursed && p.status !== "REQUESTED" && p.status !== "REJECTED" && p.status !== "FLAGGED_FRAUD" && (
+                              <button
+                                onClick={() => handleDisburseSupplier(p.id)}
+                                className="btn btn-primary btn-sm"
+                                style={{ background: "linear-gradient(135deg, #10B981 0%, #059669 100%)", borderColor: "#10B981", fontSize: "11px", padding: "3px 8px", display: "inline-flex", alignItems: "center", gap: 3 }}
+                                title="Instant Disburse to Supplier Bank"
+                              >
+                                <Zap size={12} /> Disburse Bank
+                              </button>
+                            )}
+
                             {p.status === "FLAGGED_FRAUD" && (
                               <button
                                 onClick={() => handleResolveFraud(p.id)}
@@ -554,7 +626,7 @@ export default function AdminPartsPage() {
                               className="btn btn-secondary btn-sm"
                               style={{ fontSize: "11px", padding: "3px 8px", display: "inline-flex", alignItems: "center", gap: 4 }}
                             >
-                              <FileText size={12} /> Audit Trail
+                              <FileText size={12} /> Audit
                             </button>
                           </div>
                         </td>
@@ -616,8 +688,18 @@ export default function AdminPartsPage() {
               <span style={{ color: "#94A3B8", display: "block", marginTop: 2 }}>
                 Booking: #{selectedPartForAudit.booking?.reference} • Artisan: {selectedPartForAudit.professional?.user?.firstName} {selectedPartForAudit.professional?.user?.lastName}
               </span>
+              <div style={{ display: "flex", gap: 10, marginTop: 6, flexWrap: "wrap" }}>
+                <span style={{ fontSize: "11px", color: "#34D399", background: "rgba(16,185,129,0.15)", padding: "2px 6px", borderRadius: 4 }}>
+                  Account: Dedicated Procurement Ledger
+                </span>
+                {selectedPartForAudit.disbursementReference && (
+                  <span style={{ fontSize: "11px", color: "#38BDF8", background: "rgba(14,165,233,0.15)", padding: "2px 6px", borderRadius: 4 }}>
+                    Disbursement Ref: {selectedPartForAudit.disbursementReference}
+                  </span>
+                )}
+              </div>
               {selectedPartForAudit.receiptHash && (
-                <div style={{ marginTop: 6, fontSize: "10.5px", color: "#38BDF8", fontFamily: "monospace", wordBreak: "break-all" }}>
+                <div style={{ marginTop: 6, fontSize: "10.5px", color: "#A855F7", fontFamily: "monospace", wordBreak: "break-all" }}>
                   SHA-256 Receipt Hash: {selectedPartForAudit.receiptHash}
                 </div>
               )}

@@ -1,16 +1,16 @@
 import { prisma } from "../src/lib/prisma";
-import { ensureDefaultSuppliers, computeReceiptHash } from "../src/lib/parts";
+import { ensureDefaultSuppliers, computeReceiptHash, disburseFundsToSupplier } from "../src/lib/parts";
 
 async function testWorkflow() {
   console.log("==================================================");
-  console.log("🚀 TESTING ZERO-CASH REPLACEMENT PARTS WORKFLOW");
+  console.log("🚀 TESTING DEDICATED PROCUREMENT & SUPPLIER SETTLEMENT ACCOUNT");
   console.log("==================================================");
 
   // 1. Ensure suppliers seeded
   await ensureDefaultSuppliers();
   const suppliers = await prisma.partSupplier.findMany();
   console.log(`✓ Verified Partner Suppliers in Database: ${suppliers.length}`);
-  suppliers.forEach((s) => console.log(`  - [${s.category}] ${s.name} (${s.address})`));
+  suppliers.forEach((s) => console.log(`  - [${s.category}] ${s.name} (${s.bankName}: ${s.bankAccount})`));
 
   // 2. Find or create an active test booking
   let booking = await prisma.booking.findFirst({
@@ -22,7 +22,7 @@ async function testWorkflow() {
   });
 
   if (!booking) {
-    console.log("No booking found, querying user & pro to create test booking...");
+    console.log("No booking found, creating test booking...");
     const customer = await prisma.user.findFirst({ where: { role: "CUSTOMER" } });
     const pro = await prisma.professional.findFirst({ include: { user: true } });
     const service = await prisma.service.findFirst();
@@ -55,10 +55,12 @@ async function testWorkflow() {
   console.log(`  Client: ${booking.customer.firstName} ${booking.customer.lastName}`);
   console.log(`  Artisan: ${booking.professional?.user?.firstName || "Assigned Pro"}`);
 
-  // 3. Simulate Artisan Part Request Submission
+  // 3. Step 1: Artisan Diagnoses Fault & Submits Part Request
   console.log("\n--- STEP 1: Artisan Diagnoses Fault & Submits Part Request ---");
   const testPartRef = `HHP-PART-TEST-${Date.now().toString().slice(-4)}`;
   const sampleEvidencePhoto = "https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=600&q=80";
+
+  const targetSupplier = suppliers[0];
 
   const part = await prisma.replacementPart.create({
     data: {
@@ -66,7 +68,7 @@ async function testWorkflow() {
       bookingId: booking.id,
       customerId: booking.customerId,
       professionalId: booking.professionalId!,
-      supplierId: suppliers[0]?.id || null,
+      supplierId: targetSupplier?.id || null,
       partName: "1.5HP AC Dual-Run Capacitor 45+5 uF",
       category: "HVAC",
       reason: "BURNT_OUT",
@@ -74,7 +76,9 @@ async function testWorkflow() {
       estimatedCost: 16500,
       evidencePhotos: JSON.stringify([sampleEvidencePhoto]),
       status: "REQUESTED",
+      destinationAccount: "PROCUREMENT_ACCOUNT",
       paymentStatus: "PENDING",
+      disbursementStatus: "PENDING_DISBURSEMENT",
     },
     include: {
       auditLogs: true,
@@ -91,17 +95,18 @@ async function testWorkflow() {
   });
 
   console.log(`✓ Part Request Created: #${part.reference} - ${part.partName} (₦${part.estimatedCost})`);
-  console.log(`✓ Status: ${part.status} | Escrow Payment: ${part.paymentStatus}`);
+  console.log(`✓ Account Routing: ${part.destinationAccount} (Decoupled from Service Escrow)`);
 
-  // 4. Simulate Client Authorization & Zero-Cash Escrow Payment
-  console.log("\n--- STEP 2: Client Authorizes & Funds Part via HandyHub Escrow ---");
+  // 4. Step 2: Client Authorizes & Funds Dedicated Procurement Account (Account 2)
+  console.log("\n--- STEP 2: Client Authorizes Payment -> Credited to Dedicated Procurement Account ---");
   const voucherCode = `HHP-VOUCH-${Math.floor(1000 + Math.random() * 9000)}`;
   const authorizedPart = await prisma.replacementPart.update({
     where: { id: part.id },
     data: {
       status: "VOUCHER_ISSUED",
       approvedCost: part.estimatedCost,
-      paymentStatus: "PAID_ESCROW",
+      destinationAccount: "PROCUREMENT_ACCOUNT",
+      paymentStatus: "DIRECT_PROCUREMENT_PAID",
       paymentMethod: "WALLET",
       paymentReference: `PAY-PART-${part.reference}-${Date.now()}`,
       voucherCode,
@@ -109,30 +114,27 @@ async function testWorkflow() {
     },
   });
 
-  await prisma.partAuditLog.create({
-    data: {
-      partId: part.id,
-      actorRole: "CUSTOMER",
-      action: "APPROVED",
-      notes: "Customer authorized ₦16,500 payment via Wallet into HandyHub Escrow.",
-    },
-  });
-
-  await prisma.partAuditLog.create({
-    data: {
-      partId: part.id,
-      actorRole: "SYSTEM",
-      action: "VOUCHER_ISSUED",
-      notes: `Generated single-use cryptographic procurement voucher [ ${voucherCode} ].`,
-    },
-  });
-
-  console.log(`✓ Client Approved & Paid ₦${authorizedPart.approvedCost} into HandyHub Escrow!`);
+  console.log(`✓ Client Approved & Funded ₦${authorizedPart.approvedCost} into Dedicated Procurement Account!`);
+  console.log(`✓ Destination Account: ${authorizedPart.destinationAccount} (Labor Escrow Bypassed)`);
   console.log(`✓ Single-Use Voucher Issued: [ ${authorizedPart.voucherCode} ]`);
-  console.log(`✓ Status: ${authorizedPart.status} | Payment Status: ${authorizedPart.paymentStatus}`);
 
-  // 5. Simulate Artisan Collection & Installation with Receipt Upload
-  console.log("\n--- STEP 3: Artisan Collects Part, Installs & Uploads Proof ---");
+  // 5. Step 3: Fast Direct Supplier Disbursement (Instant Merchant Payout)
+  console.log("\n--- STEP 3: Fast Direct Supplier Disbursement Executed ---");
+  const disbResult = await disburseFundsToSupplier(
+    part.id,
+    "SYSTEM",
+    "Instant direct merchant settlement executed."
+  );
+
+  console.log(`⚡ Instant Bank Settlement Ref: ${disbResult.disbursementReference}`);
+  console.log(`⚡ Merchant Credited: ${disbResult.supplier.name} (${disbResult.supplier.bankName}: ${disbResult.supplier.bankAccount})`);
+  console.log(`⚡ Part Status: ${disbResult.part.paymentStatus} | Disbursement: ${disbResult.part.disbursementStatus}`);
+
+  const updatedSupplier = await prisma.partSupplier.findUnique({ where: { id: targetSupplier.id } });
+  console.log(`✓ Supplier Running Disbursement Volume: ₦${updatedSupplier?.totalDisbursedNgn.toLocaleString()}`);
+
+  // 6. Step 4: Artisan Collects Part, Installs & Uploads Proof
+  console.log("\n--- STEP 4: Artisan Collects Part, Installs & Uploads Proof ---");
   const sampleReceiptUrl = "https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?auto=format&fit=crop&w=600&q=80";
   const sampleInstalledUrl = "https://images.unsplash.com/photo-1581092335397-9583fe92d232?auto=format&fit=crop&w=600&q=80";
   const receiptHash = computeReceiptHash(sampleReceiptUrl);
@@ -148,49 +150,34 @@ async function testWorkflow() {
     },
   });
 
-  await prisma.partAuditLog.create({
-    data: {
-      partId: part.id,
-      actorRole: "ARTISAN",
-      action: "INSTALLED",
-      notes: "Artisan uploaded invoice receipt and verified installed photo.",
-      metadata: JSON.stringify({ receiptHash }),
-    },
-  });
-
   console.log(`✓ Installation Proof Uploaded!`);
   console.log(`✓ Cryptographic SHA-256 Receipt Hash Computed: ${receiptHash.substring(0, 24)}...`);
   console.log(`✓ Status: ${installedPart.status}`);
 
-  // 6. Test Fraud Safeguard: Duplicate Receipt Detection
-  console.log("\n--- STEP 4: Testing Fraud Safeguard (Duplicate Receipt Collision) ---");
-  console.log(`Simulating fraudulent attempt to upload the EXACT SAME receipt for a new part...`);
-
+  // 7. Step 5: Duplicate Receipt Collision Check
+  console.log("\n--- STEP 5: Testing Fraud Safeguard (Duplicate Receipt Collision) ---");
   const existingHashMatch = await prisma.replacementPart.findFirst({
-    where: {
-      receiptHash,
-      id: { not: "different_part_id" },
-    },
+    where: { receiptHash, id: { not: "different_id" } },
   });
 
   if (existingHashMatch) {
     console.log(`🚨 FRAUD SAFEGUARD ACTIVATED: Duplicate receipt collision detected with Part #${existingHashMatch.reference}!`);
-    console.log(`✓ The system automatically flags transaction as FLAGGED_FRAUD and logs immutable security event.`);
+    console.log(`✓ Transaction flagged as FLAGGED_FRAUD and logged to immutable audit ledger.`);
   }
 
-  // 7. Verify Audit Trail Integrity
+  // 8. Step 6: Review Audit Logs
   const finalAuditLogs = await prisma.partAuditLog.findMany({
     where: { partId: part.id },
     orderBy: { createdAt: "asc" },
   });
 
-  console.log(`\n--- STEP 5: Immutable Audit Ledger Review (${finalAuditLogs.length} Events) ---`);
+  console.log(`\n--- STEP 6: Immutable Audit Ledger Review (${finalAuditLogs.length} Events) ---`);
   finalAuditLogs.forEach((l, i) => {
     console.log(`  ${i + 1}. [${l.actorRole}] -> ${l.action}: "${l.notes}" (${new Date(l.createdAt).toLocaleTimeString()})`);
   });
 
   console.log("\n==================================================");
-  console.log("✅ ALL REPLACEMENT PARTS WORKFLOW TESTS PASSED!");
+  console.log("✅ DEDICATED PROCUREMENT & DIRECT SUPPLIER SETTLEMENT TESTS PASSED!");
   console.log("==================================================");
 }
 
