@@ -17,6 +17,8 @@ function TrackContent() {
   const [error, setError] = useState("");
   const [booking, setBooking] = useState<any>(null);
   const [reviewModalOpen, setReviewModalOpen] = useState(false);
+  const [previewPhotoUrl, setPreviewPhotoUrl] = useState<string | null>(null);
+  const [brokenImages, setBrokenImages] = useState<Record<string, boolean>>({});
 
   const initialRef = searchParams.get("reference") || searchParams.get("ref") || searchParams.get("id") || "";
 
@@ -352,7 +354,7 @@ function TrackContent() {
             )}
 
             {/* Verified Job Execution Proof Photos (Before & After) */}
-            {(booking.beforePhoto || booking.afterPhoto) && (
+            {((booking.beforePhoto && !brokenImages["before"]) || (booking.afterPhoto && !brokenImages["after"])) && (
               <div className="card" style={{ background: "rgba(15, 23, 42, 0.95)", border: "1.5px solid rgba(14, 165, 233, 0.35)" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14, flexWrap: "wrap", gap: 8 }}>
                   <h3 className="h4" style={{ margin: 0, color: "#F8FAFC", display: "flex", alignItems: "center", gap: 8 }}>
@@ -364,23 +366,39 @@ function TrackContent() {
                 </div>
 
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 14 }}>
-                  {booking.beforePhoto && (
-                    <div style={{ background: "rgba(30, 41, 59, 0.7)", borderRadius: 12, padding: 12, border: "1px solid rgba(255,255,255,0.08)" }}>
+                  {booking.beforePhoto && !brokenImages["before"] && (
+                    <div
+                      onClick={() => setPreviewPhotoUrl(booking.beforePhoto)}
+                      style={{ background: "rgba(30, 41, 59, 0.7)", borderRadius: 12, padding: 12, border: "1px solid rgba(255,255,255,0.08)", cursor: "pointer" }}
+                    >
                       <span style={{ fontSize: "11px", color: "#38BDF8", fontWeight: 700, textTransform: "uppercase", display: "block", marginBottom: 6 }}>
-                        📸 Before-Work Inspection
+                        📸 Before-Work Inspection (Click to Zoom)
                       </span>
                       <div style={{ width: "100%", height: "160px", borderRadius: 8, overflow: "hidden", border: "1px solid rgba(14,165,233,0.3)" }}>
-                        <img src={booking.beforePhoto} alt="Before Work Inspection" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                        <img
+                          src={booking.beforePhoto}
+                          alt="Before Work Inspection"
+                          onError={() => setBrokenImages((prev) => ({ ...prev, before: true }))}
+                          style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                        />
                       </div>
                     </div>
                   )}
-                  {booking.afterPhoto && (
-                    <div style={{ background: "rgba(30, 41, 59, 0.7)", borderRadius: 12, padding: 12, border: "1px solid rgba(255,255,255,0.08)" }}>
+                  {booking.afterPhoto && !brokenImages["after"] && (
+                    <div
+                      onClick={() => setPreviewPhotoUrl(booking.afterPhoto)}
+                      style={{ background: "rgba(30, 41, 59, 0.7)", borderRadius: 12, padding: 12, border: "1px solid rgba(255,255,255,0.08)", cursor: "pointer" }}
+                    >
                       <span style={{ fontSize: "11px", color: "#10B981", fontWeight: 700, textTransform: "uppercase", display: "block", marginBottom: 6 }}>
-                        ✨ Completed Work Proof
+                        ✨ Completed Work Proof (Click to Zoom)
                       </span>
                       <div style={{ width: "100%", height: "160px", borderRadius: 8, overflow: "hidden", border: "1px solid rgba(16,185,129,0.3)" }}>
-                        <img src={booking.afterPhoto} alt="Completed Work Proof" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                        <img
+                          src={booking.afterPhoto}
+                          alt="Completed Work Proof"
+                          onError={() => setBrokenImages((prev) => ({ ...prev, after: true }))}
+                          style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                        />
                       </div>
                     </div>
                   )}
@@ -436,6 +454,49 @@ function TrackContent() {
           </motion.div>
         )}
       </div>
+
+      {/* Fullscreen Image Lightbox Modal */}
+      {previewPhotoUrl && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 10000,
+            background: "rgba(0, 0, 0, 0.92)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: 20,
+          }}
+          onClick={() => setPreviewPhotoUrl(null)}
+        >
+          <div style={{ maxWidth: "800px", maxHeight: "85vh", position: "relative" }} onClick={(e) => e.stopPropagation()}>
+            <img
+              src={previewPhotoUrl}
+              alt="Execution Evidence Preview"
+              style={{ maxWidth: "100%", maxHeight: "85vh", objectFit: "contain", borderRadius: 12, border: "2px solid #334155" }}
+            />
+            <button
+              onClick={() => setPreviewPhotoUrl(null)}
+              style={{
+                position: "absolute",
+                top: -12,
+                right: -12,
+                background: "#EF4444",
+                color: "white",
+                border: "none",
+                borderRadius: "50%",
+                width: 32,
+                height: 32,
+                cursor: "pointer",
+                fontWeight: "bold",
+              }}
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Rate & Review Modal */}
       {booking && (

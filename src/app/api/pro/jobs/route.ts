@@ -53,24 +53,34 @@ export async function GET(request: Request) {
         }
       } catch {}
 
+      const isValidProofUrl = (url: any): boolean => {
+        if (!url || typeof url !== "string") return false;
+        const trimmed = url.trim();
+        if (!trimmed || trimmed === "[]" || trimmed === "null" || trimmed === "undefined") return false;
+        if (trimmed.includes("before_sample.jpg") || trimmed.includes("after_sample.jpg") || trimmed.includes("handyhub.ng/photos/")) return false;
+        return trimmed.startsWith("http://") || trimmed.startsWith("https://") || trimmed.startsWith("data:image/") || trimmed.startsWith("/");
+      };
+
       let beforePhoto = null;
       let afterPhoto = null;
       try {
         if (b.beforePhotos) {
           const parsed = JSON.parse(b.beforePhotos);
-          beforePhoto = Array.isArray(parsed) ? parsed[0] : parsed;
+          const raw = Array.isArray(parsed) ? parsed[0] : parsed;
+          if (isValidProofUrl(raw)) beforePhoto = raw;
         }
       } catch {
-        if (b.beforePhotos) beforePhoto = b.beforePhotos;
+        if (isValidProofUrl(b.beforePhotos)) beforePhoto = b.beforePhotos;
       }
 
       try {
         if (b.afterPhotos) {
           const parsed = JSON.parse(b.afterPhotos);
-          afterPhoto = Array.isArray(parsed) ? parsed[0] : parsed;
+          const raw = Array.isArray(parsed) ? parsed[0] : parsed;
+          if (isValidProofUrl(raw)) afterPhoto = raw;
         }
       } catch {
-        if (b.afterPhotos) afterPhoto = b.afterPhotos;
+        if (isValidProofUrl(b.afterPhotos)) afterPhoto = b.afterPhotos;
       }
 
       return {

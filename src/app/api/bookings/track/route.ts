@@ -120,23 +120,37 @@ export async function GET(request: Request) {
 
     const proDigitalId = formatDigitalId(dbBooking?.professional);
 
+    const isValidProofUrl = (url: any): boolean => {
+      if (!url || typeof url !== "string") return false;
+      const trimmed = url.trim();
+      if (!trimmed || trimmed === "[]" || trimmed === "null" || trimmed === "undefined") return false;
+      if (trimmed.includes("before_sample.jpg") || trimmed.includes("after_sample.jpg") || trimmed.includes("handyhub.ng/photos/")) return false;
+      return trimmed.startsWith("http://") || trimmed.startsWith("https://") || trimmed.startsWith("data:image/") || trimmed.startsWith("/");
+    };
+
     let beforePhoto: string | null = null;
     let afterPhoto: string | null = null;
     try {
       if (dbBooking?.beforePhotos) {
         const parsed = JSON.parse(dbBooking.beforePhotos);
-        beforePhoto = Array.isArray(parsed) ? parsed[0] : parsed;
+        const raw = Array.isArray(parsed) ? parsed[0] : parsed;
+        if (isValidProofUrl(raw)) beforePhoto = raw;
       }
     } catch {
-      if (dbBooking?.beforePhotos) beforePhoto = dbBooking.beforePhotos;
+      if (dbBooking?.beforePhotos && isValidProofUrl(dbBooking.beforePhotos)) {
+        beforePhoto = dbBooking.beforePhotos;
+      }
     }
     try {
       if (dbBooking?.afterPhotos) {
         const parsed = JSON.parse(dbBooking.afterPhotos);
-        afterPhoto = Array.isArray(parsed) ? parsed[0] : parsed;
+        const raw = Array.isArray(parsed) ? parsed[0] : parsed;
+        if (isValidProofUrl(raw)) afterPhoto = raw;
       }
     } catch {
-      if (dbBooking?.afterPhotos) afterPhoto = dbBooking.afterPhotos;
+      if (dbBooking?.afterPhotos && isValidProofUrl(dbBooking.afterPhotos)) {
+        afterPhoto = dbBooking.afterPhotos;
+      }
     }
 
     const formattedBooking = {
