@@ -241,11 +241,11 @@ export const ROLE_LABELS: Record<string, { label: string; title: string; descrip
     badgeColor: "#06B6D4",
     tier: 2,
   },
-  ADMIN: {
-    label: "Admin General",
-    title: "System Administrator",
-    description: "High-level administrative operational authority.",
-    badgeColor: "#F97316",
+  AI_EXECUTIVE_ANALYST: {
+    label: "AI Executive Analyst",
+    title: "Chief Commander AI Assistant",
+    description: "Autonomous AI Intelligence Suite & Operational Assistant to the Chief Commander. Real-time platform diagnostics, dispatch bottleneck detection, price anomaly alerts, and automated oversight.",
+    badgeColor: "#6366F1",
     tier: 2,
   },
   OPERATIONS_MANAGER: {
@@ -440,13 +440,41 @@ export function hasPermission(role: string | undefined | null, permission: keyof
 
 export function getRoleBadgeInfo(role: string | undefined | null) {
   const normalized = (role || "CUSTOMER").toUpperCase();
-  return (
-    ROLE_LABELS[normalized] || {
-      label: normalized,
-      title: normalized,
-      description: "End User Role",
-      badgeColor: "#64748B",
+  if (ROLE_LABELS[normalized]) {
+    return ROLE_LABELS[normalized];
+  }
+  if (normalized === "ADMIN") {
+    return {
+      label: "Chief Commander",
+      title: "Super Admin",
+      description: "Supreme platform sovereignty.",
+      badgeColor: "#EF4444",
+      tier: 1,
+    };
+  }
+  if (normalized === "PROFESSIONAL") {
+    return {
+      label: "Verified Artisan",
+      title: "Skilled Professional Partner",
+      description: "Vetted field service technician.",
+      badgeColor: "#10B981",
       tier: 5,
-    }
-  );
+    };
+  }
+  if (normalized === "CUSTOMER") {
+    return {
+      label: "Client / Customer",
+      title: "Customer Account",
+      description: "Residential & commercial service client.",
+      badgeColor: "#0EA5E9",
+      tier: 5,
+    };
+  }
+  return {
+    label: normalized,
+    title: normalized,
+    description: "Platform Account",
+    badgeColor: "#64748B",
+    tier: 5,
+  };
 }

@@ -127,8 +127,12 @@ async function runGovernanceTests() {
   const mktBadge = getRoleBadgeInfo("MARKETPLACE_MANAGER");
   assert(mktBadge.badgeColor === "#10B981", "Marketplace Manager badge color is emerald green");
 
+  const aiBadge = getRoleBadgeInfo("AI_EXECUTIVE_ANALYST");
+  assert(aiBadge.label === "AI Executive Analyst", "AI Executive Analyst label is present in directory");
+  assert(aiBadge.badgeColor === "#6366F1", "AI Executive Analyst badge color is indigo");
+
   console.log("\n=======================================================");
-  console.log("🎉 ALL 18 GOVERNANCE & RBAC ASSERTIONS PASSED PERFECTLY");
+  console.log("🎉 ALL GOVERNANCE & RBAC ASSERTIONS PASSED PERFECTLY");
   console.log("=======================================================\n");
 }
 

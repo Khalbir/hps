@@ -44,11 +44,11 @@ function loadLocalStore(): LocalStoreData {
   const initialData: LocalStoreData = {
     users: [
       {
-        id: "usr_admin_root",
-        email: "admin@handyhubpro.ng",
-        firstName: "Khalid",
-        lastName: "Kabir",
-        phone: "+2348000000000",
+        id: "usr_admin_khalbir_hotmail",
+        email: "khalbir@hotmail.com",
+        firstName: "KHALID",
+        lastName: "KABIR",
+        phone: "+2348169829213",
         password: "$2a$12$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeg6Lruj3vjPGga31lW", // AdminPass123!
         role: "SUPER_ADMIN",
         isVerified: true,

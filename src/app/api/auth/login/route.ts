@@ -6,13 +6,13 @@ import { storeCredential } from "@/lib/credentials-store";
 
 // Built-in high-availability seed test accounts
 const SEED_ACCOUNTS: Record<string, { pass: string; user: any }> = {
-  "admin@handyhubpro.ng": {
+  "khalbir@hotmail.com": {
     pass: "AdminPass123!",
     user: {
-      id: "usr_admin_root",
-      email: "admin@handyhubpro.ng",
-      firstName: "Khalid",
-      lastName: "Kabir",
+      id: "usr_admin_khalbir_hotmail",
+      email: "khalbir@hotmail.com",
+      firstName: "KHALID",
+      lastName: "KABIR",
       role: "SUPER_ADMIN",
     },
   },
