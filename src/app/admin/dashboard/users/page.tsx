@@ -544,11 +544,13 @@ export default function UsersRoleManagementPage() {
                   onChange={(e) => setStaffForm({ ...staffForm, role: e.target.value })}
                   style={{ width: "100%", background: "#0F172A", border: "1px solid #334155", borderRadius: "8px", padding: "10px", color: "#F8FAFC", fontSize: "14px", cursor: "pointer" }}
                 >
-                  <option value="ADMIN">Admin General (High-level Operational Authority)</option>
+                  <option value="EXECUTIVE_OPERATIONS_MANAGER">Executive Operations (CAO) • Second-in-Command</option>
                   <option value="OPERATIONS_MANAGER">Operations Manager (Bookings Workflow & Live Radar)</option>
+                  <option value="MARKETPLACE_MANAGER">Marketplace Manager (Merchants, SKUs & Logistics)</option>
                   <option value="VERIFICATION_OFFICER">Verification Officer (Artisan NIN & Verification Audits)</option>
                   <option value="CUSTOMER_SUPPORT">Customer Support (Disputes, Refunds & Support Tickets)</option>
                   <option value="FINANCE">Finance Admin (Paystack/Monnify Escrow & Revenue Reporting)</option>
+                  <option value="ADMIN">Admin General (Operational Authority)</option>
                   <option value="SUPER_ADMIN">Chief Commander (Full Root Access)</option>
                 </select>
               </div>
@@ -604,11 +606,13 @@ export default function UsersRoleManagementPage() {
                 style={{ width: "100%", background: "#0F172A", border: "1px solid #334155", borderRadius: "8px", padding: "10px", color: "#F8FAFC", fontSize: "14px" }}
               >
                 <option value="SUPER_ADMIN">Chief Commander (Full Unchecked Root Control)</option>
-                <option value="ADMIN">Admin General (Operational Authority)</option>
+                <option value="EXECUTIVE_OPERATIONS_MANAGER">Executive Operations (CAO) • Second-in-Command</option>
                 <option value="OPERATIONS_MANAGER">Operations Manager (Bookings & Live Dispatch)</option>
+                <option value="MARKETPLACE_MANAGER">Marketplace Manager (Merchants, SKUs & Logistics)</option>
                 <option value="VERIFICATION_OFFICER">Verification Officer (Artisan NIN & Verification Audits)</option>
                 <option value="CUSTOMER_SUPPORT">Customer Support (Disputes & Customer Tickets)</option>
                 <option value="FINANCE">Finance Admin (Paystack Escrow Payouts & Refunds)</option>
+                <option value="ADMIN">Admin General (Operational Authority)</option>
                 <option value="PROFESSIONAL">Professional Partner</option>
                 <option value="CUSTOMER">Client / Customer</option>
               </select>

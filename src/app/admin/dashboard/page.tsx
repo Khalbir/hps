@@ -2,14 +2,17 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { AdminLayoutShell } from "@/components/layout/AdminLayoutShell";
 import {
   DollarSign, ClipboardList, UserPlus, Activity, Shield,
   ArrowRight, CheckCircle2, Clock, MapPin, AlertCircle,
-  RefreshCw, TrendingUp, BarChart3, Inbox
+  RefreshCw, TrendingUp, BarChart3, Inbox, Sparkles, Check, X,
+  Zap, AlertTriangle, Scale, ShoppingBag, Wrench, ShieldCheck,
+  Send, ChevronRight, Eye, Layers, UserCheck
 } from "lucide-react";
 import styles from "../admin.module.css";
+import { ROLE_LABELS } from "@/lib/rbac";
 
 const statusColorMap: Record<string, string> = {
   COMPLETED: "#10B981",
@@ -69,6 +72,18 @@ export default function AdminDashboardPage() {
   const [loading, setLoading] = useState(true);
   const [telemetry, setTelemetry] = useState<any>(null);
 
+  // Executive Perspective Mode (Super Admin vs CAO Executive Operations)
+  const [executiveView, setExecutiveView] = useState<"SUPER_ADMIN" | "EXECUTIVE_OPERATIONS_MANAGER">("SUPER_ADMIN");
+
+  // AI Executive Operations Analyst State
+  const [aiAnalyst, setAiAnalyst] = useState<any>(null);
+  const [loadingAi, setLoadingAi] = useState(true);
+
+  // High-Risk Approvals Queue State
+  const [approvals, setApprovals] = useState<any[]>([]);
+  const [loadingApprovals, setLoadingApprovals] = useState(true);
+  const [actionFeedback, setActionFeedback] = useState<{ id: string; msg: string; type: "success" | "error" } | null>(null);
+
   const fetchTelemetry = async () => {
     try {
       const res = await fetch(`/api/admin/telemetry?_t=${Date.now()}`);
@@ -84,12 +99,88 @@ export default function AdminDashboardPage() {
     }
   };
 
+  const fetchAiAnalyst = async () => {
+    try {
+      const res = await fetch(`/api/admin/ai-analyst?_t=${Date.now()}`);
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setAiAnalyst(data);
+      }
+    } catch (err) {
+      console.warn("Failed to load AI analyst:", err);
+    } finally {
+      setLoadingAi(false);
+    }
+  };
+
+  const fetchApprovals = async () => {
+    try {
+      const res = await fetch(`/api/admin/approvals?_t=${Date.now()}`);
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setApprovals(data.approvalQueue || []);
+      }
+    } catch (err) {
+      console.warn("Failed to load approvals queue:", err);
+    } finally {
+      setLoadingApprovals(false);
+    }
+  };
+
   useEffect(() => {
     fetchTelemetry();
+    fetchAiAnalyst();
+    fetchApprovals();
+
     if (!autoRefresh) return;
-    const interval = setInterval(fetchTelemetry, 5000);
+    const interval = setInterval(() => {
+      fetchTelemetry();
+      fetchAiAnalyst();
+      fetchApprovals();
+    }, 6000);
     return () => clearInterval(interval);
   }, [autoRefresh]);
+
+  const handleApprovalDecision = async (approval: any, decision: "APPROVED" | "REJECTED") => {
+    try {
+      const res = await fetch("/api/admin/approvals", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          approvalId: approval.id,
+          sourceId: approval.sourceId,
+          type: approval.type,
+          decision,
+          actorRole: executiveView,
+          notes: `Executive decision executed directly from Command Center.`,
+        }),
+      });
+
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setActionFeedback({
+          id: approval.id,
+          msg: `${approval.title} successfully ${decision === "APPROVED" ? "authorized" : "declined"}!`,
+          type: "success",
+        });
+        setApprovals((prev) => prev.filter((a) => a.id !== approval.id));
+      } else {
+        setActionFeedback({
+          id: approval.id,
+          msg: data.error || "Failed to execute decision.",
+          type: "error",
+        });
+      }
+    } catch {
+      setActionFeedback({
+        id: approval.id,
+        msg: "Network error executing decision.",
+        type: "error",
+      });
+    } finally {
+      setTimeout(() => setActionFeedback(null), 4500);
+    }
+  };
 
   const stats = telemetry?.stats || {
     totalRevenueNgn: 0,
@@ -103,55 +194,403 @@ export default function AdminDashboardPage() {
   };
 
   const kpiStats = [
-    { id: "rev", label: "Total Revenue (NGN)", value: `₦${stats.totalRevenueNgn.toLocaleString()}`, change: "Real Database Sum", icon: DollarSign, color: "#10B981", bg: "rgba(16,185,129,0.15)" },
-    { id: "active", label: "Active Bookings", value: String(stats.activeBookingsCount), change: "Live In-Flight", icon: ClipboardList, color: "#0EA5E9", bg: "rgba(14,165,233,0.15)" },
+    { id: "rev", label: "Total Platform Volume", value: `₦${stats.totalRevenueNgn.toLocaleString()}`, change: "Real Database Sum", icon: DollarSign, color: "#10B981", bg: "rgba(16,185,129,0.15)" },
+    { id: "active", label: "In-Flight Bookings", value: String(stats.activeBookingsCount), change: "Active Operations", icon: ClipboardList, color: "#0EA5E9", bg: "rgba(14,165,233,0.15)" },
     { id: "pros", label: "Verified Artisans", value: String(stats.verifiedArtisansCount), change: `${stats.pendingVerificationsCount} Pending Audit`, icon: Shield, color: "#8B5CF6", bg: "rgba(139,92,246,0.15)" },
     { id: "disputes", label: "Open Disputes", value: String(stats.openDisputesCount), change: stats.openDisputesCount > 0 ? "Requires Action" : "All Clear", icon: AlertCircle, color: stats.openDisputesCount > 0 ? "#EF4444" : "#10B981", bg: stats.openDisputesCount > 0 ? "rgba(239,68,68,0.15)" : "rgba(16,185,129,0.15)" },
     { id: "completed", label: "Completed Jobs", value: String(stats.completedJobsCount), change: `${stats.totalBookingsAll} Total Placed`, icon: CheckCircle2, color: "#10B981", bg: "rgba(16,185,129,0.15)" },
-    { id: "response", label: "Avg Pro Response", value: stats.avgResponseTimeMin > 0 ? `${stats.avgResponseTimeMin} mins` : "N/A", change: "Live Metric", icon: Clock, color: "#F59E0B", bg: "rgba(245,158,11,0.15)" },
+    { id: "response", label: "Avg Pro Response", value: stats.avgResponseTimeMin > 0 ? `${stats.avgResponseTimeMin} mins` : "N/A", change: "Live SLA Metric", icon: Clock, color: "#F59E0B", bg: "rgba(245,158,11,0.15)" },
   ];
 
   const bookingStatusBreakdown = telemetry?.bookingStatusBreakdown || [];
-  const regionalDistribution = telemetry?.regionalDistribution || [];
   const revenueMonthly = telemetry?.revenueMonthly || [];
   const recentBookings = telemetry?.recentBookings || [];
   const liveActivityFeed = telemetry?.liveActivityFeed || [];
-
   const maxRev = Math.max(1000, ...revenueMonthly.map((r: any) => r.amount || 0));
 
   return (
     <AdminLayoutShell>
-      {/* Top Header Bar */}
-      <header className={styles.adminTopBar} style={{ marginBottom: "var(--space-6)" }}>
+      {/* Top Header Bar with Executive View Switcher */}
+      <header className={styles.adminTopBar} style={{ marginBottom: "var(--space-5)" }}>
         <div>
-          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-            <h1 className="h3">Production KPI Command Center</h1>
-            <span className="badge" style={{ background: "rgba(16,185,129,0.15)", color: "#10B981", fontSize: "11px", fontWeight: 700 }}>
-              LIVE DATABASE TELEMETRY
+          <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
+            <h1 className="h3">Enterprise Executive Command Center</h1>
+            <span
+              className="badge"
+              style={{
+                background: executiveView === "SUPER_ADMIN" ? "rgba(239,68,68,0.15)" : "rgba(6,182,212,0.15)",
+                color: executiveView === "SUPER_ADMIN" ? "#EF4444" : "#06B6D4",
+                fontSize: "11px",
+                fontWeight: 700,
+                border: `1px solid ${executiveView === "SUPER_ADMIN" ? "rgba(239,68,68,0.3)" : "rgba(6,182,212,0.3)"}`,
+              }}
+            >
+              {executiveView === "SUPER_ADMIN" ? "CHIEF COMMANDER (SUPER ADMIN)" : "EXECUTIVE OPERATIONS (CAO)"}
             </span>
           </div>
           <p style={{ color: "var(--text-secondary)", fontSize: "var(--fs-sm)" }}>
-            Zero fiction. Live truth calculated directly from Prisma Database. Last synced: {lastUpdated || "Syncing..."}
+            Dual Executive Governance • Real-time telemetry, AI diagnostic analysis & high-risk approval workflows.
           </p>
         </div>
 
-        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
+          {/* Perspective Switcher */}
+          <div style={{ display: "flex", background: "#0F172A", padding: 4, borderRadius: 8, border: "1px solid #334155" }}>
+            <button
+              onClick={() => setExecutiveView("SUPER_ADMIN")}
+              style={{
+                background: executiveView === "SUPER_ADMIN" ? "#EF4444" : "transparent",
+                color: executiveView === "SUPER_ADMIN" ? "#FFFFFF" : "#94A3B8",
+                border: "none",
+                borderRadius: 6,
+                padding: "6px 12px",
+                fontSize: "12px",
+                fontWeight: 700,
+                cursor: "pointer",
+                transition: "all 0.2s",
+              }}
+            >
+              Super Admin View
+            </button>
+            <button
+              onClick={() => setExecutiveView("EXECUTIVE_OPERATIONS_MANAGER")}
+              style={{
+                background: executiveView === "EXECUTIVE_OPERATIONS_MANAGER" ? "#06B6D4" : "transparent",
+                color: executiveView === "EXECUTIVE_OPERATIONS_MANAGER" ? "#FFFFFF" : "#94A3B8",
+                border: "none",
+                borderRadius: 6,
+                padding: "6px 12px",
+                fontSize: "12px",
+                fontWeight: 700,
+                cursor: "pointer",
+                transition: "all 0.2s",
+              }}
+            >
+              CAO Operations View
+            </button>
+          </div>
+
           <button
             onClick={() => setAutoRefresh(!autoRefresh)}
             className="btn btn-secondary btn-sm"
             style={{ display: "flex", alignItems: "center", gap: "6px" }}
           >
             <RefreshCw size={14} className={autoRefresh ? "spinner" : ""} />
-            {autoRefresh ? "Auto-Refresh ON (5s)" : "Auto-Refresh Paused"}
+            {autoRefresh ? "Live 6s" : "Paused"}
           </button>
-
-          <Link href="/admin/dashboard/analytics" className="btn btn-primary btn-sm">
-            <BarChart3 size={14} /> Full Analytics & Export
-          </Link>
         </div>
       </header>
 
       <div className={styles.adminContent}>
+        {/* ========================================================================= */}
+        {/* AI EXECUTIVE OPERATIONS ANALYST ASSISTANT WIDGET */}
+        {/* ========================================================================= */}
+        <div
+          className="card"
+          style={{
+            background: "linear-gradient(135deg, #0F172A 0%, #1E293B 100%)",
+            border: "1px solid rgba(14,165,233,0.3)",
+            padding: "20px",
+            marginBottom: "var(--space-6)",
+            position: "relative",
+            overflow: "hidden",
+          }}
+        >
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 16, flexWrap: "wrap", marginBottom: 16 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+              <div
+                style={{
+                  width: 44,
+                  height: 44,
+                  borderRadius: "10px",
+                  background: "linear-gradient(135deg, #0EA5E9 0%, #0284C7 100%)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  boxShadow: "0 0 20px rgba(14,165,233,0.4)",
+                }}
+              >
+                <Sparkles size={22} color="#FFFFFF" />
+              </div>
+              <div>
+                <h3 className="h4" style={{ margin: "0 0 2px 0", color: "#F8FAFC", display: "flex", alignItems: "center", gap: 8 }}>
+                  AI Executive Operations Analyst Assistant
+                  <span style={{ fontSize: "11px", background: "rgba(14,165,233,0.2)", color: "#38BDF8", padding: "2px 8px", borderRadius: 99, fontWeight: 700 }}>
+                    AUTONOMOUS TELEMETRY ENGINE
+                  </span>
+                </h3>
+                <p style={{ margin: 0, fontSize: "12.5px", color: "#94A3B8" }}>
+                  {aiAnalyst?.executiveBriefing || "Analyzing real-time dispatch bottlenecks, fraud vectors, and marketplace SLAs..."}
+                </p>
+              </div>
+            </div>
+
+            {/* Health Score Gauge Badge */}
+            <div style={{ display: "flex", alignItems: "center", gap: 12, background: "rgba(15,23,42,0.8)", padding: "8px 16px", borderRadius: 10, border: "1px solid #334155" }}>
+              <div style={{ textAlign: "right" }}>
+                <span style={{ fontSize: "11px", color: "#94A3B8", textTransform: "uppercase", fontWeight: 700, display: "block" }}>
+                  Platform Health Index
+                </span>
+                <span style={{ fontSize: "12px", color: aiAnalyst?.healthScore >= 85 ? "#10B981" : "#F59E0B", fontWeight: 700 }}>
+                  {aiAnalyst?.statusBadge?.replace(/_/g, " ") || "ANALYZING..."}
+                </span>
+              </div>
+              <div
+                style={{
+                  width: 44,
+                  height: 44,
+                  borderRadius: "50%",
+                  border: `3px solid ${aiAnalyst?.healthScore >= 85 ? "#10B981" : aiAnalyst?.healthScore >= 70 ? "#F59E0B" : "#EF4444"}`,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontSize: "15px",
+                  fontWeight: 900,
+                  color: "#FFFFFF",
+                }}
+              >
+                {aiAnalyst?.healthScore ?? 98}
+              </div>
+            </div>
+          </div>
+
+          {/* Anomaly & Action Alerts Grid */}
+          {aiAnalyst?.anomalies && aiAnalyst.anomalies.length > 0 ? (
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 12 }}>
+              {aiAnalyst.anomalies.map((anom: any) => (
+                <div
+                  key={anom.id}
+                  style={{
+                    background: "rgba(15,23,42,0.6)",
+                    border: `1px solid ${anom.severity === "HIGH" ? "rgba(239,68,68,0.4)" : "rgba(245,158,11,0.4)"}`,
+                    borderRadius: 8,
+                    padding: "12px 14px",
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    gap: 10,
+                  }}
+                >
+                  <div style={{ display: "flex", alignItems: "flex-start", gap: 8 }}>
+                    <AlertTriangle size={16} color={anom.severity === "HIGH" ? "#EF4444" : "#F59E0B"} style={{ flexShrink: 0, marginTop: 2 }} />
+                    <div>
+                      <strong style={{ fontSize: "12.5px", color: "#F8FAFC", display: "block" }}>{anom.title}</strong>
+                      <span style={{ fontSize: "11.5px", color: "#94A3B8", lineHeight: 1.4 }}>{anom.detail}</span>
+                    </div>
+                  </div>
+                  <Link
+                    href={anom.actionUrl || "#"}
+                    className="btn btn-secondary btn-xs"
+                    style={{ fontSize: "11px", whiteSpace: "nowrap", flexShrink: 0, padding: "4px 10px" }}
+                  >
+                    {anom.actionLabel} &rarr;
+                  </Link>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: "12.5px", color: "#10B981" }}>
+              <CheckCircle2 size={16} color="#10B981" />
+              <span>Zero critical operational anomalies detected. All dispatch queues and escrow pipelines are in optimal velocity.</span>
+            </div>
+          )}
+        </div>
+
+        {/* ========================================================================= */}
+        {/* EXECUTIVE HIGH-RISK APPROVAL QUEUE (SUPER ADMIN EXCLUSIVE) */}
+        {/* ========================================================================= */}
+        {executiveView === "SUPER_ADMIN" && (
+          <div
+            className="card"
+            style={{
+              background: "#1E293B",
+              border: "1px solid #334155",
+              borderLeft: "4px solid #EF4444",
+              padding: "20px",
+              marginBottom: "var(--space-6)",
+            }}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+              <div>
+                <h3 className="h4" style={{ margin: "0 0 2px 0", color: "#F8FAFC", display: "flex", alignItems: "center", gap: 8 }}>
+                  <Scale size={20} color="#EF4444" /> Chief Commander High-Risk Approval Queue
+                  <span style={{ fontSize: "11px", background: "rgba(239,68,68,0.2)", color: "#EF4444", padding: "2px 8px", borderRadius: 99, fontWeight: 700 }}>
+                    {approvals.length} PENDING DECISIONS
+                  </span>
+                </h3>
+                <p style={{ margin: 0, fontSize: "12.5px", color: "#94A3B8" }}>
+                  Items exceeding CAO autonomous thresholds (Escrow Releases &gt; ₦100k, Customer Refunds &gt; ₦50k, High-value quotes) require Super Admin signoff.
+                </p>
+              </div>
+            </div>
+
+            {actionFeedback && (
+              <div
+                style={{
+                  padding: "10px 14px",
+                  borderRadius: 8,
+                  marginBottom: 14,
+                  background: actionFeedback.type === "success" ? "rgba(16,185,129,0.15)" : "rgba(239,68,68,0.15)",
+                  border: `1px solid ${actionFeedback.type === "success" ? "#10B981" : "#EF4444"}`,
+                  fontSize: "12.5px",
+                  color: actionFeedback.type === "success" ? "#10B981" : "#EF4444",
+                  fontWeight: 600,
+                }}
+              >
+                {actionFeedback.msg}
+              </div>
+            )}
+
+            {approvals.length === 0 ? (
+              <div style={{ padding: "24px", textAlign: "center", background: "#0F172A", borderRadius: 8, border: "1px solid #334155" }}>
+                <CheckCircle2 size={32} color="#10B981" style={{ margin: "0 auto 8px" }} />
+                <h4 className="h4" style={{ margin: 0, color: "#F8FAFC" }}>High-Risk Approval Queue is Clear</h4>
+                <span style={{ fontSize: "12px", color: "#94A3B8" }}>CAO is autonomously coordinating daily operations within configured policy limits.</span>
+              </div>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                {approvals.map((appr: any) => (
+                  <div
+                    key={appr.id}
+                    style={{
+                      background: "#0F172A",
+                      border: "1px solid #334155",
+                      borderRadius: 8,
+                      padding: "14px 16px",
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      gap: 16,
+                      flexWrap: "wrap",
+                    }}
+                  >
+                    <div style={{ flex: 1 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                        <span style={{ fontSize: "11px", fontFamily: "monospace", color: "#38BDF8", background: "rgba(56,189,248,0.1)", padding: "2px 6px", borderRadius: 4 }}>
+                          {appr.id}
+                        </span>
+                        <strong style={{ fontSize: "13.5px", color: "#F8FAFC" }}>{appr.title}</strong>
+                        {appr.amountNgn > 0 && (
+                          <span style={{ fontSize: "12px", fontWeight: 700, color: "#10B981", background: "rgba(16,185,129,0.15)", padding: "1px 8px", borderRadius: 4 }}>
+                            ₦{appr.amountNgn.toLocaleString()}
+                          </span>
+                        )}
+                      </div>
+                      <p style={{ margin: 0, fontSize: "12px", color: "#94A3B8", lineHeight: 1.4 }}>{appr.description}</p>
+                    </div>
+
+                    <div style={{ display: "flex", gap: 8 }}>
+                      <button
+                        className="btn btn-secondary btn-xs"
+                        onClick={() => handleApprovalDecision(appr, "REJECTED")}
+                        style={{ border: "1px solid #EF4444", color: "#EF4444" }}
+                      >
+                        <X size={14} /> Decline
+                      </button>
+                      <button
+                        className="btn btn-primary btn-xs"
+                        onClick={() => handleApprovalDecision(appr, "APPROVED")}
+                        style={{ background: "#10B981", borderColor: "#10B981" }}
+                      >
+                        <Check size={14} /> Authorize & Release
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ========================================================================= */}
+        {/* CAO CROSS-DEPARTMENTAL OPERATIONS RADAR (CAO VIEW EXCLUSIVE) */}
+        {/* ========================================================================= */}
+        {executiveView === "EXECUTIVE_OPERATIONS_MANAGER" && (
+          <div
+            className="card"
+            style={{
+              background: "#1E293B",
+              border: "1px solid #334155",
+              borderLeft: "4px solid #06B6D4",
+              padding: "20px",
+              marginBottom: "var(--space-6)",
+            }}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+              <div>
+                <h3 className="h4" style={{ margin: "0 0 2px 0", color: "#F8FAFC", display: "flex", alignItems: "center", gap: 8 }}>
+                  <Layers size={20} color="#06B6D4" /> CAO Cross-Departmental Operations Radar
+                </h3>
+                <p style={{ margin: 0, fontSize: "12.5px", color: "#94A3B8" }}>
+                  Second-in-Command coordination across Field Dispatch, Marketplace Stores, Parts Procurement, and Compliance.
+                </p>
+              </div>
+            </div>
+
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 14 }}>
+              {/* Field Ops */}
+              <div style={{ background: "#0F172A", padding: 14, borderRadius: 8, border: "1px solid #334155" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+                  <ClipboardList size={16} color="#3B82F6" />
+                  <strong style={{ fontSize: "13px", color: "#F8FAFC" }}>Field Operations</strong>
+                </div>
+                <div style={{ fontSize: "12px", color: "#94A3B8", display: "flex", flexDirection: "column", gap: 4 }}>
+                  <span>In-Flight Jobs: <strong style={{ color: "#38BDF8" }}>{stats.activeBookingsCount}</strong></span>
+                  <span>Avg Response: <strong style={{ color: "#F59E0B" }}>{stats.avgResponseTimeMin} mins</strong></span>
+                </div>
+                <Link href="/admin/dashboard/bookings" style={{ fontSize: "11px", color: "#38BDF8", display: "inline-block", marginTop: 8 }}>
+                  Open Dispatch Workflow &rarr;
+                </Link>
+              </div>
+
+              {/* Marketplace */}
+              <div style={{ background: "#0F172A", padding: 14, borderRadius: 8, border: "1px solid #334155" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+                  <ShoppingBag size={16} color="#10B981" />
+                  <strong style={{ fontSize: "13px", color: "#F8FAFC" }}>Marketplace & Stores</strong>
+                </div>
+                <div style={{ fontSize: "12px", color: "#94A3B8", display: "flex", flexDirection: "column", gap: 4 }}>
+                  <span>Merchants: <strong style={{ color: "#10B981" }}>Active Ecosystem</strong></span>
+                  <span>Multi-Zone Logistics: <strong style={{ color: "#38BDF8" }}>Abuja & Lagos</strong></span>
+                </div>
+                <Link href="/admin/dashboard/marketplace" style={{ fontSize: "11px", color: "#38BDF8", display: "inline-block", marginTop: 8 }}>
+                  Manage Merchants &rarr;
+                </Link>
+              </div>
+
+              {/* Parts Procurement */}
+              <div style={{ background: "#0F172A", padding: 14, borderRadius: 8, border: "1px solid #334155" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+                  <Wrench size={16} color="#F59E0B" />
+                  <strong style={{ fontSize: "13px", color: "#F8FAFC" }}>Parts Procurement</strong>
+                </div>
+                <div style={{ fontSize: "12px", color: "#94A3B8", display: "flex", flexDirection: "column", gap: 4 }}>
+                  <span>Vouchers & Quotes: <strong style={{ color: "#F59E0B" }}>Autonomous (&le; ₦75k)</strong></span>
+                  <span>Direct Transfers: <strong style={{ color: "#10B981" }}>Verified Stores</strong></span>
+                </div>
+                <Link href="/admin/dashboard/parts" style={{ fontSize: "11px", color: "#38BDF8", display: "inline-block", marginTop: 8 }}>
+                  Audit Replacement Parts &rarr;
+                </Link>
+              </div>
+
+              {/* Compliance & Safety */}
+              <div style={{ background: "#0F172A", padding: 14, borderRadius: 8, border: "1px solid #334155" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+                  <ShieldCheck size={16} color="#8B5CF6" />
+                  <strong style={{ fontSize: "13px", color: "#F8FAFC" }}>Compliance & Safety</strong>
+                </div>
+                <div style={{ fontSize: "12px", color: "#94A3B8", display: "flex", flexDirection: "column", gap: 4 }}>
+                  <span>Pending Artisans: <strong style={{ color: "#8B5CF6" }}>{stats.pendingVerificationsCount}</strong></span>
+                  <span>5-Pillar Audits: <strong style={{ color: "#10B981" }}>Active Gate</strong></span>
+                </div>
+                <Link href="/admin/dashboard/professionals" style={{ fontSize: "11px", color: "#38BDF8", display: "inline-block", marginTop: 8 }}>
+                  Review Artisan Dossiers &rarr;
+                </Link>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* KPI Stats Grid */}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "var(--space-4)", marginBottom: "var(--space-6)" }}>
           {kpiStats.map((s, idx) => (
@@ -181,8 +620,8 @@ export default function AdminDashboardPage() {
           <div className="card" style={{ background: "#1E293B", border: "1px solid #334155", padding: "var(--space-5)" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "var(--space-4)" }}>
               <div>
-                <h3 className="h4" style={{ margin: 0, color: "#F8FAFC" }}>Real Production Gross Revenue (2026)</h3>
-                <span style={{ fontSize: "12px", color: "#94A3B8" }}>Cumulative verified Paystack / gateway payments in NGN</span>
+                <h3 className="h4" style={{ margin: 0, color: "#F8FAFC" }}>Production Gross Platform Volume (2026)</h3>
+                <span style={{ fontSize: "12px", color: "#94A3B8" }}>Escrow & payment gateway settlements in NGN</span>
               </div>
               <span style={{ color: "#10B981", fontWeight: 700, fontSize: "14px", display: "flex", alignItems: "center", gap: "4px" }}>
                 <TrendingUp size={16} /> Live Escrow Sum
@@ -215,7 +654,7 @@ export default function AdminDashboardPage() {
 
           {/* Booking Status Breakdown */}
           <div className="card" style={{ background: "#1E293B", border: "1px solid #334155", padding: "var(--space-5)" }}>
-            <h3 className="h4" style={{ margin: "0 0 var(--space-4) 0", color: "#F8FAFC" }}>Live 8-State Booking Counts</h3>
+            <h3 className="h4" style={{ margin: "0 0 var(--space-4) 0", color: "#F8FAFC" }}>Live 8-State Booking Velocity</h3>
             <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
               {bookingStatusBreakdown.map((sb: any) => {
                 const color = statusColorMap[sb.status] || "#94A3B8";
@@ -291,8 +730,8 @@ export default function AdminDashboardPage() {
           <div className="card" style={{ background: "#1E293B", border: "1px solid #334155", padding: "var(--space-5)", overflow: "hidden" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "var(--space-4)" }}>
               <div>
-                <h3 className="h4" style={{ margin: 0 }}>Live Audit Log Stream</h3>
-                <span style={{ fontSize: "12px", color: "#94A3B8" }}>Real-time database events</span>
+                <h3 className="h4" style={{ margin: 0 }}>Live Immutable Audit Ledger</h3>
+                <span style={{ fontSize: "12px", color: "#94A3B8" }}>Tamper-evident governance events</span>
               </div>
               <Activity size={18} color="#0EA5E9" />
             </div>
@@ -304,7 +743,6 @@ export default function AdminDashboardPage() {
             ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
                 {liveActivityFeed.map((act: any) => {
-                  // Parse and summarize JSON details for readability
                   let displayDetails = act.details || "";
                   try {
                     if (displayDetails.startsWith("{") || displayDetails.startsWith("[")) {
@@ -318,14 +756,11 @@ export default function AdminDashboardPage() {
                       if (summaryParts.length > 0) {
                         displayDetails = summaryParts.join(" • ");
                       } else {
-                        // Fallback: show first few key-value pairs
                         const keys = Object.keys(parsed).slice(0, 3);
                         displayDetails = keys.map((k) => `${k}: ${typeof parsed[k] === "object" ? "..." : String(parsed[k]).substring(0, 40)}`).join(" • ");
                       }
                     }
-                  } catch {
-                    // Not JSON, use as-is but truncate
-                  }
+                  } catch {}
 
                   const maxLen = 120;
                   const isTruncated = displayDetails.length > maxLen;
