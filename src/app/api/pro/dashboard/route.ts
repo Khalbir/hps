@@ -35,6 +35,25 @@ export async function GET(request: Request) {
       ]);
     }
 
+    // Explicit safeguard: If the user is a CUSTOMER and has no professional profile
+    if (user && user.role === "CUSTOMER" && !pro) {
+      return NextResponse.json({
+        success: true,
+        isProfessional: false,
+        role: "CUSTOMER",
+        userName: `${user.firstName} ${user.lastName}`.trim(),
+        userEmail: user.email,
+        proName: `${user.firstName} ${user.lastName}`.trim(),
+        verificationStatus: "NOT_A_PRO",
+        message: "This account is a registered Customer account, not an artisan partner profile.",
+        activeJobs: [],
+        walletBalance: wallet?.balance || 0,
+        pendingEscrow: 0,
+        completedJobs: 0,
+        rating: 5.0,
+      });
+    }
+
     const walletBalance = wallet?.balance || 0;
     const pendingEscrow = wallet?.pendingEscrow || 0;
     const rating = pro?.rating || 5.0;

@@ -27,14 +27,11 @@ export function ProLayoutShell({ children }: { children: ReactNode }) {
   const [available, setAvailable] = useState(true);
   const [jobCount, setJobCount] = useState(0);
   const [notifCount, setNotifCount] = useState(0);
+  const [isCustomerAccount, setIsCustomerAccount] = useState(false);
+  const [customerName, setCustomerName] = useState("");
   const pathname = usePathname();
 
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      localStorage.setItem("handyhub_stay_signed_in", "true");
-      document.cookie = "handyhub_pro_session=authenticated; path=/; max-age=2592000; SameSite=Lax";
-    }
-
     let activeUserId = "";
     let activeEmail = "";
     if (typeof window !== "undefined") {
@@ -44,6 +41,12 @@ export function ProLayoutShell({ children }: { children: ReactNode }) {
         const parsed = storedPro ? JSON.parse(storedPro) : storedUser ? JSON.parse(storedUser) : null;
         if (parsed?.user?.id || parsed?.id) activeUserId = parsed.user?.id || parsed.id;
         if (parsed?.user?.email || parsed?.email) activeEmail = parsed.user?.email || parsed.email;
+
+        const role = parsed?.user?.role || parsed?.role;
+        if (role === "CUSTOMER") {
+          setIsCustomerAccount(true);
+          setCustomerName(`${parsed?.user?.firstName || parsed?.firstName || ""} ${parsed?.user?.lastName || parsed?.lastName || ""}`.trim());
+        }
       } catch (err) {}
     }
 
@@ -51,6 +54,10 @@ export function ProLayoutShell({ children }: { children: ReactNode }) {
       fetch(`/api/pro/dashboard?userId=${activeUserId}&email=${encodeURIComponent(activeEmail)}`)
         .then((res) => res.json())
         .then((data) => {
+          if (data.role === "CUSTOMER" || data.isProfessional === false) {
+            setIsCustomerAccount(true);
+            if (data.userName) setCustomerName(data.userName);
+          }
           if (data.activeJobs) {
             setJobCount(data.activeJobs.length);
           }
@@ -117,9 +124,9 @@ export function ProLayoutShell({ children }: { children: ReactNode }) {
         </nav>
 
         <div className={styles.sidebarFooter} style={{ padding: "var(--space-4)", borderTop: "1px solid var(--border-primary)" }}>
-          <Link href="/" className={styles.navLink} style={{ color: "var(--text-tertiary)" }}>
+          <Link href="/dashboard" className={styles.navLink} style={{ color: "#0284C7", fontWeight: 700 }}>
             <LogOut size={18} />
-            <span>Switch to Customer</span>
+            <span>Switch to Customer Dashboard</span>
           </Link>
         </div>
       </aside>
@@ -131,6 +138,42 @@ export function ProLayoutShell({ children }: { children: ReactNode }) {
             <Menu size={24} />
           </button>
         </div>
+
+        {isCustomerAccount && (
+          <div style={{
+            background: "linear-gradient(135deg, rgba(2, 132, 199, 0.12) 0%, rgba(99, 102, 241, 0.12) 100%)",
+            border: "1.5px solid #0284C7",
+            borderRadius: "14px",
+            padding: "14px 20px",
+            marginBottom: "24px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            flexWrap: "wrap",
+            gap: 12,
+          }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+              <span style={{ fontSize: "24px" }}>👤</span>
+              <div>
+                <strong style={{ color: "var(--text-primary)", fontSize: "14px", display: "block" }}>
+                  Customer Account Active: {customerName || "Customer"}
+                </strong>
+                <span style={{ color: "var(--text-secondary)", fontSize: "12px" }}>
+                  You are logged in with a Customer Account. To manage your service bookings and wallet, use your Customer Dashboard.
+                </span>
+              </div>
+            </div>
+            <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+              <Link href="/dashboard" className="btn btn-primary btn-sm" style={{ background: "#0284C7", fontWeight: 700, textDecoration: "none" }}>
+                ➔ Go to Customer Dashboard
+              </Link>
+              <Link href="/pro/verification" className="btn btn-secondary btn-sm" style={{ fontSize: "12px", textDecoration: "none" }}>
+                Become a Verified Pro
+              </Link>
+            </div>
+          </div>
+        )}
+
         {children}
       </main>
     </div>
