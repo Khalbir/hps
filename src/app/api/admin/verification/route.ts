@@ -282,6 +282,18 @@ export async function POST(request: Request) {
     }
 
     // 3. Upsert / Update Professional table
+    let skillUpdate: any = {};
+    if (body.skills || body.field) {
+      let sArr: string[] = [];
+      if (Array.isArray(body.skills)) sArr = body.skills;
+      else if (typeof body.skills === "string") sArr = body.skills.split(/[,;\n]/).map((s: string) => s.trim()).filter(Boolean);
+      else if (body.field) sArr = [body.field.trim()];
+
+      if (sArr.length > 0) {
+        skillUpdate.skills = JSON.stringify(sArr);
+      }
+    }
+
     if (!pro && user) {
       pro = await prisma.professional.create({
         data: {
@@ -291,6 +303,7 @@ export async function POST(request: Request) {
           addressVerified: targetStatus === "VERIFIED",
           isAvailable: targetStatus === "VERIFIED",
           verifiedAt: targetStatus === "VERIFIED" ? new Date() : null,
+          ...skillUpdate,
         },
         include: { user: true },
       });
@@ -303,6 +316,7 @@ export async function POST(request: Request) {
           addressVerified: targetStatus === "VERIFIED",
           isAvailable: targetStatus === "VERIFIED",
           verifiedAt: targetStatus === "VERIFIED" ? new Date() : null,
+          ...skillUpdate,
         },
       });
     }

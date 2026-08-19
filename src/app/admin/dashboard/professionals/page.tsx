@@ -4,9 +4,27 @@ import { useState, useEffect } from "react";
 import { AdminLayoutShell } from "@/components/layout/AdminLayoutShell";
 import {
   Shield, CheckCircle2, XCircle, Search, Filter, Eye, FileText,
-  MapPin, Phone, Mail, Award, Clock, AlertTriangle, ExternalLink, Inbox, Trash2
+  MapPin, Phone, Mail, Award, Clock, AlertTriangle, ExternalLink, Inbox, Trash2,
+  Edit, Wrench, Sparkles, Check
 } from "lucide-react";
 import styles from "../../admin.module.css";
+
+export const STANDARD_TRADE_CATEGORIES = [
+  "Cleaning",
+  "Plumbing",
+  "Electrical",
+  "AC & HVAC",
+  "Painting",
+  "Carpentry",
+  "Security",
+  "Solar & Power",
+  "Home Improvement",
+  "Gardening",
+  "Laundry",
+  "Masonry & Tiling",
+  "Appliance Repair",
+  "General Maintenance",
+];
 
 export default function ProfessionalVerificationPage() {
   const [filterStatus, setFilterStatus] = useState("PENDING");
@@ -17,6 +35,55 @@ export default function ProfessionalVerificationPage() {
   const [previewMediaUrl, setPreviewMediaUrl] = useState<string | null>(null);
   const [officerNotes, setOfficerNotes] = useState("");
   const [toast, setToast] = useState("");
+
+  // Skills & Field Editing State
+  const [editingSkillsPro, setEditingSkillsPro] = useState<any | null>(null);
+  const [selectedTradeCategory, setSelectedTradeCategory] = useState("Cleaning");
+  const [customSkillsInput, setCustomSkillsInput] = useState("");
+  const [savingSkills, setSavingSkills] = useState(false);
+
+  const handleSaveSkills = async () => {
+    const targetPro = editingSkillsPro || inspectPro;
+    if (!targetPro) return;
+
+    setSavingSkills(true);
+    try {
+      const res = await fetch("/api/admin/professionals/skills", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          proId: targetPro.id,
+          userId: targetPro.userId,
+          email: targetPro.email,
+          primaryField: selectedTradeCategory,
+          skills: customSkillsInput,
+        }),
+      });
+
+      const data = await res.json();
+      if (res.ok) {
+        setToast(`Artisan trade skills updated to "${selectedTradeCategory}" successfully! 🎉`);
+        setPros((prev) =>
+          prev.map((p) =>
+            p.id === targetPro.id || p.userId === targetPro.userId
+              ? { ...p, field: selectedTradeCategory }
+              : p
+          )
+        );
+        if (inspectPro) {
+          setInspectPro((prev: any) => (prev ? { ...prev, field: selectedTradeCategory } : null));
+        }
+        setEditingSkillsPro(null);
+      } else {
+        setToast(`Error: ${data.error || "Failed to update skills"}`);
+      }
+    } catch {
+      setToast("Failed to connect to server to update skills.");
+    } finally {
+      setSavingSkills(false);
+      setTimeout(() => setToast(""), 6000);
+    }
+  };
 
   const fetchPros = async () => {
     try {
@@ -266,7 +333,23 @@ export default function ProfessionalVerificationPage() {
                     <strong style={{ color: "#F8FAFC", display: "block" }}>{p.name}</strong>
                     <span style={{ fontSize: "12px", color: "#94A3B8" }}>{p.phone}</span>
                   </td>
-                  <td style={{ padding: "12px 16px", color: "#CBD5E1" }}>{p.field}</td>
+                  <td style={{ padding: "12px 16px", color: "#CBD5E1" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                      <span style={{ fontWeight: 600, color: "#38BDF8" }}>{p.field}</span>
+                      <button
+                        onClick={() => {
+                          setEditingSkillsPro(p);
+                          setSelectedTradeCategory(p.field || "Cleaning");
+                          setCustomSkillsInput(p.field || "");
+                        }}
+                        className="btn btn-secondary btn-xs"
+                        style={{ padding: "2px 6px", fontSize: "10.5px", color: "#A855F7", borderColor: "rgba(168,85,247,0.4)", background: "rgba(168,85,247,0.1)", display: "inline-flex", alignItems: "center", gap: 3 }}
+                        title="Change / Correct Artisan Trade Skill & Field"
+                      >
+                        <Edit size={10} /> Edit Skill
+                      </button>
+                    </div>
+                  </td>
                   <td style={{ padding: "12px 16px", color: "#F8FAFC", fontWeight: 600 }}>{p.operatingState || p.city}</td>
                   <td style={{ padding: "12px 16px" }}>
                     <span style={{ fontFamily: "monospace", fontSize: "12px", color: "#0EA5E9" }}>
@@ -293,7 +376,16 @@ export default function ProfessionalVerificationPage() {
                   </td>
                   <td style={{ padding: "12px 16px" }}>
                     <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
-                      <button className="btn btn-primary btn-xs" onClick={() => setInspectPro(p)} style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+                      <button
+                        className="btn btn-primary btn-xs"
+                        onClick={() => {
+                          setInspectPro(p);
+                          setSelectedTradeCategory(p.field || "Cleaning");
+                          setCustomSkillsInput(p.field || "");
+                          setOfficerNotes(p.notes || "");
+                        }}
+                        style={{ display: "inline-flex", alignItems: "center", gap: 4 }}
+                      >
                         <Eye size={13} /> Audit Docs
                       </button>
                       <button
@@ -452,16 +544,57 @@ export default function ProfessionalVerificationPage() {
                 </div>
               </div>
 
-              {/* Step 4: Trade Skill Quiz */}
-              <div style={{ background: "#0F172A", padding: "14px", borderRadius: "10px", border: "1px solid #334155", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <div>
-                  <strong style={{ fontSize: "12px", color: "#10B981", textTransform: "uppercase", display: "block" }}>
-                    4️⃣ Category Trade Skill Competency Assessment
+              {/* Step 4: Category Trade Skill & Specialization (Admin Editable) */}
+              <div style={{ background: "#0F172A", padding: "16px", borderRadius: "10px", border: "1px solid #334155" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12, flexWrap: "wrap", gap: 6 }}>
+                  <strong style={{ fontSize: "12px", color: "#38BDF8", textTransform: "uppercase", display: "flex", alignItems: "center", gap: 6 }}>
+                    <Wrench size={14} color="#38BDF8" /> 4️⃣ Trade Specialization & Category (Admin Editable)
                   </strong>
-                  <span style={{ fontSize: "13px", color: "#CBD5E1" }}>Field: {inspectPro.field}</span>
+                  <span style={{ fontSize: "11px", color: "#10B981", fontWeight: 700 }}>Quiz: {inspectPro.quizScore || 100}% (PASSED)</span>
                 </div>
-                <div style={{ background: "rgba(16,185,129,0.15)", color: "#10B981", border: "1px solid #10B981", borderRadius: 8, padding: "6px 14px", fontWeight: "bold", fontSize: "16px" }}>
-                  {inspectPro.quizScore}% (PASSED)
+
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginBottom: "12px" }}>
+                  <div>
+                    <label style={{ fontSize: "11px", color: "#94A3B8", textTransform: "uppercase", display: "block", marginBottom: "4px" }}>
+                      Select Primary Trade Category
+                    </label>
+                    <select
+                      value={selectedTradeCategory}
+                      onChange={(e) => setSelectedTradeCategory(e.target.value)}
+                      style={{ width: "100%", background: "#1E293B", border: "1px solid #334155", borderRadius: "6px", padding: "8px 10px", color: "#F8FAFC", fontSize: "13px" }}
+                    >
+                      {STANDARD_TRADE_CATEGORIES.map((cat) => (
+                        <option key={cat} value={cat}>{cat}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label style={{ fontSize: "11px", color: "#94A3B8", textTransform: "uppercase", display: "block", marginBottom: "4px" }}>
+                      Specific Skills / Sub-trades
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="e.g., Pipe repairs, Drainage, Taps"
+                      value={customSkillsInput}
+                      onChange={(e) => setCustomSkillsInput(e.target.value)}
+                      style={{ width: "100%", background: "#1E293B", border: "1px solid #334155", borderRadius: "6px", padding: "8px 10px", color: "#F8FAFC", fontSize: "13px" }}
+                    />
+                  </div>
+                </div>
+
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderTop: "1px solid #1E293B", paddingTop: 8 }}>
+                  <span style={{ fontSize: "11.5px", color: "#64748B" }}>
+                    Current active trade: <strong style={{ color: "#38BDF8" }}>{inspectPro.field}</strong>
+                  </span>
+                  <button
+                    type="button"
+                    onClick={handleSaveSkills}
+                    disabled={savingSkills}
+                    className="btn btn-secondary btn-xs"
+                    style={{ background: "#0EA5E9", color: "#FFFFFF", fontWeight: "bold", display: "inline-flex", alignItems: "center", gap: 4 }}
+                  >
+                    <Check size={12} /> {savingSkills ? "Saving..." : "Save Trade & Skills"}
+                  </button>
                 </div>
               </div>
             </div>
@@ -511,6 +644,88 @@ export default function ProfessionalVerificationPage() {
                   <CheckCircle2 size={16} /> Approve & Issue Verified Badge
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Standalone Quick-Edit Skills Modal */}
+      {editingSkillsPro && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            backgroundColor: "rgba(15,23,42,0.85)",
+            backdropFilter: "blur(8px)",
+            zIndex: 9999,
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            padding: "20px",
+          }}
+          onClick={() => setEditingSkillsPro(null)}
+        >
+          <div
+            className="card"
+            style={{ width: "100%", maxWidth: "480px", background: "#1E293B", border: "1px solid #334155", borderRadius: "16px", padding: "24px" }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid #334155", paddingBottom: "12px", marginBottom: "16px" }}>
+              <h3 className="h4" style={{ margin: 0, color: "#F8FAFC", display: "flex", alignItems: "center", gap: 8 }}>
+                <Wrench size={18} color="#38BDF8" /> Edit Artisan Skill & Field
+              </h3>
+              <button onClick={() => setEditingSkillsPro(null)} style={{ background: "none", border: "none", color: "#94A3B8", cursor: "pointer" }}>✕</button>
+            </div>
+
+            <p style={{ fontSize: "13px", color: "#94A3B8", marginBottom: "16px" }}>
+              Updating verified trade skill for <strong style={{ color: "#F8FAFC" }}>{editingSkillsPro.name}</strong> ({editingSkillsPro.email})
+            </p>
+
+            <div style={{ marginBottom: "16px" }}>
+              <label style={{ fontSize: "12px", color: "#64748B", fontWeight: 700, textTransform: "uppercase", display: "block", marginBottom: "6px" }}>
+                Primary Trade Category <span style={{ color: "#EF4444" }}>*</span>
+              </label>
+              <select
+                value={selectedTradeCategory}
+                onChange={(e) => setSelectedTradeCategory(e.target.value)}
+                style={{ width: "100%", background: "#0F172A", border: "1px solid #334155", borderRadius: "8px", padding: "10px", color: "#F8FAFC", fontSize: "14px", cursor: "pointer" }}
+              >
+                {STANDARD_TRADE_CATEGORIES.map((cat) => (
+                  <option key={cat} value={cat}>{cat}</option>
+                ))}
+              </select>
+            </div>
+
+            <div style={{ marginBottom: "20px" }}>
+              <label style={{ fontSize: "12px", color: "#64748B", fontWeight: 700, textTransform: "uppercase", display: "block", marginBottom: "6px" }}>
+                Specific Trade Skills / Specialties <span style={{ color: "#94A3B8", fontWeight: 400 }}>(Comma-separated)</span>
+              </label>
+              <input
+                type="text"
+                placeholder="e.g., Pipe repairs, Drainage, Water heater installation"
+                value={customSkillsInput}
+                onChange={(e) => setCustomSkillsInput(e.target.value)}
+                style={{ width: "100%", background: "#0F172A", border: "1px solid #334155", borderRadius: "8px", padding: "10px", color: "#F8FAFC", fontSize: "14px" }}
+              />
+            </div>
+
+            <div style={{ display: "flex", gap: "10px", justifyContent: "flex-end" }}>
+              <button
+                type="button"
+                onClick={() => setEditingSkillsPro(null)}
+                className="btn btn-secondary btn-sm"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleSaveSkills}
+                disabled={savingSkills}
+                className="btn btn-primary btn-sm"
+                style={{ background: "#0EA5E9", fontWeight: "bold" }}
+              >
+                {savingSkills ? "Saving..." : "Save Changes 💾"}
+              </button>
             </div>
           </div>
         </div>

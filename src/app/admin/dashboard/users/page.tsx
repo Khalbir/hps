@@ -9,6 +9,23 @@ import {
 import styles from "../../admin.module.css";
 import { ROLE_LABELS } from "@/lib/rbac";
 
+export const STANDARD_TRADE_CATEGORIES = [
+  "Cleaning",
+  "Plumbing",
+  "Electrical",
+  "AC & HVAC",
+  "Painting",
+  "Carpentry",
+  "Security",
+  "Solar & Power",
+  "Home Improvement",
+  "Gardening",
+  "Laundry",
+  "Masonry & Tiling",
+  "Appliance Repair",
+  "General Maintenance",
+];
+
 export default function UsersRoleManagementPage() {
   const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -32,6 +49,7 @@ export default function UsersRoleManagementPage() {
   // Edit Existing User Role Modal State
   const [editingUser, setEditingUser] = useState<any>(null);
   const [selectedRole, setSelectedRole] = useState("ADMIN");
+  const [editTradeSkill, setEditTradeSkill] = useState("Cleaning");
   const [editPassword, setEditPassword] = useState("");
 
   // Client Address Verification Audit Modal State
@@ -156,7 +174,12 @@ export default function UsersRoleManagementPage() {
   const handleRoleChange = async () => {
     if (!editingUser) return;
     try {
-      const payload: any = { userId: editingUser.id, role: selectedRole };
+      const payload: any = {
+        userId: editingUser.id,
+        role: selectedRole,
+        primaryField: editTradeSkill,
+        skills: [editTradeSkill],
+      };
       if (editPassword.trim()) {
         payload.password = editPassword.trim();
       }
@@ -590,6 +613,26 @@ export default function UsersRoleManagementPage() {
                 <option value="CUSTOMER">Client / Customer</option>
               </select>
             </div>
+
+            {selectedRole === "PROFESSIONAL" && (
+              <div style={{ marginBottom: "16px", background: "#0F172A", border: "1px solid rgba(56,189,248,0.3)", borderRadius: "8px", padding: "12px" }}>
+                <label style={{ fontSize: "12px", color: "#38BDF8", fontWeight: 700, textTransform: "uppercase", display: "block", marginBottom: "6px" }}>
+                  🛠️ Artisan Primary Trade / Specialization
+                </label>
+                <select
+                  value={editTradeSkill}
+                  onChange={(e) => setEditTradeSkill(e.target.value)}
+                  style={{ width: "100%", background: "#1E293B", border: "1px solid #334155", borderRadius: "6px", padding: "10px", color: "#F8FAFC", fontSize: "13.5px", cursor: "pointer" }}
+                >
+                  {STANDARD_TRADE_CATEGORIES.map((cat) => (
+                    <option key={cat} value={cat}>{cat}</option>
+                  ))}
+                </select>
+                <span style={{ fontSize: "11px", color: "#94A3B8", marginTop: "4px", display: "block" }}>
+                  Selected trade field will be verified and assigned across live dispatch and search.
+                </span>
+              </div>
+            )}
 
             <div style={{ marginBottom: "20px" }}>
               <label style={{ fontSize: "12px", color: "#64748B", fontWeight: 700, textTransform: "uppercase", display: "block", marginBottom: "4px" }}>

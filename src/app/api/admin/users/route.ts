@@ -322,14 +322,20 @@ export async function PUT(request: Request) {
         });
 
         if (role === "PROFESSIONAL") {
+          const resolvedField = body.primaryField || body.field || "General Skilled Services";
+          const skillsList = body.skills ? (Array.isArray(body.skills) ? body.skills : [body.skills]) : [resolvedField];
+
           await prisma.professional.upsert({
             where: { userId: existingUser.id },
-            update: { verificationStatus: "VERIFIED" },
+            update: {
+              verificationStatus: "VERIFIED",
+              skills: JSON.stringify(skillsList),
+            },
             create: {
               userId: existingUser.id,
               digitalId: generateDigitalIdFromSeed(existingUser.id),
-              bio: "Verified Skilled Artisan / Professional",
-              skills: JSON.stringify(["General Skilled Services"]),
+              bio: `Verified Skilled Artisan in ${resolvedField}`,
+              skills: JSON.stringify(skillsList),
               verificationStatus: "VERIFIED",
               rating: 5.0,
               totalJobs: 0,
