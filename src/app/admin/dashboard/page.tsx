@@ -677,13 +677,13 @@ export default function AdminDashboardPage() {
         {/* 2-Column Section: Live Bookings Table & Live Audit Stream */}
         <div className={styles.gridTwoCol}>
           {/* Active Live Bookings Table */}
-          <div className="card" style={{ background: "#1E293B", border: "1px solid #334155", padding: 0, overflow: "hidden" }}>
-            <div style={{ padding: "var(--space-4)", borderBottom: "1px solid #334155", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <div className="card" style={{ background: "#1E293B", border: "1px solid #334155", padding: 0, overflow: "hidden", display: "flex", flexDirection: "column" }}>
+            <div style={{ padding: "16px", borderBottom: "1px solid #334155", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "8px" }}>
               <div>
-                <h3 className="h4" style={{ margin: 0 }}>Recent Production Bookings</h3>
+                <h3 className="h4" style={{ margin: 0, color: "#F8FAFC", fontWeight: 700 }}>Recent Production Bookings</h3>
                 <span style={{ fontSize: "12px", color: "#94A3B8" }}>Fetched directly from database</span>
               </div>
-              <Link href="/admin/dashboard/bookings" className="btn btn-secondary btn-xs">
+              <Link href="/admin/dashboard/bookings" className="btn btn-secondary btn-xs" style={{ color: "#38BDF8", borderColor: "#0EA5E9", display: "inline-flex", alignItems: "center", gap: 4 }}>
                 View All Bookings <ArrowRight size={14} />
               </Link>
             </div>
@@ -691,38 +691,40 @@ export default function AdminDashboardPage() {
             {recentBookings.length === 0 ? (
               <div style={{ padding: "40px", textAlign: "center", color: "#94A3B8" }}>
                 <Inbox size={32} style={{ marginBottom: "8px", opacity: 0.5 }} />
-                <p style={{ margin: 0, fontSize: "14px" }}>No production bookings in database yet.</p>
+                <p style={{ margin: 0, fontSize: "14px", color: "#F8FAFC" }}>No production bookings in database yet.</p>
                 <span style={{ fontSize: "12px", color: "#64748B" }}>Real bookings placed by customers will stream here live.</span>
               </div>
             ) : (
-              <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left", fontSize: "var(--fs-sm)" }}>
-                <thead>
-                  <tr style={{ background: "#0F172A", borderBottom: "1px solid #334155", color: "#94A3B8" }}>
-                    <th style={{ padding: "var(--space-3) var(--space-4)" }}>Ref</th>
-                    <th style={{ padding: "var(--space-3) var(--space-4)" }}>Customer</th>
-                    <th style={{ padding: "var(--space-3) var(--space-4)" }}>Service</th>
-                    <th style={{ padding: "var(--space-3) var(--space-4)" }}>Artisan</th>
-                    <th style={{ padding: "var(--space-3) var(--space-4)" }}>Amount</th>
-                    <th style={{ padding: "var(--space-3) var(--space-4)" }}>Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {recentBookings.map((b: any) => (
-                    <tr key={b.id} style={{ borderBottom: "1px solid #334155" }}>
-                      <td style={{ padding: "var(--space-3) var(--space-4)", fontFamily: "monospace", color: "#0EA5E9" }}>#{b.id}</td>
-                      <td style={{ padding: "var(--space-3) var(--space-4)", fontWeight: "bold" }}>{b.customer}</td>
-                      <td style={{ padding: "var(--space-3) var(--space-4)" }}>{b.service}</td>
-                      <td style={{ padding: "var(--space-3) var(--space-4)", color: "#CBD5E1" }}>{b.pro}</td>
-                      <td style={{ padding: "var(--space-3) var(--space-4)", fontWeight: "bold", color: "#10B981" }}>{b.amount}</td>
-                      <td style={{ padding: "var(--space-3) var(--space-4)" }}>
-                        <span className="badge" style={{ background: (statusColorMap[b.status] || "#94A3B8") + "25", color: statusColorMap[b.status] || "#94A3B8" }}>
-                          {b.status}
-                        </span>
-                      </td>
+              <div style={{ overflowX: "auto", width: "100%", WebkitOverflowScrolling: "touch" }}>
+                <table style={{ width: "100%", minWidth: "640px", borderCollapse: "collapse", textAlign: "left", fontSize: "13px" }}>
+                  <thead>
+                    <tr style={{ background: "#0F172A", borderBottom: "1px solid #334155", color: "#94A3B8" }}>
+                      <th style={{ padding: "10px 14px", whiteSpace: "nowrap", fontWeight: 600 }}>Ref</th>
+                      <th style={{ padding: "10px 14px", whiteSpace: "nowrap", fontWeight: 600 }}>Customer</th>
+                      <th style={{ padding: "10px 14px", whiteSpace: "nowrap", fontWeight: 600 }}>Service</th>
+                      <th style={{ padding: "10px 14px", whiteSpace: "nowrap", fontWeight: 600 }}>Artisan</th>
+                      <th style={{ padding: "10px 14px", whiteSpace: "nowrap", fontWeight: 600 }}>Amount</th>
+                      <th style={{ padding: "10px 14px", whiteSpace: "nowrap", fontWeight: 600, textAlign: "right" }}>Status</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {recentBookings.map((b: any) => (
+                      <tr key={b.id} style={{ borderBottom: "1px solid #334155" }}>
+                        <td style={{ padding: "12px 14px", fontFamily: "monospace", color: "#0EA5E9", whiteSpace: "nowrap", fontWeight: 600 }}>#{b.id}</td>
+                        <td style={{ padding: "12px 14px", fontWeight: 600, color: "#F8FAFC", whiteSpace: "nowrap" }}>{b.customer}</td>
+                        <td style={{ padding: "12px 14px", color: "#CBD5E1", whiteSpace: "nowrap" }}>{b.service}</td>
+                        <td style={{ padding: "12px 14px", color: "#F8FAFC", whiteSpace: "nowrap", fontWeight: 500 }}>{b.pro}</td>
+                        <td style={{ padding: "12px 14px", fontWeight: "bold", color: "#10B981", whiteSpace: "nowrap" }}>{b.amount}</td>
+                        <td style={{ padding: "12px 14px", textAlign: "right", whiteSpace: "nowrap" }}>
+                          <span className="badge" style={{ background: (statusColorMap[b.status] || "#94A3B8") + "25", color: statusColorMap[b.status] || "#94A3B8", border: `1px solid ${(statusColorMap[b.status] || "#94A3B8")}40`, fontSize: "11px", fontWeight: 700, padding: "2px 8px" }}>
+                            {b.status}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             )}
           </div>
 
@@ -730,7 +732,7 @@ export default function AdminDashboardPage() {
           <div className="card" style={{ background: "#1E293B", border: "1px solid #334155", padding: "var(--space-5)", overflow: "hidden" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "var(--space-4)" }}>
               <div>
-                <h3 className="h4" style={{ margin: 0 }}>Live Immutable Audit Ledger</h3>
+                <h3 className="h4" style={{ margin: 0, color: "#F8FAFC", fontWeight: 700 }}>Live Immutable Audit Ledger</h3>
                 <span style={{ fontSize: "12px", color: "#94A3B8" }}>Tamper-evident governance events</span>
               </div>
               <Activity size={18} color="#0EA5E9" />

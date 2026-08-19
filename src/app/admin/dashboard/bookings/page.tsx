@@ -303,67 +303,69 @@ export default function BookingsWorkflowPage() {
               <p style={{ margin: 0, fontSize: "13px" }}>Real customer bookings stored in the database will display here automatically.</p>
             </div>
           ) : (
-            <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left", fontSize: "14px" }}>
-              <thead>
-                <tr style={{ background: "#0F172A", borderBottom: "1px solid #334155", color: "#94A3B8" }}>
-                  <th style={{ padding: "12px 16px" }}>Ref</th>
-                  <th style={{ padding: "12px 16px" }}>Customer</th>
-                  <th style={{ padding: "12px 16px" }}>Service</th>
-                  <th style={{ padding: "12px 16px" }}>Assigned Artisan</th>
-                  <th style={{ padding: "12px 16px" }}>Amount</th>
-                  <th style={{ padding: "12px 16px" }}>Status</th>
-                  <th style={{ padding: "12px 16px" }}>Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredBookings.map((b) => (
-                  <tr
-                    key={b.id}
-                    style={{
-                      borderBottom: "1px solid #334155",
-                      background: selectedBooking?.id === b.id ? "rgba(14,165,233,0.08)" : "transparent",
-                      cursor: "pointer",
-                    }}
-                    onClick={() => setSelectedBooking(b)}
-                  >
-                    <td style={{ padding: "12px 16px", fontFamily: "monospace", color: "#0EA5E9", fontWeight: 700 }}>#{b.reference}</td>
-                    <td style={{ padding: "12px 16px", fontWeight: 600, color: "#F8FAFC" }}>{b.customer.name}</td>
-                    <td style={{ padding: "12px 16px", color: "#CBD5E1" }}>{b.service}</td>
-                    <td style={{ padding: "12px 16px" }}>
-                      {b.pro ? (
-                        <span style={{ color: "#38BDF8", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 4 }}>
-                          <UserCheck size={14} color="#10B981" /> {b.pro.name}
-                        </span>
-                      ) : (
-                        <span style={{ background: "rgba(239,68,68,0.15)", color: "#EF4444", border: "1px solid rgba(239,68,68,0.3)", padding: "3px 8px", borderRadius: 6, fontSize: 11, fontWeight: 800 }}>
-                          🚨 Unassigned (Needs Pro)
-                        </span>
-                      )}
-                    </td>
-                    <td style={{ padding: "12px 16px", fontWeight: 700, color: "#10B981" }}>₦{b.amount.toLocaleString()}</td>
-                    <td style={{ padding: "12px 16px" }}>
-                      <span className="badge" style={{ background: getStatusColor(b.status) + "25", color: getStatusColor(b.status), fontSize: "11px", fontWeight: 700 }}>
-                        {b.status}
-                      </span>
-                    </td>
-                    <td style={{ padding: "12px 16px" }}>
-                      <button
-                        className="btn btn-xs"
-                        style={{
-                          background: !b.pro ? "#EF4444" : "#1E293B",
-                          color: "#FFFFFF",
-                          border: !b.pro ? "none" : "1px solid #334155",
-                          fontWeight: 700,
-                        }}
-                        onClick={(e) => { e.stopPropagation(); setSelectedBooking(b); }}
-                      >
-                        {!b.pro ? "⚡ Assign Pro" : "Manage"}
-                      </button>
-                    </td>
+            <div style={{ overflowX: "auto", width: "100%", WebkitOverflowScrolling: "touch" }}>
+              <table style={{ width: "100%", minWidth: "750px", borderCollapse: "collapse", textAlign: "left", fontSize: "14px" }}>
+                <thead>
+                  <tr style={{ background: "#0F172A", borderBottom: "1px solid #334155", color: "#94A3B8" }}>
+                    <th style={{ padding: "12px 16px", whiteSpace: "nowrap" }}>Ref</th>
+                    <th style={{ padding: "12px 16px", whiteSpace: "nowrap" }}>Customer</th>
+                    <th style={{ padding: "12px 16px", whiteSpace: "nowrap" }}>Service</th>
+                    <th style={{ padding: "12px 16px", whiteSpace: "nowrap" }}>Assigned Artisan</th>
+                    <th style={{ padding: "12px 16px", whiteSpace: "nowrap" }}>Amount</th>
+                    <th style={{ padding: "12px 16px", whiteSpace: "nowrap" }}>Status</th>
+                    <th style={{ padding: "12px 16px", whiteSpace: "nowrap" }}>Action</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {filteredBookings.map((b) => (
+                    <tr
+                      key={b.id}
+                      style={{
+                        borderBottom: "1px solid #334155",
+                        background: selectedBooking?.id === b.id ? "rgba(14,165,233,0.08)" : "transparent",
+                        cursor: "pointer",
+                      }}
+                      onClick={() => setSelectedBooking(b)}
+                    >
+                      <td style={{ padding: "12px 16px", fontFamily: "monospace", color: "#0EA5E9", fontWeight: 700, whiteSpace: "nowrap" }}>#{b.reference}</td>
+                      <td style={{ padding: "12px 16px", fontWeight: 600, color: "#F8FAFC", whiteSpace: "nowrap" }}>{b.customer.name}</td>
+                      <td style={{ padding: "12px 16px", color: "#CBD5E1", whiteSpace: "nowrap" }}>{b.service}</td>
+                      <td style={{ padding: "12px 16px", whiteSpace: "nowrap" }}>
+                        {b.pro ? (
+                          <span style={{ color: "#38BDF8", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 4 }}>
+                            <UserCheck size={14} color="#10B981" /> {b.pro.name}
+                          </span>
+                        ) : (
+                          <span style={{ background: "rgba(239,68,68,0.15)", color: "#EF4444", border: "1px solid rgba(239,68,68,0.3)", padding: "3px 8px", borderRadius: 6, fontSize: 11, fontWeight: 800 }}>
+                            🚨 Unassigned (Needs Pro)
+                          </span>
+                        )}
+                      </td>
+                      <td style={{ padding: "12px 16px", fontWeight: 700, color: "#10B981", whiteSpace: "nowrap" }}>₦{b.amount.toLocaleString()}</td>
+                      <td style={{ padding: "12px 16px", whiteSpace: "nowrap" }}>
+                        <span className="badge" style={{ background: getStatusColor(b.status) + "25", color: getStatusColor(b.status), fontSize: "11px", fontWeight: 700, border: `1px solid ${getStatusColor(b.status)}40`, padding: "2px 8px" }}>
+                          {b.status}
+                        </span>
+                      </td>
+                      <td style={{ padding: "12px 16px", whiteSpace: "nowrap" }}>
+                        <button
+                          className="btn btn-xs"
+                          style={{
+                            background: !b.pro ? "#EF4444" : "#1E293B",
+                            color: "#FFFFFF",
+                            border: !b.pro ? "none" : "1px solid #334155",
+                            fontWeight: 700,
+                          }}
+                          onClick={(e) => { e.stopPropagation(); setSelectedBooking(b); }}
+                        >
+                          {!b.pro ? "⚡ Assign Pro" : "Manage"}
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           )}
         </div>
 
