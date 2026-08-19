@@ -83,17 +83,19 @@ export async function GET() {
       }
 
       const isPro = u.role === "PROFESSIONAL" || Boolean(u.professional);
+      const isStaff = u.role !== "CUSTOMER" && u.role !== "PROFESSIONAL";
+      const effectiveRole = isStaff ? u.role : (isPro ? "PROFESSIONAL" : "CUSTOMER");
 
       return {
         id: u.id,
         name: `${u.firstName || ""} ${u.lastName || ""}`.trim() || u.email.split("@")[0] || "User Account",
         email: u.email,
         phone: u.phone || "Not Provided",
-        role: u.role,
+        role: effectiveRole,
         isProfessional: isPro,
         digitalId: u.professional?.digitalId || (isPro ? "HHP-PRO-VERIFIED" : null),
         professionalStatus: u.professional?.verificationStatus || (isPro ? "VERIFIED" : null),
-        isVerified: u.isVerified,
+        isVerified: Boolean(u.isVerified || u.professional?.verificationStatus === "VERIFIED"),
         createdAt: u.createdAt ? new Date(u.createdAt).toISOString().split("T")[0] : "Recent",
         permanentAddress: u.permanentAddress,
         permanentAddressProof: u.permanentAddressProof,
