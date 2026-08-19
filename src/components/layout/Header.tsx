@@ -5,7 +5,7 @@ import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Sparkles, Wrench, Zap, Snowflake, Paintbrush, Hammer, Camera, SunMedium,
-  Menu, X, Sun, Moon, ChevronDown, Phone, MessageSquare, ArrowRight, Layers, User
+  Menu, X, Sun, Moon, ChevronDown, Phone, MessageSquare, ArrowRight, Layers, User, ShoppingBag
 } from "lucide-react";
 import { useTheme } from "@/components/ThemeProvider";
 import { BrandLogo } from "@/components/common/BrandLogo";
@@ -181,13 +181,16 @@ export function Header() {
                 )}
               </AnimatePresence>
             </div>
+            <Link href="/marketplace" className={styles.navLink} style={{ color: "#0EA5E9", fontWeight: 700, display: "inline-flex", alignItems: "center", gap: 5 }}>
+              <ShoppingBag size={15} /> Marketplace
+            </Link>
             <Link href="/about" className={styles.navLink}>
               About
             </Link>
             <Link href="/contact" className={styles.navLink}>
               Contact
             </Link>
-            <Link href="/track" className={styles.navLink} style={{ color: "#0EA5E9", fontWeight: "bold" }}>
+            <Link href="/track" className={styles.navLink} style={{ color: "#10B981", fontWeight: "bold" }}>
               Track Booking
             </Link>
           </nav>
@@ -448,3 +451,5 @@ export function Header() {
     </>
   );
 }
+
+export default Header;

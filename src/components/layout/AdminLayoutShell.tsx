@@ -6,7 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard, Users, ClipboardList, CreditCard, Star,
   Settings, Shield, ShieldCheck, BarChart3, Tag, Bell, LogOut, Menu, X,
-  MapPin, Lock, Search, AlertCircle, Download, HelpCircle, Wrench
+  MapPin, Lock, Search, AlertCircle, Download, HelpCircle, Wrench, ShoppingBag
 } from "lucide-react";
 import styles from "@/app/admin/admin.module.css";
 import { GlobalSearchModal } from "@/components/admin/GlobalSearchModal";
@@ -22,6 +22,7 @@ interface NavItem {
 
 const adminNav: NavItem[] = [
   { href: "/admin/dashboard", label: "KPI Command Center", icon: LayoutDashboard, permissionKey: "dashboard" },
+  { href: "/admin/dashboard/marketplace", label: "HandyHub Marketplace", icon: ShoppingBag, permissionKey: "marketplace" },
   { href: "/admin/dashboard/map", label: "Live Map & Radius", icon: MapPin, permissionKey: "map" },
   { href: "/admin/dashboard/bookings", label: "Bookings Workflow", icon: ClipboardList, permissionKey: "bookings" },
   { href: "/admin/dashboard/parts", label: "Replacement Parts & Vouchers", icon: Wrench, permissionKey: "parts" },

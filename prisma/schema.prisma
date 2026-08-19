@@ -61,6 +61,8 @@ model User {
   disputesRaised   Dispute[]  @relation("CustomerDisputes")
   disputesAssigned Dispute[]  @relation("AdminDisputes")
   replacementParts ReplacementPart[] @relation("CustomerParts")
+  merchant         Merchant?
+  marketplaceOrders MarketplaceOrder[]
 }
 
 model Session {
@@ -524,6 +526,221 @@ model PartAuditLog {
   createdAt      DateTime  @default(now())
 
   replacementPart ReplacementPart @relation(fields: [partId], references: [id], onDelete: Cascade)
+}
+
+// ============================================
+// MARKETPLACE & MERCHANT MODELS
+// ============================================
+
+model Merchant {
+  id                    String    @id @default(cuid())
+  userId                String    @unique
+  businessName          String
+  slug                  String    @unique
+  cacNumber             String?
+  businessAddress       String
+  city                  String    @default("Abuja")
+  state                 String    @default("FCT")
+  latitude              Float?
+  longitude             Float?
+  phone                 String
+  email                 String?
+  bankName              String?
+  bankAccount           String?
+  accountName           String?
+  paystackRecipientCode String?   // Paystack transfer recipient code for instant disbursement
+  logoUrl               String?
+  storePhotoUrl         String?
+  
+  // Verification & Compliance
+  verificationStatus    String    @default("PENDING") // PENDING, VERIFIED, REJECTED, SUSPENDED
+  verificationNotes     String?
+  verifiedAt            DateTime?
+
+  // Monthly Subscription
+  subscriptionStatus    String    @default("PENDING_PAYMENT") // ACTIVE, TRIAL, EXPIRED, SUSPENDED, CANCELLED
+  subscriptionPlan      String    @default("STANDARD_MONTHLY") // STANDARD_MONTHLY (₦15,000/mo), PREMIUM_MONTHLY
+  subscriptionAmount    Float     @default(15000)
+  subscriptionStartedAt DateTime?
+  subscriptionExpiresAt DateTime?
+  lastPaymentReference  String?
+
+  rating                Float     @default(5.0)
+  totalOrders           Int       @default(0)
+  isActive              Boolean   @default(true)
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  products              MarketplaceProduct[]
+  subscriptionInvoices  MerchantSubscriptionInvoice[]
+  orderItems            MarketplaceOrderItem[]
+}
+
+model MerchantSubscriptionInvoice {
+  id                String    @id @default(cuid())
+  merchantId        String
+  amount            Float
+  periodStart       DateTime
+  periodEnd         DateTime
+  status            String    @default("PAID") // PAID, PENDING, OVERDUE, CANCELLED
+  paystackReference String?   @unique
+  paidAt            DateTime?
+  createdAt         DateTime  @default(now())
+
+  merchant          Merchant  @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+}
+
+model MarketplaceCategory {
+  id          String    @id @default(cuid())
+  name        String    @unique
+  slug        String    @unique
+  icon        String?
+  description String?
+  type        String    @default("REPLACEMENT_PARTS") // REPLACEMENT_PARTS (Phase 1 Active), TOOLS, MATERIALS, EQUIPMENT
+  isActive    Boolean   @default(true)
+  order       Int       @default(0)
+  createdAt   DateTime  @default(now())
+
+  products    MarketplaceProduct[]
+}
+
+model MarketplaceProduct {
+  id                String    @id @default(cuid())
+  merchantId        String
+  categoryId        String
+  sku               String    @unique
+  title             String
+  slug              String    @unique
+  description       String
+  partNumber        String?
+  brand             String?
+  compatibility     String    @default("[]") // JSON array of supported equipment/models
+  specifications    String    @default("{}") // JSON key-values (voltage, material, size)
+  price             Float
+  compareAtPrice    Float?
+  costPrice         Float?
+  stockQuantity     Int       @default(0)
+  lowStockThreshold Int       @default(5)
+  images            String    @default("[]") // JSON array of product image URLs
+  weightKg          Float     @default(0.5)
+  dimensions        String?
+  status            String    @default("ACTIVE") // DRAFT, ACTIVE, OUT_OF_STOCK, SUSPENDED
+  isVerified        Boolean   @default(true)
+  
+  // Fraud & Price Anomaly Detection
+  priceAnomalyFlag  Boolean   @default(false)
+  medianMarketPrice Float?
+  
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  merchant          Merchant            @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+  category          MarketplaceCategory @relation(fields: [categoryId], references: [id])
+  reservations      InventoryReservation[]
+  orderItems        MarketplaceOrderItem[]
+}
+
+model InventoryReservation {
+  id             String    @id @default(cuid())
+  productId      String
+  customerId     String
+  cartSessionId  String
+  quantity       Int       @default(1)
+  reservedUntil  DateTime  // 15-minute TTL lock window
+  status         String    @default("RESERVED") // RESERVED, COMMITTED, RELEASED
+  createdAt      DateTime  @default(now())
+
+  product        MarketplaceProduct @relation(fields: [productId], references: [id], onDelete: Cascade)
+}
+
+model MarketplaceOrder {
+  id                    String    @id @default(cuid())
+  orderNumber           String    @unique // e.g. HHP-MKT-94821
+  customerId            String
+  procurementType       String    @default("DIRECT_PURCHASE") // DIRECT_PURCHASE, AUTO_PROCUREMENT
+  status                String    @default("PENDING_PAYMENT") 
+  // PENDING_PAYMENT, PAID, PROCESSING, READY_FOR_PICKUP, IN_TRANSIT, DELIVERED, CANCELLED, REFUNDED
+
+  subtotal              Float
+  logisticsFee          Float     @default(0)
+  totalAmount           Float
+
+  destinationAccount    String    @default("PROCUREMENT_ACCOUNT")
+  paymentStatus         String    @default("PENDING") // PENDING, PAID, ESCROW_HOLD, DISBURSED, REFUNDED
+  paymentMethod         String?   // PAYSTACK, WALLET
+  paymentReference      String?
+
+  deliveryAddress       String    // JSON / Street address
+  deliveryCity          String    @default("Abuja")
+  deliveryState         String    @default("FCT")
+  deliveryLatitude      Float?
+  deliveryLongitude     Float?
+  
+  deliveryPartner       String?   @default("HandyHub Priority Dispatch")
+  trackingNumber        String?   @unique
+  deliveryOtp           String?   // 6-digit confirmation PIN
+  otpVerified           Boolean   @default(false)
+  estimatedDeliveryTime DateTime?
+  deliveredAt           DateTime?
+
+  customerNotes         String?
+  invoiceHash           String?   // Duplicate invoice detection SHA-256
+
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  customer              User      @relation(fields: [customerId], references: [id])
+  items                 MarketplaceOrderItem[]
+  logisticsTrackings    MarketplaceLogisticsTracking[]
+  auditLogs             MarketplaceAuditLog[]
+}
+
+model MarketplaceOrderItem {
+  id                    String    @id @default(cuid())
+  orderId               String
+  productId             String
+  merchantId            String
+  unitPrice             Float
+  quantity              Int
+  totalPrice            Float
+  
+  merchantPayoutStatus  String    @default("ESCROW_HOLD") // PENDING, ESCROW_HOLD, DISBURSED, REFUNDED
+  merchantPayoutAmount  Float
+  disbursedAt           DateTime?
+  disbursementReference String?
+
+  order                 MarketplaceOrder   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product               MarketplaceProduct @relation(fields: [productId], references: [id])
+  merchant              Merchant           @relation(fields: [merchantId], references: [id])
+}
+
+model MarketplaceLogisticsTracking {
+  id           String    @id @default(cuid())
+  orderId      String
+  status       String    // ORDER_CONFIRMED, MERCHANT_PACKED, DISPATCH_ASSIGNED, IN_TRANSIT, DELIVERED
+  locationName String
+  notes        String?
+  riderName    String?
+  riderPhone   String?
+  timestamp    DateTime  @default(now())
+
+  order        MarketplaceOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+}
+
+model MarketplaceAuditLog {
+  id        String   @id @default(cuid())
+  orderId   String?
+  merchantId String?
+  productId String?
+  actorId   String?
+  actorRole String   // CUSTOMER, MERCHANT, ADMIN, SYSTEM
+  action    String   // ORDER_PLACED, INVENTORY_RESERVED, AUTO_PROCURED, DELIVERY_CONFIRMED, PRICE_FLAGGED, SUBSCRIPTION_RENEWED
+  details   String?  // JSON
+  ipAddress String?
+  createdAt DateTime @default(now())
+
+  order     MarketplaceOrder? @relation(fields: [orderId], references: [id], onDelete: Cascade)
 }
 
 

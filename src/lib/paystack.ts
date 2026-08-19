@@ -352,3 +352,15 @@ export class PaystackService {
 
 // Singleton Instance
 export const paystack = new PaystackService();
+
+export async function initializePaystackTransaction(options: PaystackInitializeOptions) {
+  const res = await paystack.initializeTransaction(options);
+  if (!res.success || !res.data) {
+    throw new Error(res.error || "Failed to initialize Paystack transaction");
+  }
+  return {
+    authorizationUrl: res.data.authorization_url,
+    accessCode: res.data.access_code,
+    reference: res.data.reference,
+  };
+}

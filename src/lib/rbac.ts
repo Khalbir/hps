@@ -15,6 +15,7 @@ export type UserRole =
 
 export interface RolePermissions {
   dashboard: boolean;
+  marketplace: boolean;
   map: boolean;
   bookings: boolean;
   parts: boolean;
@@ -35,6 +36,7 @@ export interface RolePermissions {
 export const ROLE_PERMISSIONS: Record<string, RolePermissions> = {
   SUPER_ADMIN: {
     dashboard: true,
+    marketplace: true,
     map: true,
     bookings: true,
     parts: true,
@@ -53,6 +55,7 @@ export const ROLE_PERMISSIONS: Record<string, RolePermissions> = {
   },
   ADMIN: { // Legacy admin map
     dashboard: true,
+    marketplace: true,
     map: true,
     bookings: true,
     parts: true,
@@ -71,6 +74,7 @@ export const ROLE_PERMISSIONS: Record<string, RolePermissions> = {
   },
   OPERATIONS_MANAGER: {
     dashboard: true,
+    marketplace: true,
     map: true,
     bookings: true,
     parts: true,
@@ -89,6 +93,7 @@ export const ROLE_PERMISSIONS: Record<string, RolePermissions> = {
   },
   VERIFICATION_OFFICER: {
     dashboard: true,
+    marketplace: true,
     map: false,
     bookings: false,
     parts: false,
@@ -107,6 +112,7 @@ export const ROLE_PERMISSIONS: Record<string, RolePermissions> = {
   },
   CUSTOMER_SUPPORT: {
     dashboard: true,
+    marketplace: true,
     map: false,
     bookings: true,
     parts: true,
@@ -125,6 +131,7 @@ export const ROLE_PERMISSIONS: Record<string, RolePermissions> = {
   },
   FINANCE: {
     dashboard: true,
+    marketplace: true,
     map: false,
     bookings: true,
     parts: true,
