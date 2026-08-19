@@ -3,13 +3,14 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { ProLayoutShell } from "@/components/layout/ProLayoutShell";
-import { User, ShieldCheck, Award, Star, MapPin, Camera, FileText, RefreshCw, AlertCircle } from "lucide-react";
+import { User, ShieldCheck, Award, Star, MapPin, Camera, FileText, RefreshCw, AlertCircle, Copy, Check, Fingerprint, BadgeCheck } from "lucide-react";
 import styles from "../dashboard/dashboard.module.css";
 
 export default function ProProfilePage() {
   const [profile, setProfile] = useState<any>({
     fullName: "Artisan Partner",
     initials: "AP",
+    digitalId: "HHP-PRO-84920",
     specialty: "Service Specialist",
     location: "Abuja, Nigeria",
     verificationStatus: "PENDING",
@@ -18,6 +19,7 @@ export default function ProProfilePage() {
     guarantorStatus: "Pending Audit",
   });
   const [loading, setLoading] = useState(true);
+  const [copiedId, setCopiedId] = useState(false);
 
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [avatarMsg, setAvatarMsg] = useState("");
@@ -53,6 +55,7 @@ export default function ProProfilePage() {
           initials,
           avatar: data.avatar || null,
           isCustomer,
+          digitalId: data.digitalId || "HHP-PRO-84920",
           rating: data.rating || 5.0,
           totalReviews: data.totalReviews || 0,
           totalJobs: data.completedJobs || 0,
@@ -226,24 +229,78 @@ export default function ProProfilePage() {
           )}
 
           {!isCustomer && (
-            <div style={{ margin: "14px 0", padding: "12px", background: "var(--bg-tertiary)", borderRadius: "12px", border: "1px solid var(--border-primary)" }}>
-              <div style={{ display: "inline-flex", gap: 3, marginBottom: 4 }}>
-                {[1, 2, 3, 4, 5].map((s) => (
-                  <Star
-                    key={s}
-                    size={16}
-                    fill={s <= Math.round(Number(profile.rating) || 5) ? "#F59E0B" : "transparent"}
-                    color={s <= Math.round(Number(profile.rating) || 5) ? "#F59E0B" : "rgba(245,158,11,0.3)"}
-                  />
-                ))}
+            <>
+              {/* Official Digital ID Badge */}
+              <div style={{
+                margin: "12px 0 16px",
+                padding: "12px 14px",
+                background: "linear-gradient(135deg, rgba(14, 165, 233, 0.12) 0%, rgba(99, 102, 241, 0.12) 100%)",
+                border: "1.5px solid rgba(14, 165, 233, 0.4)",
+                borderRadius: "14px",
+                textAlign: "center",
+              }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, marginBottom: 6 }}>
+                  <Fingerprint size={16} color="#0EA5E9" />
+                  <span style={{ fontSize: "11px", fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.08em", color: "#0EA5E9" }}>
+                    Verified Digital ID
+                  </span>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginBottom: 6 }}>
+                  <span style={{
+                    fontFamily: "monospace",
+                    fontSize: "15px",
+                    fontWeight: 800,
+                    color: "#F8FAFC",
+                    background: "#0F172A",
+                    padding: "4px 10px",
+                    borderRadius: "6px",
+                    border: "1px solid rgba(14, 165, 233, 0.3)",
+                    letterSpacing: "0.06em",
+                  }}>
+                    {profile.digitalId}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (typeof navigator !== "undefined" && navigator.clipboard) {
+                        navigator.clipboard.writeText(profile.digitalId);
+                        setCopiedId(true);
+                        setTimeout(() => setCopiedId(false), 2000);
+                      }
+                    }}
+                    className="btn btn-secondary btn-xs"
+                    style={{ padding: "4px 8px", fontSize: "11px", display: "inline-flex", alignItems: "center", gap: 4 }}
+                    title="Copy Official Digital ID"
+                  >
+                    {copiedId ? <Check size={12} color="#10B981" /> : <Copy size={12} />}
+                    {copiedId ? "Copied!" : "Copy"}
+                  </button>
+                </div>
+                <span style={{ fontSize: "10px", color: "var(--text-secondary)" }}>
+                  🛡️ Official Security Token • Client Verification Protected
+                </span>
               </div>
-              <span style={{ fontSize: "14px", fontWeight: 700, color: "#F59E0B", display: "block" }}>
-                {Number(profile.rating || 5.0).toFixed(1)}★ Overall Star Rating
-              </span>
-              <span style={{ fontSize: "12px", color: "var(--text-secondary)" }}>
-                {profile.totalReviews > 0 ? `${profile.totalReviews} verified client reviews • ${profile.totalJobs} completed jobs` : "5.0 initial verified rating"}
-              </span>
-            </div>
+
+              {/* Star Rating Widget */}
+              <div style={{ margin: "0 0 16px", padding: "12px", background: "var(--bg-tertiary)", borderRadius: "12px", border: "1px solid var(--border-primary)" }}>
+                <div style={{ display: "inline-flex", gap: 3, marginBottom: 4 }}>
+                  {[1, 2, 3, 4, 5].map((s) => (
+                    <Star
+                      key={s}
+                      size={16}
+                      fill={s <= Math.round(Number(profile.rating) || 5) ? "#F59E0B" : "transparent"}
+                      color={s <= Math.round(Number(profile.rating) || 5) ? "#F59E0B" : "rgba(245,158,11,0.3)"}
+                    />
+                  ))}
+                </div>
+                <span style={{ fontSize: "14px", fontWeight: 700, color: "#F59E0B", display: "block" }}>
+                  {Number(profile.rating || 5.0).toFixed(1)}★ Overall Star Rating
+                </span>
+                <span style={{ fontSize: "12px", color: "var(--text-secondary)" }}>
+                  {profile.totalReviews > 0 ? `${profile.totalReviews} verified client reviews • ${profile.totalJobs} completed jobs` : "5.0 initial verified rating"}
+                </span>
+              </div>
+            </>
           )}
 
           <p style={{ fontSize: "var(--fs-sm)", color: "var(--text-secondary)", margin: "0 0 8px 0" }}>
@@ -273,6 +330,63 @@ export default function ProProfilePage() {
           </div>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)" }}>
+            {/* Official Digital Identity Card */}
+            <div className="card" style={{
+              background: "linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(30, 41, 59, 0.95) 100%)",
+              border: "1.5px solid rgba(14, 165, 233, 0.4)",
+              position: "relative",
+              overflow: "hidden",
+            }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 16, flexWrap: "wrap", gap: 12 }}>
+                <div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                    <BadgeCheck size={20} color="#0EA5E9" />
+                    <h3 className="h4" style={{ margin: 0, color: "#F8FAFC" }}>Official Professional Digital ID</h3>
+                  </div>
+                  <span style={{ fontSize: "12px", color: "#94A3B8" }}>
+                    HandyHub National Artisan & Contractor Verification Registry
+                  </span>
+                </div>
+                <span className="badge" style={{ background: "rgba(16, 185, 129, 0.2)", color: "#10B981", fontWeight: 700, border: "1px solid rgba(16, 185, 129, 0.4)" }}>
+                  ● Active & Validated
+                </span>
+              </div>
+
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 14, marginBottom: 16 }}>
+                <div style={{ padding: "12px", background: "rgba(15, 23, 42, 0.6)", borderRadius: "8px", border: "1px solid rgba(255,255,255,0.08)" }}>
+                  <span style={{ fontSize: "11px", color: "#94A3B8", textTransform: "uppercase", display: "block", marginBottom: 2 }}>Digital ID</span>
+                  <strong style={{ fontSize: "15px", fontFamily: "monospace", color: "#38BDF8" }}>{profile.digitalId}</strong>
+                </div>
+                <div style={{ padding: "12px", background: "rgba(15, 23, 42, 0.6)", borderRadius: "8px", border: "1px solid rgba(255,255,255,0.08)" }}>
+                  <span style={{ fontSize: "11px", color: "#94A3B8", textTransform: "uppercase", display: "block", marginBottom: 2 }}>Accredited Skill</span>
+                  <strong style={{ fontSize: "13px", color: "#F8FAFC" }}>{profile.specialty}</strong>
+                </div>
+                <div style={{ padding: "12px", background: "rgba(15, 23, 42, 0.6)", borderRadius: "8px", border: "1px solid rgba(255,255,255,0.08)" }}>
+                  <span style={{ fontSize: "11px", color: "#94A3B8", textTransform: "uppercase", display: "block", marginBottom: 2 }}>Identity Status</span>
+                  <strong style={{ fontSize: "13px", color: isVerified ? "#10B981" : "#F59E0B" }}>
+                    {isVerified ? "Govt NIN Verified" : "Audit In Progress"}
+                  </strong>
+                </div>
+                <div style={{ padding: "12px", background: "rgba(15, 23, 42, 0.6)", borderRadius: "8px", border: "1px solid rgba(255,255,255,0.08)" }}>
+                  <span style={{ fontSize: "11px", color: "#94A3B8", textTransform: "uppercase", display: "block", marginBottom: 2 }}>Operating State</span>
+                  <strong style={{ fontSize: "13px", color: "#F8FAFC" }}>{profile.location}</strong>
+                </div>
+              </div>
+
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderTop: "1px solid rgba(255,255,255,0.08)", paddingTop: 12, flexWrap: "wrap", gap: 10 }}>
+                <span style={{ fontSize: "11px", color: "#64748B" }}>
+                  🔒 Authenticated by HandyHub Pro Trust & Safety Engine
+                </span>
+                <Link
+                  href="/pro/verification"
+                  className="btn btn-secondary btn-xs"
+                  style={{ fontSize: "11px", textDecoration: "none" }}
+                >
+                  View Verification Dossier ➔
+                </Link>
+              </div>
+            </div>
+
             <div className="card">
               <h3 className="h4" style={{ marginBottom: "var(--space-4)" }}>Verified Qualifications</h3>
               <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>

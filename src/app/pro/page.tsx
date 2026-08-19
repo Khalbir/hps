@@ -5,13 +5,14 @@ import Link from "next/link";
 import { ProLayoutShell } from "@/components/layout/ProLayoutShell";
 import {
   ShieldCheck, Clock, AlertTriangle, ArrowRight,
-  RefreshCw, Inbox, CheckCircle2, XCircle, Star, Award, TrendingUp, ThumbsUp
+  RefreshCw, Inbox, CheckCircle2, XCircle, Star, Award, TrendingUp, ThumbsUp, Fingerprint
 } from "lucide-react";
 
 export default function ProDashboard() {
   const [loading, setLoading] = useState(true);
   const [proData, setProData] = useState<any>({
     proName: "Artisan Partner",
+    digitalId: "HHP-PRO-84920",
     verificationStatus: "UNVERIFIED",
     hasSubmittedDocs: false,
     verificationNotes: "",
@@ -79,6 +80,25 @@ export default function ProDashboard() {
         <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)", marginBottom: "var(--space-2)", flexWrap: "wrap" }}>
           <h1 className="h2">Professional Dashboard</h1>
           
+          {/* Official Digital ID Badge */}
+          {proData.digitalId && (
+            <span style={{
+              fontFamily: "monospace",
+              fontSize: "12px",
+              fontWeight: 800,
+              background: "rgba(14, 165, 233, 0.15)",
+              color: "#38BDF8",
+              padding: "4px 10px",
+              borderRadius: "99px",
+              border: "1px solid rgba(14, 165, 233, 0.35)",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 5
+            }}>
+              <Fingerprint size={14} color="#0EA5E9" /> ID: {proData.digitalId}
+            </span>
+          )}
+
           {/* Dynamic Verification Badge */}
           {isVerified ? (
             <span className="badge" style={{ background: "rgba(16,185,129,0.15)", color: "#10B981", display: "inline-flex", alignItems: "center", gap: 4, fontWeight: 700 }}>

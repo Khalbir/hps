@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { hash } from "bcryptjs";
+import { generateDigitalIdFromSeed } from "@/lib/digitalId";
 
 export async function POST(request: Request) {
   try {
@@ -103,6 +104,7 @@ export async function POST(request: Request) {
         proRecord = await prisma.professional.create({
           data: {
             userId: targetUser.id,
+            digitalId: generateDigitalIdFromSeed(targetUser.id),
             verificationStatus: "PENDING",
             idType: idType || "NIN",
             idNumber: idNumber || "NIN-89302194812",
@@ -117,6 +119,7 @@ export async function POST(request: Request) {
         proRecord = await prisma.professional.update({
           where: { id: existingPro.id },
           data: {
+            digitalId: existingPro.digitalId || generateDigitalIdFromSeed(existingPro.id),
             verificationStatus: "PENDING",
             idType: idType || existingPro.idType,
             idNumber: idNumber || existingPro.idNumber,

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { formatDigitalId } from "@/lib/digitalId";
 
 export const dynamic = "force-dynamic";
 
@@ -214,11 +215,14 @@ export async function GET(request: Request) {
       }));
     }
 
+    const proDigitalId = formatDigitalId(pro);
+
     return NextResponse.json({
       success: true,
       proName,
       userEmail: user?.email || "",
       avatar: user?.avatar || docs?.passportPhoto || null,
+      digitalId: proDigitalId,
       specialty,
       serviceCategory: specialty,
       skills: skillsList,
@@ -245,6 +249,7 @@ export async function GET(request: Request) {
     return NextResponse.json({
       success: true,
       proName: "Artisan Partner",
+      digitalId: "HHP-PRO-84920",
       specialty: "General Skilled Services",
       serviceCategory: "General Skilled Services",
       skills: [],

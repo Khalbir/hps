@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getValidMediaUrl, SAMPLE_PORTFOLIO_IMAGE } from "@/lib/sample-documents";
+import { formatDigitalId } from "@/lib/digitalId";
 
 export const dynamic = "force-dynamic";
 
@@ -183,6 +184,7 @@ export async function GET(request: Request) {
       return {
         id: p.id,
         userId: p.userId || u.id,
+        digitalId: formatDigitalId(p),
         name: fullName,
         email: u.email || docs.email || p.email || "artisan@handyhubpro.ng",
         phone: u.phone || docs.phone || p.phone || "Not Provided",

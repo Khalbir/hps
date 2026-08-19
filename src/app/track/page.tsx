@@ -291,8 +291,25 @@ function TrackContent() {
                       </span>
                       <span>• {booking.artisan.totalJobs} Jobs Completed</span>
                     </div>
-                    <div style={{ fontSize: "var(--fs-xs)", color: "#10B981", marginTop: 4, display: "flex", alignItems: "center", gap: 6, fontWeight: 600 }}>
-                      <ShieldCheck size={15} color="#10B981" /> {booking.artisan.vehicle || "Verified Digital ID"}
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 6, flexWrap: "wrap" }}>
+                      <span style={{
+                        fontSize: "var(--fs-xs)",
+                        color: "#38BDF8",
+                        background: "rgba(14, 165, 233, 0.12)",
+                        border: "1px solid rgba(14, 165, 233, 0.35)",
+                        padding: "3px 8px",
+                        borderRadius: "6px",
+                        fontWeight: 700,
+                        fontFamily: "monospace",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: 5
+                      }}>
+                        <ShieldCheck size={14} color="#0EA5E9" /> {booking.artisan.digitalId ? `Digital ID: ${booking.artisan.digitalId}` : (booking.artisan.vehicle || "Verified Digital ID")}
+                      </span>
+                      <span style={{ fontSize: "11px", color: "#10B981", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 3 }}>
+                        🛡️ Authenticated Partner
+                      </span>
                     </div>
                   </div>
 

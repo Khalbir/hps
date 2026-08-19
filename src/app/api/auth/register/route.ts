@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { hash } from "bcryptjs";
 import { sendConfirmationEmail } from "@/lib/email";
 import { storeCredential } from "@/lib/credentials-store";
+import { generateDigitalIdFromSeed } from "@/lib/digitalId";
 
 export async function POST(request: Request) {
   try {
@@ -201,6 +202,7 @@ export async function POST(request: Request) {
         await prisma.professional.create({
           data: {
             userId: user.id,
+            digitalId: generateDigitalIdFromSeed(user.id),
             bio: serviceCategory === "others"
               ? `Custom Skillset Request: ${customSkill || "Unspecified"}`
               : `Verified ${serviceCategory} professional`,

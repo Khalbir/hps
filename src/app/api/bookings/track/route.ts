@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { formatDigitalId } from "@/lib/digitalId";
 
 const categoryNames: Record<string, string> = {
   cleaning: "Residential & Deep Cleaning",
@@ -117,6 +118,8 @@ export async function GET(request: Request) {
     const proTotalJobs = dbBooking?.professional?.totalJobs || 0;
     const proAvatar = dbBooking?.professional?.user?.avatar || null;
 
+    const proDigitalId = formatDigitalId(dbBooking?.professional);
+
     const formattedBooking = {
       id: dbBooking?.reference || cleanQuery,
       serviceName: resolvedServiceName,
@@ -133,11 +136,12 @@ export async function GET(request: Request) {
       otpCode,
       artisan: {
         id: dbBooking?.professionalId || "art_stationed_lead",
+        digitalId: proDigitalId,
         name: proName,
         phone: proPhone,
         rating: proRating,
         totalJobs: proTotalJobs,
-        vehicle: "Verified Digital ID",
+        vehicle: `Digital ID: ${proDigitalId}`,
         locationName: dbBooking?.professionalId ? "Nearest Stationed Dispatch Partner" : "Abuja Central Dispatch Hub (En Route)",
         avatar: proAvatar,
       },
