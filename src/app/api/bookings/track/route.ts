@@ -44,7 +44,7 @@ export async function GET(request: Request) {
         customer: true,
         professional: {
           include: {
-            user: { select: { firstName: true, lastName: true, phone: true } },
+            user: { select: { firstName: true, lastName: true, phone: true, avatar: true, ninStatus: true } },
           },
         },
       },
@@ -67,7 +67,7 @@ export async function GET(request: Request) {
             include: {
               service: true,
               customer: true,
-              professional: { include: { user: { select: { firstName: true, lastName: true, phone: true } } } },
+              professional: { include: { user: { select: { firstName: true, lastName: true, phone: true, avatar: true, ninStatus: true } } } },
             },
           },
         },
@@ -102,13 +102,20 @@ export async function GET(request: Request) {
 
     const proName = dbBooking?.professional?.user
       ? `${dbBooking.professional.user.firstName} ${dbBooking.professional.user.lastName}`
-      : "Engr. Kenneth O. (Senior Stationed Lead)";
+      : "HandyHub Verified Partner";
 
     const proPhone = dbBooking?.professional?.user?.phone || "+234 812 222 2936";
 
     // Generate deterministic 4-digit OTP code for Checkmate Security
     const referenceSeed = (dbBooking?.reference || cleanQuery).replace(/[^0-9]/g, "");
-    const otpCode = referenceSeed.length >= 4 ? referenceSeed.slice(-4) : "4892";
+    const otpCode = dbBooking?.completionNote || (referenceSeed.length >= 4 ? referenceSeed.slice(-4) : "4892");
+
+    const proRating = dbBooking?.professional?.rating && dbBooking.professional.rating > 0
+      ? dbBooking.professional.rating
+      : 5.0;
+
+    const proTotalJobs = dbBooking?.professional?.totalJobs || 0;
+    const proAvatar = dbBooking?.professional?.user?.avatar || null;
 
     const formattedBooking = {
       id: dbBooking?.reference || cleanQuery,
@@ -122,22 +129,22 @@ export async function GET(request: Request) {
       paymentStatus: dbBooking?.paymentStatus === "SUCCESS" || dbBooking?.paymentStatus === "PAID" ? "PAID (Paystack Escrow)" : "PAID (Escrow Protected)",
       status: bookingStatus,
       currentStep,
-      etaMinutes: bookingStatus === "EN_ROUTE" || !dbBooking ? 15 : 0,
+      etaMinutes: bookingStatus === "EN_ROUTE" || !dbBooking ? 30 : 0,
       otpCode,
       artisan: {
         id: dbBooking?.professionalId || "art_stationed_lead",
         name: proName,
         phone: proPhone,
-        rating: dbBooking?.professional?.rating || 4.9,
-        totalJobs: 142,
-        vehicle: "Verified Service Van (Toyota HiAce • ABJ-882-KY)",
+        rating: proRating,
+        totalJobs: proTotalJobs,
+        vehicle: "Verified Digital ID",
         locationName: dbBooking?.professionalId ? "Nearest Stationed Dispatch Partner" : "Abuja Central Dispatch Hub (En Route)",
-        avatar: "https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=200&q=80",
+        avatar: proAvatar,
       },
       timeline: [
         { step: 1, title: "Booking Confirmed & Escrow Held", time: dbBooking?.createdAt ? new Date(dbBooking.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "Just Now", done: true, active: currentStep === 1 },
-        { step: 2, title: "Artisan Dispatched & En Route", time: currentStep >= 2 ? "En Route (ETA ~15m)" : "Pending", done: currentStep >= 2, active: currentStep === 2 },
-        { step: 3, title: "On-Site OTP Checkmate Verification", time: currentStep >= 3 ? "Arrived" : "Pending Arrival", done: currentStep >= 3, active: currentStep === 3 },
+        { step: 2, title: "Artisan Dispatched & En Route", time: currentStep >= 2 ? "En Route (ETA ~30m)" : "Pending Dispatch", done: currentStep >= 2, active: currentStep === 2 },
+        { step: 3, title: "On-Site OTP Checkmate Verification", time: currentStep >= 3 ? `Arrived (Client OTP: ${otpCode})` : `Pending Arrival (Client OTP: ${otpCode})`, done: currentStep >= 3, active: currentStep === 3 },
         { step: 4, title: "Job Execution & Escrow Release", time: currentStep === 4 ? "Completed" : "Pending Completion", done: currentStep === 4, active: currentStep === 4 },
       ],
     };

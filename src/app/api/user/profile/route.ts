@@ -87,6 +87,9 @@ export async function PUT(request: Request) {
     if (phone !== undefined) {
       updateData.phone = phone.trim();
     }
+    if (body.avatar !== undefined) {
+      updateData.avatar = body.avatar;
+    }
 
     // Check permanent address updates
     if (permanentAddress !== undefined) {

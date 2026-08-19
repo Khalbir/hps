@@ -183,6 +183,7 @@ export async function GET(request: Request) {
       success: true,
       proName,
       userEmail: user?.email || "",
+      avatar: user?.avatar || docs?.passportPhoto || null,
       specialty,
       serviceCategory: specialty,
       skills: skillsList,

@@ -77,10 +77,10 @@ export async function GET(request: Request) {
       status: b.status,
       date: new Date(b.createdAt).toLocaleDateString() + ", " + new Date(b.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       price: `₦${b.estimatedPrice.toLocaleString()}`,
-      pro: b.professional?.user ? `${b.professional.user.firstName} ${b.professional.user.lastName.charAt(0)}.` : "Unassigned",
+      pro: b.professional?.user ? `${b.professional.user.firstName} ${b.professional.user.lastName}` : "Pending Assignment",
     }));
 
-    const activeDispatchesCount = dbBookings.filter((b) => ["PENDING", "ACCEPTED", "IN_PROGRESS"].includes(b.status)).length;
+    const activeDispatchesCount = dbBookings.filter((b) => ["PENDING", "ASSIGNED", "ACCEPTED", "EN_ROUTE", "IN_PROGRESS", "WORK_IN_PROGRESS"].includes(b.status)).length;
 
     return NextResponse.json({
       success: true,

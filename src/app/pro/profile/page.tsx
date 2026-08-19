@@ -19,6 +19,9 @@ export default function ProProfilePage() {
   });
   const [loading, setLoading] = useState(true);
 
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [avatarMsg, setAvatarMsg] = useState("");
+
   const fetchRealProfile = async () => {
     setLoading(true);
     let activeUserId = "";
@@ -43,12 +46,12 @@ export default function ProProfilePage() {
         const initials = parts.length >= 2 ? `${parts[0].charAt(0)}${parts[1].charAt(0)}`.toUpperCase() : fullName.substring(0, 2).toUpperCase();
 
         const isVerified = data.verificationStatus === "VERIFIED";
-
         const isCustomer = data.role === "CUSTOMER" || data.isProfessional === false;
 
         setProfile({
           fullName,
           initials,
+          avatar: data.avatar || null,
           isCustomer,
           specialty: isCustomer ? "HandyHub Customer Account" : (data.specialty || data.serviceCategory || (data.skills && data.skills.length > 0 ? data.skills.join(", ") : "General Skilled Services")),
           location: data.operatingState || data.location || data.city || "Abuja (FCT), Nigeria",
@@ -62,6 +65,43 @@ export default function ProProfilePage() {
       console.warn("Failed to fetch real pro profile:", err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploadingAvatar(true);
+    setAvatarMsg("");
+
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("folder", "avatars");
+
+      const res = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      });
+      const data = await res.json();
+
+      if (res.ok && data.url) {
+        const updateRes = await fetch("/api/user/profile", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ avatar: data.url }),
+        });
+
+        setProfile((prev: any) => ({ ...prev, avatar: data.url }));
+        setAvatarMsg("Profile picture updated successfully! ✅");
+      } else {
+        setAvatarMsg("Upload failed. Please try a smaller image.");
+      }
+    } catch (err) {
+      setAvatarMsg("Upload error. Please check your connection.");
+    } finally {
+      setUploadingAvatar(false);
     }
   };
 
@@ -89,9 +129,64 @@ export default function ProProfilePage() {
       <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr", gap: "var(--space-6)" }}>
         {/* Profile Card */}
         <div className="card" style={{ textAlign: "center" }}>
-          <div style={{ width: 100, height: 100, borderRadius: "50%", background: isCustomer ? "linear-gradient(135deg, #0284C7, #2563EB)" : "linear-gradient(135deg, #0EA5E9, #8B5CF6)", color: "white", fontSize: "32px", fontWeight: "bold", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto var(--space-4)" }}>
-            {profile.initials}
+          {/* Avatar Container with Upload overlay */}
+          <div style={{ position: "relative", width: 104, height: 104, margin: "0 auto var(--space-4)" }}>
+            {profile.avatar ? (
+              <img
+                src={profile.avatar}
+                alt={profile.fullName}
+                style={{ width: "100%", height: "100%", borderRadius: "50%", objectFit: "cover", border: "3px solid #0EA5E9" }}
+              />
+            ) : (
+              <div style={{ width: "100%", height: "100%", borderRadius: "50%", background: isCustomer ? "linear-gradient(135deg, #0284C7, #2563EB)" : "linear-gradient(135deg, #0EA5E9, #8B5CF6)", color: "white", fontSize: "32px", fontWeight: "bold", display: "flex", alignItems: "center", justifyContent: "center", border: "3px solid #0EA5E9" }}>
+                {profile.initials}
+              </div>
+            )}
+
+            {!isCustomer && (
+              <label
+                htmlFor="pro-avatar-input"
+                style={{
+                  position: "absolute",
+                  bottom: 0,
+                  right: 0,
+                  background: "#0EA5E9",
+                  color: "white",
+                  width: 32,
+                  height: 32,
+                  borderRadius: "50%",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  cursor: "pointer",
+                  boxShadow: "0 2px 8px rgba(0,0,0,0.25)",
+                }}
+                title="Upload Profile Picture"
+              >
+                <Camera size={16} />
+              </label>
+            )}
+            <input
+              id="pro-avatar-input"
+              type="file"
+              accept="image/*"
+              style={{ display: "none" }}
+              onChange={handleAvatarUpload}
+              disabled={uploadingAvatar}
+            />
           </div>
+
+          {uploadingAvatar && (
+            <span style={{ fontSize: "11px", color: "#0EA5E9", display: "block", marginBottom: 8 }}>
+              Uploading avatar...
+            </span>
+          )}
+          {avatarMsg && (
+            <span style={{ fontSize: "11px", color: "#10B981", display: "block", marginBottom: 8, fontWeight: "bold" }}>
+              {avatarMsg}
+            </span>
+          )}
+
           <h2 className="h3" style={{ margin: "0 0 4px" }}>{profile.fullName}</h2>
           
           {isCustomer ? (

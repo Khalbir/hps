@@ -209,19 +209,19 @@ function TrackContent() {
             )}
 
             {/* OTP Security Verification Code Card */}
-            <div className="card" style={{ background: "linear-gradient(135deg, rgba(14,165,233,0.12) 0%, rgba(249,115,22,0.12) 100%)", border: "1.5px solid rgba(14,165,233,0.3)" }}>
+            <div className="card" style={{ background: "linear-gradient(135deg, rgba(14,165,233,0.12) 0%, rgba(16,185,129,0.12) 100%)", border: "1.5px solid #0EA5E9" }}>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "var(--space-4)" }}>
-                <div>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8, color: "#0EA5E9", fontWeight: "bold", fontSize: "var(--fs-sm)" }}>
-                    <Key size={18} /> Job Checkmate Security OTP Code
+                <div style={{ flex: 1, minWidth: 260 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, color: "#0EA5E9", fontWeight: "bold", fontSize: "var(--fs-base)" }}>
+                    <Key size={20} /> On-Site OTP Checkmate Verification Code
                   </div>
-                  <p style={{ fontSize: "var(--fs-xs)", color: "var(--text-secondary)", marginTop: 4 }}>
-                    Share this 4-digit OTP code with your professional ONLY when they arrive at your property.
+                  <p style={{ fontSize: "var(--fs-sm)", color: "var(--text-secondary)", marginTop: 6, lineHeight: 1.5 }}>
+                    This 4-digit code is exclusively for you. <strong>Only provide this code to your artisan after you have inspected and are satisfied with the completed work</strong> to authorize escrow payout.
                   </p>
                 </div>
-                <div style={{ padding: "10px 24px", background: "var(--bg-elevated)", border: "2px dashed #0EA5E9", borderRadius: "var(--radius-xl)", textAlign: "center" }}>
-                  <span style={{ fontSize: "10px", color: "var(--text-tertiary)", display: "block", letterSpacing: 1 }}>YOUR OTP CODE</span>
-                  <strong style={{ fontSize: "1.75rem", letterSpacing: 6, color: "#0EA5E9", fontFamily: "var(--font-mono)" }}>
+                <div style={{ padding: "12px 28px", background: "var(--bg-elevated)", border: "2px dashed #0EA5E9", borderRadius: "var(--radius-xl)", textAlign: "center" }}>
+                  <span style={{ fontSize: "11px", color: "var(--text-tertiary)", display: "block", letterSpacing: 1.5, fontWeight: 700 }}>YOUR COMPLETION OTP</span>
+                  <strong style={{ fontSize: "2rem", letterSpacing: 8, color: "#0EA5E9", fontFamily: "var(--font-mono)", display: "block", marginTop: 2 }}>
                     {booking.otpCode}
                   </strong>
                 </div>
@@ -236,11 +236,37 @@ function TrackContent() {
                 </h3>
 
                 <div style={{ display: "flex", alignItems: "center", gap: "var(--space-4)", flexWrap: "wrap", marginBottom: "var(--space-6)" }}>
-                  <img
-                    src={booking.artisan.avatar}
-                    alt={booking.artisan.name}
-                    style={{ width: 72, height: 72, borderRadius: "50%", objectFit: "cover", border: "2.5px solid #0EA5E9" }}
-                  />
+                  {booking.artisan.avatar ? (
+                    <img
+                      src={booking.artisan.avatar}
+                      alt={booking.artisan.name}
+                      style={{ width: 72, height: 72, borderRadius: "50%", objectFit: "cover", border: "2.5px solid #0EA5E9" }}
+                    />
+                  ) : (
+                    <div
+                      style={{
+                        width: 72,
+                        height: 72,
+                        borderRadius: "50%",
+                        background: "linear-gradient(135deg, #0EA5E9, #8B5CF6)",
+                        color: "#FFFFFF",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontSize: "24px",
+                        fontWeight: "bold",
+                        border: "2.5px solid #0EA5E9",
+                        flexShrink: 0,
+                      }}
+                    >
+                      {booking.artisan.name
+                        .split(" ")
+                        .map((w: string) => w.charAt(0))
+                        .slice(0, 2)
+                        .join("")
+                        .toUpperCase() || "KK"}
+                    </div>
+                  )}
 
                   <div style={{ flex: 1, minWidth: 200 }}>
                     <h3 className="h4" style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -255,8 +281,8 @@ function TrackContent() {
                       </span>
                       <span>• {booking.artisan.totalJobs} Jobs Completed</span>
                     </div>
-                    <div style={{ fontSize: "var(--fs-xs)", color: "var(--text-tertiary)", marginTop: 4, display: "flex", alignItems: "center", gap: 6 }}>
-                      <Car size={14} color="#0EA5E9" /> {booking.artisan.vehicle}
+                    <div style={{ fontSize: "var(--fs-xs)", color: "#10B981", marginTop: 4, display: "flex", alignItems: "center", gap: 6, fontWeight: 600 }}>
+                      <ShieldCheck size={15} color="#10B981" /> {booking.artisan.vehicle || "Verified Digital ID"}
                     </div>
                   </div>
 
