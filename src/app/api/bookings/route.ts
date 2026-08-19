@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { checkRateLimit, sanitizeInput } from "@/lib/security";
-import { notifyBookingStatusChange } from "@/lib/notifications";
+import { notifyBookingStatusChange, broadcastNewJobToArtisans } from "@/lib/notifications";
 import { getBookingOtp } from "@/lib/bookingOtp";
 
 export const dynamic = "force-dynamic";
@@ -222,6 +222,20 @@ export async function POST(request: Request) {
         estimatedPrice: calculatedPrice,
         scheduledTime: scheduledTime,
       });
+
+      // Broadcast WhatsApp notification to verified artisans in the vicinity
+      if (!assignedProfessionalId) {
+        await broadcastNewJobToArtisans({
+          id: booking.id,
+          reference: booking.reference,
+          serviceId: service.id,
+          serviceName: fullBooking?.service?.name || service.name,
+          estimatedPrice: calculatedPrice,
+          scheduledDate: booking.scheduledDate,
+          scheduledTime: scheduledTime,
+          address: sanitizedAddress,
+        });
+      }
     } catch (notifErr) {
       console.warn("[Booking Creation Notification Warning]:", notifErr);
     }

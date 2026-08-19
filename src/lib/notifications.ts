@@ -1,5 +1,16 @@
 import nodemailer from "nodemailer";
 import { prisma } from "@/lib/db";
+import {
+  sendWhatsAppAlert,
+  sendArtisanNewJobAlert,
+  sendArtisanEscrowPayoutAlert,
+  sendClientBookingConfirmedAlert,
+  sendClientArtisanEnRouteAlert,
+  sendClientWorkInProgressAlert,
+  sendClientCompletionOtpAlert,
+} from "@/lib/whatsapp";
+import { getBookingOtp } from "@/lib/bookingOtp";
+import { formatDigitalId } from "@/lib/digitalId";
 
 export interface NotificationPayload {
   userId: string;
@@ -37,7 +48,7 @@ export function formatNaira(amount: number): string {
  * Generate Direct WhatsApp Click-to-Chat Link for Customer Support Concierge
  */
 export function getWhatsAppSupportLink(bookingRef?: string, stage?: string): string {
-  const supportPhone = process.env.NEXT_PUBLIC_SUPPORT_WHATSAPP || "23480042639482";
+  const supportPhone = process.env.NEXT_PUBLIC_SUPPORT_WHATSAPP || "2348122222936";
   const cleanPhone = supportPhone.replace(/[^0-9]/g, "");
   const text = encodeURIComponent(
     `Hello HandyHub Pro Customer Support, I am inquiring about Booking #${bookingRef || "N/A"}${stage ? ` (Current Stage: ${stage})` : ""}. Please assist me.`
@@ -85,17 +96,14 @@ export async function sendMultiChannelNotification(payload: NotificationPayload)
 
     // 3. WhatsApp Notification Service Dispatcher
     if (channels.includes("WHATSAPP") && payload.recipientPhone) {
-      const waSent = await sendWhatsAppNotification({
-        phone: payload.recipientPhone,
-        name: payload.recipientName || "HandyHub User",
+      const waRes = await sendWhatsAppAlert({
+        recipientPhone: payload.recipientPhone,
+        recipientName: payload.recipientName || "HandyHub User",
         title: payload.title,
-        message: payload.message,
+        body: payload.message,
         bookingRef: payload.bookingRef,
-        stageName: payload.stageName,
-        artisanInfo: payload.artisanInfo,
-        metadata: payload.metadata,
       });
-      results.WHATSAPP = waSent;
+      results.WHATSAPP = waRes.success;
     }
   } catch (error) {
     console.error("[Notification Dispatch Error]:", error);
@@ -135,7 +143,7 @@ async function sendEmailNotification(params: {
   });
 
   const trackingUrl = params.bookingRef
-    ? `https://handyhubpro.ng/bookings/track?ref=${encodeURIComponent(params.bookingRef)}`
+    ? `https://handyhubpro.ng/track?ref=${encodeURIComponent(params.bookingRef)}`
     : "https://handyhubpro.ng/bookings";
 
   const waSupportUrl = getWhatsAppSupportLink(params.bookingRef, params.stageName);
@@ -148,8 +156,8 @@ async function sendEmailNotification(params: {
       : params.stageName === "EN_ROUTE" || params.stageName === "ON_THE_WAY"
       ? 2
       : params.stageName === "ASSIGNED" || params.stageName === "CONFIRMED"
-      ? 2
-      : 1;
+      ? 1
+      : 0;
 
   const htmlContent = `
     <!DOCTYPE html>
@@ -157,46 +165,36 @@ async function sendEmailNotification(params: {
       <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>${params.title}</title>
         <style>
-          body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #0B1120; margin: 0; padding: 24px 12px; color: #E2E8F0; }
-          .container { max-width: 600px; margin: 0 auto; background: #1E293B; border-radius: 16px; border: 1px solid #334155; overflow: hidden; box-shadow: 0 20px 40px rgba(0,0,0,0.4); }
-          .header { background: linear-gradient(135deg, #0284C7 0%, #0F172A 100%); padding: 32px 24px; text-align: center; color: #ffffff; border-bottom: 1px solid #334155; }
-          .badge-pill { background: rgba(14, 165, 233, 0.2); border: 1px solid #38BDF8; color: #38BDF8; padding: 4px 14px; border-radius: 20px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; display: inline-block; margin-bottom: 12px; }
-          .title { font-size: 24px; font-weight: 800; margin: 0 0 6px 0; letter-spacing: -0.02em; color: #FFFFFF; }
-          .ref-tag { font-size: 13px; color: #94A3B8; }
-          .content { padding: 28px 24px; }
-          .greeting { font-size: 16px; font-weight: 700; color: #F8FAFC; margin-bottom: 14px; }
-          .message-box { background: #0F172A; border-left: 4px solid #0EA5E9; padding: 18px; border-radius: 8px; margin-bottom: 24px; font-size: 15px; line-height: 1.6; color: #CBD5E1; }
-          
-          /* Visual Progress Tracker */
-          .tracker-wrap { background: #0F172A; padding: 16px; border-radius: 10px; margin-bottom: 24px; border: 1px solid #334155; }
-          .tracker-title { font-size: 11px; color: #94A3B8; text-transform: uppercase; font-weight: 700; margin-bottom: 12px; }
-          .steps-row { display: flex; justify-content: space-between; position: relative; }
-          .step-item { flex: 1; text-align: center; font-size: 11px; color: #64748B; font-weight: 600; }
-          .step-item.active { color: #38BDF8; font-weight: 700; }
-          .step-item.done { color: #10B981; }
-
-          /* Artisan Dossier Card */
-          .artisan-card { background: #0F172A; border: 1px solid #0EA5E9; border-radius: 12px; padding: 16px; margin-bottom: 24px; }
-          .artisan-title { font-size: 11px; color: #0EA5E9; text-transform: uppercase; font-weight: 800; margin-bottom: 8px; }
-          .artisan-name { font-size: 16px; font-weight: 700; color: #F8FAFC; }
+          body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #0F172A; color: #F8FAFC; margin: 0; padding: 24px; }
+          .container { max-width: 580px; margin: 0 auto; background-color: #1E293B; border-radius: 16px; border: 1px solid #334155; overflow: hidden; }
+          .header { background: linear-gradient(135deg, #0EA5E9, #2563EB); padding: 32px 24px; text-align: center; }
+          .brand { font-size: 20px; font-weight: 800; color: #FFFFFF; letter-spacing: 0.5px; margin-bottom: 8px; }
+          .title { font-size: 22px; font-weight: 700; color: #FFFFFF; margin: 0; }
+          .content { padding: 32px 24px; }
+          .greeting { font-size: 16px; font-weight: 600; color: #F8FAFC; margin-bottom: 12px; }
+          .message-box { background-color: #0F172A; border-left: 4px solid #0EA5E9; padding: 16px; border-radius: 8px; font-size: 15px; line-height: 1.6; color: #CBD5E1; margin-bottom: 24px; }
+          .tracker-wrap { background-color: #0F172A; border: 1px solid #334155; border-radius: 12px; padding: 18px; margin-bottom: 24px; }
+          .tracker-title { font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; color: #94A3B8; margin-bottom: 12px; font-weight: 700; }
+          .artisan-card { background: linear-gradient(145deg, #1E293B, #0F172A); border: 1px solid #0EA5E9; border-radius: 12px; padding: 16px; margin-bottom: 24px; }
+          .artisan-title { font-size: 11px; color: #38BDF8; text-transform: uppercase; font-weight: 700; margin-bottom: 6px; }
+          .artisan-name { font-size: 17px; font-weight: 700; color: #F8FAFC; }
           .artisan-meta { font-size: 13px; color: #94A3B8; margin-top: 4px; }
-
-          /* Action Buttons */
-          .cta-btn { display: block; width: 100%; box-sizing: border-box; background: linear-gradient(135deg, #0EA5E9 0%, #0284C7 100%); color: #FFFFFF !important; text-decoration: none; padding: 14px; border-radius: 10px; text-align: center; font-weight: 700; font-size: 14px; margin-bottom: 12px; }
-          .wa-btn { display: block; width: 100%; box-sizing: border-box; background: #25D366; color: #FFFFFF !important; text-decoration: none; padding: 12px; border-radius: 10px; text-align: center; font-weight: 700; font-size: 13px; margin-bottom: 24px; }
-
-          .meta-table { width: 100%; border-collapse: collapse; margin-top: 16px; font-size: 13px; }
-          .meta-table td { padding: 10px 12px; border-bottom: 1px solid #334155; }
-          .meta-label { color: #94A3B8; font-weight: 500; width: 38%; }
-          .meta-val { color: #F8FAFC; font-weight: 700; }
-          .footer { background: #0F172A; padding: 24px; text-align: center; font-size: 12px; color: #64748B; border-top: 1px solid #334155; line-height: 1.6; }
+          .cta-btn { display: block; width: 100%; box-sizing: border-box; background-color: #0EA5E9; color: #FFFFFF; text-align: center; padding: 14px; border-radius: 8px; font-weight: 700; font-size: 15px; text-decoration: none; margin-bottom: 12px; }
+          .wa-btn { display: block; width: 100%; box-sizing: border-box; background-color: #22C55E; color: #FFFFFF; text-align: center; padding: 12px; border-radius: 8px; font-weight: 600; font-size: 14px; text-decoration: none; margin-bottom: 24px; }
+          .meta-table { width: 100%; border-collapse: collapse; margin-top: 16px; }
+          .meta-table td { padding: 8px 0; border-bottom: 1px solid #334155; font-size: 14px; }
+          .meta-label { color: #94A3B8; }
+          .meta-val { color: #F8FAFC; font-weight: 600; text-align: right; }
+          .footer { padding: 24px; text-align: center; font-size: 12px; color: #64748B; border-top: 1px solid #334155; line-height: 1.5; }
+          .ref-tag { display: inline-block; background: rgba(255, 255, 255, 0.2); padding: 4px 10px; border-radius: 20px; font-size: 12px; color: #FFFFFF; margin-top: 8px; }
         </style>
       </head>
       <body>
         <div class="container">
           <div class="header">
-            <div class="badge-pill">🛡️ HandyHub Pro Concierge</div>
+            <div class="brand">HANDYHUB PRO SOLUTIONS</div>
             <h1 class="title">${params.title}</h1>
             ${params.bookingRef ? `<div class="ref-tag">Booking Reference: <strong>#${params.bookingRef}</strong></div>` : ""}
           </div>
@@ -235,7 +233,7 @@ async function sendEmailNotification(params: {
             </a>
 
             <a href="${waSupportUrl}" class="wa-btn" target="_blank">
-              💬 Chat Support on WhatsApp (+234 800 HANDY HUB)
+              💬 Chat Support on WhatsApp (+234 812 HANDY HUB)
             </a>
 
             ${
@@ -259,7 +257,7 @@ async function sendEmailNotification(params: {
           </div>
           <div class="footer">
             © ${new Date().getFullYear()} HandyHub Pro Solutions Nigeria. Abuja Headquarters & Pan-Nigeria Expansion.<br>
-            Official Support: support@handyhubpro.ng • Phone: +234 800 42639 482<br>
+            Official Support: support@handyhubpro.ng • Phone: +234 812 222 2936<br>
             Your payment is held safely in escrow until you approve the completed service.
           </div>
         </div>
@@ -277,12 +275,7 @@ async function sendEmailNotification(params: {
       });
       return true;
     } else {
-      console.log(`\n----------------------------------------`);
-      console.log(`📧 [LIVE EMAIL NOTIFICATION] To: ${params.to}`);
-      console.log(`Subject: ${params.subject}`);
-      console.log(`Message: ${params.message}`);
-      console.log(`Tracking Link: ${trackingUrl}`);
-      console.log(`----------------------------------------\n`);
+      console.log(`\n📧 [EMAIL NOTIFICATION] To: ${params.to} | Subject: ${params.subject}`);
       return true;
     }
   } catch (err) {
@@ -292,96 +285,51 @@ async function sendEmailNotification(params: {
 }
 
 /**
- * WhatsApp Notification Service Dispatcher (Termii, Meta Cloud API, or Twilio)
+ * Broadcast new open booking to verified artisans in the vicinity
  */
-async function sendWhatsAppNotification(params: {
-  phone: string;
-  name: string;
-  title: string;
-  message: string;
-  bookingRef?: string;
-  stageName?: string;
-  artisanInfo?: {
-    name: string;
-    phone: string;
-    trade: string;
-    rating?: number;
-  };
-  metadata?: Record<string, any>;
-}): Promise<boolean> {
-  const formattedPhone = params.phone.replace(/^0/, "234").replace(/[^0-9]/g, "");
-  const trackingUrl = params.bookingRef
-    ? `https://handyhubpro.ng/bookings/track?ref=${encodeURIComponent(params.bookingRef)}`
-    : "https://handyhubpro.ng/bookings";
-  const waSupportLink = getWhatsAppSupportLink(params.bookingRef, params.stageName);
+export async function broadcastNewJobToArtisans(booking: {
+  id: string;
+  reference: string;
+  serviceId: string;
+  serviceName: string;
+  estimatedPrice: number;
+  scheduledDate: string | Date;
+  scheduledTime?: string;
+  address?: string;
+}) {
+  try {
+    const verifiedPros = await prisma.professional.findMany({
+      where: {
+        verificationStatus: { in: ["VERIFIED", "APPROVED"] },
+        isAvailable: true,
+      },
+      include: {
+        user: { select: { id: true, firstName: true, lastName: true, phone: true, email: true } },
+      },
+      take: 5,
+    });
 
-  const waMessage =
-    `🔔 *HANDYHUB PRO LIVE NOTIFICATION*\n` +
-    `*${params.title}*\n\n` +
-    `Hello ${params.name},\n` +
-    `${params.message}\n\n` +
-    (params.artisanInfo
-      ? `👨‍🔧 *Assigned Artisan:* ${params.artisanInfo.name}\n` +
-        `📞 *Artisan Phone:* ${params.artisanInfo.phone}\n` +
-        `🛠️ *Trade:* ${params.artisanInfo.trade}\n\n`
-      : "") +
-    (params.bookingRef ? `🔖 *Booking Ref:* #${params.bookingRef}\n` : "") +
-    `🗺️ *Live GPS Radar & Tracking:*\n${trackingUrl}\n\n` +
-    `💬 *Customer Support Concierge:*\n${waSupportLink}\n\n` +
-    `_HandyHub Pro Solutions • Escrow-Protected On-Demand Services_`;
+    const dateStr = typeof booking.scheduledDate === "string"
+      ? booking.scheduledDate
+      : new Date(booking.scheduledDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 
-  // 1. Termii WhatsApp API Integration
-  const termiiKey = process.env.TERMII_API_KEY;
-  if (termiiKey) {
-    try {
-      await fetch("https://api.ng.termii.com/api/sms/send", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          to: formattedPhone,
-          from: "HandyHub",
-          sms: waMessage,
-          type: "plain",
-          channel: "whatsapp",
-          api_key: termiiKey,
-        }),
-      });
-      return true;
-    } catch (err) {
-      console.warn("[Termii WhatsApp API Error]:", err);
+    for (const pro of verifiedPros) {
+      if (pro.user?.phone) {
+        await sendArtisanNewJobAlert({
+          artisanPhone: pro.user.phone,
+          artisanName: `${pro.user.firstName} ${pro.user.lastName}`.trim(),
+          serviceName: booking.serviceName,
+          location: booking.address || "Abuja FCT / Covered Area",
+          priceNgn: booking.estimatedPrice,
+          scheduledDate: dateStr,
+          scheduledTime: booking.scheduledTime || "Flexible / As Agreed",
+          bookingRef: booking.reference,
+        }).catch((err) => console.warn("[Broadcast Artisan WhatsApp Error]:", err));
+      }
     }
+  } catch (err) {
+    console.warn("[Broadcast New Job Error]:", err);
   }
-
-  // 2. Meta WhatsApp Cloud API Integration
-  const waToken = process.env.WHATSAPP_CLOUD_TOKEN;
-  const waPhoneId = process.env.WHATSAPP_PHONE_NUMBER_ID;
-  if (waToken && waPhoneId) {
-    try {
-      await fetch(`https://graph.facebook.com/v18.0/${waPhoneId}/messages`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${waToken}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          messaging_product: "whatsapp",
-          to: formattedPhone,
-          type: "text",
-          text: { body: waMessage },
-        }),
-      });
-      return true;
-    } catch (err) {
-      console.warn("[Meta WhatsApp API Error]:", err);
-    }
-  }
-
-  // 3. Fallback Log (Instant Visibility)
-  console.log(`\n========================================`);
-  console.log(`💬 [WHATSAPP DISPATCH TO: +${formattedPhone}]`);
-  console.log(waMessage);
-  console.log(`========================================\n`);
-  return true;
 }
 
 /**
@@ -396,14 +344,17 @@ export async function notifyBookingStatusChange(booking: {
   professional?: {
     id?: string;
     userId?: string;
+    digitalId?: string | null;
     yearsExperience?: number;
     rating?: number;
     user: { id?: string; email: string; phone?: string | null; firstName: string; lastName: string };
   } | null;
   service?: { name: string } | null;
   estimatedPrice: number;
+  scheduledDate?: string | Date;
   scheduledTime?: string;
   address?: string;
+  completionNote?: string | null;
 }) {
   const customerName = booking.customer
     ? `${booking.customer.firstName} ${booking.customer.lastName}`.trim()
@@ -413,7 +364,8 @@ export async function notifyBookingStatusChange(booking: {
     ? `${booking.professional.user.firstName} ${booking.professional.user.lastName}`.trim()
     : "HandyHub Pro Verified Artisan";
 
-  const proPhone = booking.professional?.user.phone || "+234 800 HANDY HUB";
+  const proPhone = booking.professional?.user.phone || "+234 812 222 2936";
+  const proDigitalId = formatDigitalId(booking.professional as any);
   const amountStr = formatNaira(booking.estimatedPrice);
   const serviceName = booking.service?.name || "Professional Service";
   const stage = booking.status.toUpperCase();
@@ -427,6 +379,92 @@ export async function notifyBookingStatusChange(booking: {
       }
     : undefined;
 
+  const dateStr = booking.scheduledDate
+    ? typeof booking.scheduledDate === "string"
+      ? booking.scheduledDate
+      : new Date(booking.scheduledDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+    : "Scheduled Date";
+
+  // =================================================================
+  // SPECIALIZED WHATSAPP WORKFLOW DISPATCHERS
+  // =================================================================
+
+  // 1. CLIENT WHATSAPP ALERTS
+  if (booking.customer?.phone) {
+    const custPhone = booking.customer.phone;
+
+    if (stage === "PENDING") {
+      await sendClientBookingConfirmedAlert({
+        clientPhone: custPhone,
+        clientName: customerName,
+        serviceName,
+        bookingRef: booking.reference,
+        amountNgn: booking.estimatedPrice,
+        scheduledDate: dateStr,
+        scheduledTime: booking.scheduledTime || "As scheduled",
+        serviceAddress: booking.address || "Client Specified Location",
+      }).catch((e) => console.warn("[Client WhatsApp PENDING Error]:", e));
+    } else if (stage === "EN_ROUTE" || stage === "ON_THE_WAY") {
+      await sendClientArtisanEnRouteAlert({
+        clientPhone: custPhone,
+        clientName: customerName,
+        artisanName: proName,
+        artisanPhone: proPhone,
+        digitalId: proDigitalId,
+        serviceName,
+        bookingRef: booking.reference,
+        etaMinutes: 25,
+      }).catch((e) => console.warn("[Client WhatsApp EN_ROUTE Error]:", e));
+    } else if (stage === "WORK_IN_PROGRESS" || stage === "IN_PROGRESS") {
+      await sendClientWorkInProgressAlert({
+        clientPhone: custPhone,
+        clientName: customerName,
+        artisanName: proName,
+        serviceName,
+        bookingRef: booking.reference,
+      }).catch((e) => console.warn("[Client WhatsApp WORK_IN_PROGRESS Error]:", e));
+    } else if (stage === "COMPLETED") {
+      const otpCode = getBookingOtp(booking);
+      await sendClientCompletionOtpAlert({
+        clientPhone: custPhone,
+        clientName: customerName,
+        artisanName: proName,
+        serviceName,
+        bookingRef: booking.reference,
+        otpCode,
+      }).catch((e) => console.warn("[Client WhatsApp COMPLETED Error]:", e));
+    }
+  }
+
+  // 2. ARTISAN WHATSAPP ALERTS
+  if (booking.professional?.user?.phone) {
+    const artisanPhone = booking.professional.user.phone;
+
+    if (stage === "ASSIGNED" || stage === "CONFIRMED") {
+      await sendArtisanNewJobAlert({
+        artisanPhone,
+        artisanName: proName,
+        serviceName,
+        location: booking.address || "Abuja FCT / Covered Area",
+        priceNgn: booking.estimatedPrice,
+        scheduledDate: dateStr,
+        scheduledTime: booking.scheduledTime || "As Agreed",
+        bookingRef: booking.reference,
+      }).catch((e) => console.warn("[Artisan WhatsApp ASSIGNED Error]:", e));
+    } else if (stage === "ESCROW_RELEASED") {
+      await sendArtisanEscrowPayoutAlert({
+        artisanPhone,
+        artisanName: proName,
+        bookingRef: booking.reference,
+        serviceName,
+        amountNgn: booking.estimatedPrice,
+      }).catch((e) => console.warn("[Artisan WhatsApp ESCROW_RELEASED Error]:", e));
+    }
+  }
+
+  // =================================================================
+  // IN-APP & EMAIL LIFECYCLE FALLBACK
+  // =================================================================
   const stageConfigurations: Record<
     string,
     { title: string; customerMsg: string; proMsg?: string; stageName: string }
@@ -439,7 +477,7 @@ export async function notifyBookingStatusChange(booking: {
     ASSIGNED: {
       stageName: "ARTISAN_ASSIGNED",
       title: "Artisan Partner Matched & Assigned 👨‍🔧",
-      customerMsg: `Great news! ${proName} has been assigned to your ${serviceName} booking #${booking.reference}. They have been notified and are preparing tools and equipment.`,
+      customerMsg: `Great news! ${proName} has been assigned to your ${serviceName} booking #${booking.reference}. They have been notified on WhatsApp and are preparing tools and equipment.`,
       proMsg: `New Job Assigned! You have been assigned to booking #${booking.reference} for ${serviceName} (${amountStr}) in Abuja/Expansion. Check job details to accept.`,
     },
     CONFIRMED: {
@@ -475,7 +513,7 @@ export async function notifyBookingStatusChange(booking: {
     COMPLETED: {
       stageName: "JOB_COMPLETED",
       title: "Job Completed! Please Inspect & Confirm 🌟",
-      customerMsg: `${proName} has marked your ${serviceName} job #${booking.reference} as completed! Please inspect the work and confirm to release escrow payout.`,
+      customerMsg: `${proName} has marked your ${serviceName} job #${booking.reference} as completed! Please inspect the work and share your 4-digit OTP to release escrow payout.`,
       proMsg: `Job #${booking.reference} marked completed! Payout will be disbursed upon client OTP confirmation.`,
     },
     ESCROW_RELEASED: {
@@ -503,7 +541,7 @@ export async function notifyBookingStatusChange(booking: {
     customerMsg: `Your booking #${booking.reference} status is now ${stage}.`,
   };
 
-  // 1. Notify Customer (Client) across Email, WhatsApp & In-App
+  // 1. Notify Customer (Client) via In-App and Email
   if (booking.customer) {
     await sendMultiChannelNotification({
       userId: booking.customerId,
@@ -527,7 +565,7 @@ export async function notifyBookingStatusChange(booking: {
     });
   }
 
-  // 2. Notify Professional (Artisan)
+  // 2. Notify Professional (Artisan) via In-App and Email
   if (booking.professional && config.proMsg) {
     let proUserId = booking.professional.user?.id || (booking.professional as any)?.userId;
     if (!proUserId && booking.professional.user?.email) {
