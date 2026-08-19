@@ -275,9 +275,19 @@ function TrackContent() {
                         VERIFIED PRO
                       </span>
                     </h3>
-                    <div style={{ display: "flex", alignItems: "center", gap: 12, fontSize: "var(--fs-xs)", color: "var(--text-secondary)", marginTop: 4 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10, fontSize: "var(--fs-xs)", color: "var(--text-secondary)", marginTop: 4, flexWrap: "wrap" }}>
                       <span style={{ color: "#F59E0B", fontWeight: "bold", display: "flex", alignItems: "center", gap: 4 }}>
-                        <Star size={14} fill="#F59E0B" /> {booking.artisan.rating} Rating
+                        <span style={{ display: "inline-flex", gap: 2 }}>
+                          {[1, 2, 3, 4, 5].map((s) => (
+                            <Star
+                              key={s}
+                              size={14}
+                              fill={s <= Math.round(Number(booking.artisan.rating) || 5) ? "#F59E0B" : "transparent"}
+                              color={s <= Math.round(Number(booking.artisan.rating) || 5) ? "#F59E0B" : "rgba(245,158,11,0.3)"}
+                            />
+                          ))}
+                        </span>
+                        <span>{Number(booking.artisan.rating || 5.0).toFixed(1)} Rating</span>
                       </span>
                       <span>• {booking.artisan.totalJobs} Jobs Completed</span>
                     </div>
@@ -286,8 +296,17 @@ function TrackContent() {
                     </div>
                   </div>
 
-                  {/* Direct Contact Buttons */}
+                  {/* Direct Contact & Rating Buttons */}
                   <div style={{ display: "flex", gap: "var(--space-3)", flexWrap: "wrap" }}>
+                    <button
+                      type="button"
+                      onClick={() => setReviewModalOpen(true)}
+                      className="btn btn-secondary btn-md"
+                      style={{ color: "#F59E0B", borderColor: "rgba(245,158,11,0.5)", display: "inline-flex", alignItems: "center", gap: 6 }}
+                      title="Rate & Review Artisan"
+                    >
+                      <Star size={16} fill="#F59E0B" /> Rate Artisan
+                    </button>
                     <a
                       href={`tel:${booking.artisan.phone}`}
                       className="btn btn-primary btn-md"

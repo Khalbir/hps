@@ -53,6 +53,10 @@ export default function ProProfilePage() {
           initials,
           avatar: data.avatar || null,
           isCustomer,
+          rating: data.rating || 5.0,
+          totalReviews: data.totalReviews || 0,
+          totalJobs: data.completedJobs || 0,
+          reviews: data.reviews || [],
           specialty: isCustomer ? "HandyHub Customer Account" : (data.specialty || data.serviceCategory || (data.skills && data.skills.length > 0 ? data.skills.join(", ") : "General Skilled Services")),
           location: data.operatingState || data.location || data.city || "Abuja (FCT), Nigeria",
           verificationStatus: isCustomer ? "CUSTOMER" : data.verificationStatus,
@@ -221,6 +225,27 @@ export default function ProProfilePage() {
             </span>
           )}
 
+          {!isCustomer && (
+            <div style={{ margin: "14px 0", padding: "12px", background: "var(--bg-tertiary)", borderRadius: "12px", border: "1px solid var(--border-primary)" }}>
+              <div style={{ display: "inline-flex", gap: 3, marginBottom: 4 }}>
+                {[1, 2, 3, 4, 5].map((s) => (
+                  <Star
+                    key={s}
+                    size={16}
+                    fill={s <= Math.round(Number(profile.rating) || 5) ? "#F59E0B" : "transparent"}
+                    color={s <= Math.round(Number(profile.rating) || 5) ? "#F59E0B" : "rgba(245,158,11,0.3)"}
+                  />
+                ))}
+              </div>
+              <span style={{ fontSize: "14px", fontWeight: 700, color: "#F59E0B", display: "block" }}>
+                {Number(profile.rating || 5.0).toFixed(1)}★ Overall Star Rating
+              </span>
+              <span style={{ fontSize: "12px", color: "var(--text-secondary)" }}>
+                {profile.totalReviews > 0 ? `${profile.totalReviews} verified client reviews • ${profile.totalJobs} completed jobs` : "5.0 initial verified rating"}
+              </span>
+            </div>
+          )}
+
           <p style={{ fontSize: "var(--fs-sm)", color: "var(--text-secondary)", margin: "0 0 8px 0" }}>
             Account Type: <strong style={{ color: "var(--color-primary, #0284C7)", fontWeight: 700 }}>{profile.specialty}</strong>
           </p>
@@ -247,32 +272,67 @@ export default function ProProfilePage() {
             </div>
           </div>
         ) : (
-          <div className="card">
-            <h3 className="h4" style={{ marginBottom: "var(--space-4)" }}>Verified Qualifications</h3>
-            <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)", padding: "var(--space-3)", background: "var(--bg-tertiary)", borderRadius: "var(--radius-lg)" }}>
-                <ShieldCheck size={20} color={isVerified ? "#10B981" : "#F59E0B"} />
-                <div>
-                  <strong style={{ fontSize: "var(--fs-sm)", display: "block" }}>Government Identity & NIN Audit</strong>
-                  <span style={{ fontSize: "var(--fs-xs)", color: isVerified ? "#10B981" : "#F59E0B" }}>{profile.ninStatus}</span>
+          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)" }}>
+            <div className="card">
+              <h3 className="h4" style={{ marginBottom: "var(--space-4)" }}>Verified Qualifications</h3>
+              <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)", padding: "var(--space-3)", background: "var(--bg-tertiary)", borderRadius: "var(--radius-lg)" }}>
+                  <ShieldCheck size={20} color={isVerified ? "#10B981" : "#F59E0B"} />
+                  <div>
+                    <strong style={{ fontSize: "var(--fs-sm)", display: "block" }}>Government Identity & NIN Audit</strong>
+                    <span style={{ fontSize: "var(--fs-xs)", color: isVerified ? "#10B981" : "#F59E0B" }}>{profile.ninStatus}</span>
+                  </div>
                 </div>
+
+                <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)", padding: "var(--space-3)", background: "var(--bg-tertiary)", borderRadius: "var(--radius-lg)" }}>
+                  <Award size={20} color={isVerified ? "#10B981" : "#F59E0B"} />
+                  <div>
+                    <strong style={{ fontSize: "var(--fs-sm)", display: "block" }}>Trade Certificate & Skill Quiz</strong>
+                    <span style={{ fontSize: "var(--fs-xs)", color: isVerified ? "#10B981" : "#F59E0B" }}>{profile.tradeQuizStatus}</span>
+                  </div>
+                </div>
+
+                <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)", padding: "var(--space-3)", background: "var(--bg-tertiary)", borderRadius: "var(--radius-lg)" }}>
+                  <FileText size={20} color={isVerified ? "#10B981" : "#F59E0B"} />
+                  <div>
+                    <strong style={{ fontSize: "var(--fs-sm)", display: "block" }}>Guarantor References</strong>
+                    <span style={{ fontSize: "var(--fs-xs)", color: isVerified ? "#10B981" : "#F59E0B" }}>{profile.guarantorStatus}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Client Reviews Feed on Profile */}
+            <div className="card">
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "var(--space-4)" }}>
+                <h3 className="h4" style={{ margin: 0 }}>Client Feedback & Reviews</h3>
+                <span style={{ fontSize: "12px", color: "#F59E0B", fontWeight: 700 }}>
+                  {profile.reviews?.length || 0} Reviews
+                </span>
               </div>
 
-              <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)", padding: "var(--space-3)", background: "var(--bg-tertiary)", borderRadius: "var(--radius-lg)" }}>
-                <Award size={20} color={isVerified ? "#10B981" : "#F59E0B"} />
-                <div>
-                  <strong style={{ fontSize: "var(--fs-sm)", display: "block" }}>Trade Certificate & Skill Quiz</strong>
-                  <span style={{ fontSize: "var(--fs-xs)", color: isVerified ? "#10B981" : "#F59E0B" }}>{profile.tradeQuizStatus}</span>
+              {!profile.reviews || profile.reviews.length === 0 ? (
+                <p style={{ margin: 0, fontSize: "13px", color: "var(--text-secondary)", textAlign: "center", padding: "16px" }}>
+                  No customer reviews received yet. Clean and punctual job execution will earn you top 5-star ratings!
+                </p>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                  {profile.reviews.map((r: any) => (
+                    <div key={r.id} style={{ padding: "12px", background: "var(--bg-tertiary)", borderRadius: "8px", border: "1px solid var(--border-primary)" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+                        <strong style={{ fontSize: "13px" }}>{r.clientName}</strong>
+                        <div style={{ display: "flex", alignItems: "center", gap: 3 }}>
+                          <Star size={12} fill="#F59E0B" color="#F59E0B" />
+                          <span style={{ fontSize: "12px", fontWeight: 700, color: "#F59E0B" }}>{r.rating}.0★</span>
+                        </div>
+                      </div>
+                      <p style={{ margin: 0, fontSize: "12px", color: "var(--text-secondary)", fontStyle: "italic" }}>
+                        "{r.comment}"
+                      </p>
+                    </div>
+                  ))}
                 </div>
-              </div>
-
-              <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)", padding: "var(--space-3)", background: "var(--bg-tertiary)", borderRadius: "var(--radius-lg)" }}>
-                <FileText size={20} color={isVerified ? "#10B981" : "#F59E0B"} />
-                <div>
-                  <strong style={{ fontSize: "var(--fs-sm)", display: "block" }}>Guarantor References</strong>
-                  <span style={{ fontSize: "var(--fs-xs)", color: isVerified ? "#10B981" : "#F59E0B" }}>{profile.guarantorStatus}</span>
-                </div>
-              </div>
+              )}
             </div>
           </div>
         )}

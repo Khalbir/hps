@@ -5,7 +5,7 @@ import Link from "next/link";
 import { ProLayoutShell } from "@/components/layout/ProLayoutShell";
 import {
   ShieldCheck, Clock, AlertTriangle, ArrowRight,
-  RefreshCw, Inbox, CheckCircle2, XCircle
+  RefreshCw, Inbox, CheckCircle2, XCircle, Star, Award, TrendingUp, ThumbsUp
 } from "lucide-react";
 
 export default function ProDashboard() {
@@ -19,6 +19,8 @@ export default function ProDashboard() {
     pendingEscrow: 0,
     completedJobs: 0,
     rating: 5.0,
+    totalReviews: 0,
+    reviews: [],
     activeJobs: [],
   });
 
@@ -234,26 +236,7 @@ export default function ProDashboard() {
         </Link>
       </div>
 
-      {/* High-Confidence Platform Stats Banner */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "12px", background: "#1E293B", border: "1px solid #334155", borderRadius: "16px", padding: "16px 20px", marginBottom: "20px" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          <ShieldCheck size={18} color="#10B981" />
-          <span style={{ fontSize: "13px", color: "#F8FAFC", fontWeight: 700 }}>327 Verified Professionals</span>
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          <CheckCircle2 size={18} color="#0EA5E9" />
-          <span style={{ fontSize: "13px", color: "#F8FAFC", fontWeight: 700 }}>1,828 Completed Dispatches</span>
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          <span style={{ color: "#F59E0B", fontWeight: 700, fontSize: "13px" }}>4.9★ Average Rating</span>
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          <Clock size={18} color="#8B5CF6" />
-          <span style={{ fontSize: "13px", color: "#F8FAFC", fontWeight: 700 }}>15-Min Rapid Dispatch SLA</span>
-        </div>
-      </div>
-
-      {/* Real Database Metrics Row */}
+      {/* Real Database Metrics Row with 5-Star Rating Card */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "var(--space-4)", marginBottom: "var(--space-6)" }}>
         <div className="card" style={{ padding: "var(--space-4)", borderLeft: "4px solid #0EA5E9" }}>
           <span style={{ fontSize: "var(--fs-xs)", color: "var(--text-tertiary)" }}>Wallet Balance</span>
@@ -267,14 +250,63 @@ export default function ProDashboard() {
           <span style={{ fontSize: "var(--fs-xs)", color: "#10B981" }}>Completed Jobs</span>
           <h3 className="h3" style={{ margin: "4px 0 0", color: "#10B981" }}>{proData.completedJobs || 0}</h3>
         </div>
-        <div className="card" style={{ padding: "var(--space-4)", borderLeft: "4px solid #8B5CF6" }}>
-          <span style={{ fontSize: "var(--fs-xs)", color: "#8B5CF6" }}>Customer Rating</span>
-          <h3 className="h3" style={{ margin: "4px 0 0", color: "#8B5CF6" }}>{proData.rating || 5.0}★</h3>
+        <div className="card" style={{ padding: "var(--space-4)", borderLeft: "4px solid #F59E0B" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <span style={{ fontSize: "var(--fs-xs)", color: "#F59E0B", fontWeight: 700 }}>Client Star Rating</span>
+            <div style={{ display: "inline-flex", gap: 1 }}>
+              {[1, 2, 3, 4, 5].map((s) => (
+                <Star
+                  key={s}
+                  size={12}
+                  fill={s <= Math.round(Number(proData.rating) || 5) ? "#F59E0B" : "transparent"}
+                  color={s <= Math.round(Number(proData.rating) || 5) ? "#F59E0B" : "rgba(245,158,11,0.3)"}
+                />
+              ))}
+            </div>
+          </div>
+          <h3 className="h3" style={{ margin: "4px 0 0", color: "#F59E0B" }}>
+            {Number(proData.rating || 5.0).toFixed(1)}★
+          </h3>
+          <span style={{ fontSize: "11px", color: "var(--text-secondary)" }}>
+            {proData.totalReviews > 0 ? `${proData.totalReviews} verified client reviews` : "Initial verified rating"}
+          </span>
+        </div>
+      </div>
+
+      {/* Motivation & Competence Incentive Card */}
+      <div style={{
+        background: "linear-gradient(135deg, rgba(14, 165, 233, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%)",
+        border: "1px solid rgba(14, 165, 233, 0.3)",
+        borderRadius: "16px",
+        padding: "16px 20px",
+        marginBottom: "var(--space-6)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        flexWrap: "wrap",
+        gap: "14px",
+      }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+          <div style={{ width: 40, height: 40, borderRadius: "50%", background: "rgba(245, 158, 11, 0.15)", color: "#F59E0B", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <Award size={22} />
+          </div>
+          <div>
+            <strong style={{ color: "var(--text-primary)", fontSize: "14px", display: "block" }}>
+              Artisan Competence & Quality Standards: Maintain 4.8★ - 5.0★ Rating
+            </strong>
+            <span style={{ color: "var(--text-secondary)", fontSize: "12px" }}>
+              High client star ratings qualify you for priority booking dispatches in your area, rapid escrow releases, and top-tier artisan badges.
+            </span>
+          </div>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, background: "rgba(16, 185, 129, 0.15)", padding: "6px 12px", borderRadius: "8px", border: "1px solid #10B981" }}>
+          <TrendingUp size={16} color="#10B981" />
+          <span style={{ fontSize: "12px", fontWeight: 700, color: "#10B981" }}>Top-Tier Artisan Status</span>
         </div>
       </div>
 
       {/* Active Jobs Dispatch Card */}
-      <div className="card">
+      <div className="card" style={{ marginBottom: "var(--space-6)" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "var(--space-4)", flexWrap: "wrap", gap: 12 }}>
           <h3 className="h4">Active & Upcoming Job Dispatches</h3>
           <div style={{ display: "flex", gap: 8 }}>
@@ -311,6 +343,67 @@ export default function ProDashboard() {
                     Execution Proof & OTP <ArrowRight size={14} />
                   </Link>
                 </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Real Verified Client Reviews Feed */}
+      <div className="card">
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "var(--space-4)", flexWrap: "wrap", gap: 12 }}>
+          <div>
+            <h3 className="h4" style={{ margin: 0 }}>Client Ratings & Performance Feedback</h3>
+            <span style={{ fontSize: "12px", color: "var(--text-secondary)" }}>
+              Transcribed ratings and comments directly submitted by clients after completed jobs
+            </span>
+          </div>
+          <span style={{ fontSize: "13px", fontWeight: 700, color: "#F59E0B" }}>
+            {proData.reviews?.length || 0} Total Reviews
+          </span>
+        </div>
+
+        {!proData.reviews || proData.reviews.length === 0 ? (
+          <div style={{ padding: "30px", textAlign: "center", background: "var(--bg-tertiary)", borderRadius: "var(--radius-lg)" }}>
+            <p style={{ margin: 0, fontSize: "13px", color: "var(--text-secondary)" }}>
+              No client reviews logged yet. Complete service dispatches cleanly and encourage clients to rate you 5 stars!
+            </p>
+          </div>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+            {proData.reviews.map((rev: any) => (
+              <div
+                key={rev.id}
+                style={{
+                  padding: "16px",
+                  background: "var(--bg-tertiary)",
+                  borderRadius: "12px",
+                  border: "1px solid var(--border-primary)",
+                }}
+              >
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6, flexWrap: "wrap", gap: 8 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <strong style={{ fontSize: "14px", color: "var(--text-primary)" }}>{rev.clientName}</strong>
+                    <span style={{ fontSize: "11px", color: "var(--text-secondary)" }}>• {rev.serviceName}</span>
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                    <div style={{ display: "inline-flex", gap: 2 }}>
+                      {[1, 2, 3, 4, 5].map((s) => (
+                        <Star
+                          key={s}
+                          size={12}
+                          fill={s <= rev.rating ? "#F59E0B" : "transparent"}
+                          color={s <= rev.rating ? "#F59E0B" : "rgba(245,158,11,0.3)"}
+                        />
+                      ))}
+                    </div>
+                    <span style={{ fontSize: "12px", fontWeight: 700, color: "#F59E0B" }}>{rev.rating}.0★</span>
+                    <span style={{ fontSize: "11px", color: "var(--text-tertiary)", marginLeft: 6 }}>{rev.date}</span>
+                  </div>
+                </div>
+                <p style={{ margin: 0, fontSize: "13px", color: "var(--text-secondary)", fontStyle: "italic" }}>
+                  "{rev.comment}"
+                </p>
               </div>
             ))}
           </div>

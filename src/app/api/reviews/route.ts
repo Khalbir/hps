@@ -119,24 +119,35 @@ export async function POST(request: Request) {
 
     const ratingNum = Math.min(5, Math.max(1, Number(rating)));
 
-    // Find the booking
-    const booking = await prisma.booking.findUnique({
-      where: { id: bookingId },
-      include: { professional: true },
+    // Find the booking by ID or reference code
+    const booking = await prisma.booking.findFirst({
+      where: {
+        OR: [
+          { id: bookingId },
+          { reference: bookingId },
+        ],
+      },
+      include: {
+        professional: {
+          include: {
+            user: true,
+          },
+        },
+        customer: true,
+      },
     });
 
     if (!booking) {
       return NextResponse.json({ error: "Booking not found" }, { status: 404 });
     }
 
-    // Get customer ID and professional ID
     const customerId = booking.customerId;
-    
-    // If professionalId is missing on booking, get default pro or created pro
     let professionalId = booking.professionalId;
 
     if (!professionalId) {
-      const firstPro = await prisma.professional.findFirst();
+      const firstPro = await prisma.professional.findFirst({
+        include: { user: true },
+      });
       if (firstPro) {
         professionalId = firstPro.id;
       } else {
@@ -144,36 +155,84 @@ export async function POST(request: Request) {
       }
     }
 
-    // Create Review in DB
-    const review = await prisma.review.create({
-      data: {
-        bookingId,
+    // Check if review already exists for this booking & customer
+    const existingReview = await prisma.review.findFirst({
+      where: {
+        bookingId: booking.id,
         customerId,
-        professionalId,
-        rating: ratingNum,
-        comment: comment || "Great service rendered.",
       },
     });
 
-    // Update Professional rating average
+    let review;
+    if (existingReview) {
+      review = await prisma.review.update({
+        where: { id: existingReview.id },
+        data: {
+          rating: ratingNum,
+          comment: comment || existingReview.comment,
+        },
+      });
+    } else {
+      review = await prisma.review.create({
+        data: {
+          bookingId: booking.id,
+          customerId,
+          professionalId,
+          rating: ratingNum,
+          comment: comment || "Quality service completed satisfactorily.",
+        },
+      });
+    }
+
+    // Recalculate & transcribe Professional overall star rating average
     const allProReviews = await prisma.review.findMany({
       where: { professionalId },
       select: { rating: true },
     });
 
+    let avgRating = ratingNum;
     if (allProReviews.length > 0) {
       const total = allProReviews.reduce((acc, r) => acc + r.rating, 0);
-      const avgRating = Number((total / allProReviews.length).toFixed(1));
+      avgRating = Number((total / allProReviews.length).toFixed(1));
+    }
 
-      await prisma.professional.update({
-        where: { id: professionalId },
-        data: { rating: avgRating },
+    // Get actual count of completed jobs for this pro
+    const completedCount = await prisma.booking.count({
+      where: {
+        professionalId,
+        status: { in: ["COMPLETED", "WORK_IN_PROGRESS"] },
+      },
+    });
+
+    await prisma.professional.update({
+      where: { id: professionalId },
+      data: {
+        rating: avgRating,
+        totalJobs: Math.max(completedCount, 1),
+      },
+    }).catch(() => {});
+
+    // Notify the assigned artisan in real-time
+    const proUserId = booking.professional?.user?.id || (booking.professional as any)?.userId;
+    if (proUserId) {
+      const clientName = booking.customer
+        ? `${booking.customer.firstName} ${booking.customer.lastName}`.trim()
+        : "Client";
+
+      await prisma.notification.create({
+        data: {
+          userId: proUserId,
+          type: "BOOKING",
+          title: `⭐ You Received a ${ratingNum}-Star Client Rating!`,
+          message: `${clientName} reviewed your service with ${ratingNum}/5 stars: "${comment || "Quality service completed satisfactorily."}". Your updated average rating is ${avgRating}★ (${allProReviews.length} verified reviews).`,
+        },
       }).catch(() => {});
     }
 
     return NextResponse.json({
       success: true,
-      message: "Thank you! Your review and rating have been logged successfully.",
+      message: "Thank you! Your rating and feedback have been transcribed to the artisan's profile.",
+      rating: avgRating,
       review,
     });
   } catch (error: any) {

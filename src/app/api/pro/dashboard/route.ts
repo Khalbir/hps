@@ -179,6 +179,41 @@ export async function GET(request: Request) {
     const rawLocation = docs.operatingState || docs.city || user?.permanentAddress || "Abuja (FCT)";
     const operatingState = rawLocation.includes("Nigeria") ? rawLocation : `${rawLocation}, Nigeria`;
 
+    // Fetch real verified client reviews and transcribe dynamic rating
+    let proReviews: any[] = [];
+    let calculatedRating = rating;
+
+    if (pro) {
+      const dbReviews = await prisma.review.findMany({
+        where: { professionalId: pro.id },
+        orderBy: { createdAt: "desc" },
+        include: {
+          customer: { select: { firstName: true, lastName: true } },
+          booking: {
+            select: {
+              reference: true,
+              service: { select: { name: true } },
+            },
+          },
+        },
+      });
+
+      if (dbReviews.length > 0) {
+        const sum = dbReviews.reduce((acc, r) => acc + r.rating, 0);
+        calculatedRating = Number((sum / dbReviews.length).toFixed(1));
+      }
+
+      proReviews = dbReviews.map((r) => ({
+        id: r.id,
+        rating: r.rating,
+        comment: r.comment,
+        clientName: r.customer ? `${r.customer.firstName} ${r.customer.lastName.charAt(0)}.` : "Verified Client",
+        serviceName: r.booking?.service?.name || "Verified Service",
+        bookingRef: r.booking?.reference || "",
+        date: new Date(r.createdAt).toLocaleDateString(),
+      }));
+    }
+
     return NextResponse.json({
       success: true,
       proName,
@@ -199,7 +234,9 @@ export async function GET(request: Request) {
       pendingEscrow,
       lifetimeEarnings,
       completedJobs,
-      rating,
+      rating: calculatedRating,
+      totalReviews: proReviews.length,
+      reviews: proReviews,
       activeJobs: activeBookings,
       transactions,
     });
@@ -220,6 +257,8 @@ export async function GET(request: Request) {
       pendingEscrow: 0,
       completedJobs: 0,
       rating: 5.0,
+      totalReviews: 0,
+      reviews: [],
       activeJobs: [],
     });
   }

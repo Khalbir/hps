@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { BrandLogo } from "@/components/common/BrandLogo";
 import { AddressVerificationModule } from "@/components/features/verification/AddressVerificationModule";
+import { RateReviewModal } from "@/components/common/RateReviewModal";
 import {
   STORAGE_KEYS,
   saveToStorage,
@@ -43,6 +44,7 @@ function sanitizeTab(tab: any): DashboardTab {
 
 export default function DashboardPage() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [ratingModalBooking, setRatingModalBooking] = useState<{ id: string; service: string; pro: string } | null>(null);
   const [activeTab, setActiveTab] = useState<DashboardTab>(() => {
     if (typeof window !== "undefined") {
       try {
@@ -575,9 +577,20 @@ export default function DashboardPage() {
                               </span>
                             </td>
                             <td>
-                              <Link href={`/track?ref=${b.id}`} className="btn btn-secondary btn-xs" style={{ display: "inline-flex", alignItems: "center", gap: 4, color: "#0EA5E9" }}>
-                                Track Live 📍
-                              </Link>
+                              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                                <Link href={`/track?ref=${b.id}`} className="btn btn-secondary btn-xs" style={{ display: "inline-flex", alignItems: "center", gap: 4, color: "#0EA5E9" }}>
+                                  Track 📍
+                                </Link>
+                                <button
+                                  type="button"
+                                  onClick={() => setRatingModalBooking({ id: b.id, service: b.service, pro: b.pro })}
+                                  className="btn btn-secondary btn-xs"
+                                  style={{ color: "#F59E0B", borderColor: "rgba(245,158,11,0.4)", display: "inline-flex", alignItems: "center", gap: 4 }}
+                                  title="Rate & Review Artisan"
+                                >
+                                  <Star size={12} fill="#F59E0B" /> Rate
+                                </button>
+                              </div>
                             </td>
                           </tr>
                         ))}
@@ -652,9 +665,20 @@ export default function DashboardPage() {
                               </span>
                             </td>
                             <td>
-                              <Link href={`/track?ref=${b.id}`} className="btn btn-primary btn-xs">
-                                Track Status 📍
-                              </Link>
+                              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                                <Link href={`/track?ref=${b.id}`} className="btn btn-primary btn-xs">
+                                  Track Status 📍
+                                </Link>
+                                <button
+                                  type="button"
+                                  onClick={() => setRatingModalBooking({ id: b.id, service: b.service, pro: b.pro })}
+                                  className="btn btn-secondary btn-xs"
+                                  style={{ color: "#F59E0B", borderColor: "rgba(245,158,11,0.4)", display: "inline-flex", alignItems: "center", gap: 4 }}
+                                  title="Rate & Review Artisan"
+                                >
+                                  <Star size={12} fill="#F59E0B" /> Rate Pro
+                                </button>
+                              </div>
                             </td>
                           </tr>
                         ))}
@@ -1066,6 +1090,23 @@ export default function DashboardPage() {
             </form>
           </div>
         </div>
+      )}
+
+      {/* Rate & Review Artisan Modal */}
+      {ratingModalBooking && (
+        <RateReviewModal
+          isOpen={!!ratingModalBooking}
+          onClose={() => setRatingModalBooking(null)}
+          bookingId={ratingModalBooking.id}
+          serviceName={ratingModalBooking.service}
+          artisanName={ratingModalBooking.pro}
+          onReviewSubmitted={() => {
+            // refresh data
+            if (typeof window !== "undefined") {
+              window.location.reload();
+            }
+          }}
+        />
       )}
     </div>
   );
