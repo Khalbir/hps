@@ -198,17 +198,17 @@ export default function UsersRoleManagementPage() {
 
     if (!matchSearch) return false;
 
-    if (activeTab === "CLIENTS") return u.role === "CUSTOMER";
-    if (activeTab === "ARTISANS") return u.role === "PROFESSIONAL";
-    if (activeTab === "STAFF") return u.role !== "CUSTOMER" && u.role !== "PROFESSIONAL";
+    if (activeTab === "CLIENTS") return u.role === "CUSTOMER" && !u.isProfessional;
+    if (activeTab === "ARTISANS") return u.role === "PROFESSIONAL" || Boolean(u.isProfessional);
+    if (activeTab === "STAFF") return u.role !== "CUSTOMER" && u.role !== "PROFESSIONAL" && !u.isProfessional;
 
     return true;
   });
 
   const isChiefCommander = currentUserRole === "SUPER_ADMIN";
 
-  const clientsCount = users.filter((u) => u.role === "CUSTOMER").length;
-  const artisansCount = users.filter((u) => u.role === "PROFESSIONAL").length;
+  const clientsCount = users.filter((u) => u.role === "CUSTOMER" && !u.isProfessional).length;
+  const artisansCount = users.filter((u) => u.role === "PROFESSIONAL" || u.isProfessional).length;
   const staffCount = users.filter((u) => u.role !== "CUSTOMER" && u.role !== "PROFESSIONAL").length;
 
   return (
@@ -381,46 +381,49 @@ export default function UsersRoleManagementPage() {
                     </td>
                     <td style={{ padding: "10px 12px", color: "#94A3B8", fontSize: "12px", whiteSpace: "nowrap" }}>{u.createdAt}</td>
                     <td style={{ padding: "10px 12px", textAlign: "right", whiteSpace: "nowrap" }}>
-                      {u.role === "CUSTOMER" ? (
+                      <div style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}>
+                        {u.role === "CUSTOMER" ? (
+                          <button
+                            className="btn btn-secondary btn-xs"
+                            style={{
+                              color: u.permanentAddressStatus === "VERIFIED" ? "#10B981" : u.permanentAddressStatus === "PENDING" ? "#F59E0B" : "#0EA5E9",
+                              borderColor: u.permanentAddressStatus === "VERIFIED" ? "#10B981" : u.permanentAddressStatus === "PENDING" ? "#F59E0B" : "#0EA5E9",
+                              display: "inline-flex",
+                              alignItems: "center",
+                              gap: "4px",
+                              padding: "3px 8px",
+                              fontSize: "11px",
+                            }}
+                            onClick={() => {
+                              setAuditingUserAddress(u);
+                              setAddressAuditNotes(u.permanentAddressNotes || "");
+                              setManualAddressInput(u.permanentAddress || "");
+                            }}
+                          >
+                            <MapPin size={11} /> {u.permanentAddressStatus === "VERIFIED" ? "Address" : u.permanentAddressStatus === "PENDING" ? "Audit Address ⏳" : "Set Address"}
+                          </button>
+                        ) : u.role === "PROFESSIONAL" ? (
+                          <a
+                            href="/admin/dashboard/professionals"
+                            className="btn btn-secondary btn-xs"
+                            style={{ color: "#F59E0B", borderColor: "#F59E0B", display: "inline-flex", alignItems: "center", gap: "4px", textDecoration: "none", padding: "3px 8px", fontSize: "11px" }}
+                          >
+                            <Shield size={11} /> Dossier
+                          </a>
+                        ) : null}
+
                         <button
                           className="btn btn-secondary btn-xs"
-                          style={{
-                            color: u.permanentAddressStatus === "VERIFIED" ? "#10B981" : u.permanentAddressStatus === "PENDING" ? "#F59E0B" : "#0EA5E9",
-                            borderColor: u.permanentAddressStatus === "VERIFIED" ? "#10B981" : u.permanentAddressStatus === "PENDING" ? "#F59E0B" : "#0EA5E9",
-                            display: "inline-flex",
-                            alignItems: "center",
-                            gap: "4px",
-                            padding: "3px 8px",
-                            fontSize: "11px",
-                          }}
-                          onClick={() => {
-                            setAuditingUserAddress(u);
-                            setAddressAuditNotes(u.permanentAddressNotes || "");
-                            setManualAddressInput(u.permanentAddress || "");
-                          }}
-                        >
-                          <MapPin size={11} /> {u.permanentAddressStatus === "VERIFIED" ? "Manage Address" : u.permanentAddressStatus === "PENDING" ? "Audit Address ⏳" : "Set Address"}
-                        </button>
-                      ) : u.role === "PROFESSIONAL" ? (
-                        <a
-                          href="/admin/dashboard/professionals"
-                          className="btn btn-secondary btn-xs"
-                          style={{ color: "#F59E0B", borderColor: "#F59E0B", display: "inline-flex", alignItems: "center", gap: "4px", textDecoration: "none", padding: "3px 8px", fontSize: "11px" }}
-                        >
-                          <Shield size={11} /> Audit Dossier
-                        </a>
-                      ) : (
-                        <button
-                          className="btn btn-secondary btn-xs"
-                          style={{ color: "#0EA5E9", borderColor: "#0EA5E9", padding: "3px 8px", fontSize: "11px" }}
+                          style={{ color: "#A855F7", borderColor: "rgba(168,85,247,0.4)", background: "rgba(168,85,247,0.1)", padding: "3px 8px", fontSize: "11px", display: "inline-flex", alignItems: "center", gap: "4px" }}
                           onClick={() => {
                             setEditingUser(u);
                             setSelectedRole(u.role);
                           }}
+                          title="Change or reassign user role"
                         >
-                          <Edit size={11} /> {isChiefCommander ? "Change Role" : "Request Change"}
+                          <Edit size={11} /> Role
                         </button>
-                      )}
+                      </div>
                     </td>
                   </tr>
                 );

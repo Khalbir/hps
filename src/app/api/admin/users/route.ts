@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { hash } from "bcryptjs";
 import { cookies } from "next/headers";
+import { generateDigitalIdFromSeed } from "@/lib/digitalId";
 
 export const dynamic = "force-dynamic";
 
@@ -66,23 +67,8 @@ export async function GET() {
     // 2. Fetch all users directly from PostgreSQL database
     const users = await prisma.user.findMany({
       orderBy: { createdAt: "desc" },
-      select: {
-        id: true,
-        firstName: true,
-        lastName: true,
-        email: true,
-        phone: true,
-        role: true,
-        isVerified: true,
-        createdAt: true,
-        permanentAddress: true,
-        permanentAddressProof: true,
-        permanentAddressStatus: true,
-        permanentAddressNotes: true,
-        secondaryAddress: true,
-        pendingPermanentAddress: true,
-        pendingPermanentAddressProof: true,
-        bookingAddresses: true,
+      include: {
+        professional: true,
       },
     });
 
@@ -96,12 +82,17 @@ export async function GET() {
         }
       }
 
+      const isPro = u.role === "PROFESSIONAL" || Boolean(u.professional);
+
       return {
         id: u.id,
         name: `${u.firstName || ""} ${u.lastName || ""}`.trim() || u.email.split("@")[0] || "User Account",
         email: u.email,
         phone: u.phone || "Not Provided",
         role: u.role,
+        isProfessional: isPro,
+        digitalId: u.professional?.digitalId || (isPro ? "HHP-PRO-VERIFIED" : null),
+        professionalStatus: u.professional?.verificationStatus || (isPro ? "VERIFIED" : null),
         isVerified: u.isVerified,
         createdAt: u.createdAt ? new Date(u.createdAt).toISOString().split("T")[0] : "Recent",
         permanentAddress: u.permanentAddress,
@@ -329,6 +320,22 @@ export async function PUT(request: Request) {
           where: { id: userId },
           data: updateData,
         });
+
+        if (role === "PROFESSIONAL") {
+          await prisma.professional.upsert({
+            where: { userId: existingUser.id },
+            update: { verificationStatus: "VERIFIED" },
+            create: {
+              userId: existingUser.id,
+              digitalId: generateDigitalIdFromSeed(existingUser.id),
+              bio: "Verified Skilled Artisan / Professional",
+              skills: JSON.stringify(["General Skilled Services"]),
+              verificationStatus: "VERIFIED",
+              rating: 5.0,
+              totalJobs: 0,
+            },
+          }).catch(() => {});
+        }
       }
     } catch (dbErr) {
       console.warn("[Admin Users PUT DB Warning]: DB update error, relying on High-Availability Registry:", dbErr);
