@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { notifyBookingStatusChange } from "@/lib/notifications";
 import { releaseEscrowPayout } from "@/lib/escrow";
+import { getBookingOtp } from "@/lib/bookingOtp";
 
 export async function GET(request: Request) {
   try {
@@ -93,7 +94,7 @@ export async function GET(request: Request) {
         time: new Date(b.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         price: `₦${b.estimatedPrice.toLocaleString()}`,
         status: b.status,
-        otpCode: b.completionNote || "4819",
+        otpCode: getBookingOtp(b),
         beforePhoto,
         afterPhoto,
       };
@@ -226,7 +227,7 @@ export async function POST(request: Request) {
 
     // 4. COMPLETE JOB
     if (action === "COMPLETE_JOB") {
-      const expectedOtp = booking.completionNote || "4819";
+      const expectedOtp = getBookingOtp(booking);
       if (otpCode && otpCode.trim() !== expectedOtp) {
         return NextResponse.json({ error: "Invalid completion OTP. Please enter correct 4-digit customer OTP." }, { status: 400 });
       }
@@ -240,6 +241,7 @@ export async function POST(request: Request) {
         where: { reference: bookingReference },
         data: {
           status: "COMPLETED",
+          completionNote: expectedOtp,
           afterPhotos: JSON.stringify(updatedAfter.length > 0 ? updatedAfter : (afterPhotoUrl ? [afterPhotoUrl] : [])),
           completedAt: new Date(),
         },

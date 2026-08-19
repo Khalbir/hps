@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { formatDigitalId } from "@/lib/digitalId";
+import { getBookingOtp } from "@/lib/bookingOtp";
 
 const categoryNames: Record<string, string> = {
   cleaning: "Residential & Deep Cleaning",
@@ -108,8 +109,7 @@ export async function GET(request: Request) {
     const proPhone = dbBooking?.professional?.user?.phone || "+234 812 222 2936";
 
     // Generate deterministic 4-digit OTP code for Checkmate Security
-    const referenceSeed = (dbBooking?.reference || cleanQuery).replace(/[^0-9]/g, "");
-    const otpCode = dbBooking?.completionNote || (referenceSeed.length >= 4 ? referenceSeed.slice(-4) : "4892");
+    const otpCode = getBookingOtp(dbBooking || { reference: cleanQuery });
 
     const proRating = dbBooking?.professional?.rating && dbBooking.professional.rating > 0
       ? dbBooking.professional.rating

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { checkRateLimit, sanitizeInput } from "@/lib/security";
 import { notifyBookingStatusChange } from "@/lib/notifications";
+import { getBookingOtp } from "@/lib/bookingOtp";
 
 export const dynamic = "force-dynamic";
 
@@ -185,6 +186,7 @@ export async function POST(request: Request) {
         paymentStatus: "SUCCESS",
         estimatedPrice: calculatedPrice,
         finalPrice: calculatedPrice,
+        completionNote: getBookingOtp({ reference: ref }),
         promoCodeId: promoCodeId,
         discountAmount: finalDiscount,
       },
