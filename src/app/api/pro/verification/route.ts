@@ -126,6 +126,8 @@ export async function POST(request: Request) {
             idUrl: idDocumentUrl || selfieUrl || existingPro.idUrl,
             addressProofUrl: addressProofUrl || existingPro.addressProofUrl,
             documents: JSON.stringify(verificationPayload),
+            skills: serviceCategory ? JSON.stringify([serviceCategory]) : existingPro.skills,
+            bio: serviceCategory ? `Verified ${serviceCategory} artisan based in ${operatingState || "FCT Abuja"}` : existingPro.bio,
           },
         });
       }

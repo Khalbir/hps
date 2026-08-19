@@ -7,7 +7,10 @@ import { generateDigitalIdFromSeed } from "@/lib/digitalId";
 
 export async function POST(request: Request) {
   try {
-    const { firstName, lastName, email, phone, password, role, serviceCategory, customSkill } = await request.json();
+    const {
+      firstName, lastName, email, phone, password, role,
+      serviceCategory, customSkill, idType, idNumber, operatingState, homeAddress
+    } = await request.json();
 
     if (!firstName || !lastName || !email || !password) {
       return NextResponse.json(
@@ -205,9 +208,18 @@ export async function POST(request: Request) {
             digitalId: generateDigitalIdFromSeed(user.id),
             bio: serviceCategory === "others"
               ? `Custom Skillset Request: ${customSkill || "Unspecified"}`
-              : `Verified ${serviceCategory} professional`,
+              : `Verified ${serviceCategory} professional based in ${operatingState || "FCT Abuja"}`,
             skills: JSON.stringify(skillList),
             verificationStatus: "PENDING",
+            idType: idType || "NIN",
+            idNumber: idNumber || null,
+            documents: JSON.stringify({
+              serviceCategory,
+              idType: idType || "NIN",
+              idNumber: idNumber || "",
+              operatingState: operatingState || "FCT Abuja",
+              homeAddress: homeAddress || "",
+            }),
           },
         });
       } catch (err) {}

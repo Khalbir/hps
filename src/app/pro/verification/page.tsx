@@ -1,12 +1,13 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import {
   ShieldCheck, User, UploadCloud, CheckCircle, AlertTriangle,
   ArrowRight, ArrowLeft, FileText, Camera, Users, Award, Sparkles,
-  HelpCircle, Check, X, ShieldAlert, Loader2, Image as ImageIcon
+  HelpCircle, Check, X, ShieldAlert, Loader2, Image as ImageIcon,
+  CheckCircle2, RefreshCw
 } from "lucide-react";
 import { getQuizForCategory, QuizQuestion } from "@/lib/quiz";
 import { getValidMediaUrl } from "@/lib/sample-documents";
@@ -19,13 +20,37 @@ const steps = [
   { id: 4, label: "Trade Skill Assessment", desc: "Technical Competency Quiz" },
 ];
 
+const formatCategoryTitle = (cat: string) => {
+  const map: Record<string, string> = {
+    plumbing: "Plumbing",
+    electrical: "Electrical",
+    cleaning: "Cleaning",
+    hvac: "AC & HVAC",
+    painting: "Painting",
+    carpentry: "Carpentry",
+    security: "Security & CCTV",
+    solar: "Solar & Inverter",
+    "home-improvement": "Home Improvement",
+    outdoor: "Gardening & Outdoor",
+    laundry: "Laundry",
+    moving: "Moving & Relocation",
+    automotive: "Automotive Repair",
+    "smart-home": "Smart Home",
+    general: "General Handyman",
+    others: "Custom Skillset",
+  };
+  return map[cat] || (cat ? cat.charAt(0).toUpperCase() + cat.slice(1) : "General Skilled Services");
+};
+
 export default function ProVerificationPage() {
   const [step, setStep] = useState(1);
   const [submitting, setSubmitting] = useState(false);
   const [completed, setCompleted] = useState(false);
 
-  // Form State
+  // Form State & Category Verification
   const [category, setCategory] = useState("plumbing");
+  const [initialCategory, setInitialCategory] = useState("");
+  const [categoryConfirmed, setCategoryConfirmed] = useState(true);
   const [idType, setIdType] = useState("NIN");
   const [idNumber, setIdNumber] = useState("");
 
@@ -56,6 +81,56 @@ export default function ProVerificationPage() {
   const [lga, setLga] = useState("");
   const [addressProofUrl, setAddressProofUrl] = useState("");
   const [addressUploading, setAddressUploading] = useState(false);
+
+  // Fetch pro account profile & initial registered skillset
+  useEffect(() => {
+    let activeUserId = "";
+    let activeEmail = "";
+    try {
+      const stored = localStorage.getItem("handyhub_user") || localStorage.getItem("handyhub_pro_session") || sessionStorage.getItem("handyhub_active_session");
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        activeUserId = parsed.id || parsed.user?.id || "";
+        activeEmail = parsed.email || parsed.user?.email || "";
+      }
+    } catch {}
+
+    if (activeUserId || activeEmail) {
+      fetch(`/api/pro/dashboard?userId=${activeUserId}&email=${encodeURIComponent(activeEmail)}`)
+        .then((r) => r.json())
+        .then((data) => {
+          if (data && data.success) {
+            let registeredSkill = "";
+            if (data.docs?.serviceCategory) {
+              registeredSkill = data.docs.serviceCategory.toLowerCase();
+            } else if (data.specialty) {
+              registeredSkill = data.specialty.toLowerCase();
+            } else if (Array.isArray(data.skillsList) && data.skillsList.length > 0) {
+              registeredSkill = data.skillsList[0].toLowerCase();
+            }
+
+            if (registeredSkill) {
+              const matchedOption = [
+                "plumbing", "electrical", "cleaning", "hvac", "painting", "carpentry",
+                "security", "solar", "home-improvement", "outdoor", "laundry", "moving",
+                "automotive", "smart-home", "general", "others"
+              ].find((opt) => registeredSkill.includes(opt));
+
+              const finalSlug = matchedOption || (registeredSkill.startsWith("other") ? "others" : "plumbing");
+              setInitialCategory(finalSlug);
+              setCategory(finalSlug);
+            }
+
+            if (data.docs?.idType) setIdType(data.docs.idType);
+            if (data.docs?.idNumber) setIdNumber(data.docs.idNumber);
+            if (data.docs?.operatingState) setOperatingState(data.docs.operatingState);
+            if (data.docs?.homeAddress) setHomeAddress(data.docs.homeAddress);
+            if (data.docs?.lga) setLga(data.docs.lga);
+          }
+        })
+        .catch(() => {});
+    }
+  }, []);
 
   // Hidden File Input References
   const idInputRef = useRef<HTMLInputElement>(null);
@@ -215,6 +290,8 @@ export default function ProVerificationPage() {
           email: activeEmail,
           idType,
           idNumber,
+          serviceCategory: category,
+          quizScore: finalScore,
           idDocumentUrl: getValidMediaUrl(idDocumentUrl, "id"),
           selfieUrl: getValidMediaUrl(selfieUrl, "selfie"),
           tradeCertUrl: getValidMediaUrl(tradeCertUrl, "cert"),
@@ -349,12 +426,19 @@ export default function ProVerificationPage() {
                 </div>
 
                 <div className={styles.formGrid}>
-                  <div className={styles.fieldGroup}>
-                    <label className={styles.label}>Select Primary Skill Category</label>
+                  <div className={styles.fieldGroup} style={{ gridColumn: "1 / -1" }}>
+                    <label className={styles.label}>
+                      Confirm Primary Skill Category <span style={{ color: "#EF4444" }}>*</span>
+                    </label>
                     <select
                       className={styles.input}
                       value={category}
-                      onChange={(e) => setCategory(e.target.value)}
+                      onChange={(e) => {
+                        const nextCat = e.target.value;
+                        setCategory(nextCat);
+                        setCategoryConfirmed(false);
+                      }}
+                      required
                     >
                       <option value="plumbing">Plumbing (Pipes, Drainage, Water Heaters)</option>
                       <option value="electrical">Electrical Repairs & Wiring</option>
@@ -373,14 +457,65 @@ export default function ProVerificationPage() {
                       <option value="general">General Handyman Maintenance</option>
                       <option value="others">Others (Custom Skillset Request)</option>
                     </select>
+
+                    {/* Category Mismatch / Reset Request Notification */}
+                    {initialCategory && category !== initialCategory && (
+                      <div
+                        style={{
+                          marginTop: "12px",
+                          background: "rgba(245, 158, 11, 0.12)",
+                          border: "1px solid rgba(245, 158, 11, 0.4)",
+                          borderRadius: "10px",
+                          padding: "14px 16px",
+                          fontSize: "13px",
+                        }}
+                      >
+                        <div style={{ display: "flex", alignItems: "center", gap: 8, fontWeight: 700, color: "#F59E0B", marginBottom: 6 }}>
+                          <AlertTriangle size={17} />
+                          <span>Primary Trade Skill Reset Request</span>
+                        </div>
+                        <p style={{ margin: "0 0 10px 0", color: "#E2E8F0", lineHeight: 1.5, fontSize: "13px" }}>
+                          You originally registered on HandyHub as <strong>{formatCategoryTitle(initialCategory)}</strong>.
+                          You are now selecting <strong>{formatCategoryTitle(category)}</strong>.
+                          Confirming this will officially reset your primary trade specialty in your artisan profile and will calibrate your Step 4 Technical Assessment Quiz.
+                        </p>
+                        <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setInitialCategory(category);
+                              setCategoryConfirmed(true);
+                            }}
+                            className="btn btn-primary btn-xs"
+                            style={{ background: "#10B981", fontWeight: 700, padding: "6px 14px", borderRadius: "6px", fontSize: "12px" }}
+                          >
+                            ✓ Set {formatCategoryTitle(category)} as Official Primary Skill
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setCategory(initialCategory);
+                              setCategoryConfirmed(true);
+                            }}
+                            className="btn btn-secondary btn-xs"
+                            style={{ padding: "6px 14px", borderRadius: "6px", fontSize: "12px", color: "#EF4444", borderColor: "rgba(239,68,68,0.4)" }}
+                          >
+                            ✕ Revert to {formatCategoryTitle(initialCategory)}
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   <div className={styles.fieldGroup}>
-                    <label className={styles.label}>Government ID Type</label>
+                    <label className={styles.label}>
+                      Government ID Type <span style={{ color: "#EF4444" }}>*</span>
+                    </label>
                     <select
                       className={styles.input}
                       value={idType}
                       onChange={(e) => setIdType(e.target.value)}
+                      required
                     >
                       <option value="NIN">National Identification Number (NIN)</option>
                       <option value="PASSPORT">International Passport</option>
@@ -390,13 +525,16 @@ export default function ProVerificationPage() {
                   </div>
 
                   <div className={styles.fieldGroup}>
-                    <label className={styles.label}>{idType} Number</label>
+                    <label className={styles.label}>
+                      {idType === "NIN" ? "11-Digit NIN Number" : `${idType} Number`} <span style={{ color: "#EF4444" }}>*</span>
+                    </label>
                     <input
                       type="text"
                       className={styles.input}
-                      placeholder={`Enter 11-digit ${idType} Number`}
+                      placeholder={idType === "NIN" ? "Enter 11-digit NIN Number" : `Enter ${idType} Number`}
                       value={idNumber}
                       onChange={(e) => setIdNumber(e.target.value)}
+                      required
                     />
                   </div>
 
@@ -578,7 +716,7 @@ export default function ProVerificationPage() {
                   <button
                     className="btn btn-primary btn-md"
                     onClick={() => setStep(2)}
-                    disabled={!idNumber || (!idDocumentUrl && !idUploading) || (!selfieUrl && !selfieUploading)}
+                    disabled={!idType || !idNumber.trim() || !homeAddress.trim() || !operatingState || (!idDocumentUrl && !idUploading) || (!selfieUrl && !selfieUploading)}
                   >
                     Continue to Trade Credentials
                     <ArrowRight size={18} />

@@ -4,7 +4,10 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { Mail, Lock, Eye, EyeOff, User, Phone, ArrowRight, Wrench, Sparkles, HeartHandshake } from "lucide-react";
+import {
+  Mail, Lock, Eye, EyeOff, User, Phone, ArrowRight, Wrench, Sparkles, HeartHandshake,
+  FileText, MapPin, Home
+} from "lucide-react";
 import { BrandLogo } from "@/components/common/BrandLogo";
 import styles from "../auth.module.css";
 
@@ -37,6 +40,10 @@ export default function RegisterPage() {
     role: "CUSTOMER" as "CUSTOMER" | "PROFESSIONAL",
     serviceCategory: "",
     customSkill: "",
+    idType: "NIN",
+    idNumber: "",
+    operatingState: "FCT Abuja",
+    homeAddress: "",
   });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -76,6 +83,22 @@ export default function RegisterPage() {
         setError("Please specify your skillset.");
         return;
       }
+      if (!form.idType) {
+        setError("Government ID type is mandatory before signing up.");
+        return;
+      }
+      if (!form.idNumber.trim()) {
+        setError(`Please enter your ${form.idType === "NIN" ? "11-digit NIN" : "Government ID"} number.`);
+        return;
+      }
+      if (!form.operatingState.trim()) {
+        setError("Operating state in Nigeria is mandatory.");
+        return;
+      }
+      if (!form.homeAddress.trim()) {
+        setError("Home & workshop residential address is mandatory.");
+        return;
+      }
     }
 
     setLoading(true);
@@ -93,6 +116,10 @@ export default function RegisterPage() {
           role: form.role,
           serviceCategory: form.role === "PROFESSIONAL" ? form.serviceCategory : undefined,
           customSkill: form.role === "PROFESSIONAL" && form.serviceCategory === "others" ? form.customSkill.trim() : undefined,
+          idType: form.role === "PROFESSIONAL" ? form.idType : undefined,
+          idNumber: form.role === "PROFESSIONAL" ? form.idNumber.trim() : undefined,
+          operatingState: form.role === "PROFESSIONAL" ? form.operatingState : undefined,
+          homeAddress: form.role === "PROFESSIONAL" ? form.homeAddress.trim() : undefined,
         }),
       });
 
@@ -342,6 +369,95 @@ export default function RegisterPage() {
                   </p>
                 </div>
               </div>
+            )}
+
+            {/* Mandatory Government ID & Residential Address for Professionals */}
+            {form.role === "PROFESSIONAL" && (
+              <>
+                <div className={styles.nameRow}>
+                  <div className={styles.inputGroup}>
+                    <label className={styles.label}>
+                      Government ID Type <span style={{ color: "#EF4444" }}>*</span>
+                    </label>
+                    <div className={styles.inputWrap}>
+                      <FileText size={18} className={styles.inputIcon} />
+                      <select
+                        className={styles.input}
+                        value={form.idType}
+                        onChange={(e) => update("idType", e.target.value)}
+                        required
+                        style={{ cursor: "pointer" }}
+                      >
+                        <option value="NIN">National Identification Number (NIN)</option>
+                        <option value="PASSPORT">International Passport</option>
+                        <option value="VOTERS_CARD">Voter&apos;s Card</option>
+                        <option value="DRIVERS_LICENSE">Driver&apos;s License</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className={styles.inputGroup}>
+                    <label className={styles.label}>
+                      {form.idType === "NIN" ? "11-Digit NIN Number" : `${form.idType} Number`} <span style={{ color: "#EF4444" }}>*</span>
+                    </label>
+                    <div className={styles.inputWrap}>
+                      <FileText size={18} className={styles.inputIcon} />
+                      <input
+                        type="text"
+                        className={styles.input}
+                        placeholder={form.idType === "NIN" ? "Enter 11-digit NIN" : `Enter ${form.idType} number`}
+                        value={form.idNumber}
+                        onChange={(e) => update("idNumber", e.target.value)}
+                        required
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className={styles.nameRow}>
+                  <div className={styles.inputGroup}>
+                    <label className={styles.label}>
+                      Operating State in Nigeria <span style={{ color: "#EF4444" }}>*</span>
+                    </label>
+                    <div className={styles.inputWrap}>
+                      <MapPin size={18} className={styles.inputIcon} />
+                      <select
+                        className={styles.input}
+                        value={form.operatingState}
+                        onChange={(e) => update("operatingState", e.target.value)}
+                        required
+                        style={{ cursor: "pointer" }}
+                      >
+                        {[
+                          "FCT Abuja", "Abia", "Adamawa", "Akwa Ibom", "Anambra", "Bauchi", "Bayelsa", "Benue", "Borno",
+                          "Cross River", "Delta", "Ebonyi", "Edo", "Ekiti", "Enugu", "Gombe", "Imo", "Jigawa",
+                          "Kaduna", "Kano", "Katsina", "Kebbi", "Kogi", "Kwara", "Lagos", "Nasarawa", "Niger",
+                          "Ogun", "Ondo", "Osun", "Oyo", "Plateau", "Rivers", "Sokoto", "Taraba", "Yobe", "Zamfara"
+                        ].map((st) => (
+                          <option key={st} value={st}>{st}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className={styles.inputGroup}>
+                    <label className={styles.label}>
+                      Home / Workshop Address <span style={{ color: "#EF4444" }}>*</span>
+                    </label>
+                    <div className={styles.inputWrap}>
+                      <Home size={18} className={styles.inputIcon} />
+                      <input
+                        type="text"
+                        className={styles.input}
+                        placeholder="e.g. Plot 104, Wuse 2, Abuja"
+                        value={form.homeAddress}
+                        onChange={(e) => update("homeAddress", e.target.value)}
+                        required
+                      />
+                    </div>
+                  </div>
+                </div>
+              </>
             )}
 
             <div className={styles.inputGroup}>
