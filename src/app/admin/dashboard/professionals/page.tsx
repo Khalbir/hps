@@ -535,11 +535,13 @@ export default function ProfessionalVerificationPage() {
                     <strong style={{ fontSize: "12px", color: "#F8FAFC", display: "block" }}>Guarantor 1: {inspectPro.guarantor1?.name || "Chief James Okon"}</strong>
                     <span style={{ fontSize: "11px", color: "#94A3B8", display: "block" }}>Phone: {inspectPro.guarantor1?.phone || "+234 803 111 2222"}</span>
                     <span style={{ fontSize: "11px", color: "#94A3B8", display: "block" }}>Role: {inspectPro.guarantor1?.relationship || "Community Chairman"}</span>
+                    <span style={{ fontSize: "11px", color: "#38BDF8", display: "block", marginTop: 2 }}>NIN: {inspectPro.guarantor1?.nin || "N/A"}</span>
                   </div>
                   <div style={{ background: "#1E293B", padding: 10, borderRadius: 6 }}>
                     <strong style={{ fontSize: "12px", color: "#F8FAFC", display: "block" }}>Guarantor 2: {inspectPro.guarantor2?.name || "Engr. Aliyu Hassan"}</strong>
                     <span style={{ fontSize: "11px", color: "#94A3B8", display: "block" }}>Phone: {inspectPro.guarantor2?.phone || "+234 802 333 4444"}</span>
                     <span style={{ fontSize: "11px", color: "#94A3B8", display: "block" }}>Role: {inspectPro.guarantor2?.relationship || "Master Craftsman"}</span>
+                    <span style={{ fontSize: "11px", color: "#38BDF8", display: "block", marginTop: 2 }}>NIN: {inspectPro.guarantor2?.nin || "N/A"}</span>
                   </div>
                 </div>
               </div>

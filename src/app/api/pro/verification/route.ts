@@ -3,6 +3,72 @@ import { prisma } from "@/lib/db";
 import { hash } from "bcryptjs";
 import { generateDigitalIdFromSeed } from "@/lib/digitalId";
 
+export const dynamic = "force-dynamic";
+
+export async function GET(request: Request) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const userId = searchParams.get("userId");
+    const email = searchParams.get("email");
+
+    let targetUser: any = null;
+    if (userId && !userId.startsWith("pro-user")) {
+      targetUser = await prisma.user.findUnique({ where: { id: userId } });
+    }
+    if (!targetUser && email) {
+      targetUser = await prisma.user.findUnique({ where: { email: email.toLowerCase().trim() } });
+    }
+    if (!targetUser) {
+      targetUser = await prisma.user.findFirst({ where: { role: "PROFESSIONAL" } });
+    }
+
+    if (!targetUser) {
+      return NextResponse.json({ success: true, docs: {} });
+    }
+
+    const pro = await prisma.professional.findUnique({
+      where: { userId: targetUser.id },
+    });
+
+    let docs: any = {};
+    if (pro?.documents) {
+      try {
+        docs = typeof pro.documents === "string" ? JSON.parse(pro.documents) : pro.documents;
+        if (typeof docs === "string") docs = JSON.parse(docs);
+      } catch {}
+    }
+
+    return NextResponse.json({
+      success: true,
+      user: {
+        id: targetUser.id,
+        firstName: targetUser.firstName,
+        lastName: targetUser.lastName,
+        email: targetUser.email,
+        phone: targetUser.phone,
+        permanentAddress: targetUser.permanentAddress,
+        permanentAddressProof: targetUser.permanentAddressProof,
+        ninNumber: targetUser.ninNumber,
+      },
+      pro: pro
+        ? {
+            id: pro.id,
+            verificationStatus: pro.verificationStatus,
+            idType: pro.idType,
+            idNumber: pro.idNumber,
+            idUrl: pro.idUrl,
+            addressProofUrl: pro.addressProofUrl,
+            skills: pro.skills,
+          }
+        : null,
+      docs,
+    });
+  } catch (error: any) {
+    console.error("[Verification GET Error]:", error);
+    return NextResponse.json({ error: "Failed to fetch verification draft" }, { status: 500 });
+  }
+}
+
 export async function POST(request: Request) {
   try {
     const body = await request.json();
@@ -23,6 +89,8 @@ export async function POST(request: Request) {
       guarantor2,
       quizScore,
       serviceCategory,
+      isDraft,
+      currentStep,
     } = body;
 
     const cleanEmail = email ? email.toLowerCase().trim() : "artisan@handyhubpro.ng";
@@ -62,21 +130,23 @@ export async function POST(request: Request) {
 
     const verificationPayload = {
       idType: idType || "NIN",
-      idNumber: idNumber || "NIN-89302194812",
+      idNumber: idNumber || "",
       idDocumentUrl: idDocumentUrl || "",
       selfieUrl: selfieUrl || "",
       tradeCertUrl: tradeCertUrl || "",
       portfolioUrls: portfolioUrls || [],
       operatingState: operatingState || "FCT Abuja",
-      homeAddress: homeAddress || "Plot 104, Aminu Kano Crescent, Wuse 2",
+      homeAddress: homeAddress || "",
       lga: lga || "AMAC",
       addressProofUrl: addressProofUrl || "",
       guarantor1: guarantor1 || {},
       guarantor2: guarantor2 || {},
-      quizScore: quizScore || 85,
+      quizScore: quizScore !== undefined ? quizScore : null,
       submittedAt: new Date().toISOString(),
       serviceCategory: serviceCategory || "General Skilled Services",
       city: operatingState || "FCT Abuja",
+      isDraft: Boolean(isDraft),
+      lastSavedStep: currentStep || 1,
     };
 
     let proRecord = null;
@@ -89,9 +159,9 @@ export async function POST(request: Request) {
           role: "PROFESSIONAL",
           permanentAddress: homeAddress || targetUser.permanentAddress,
           permanentAddressProof: addressProofUrl || targetUser.permanentAddressProof,
-          permanentAddressStatus: "PENDING",
+          permanentAddressStatus: isDraft ? targetUser.permanentAddressStatus || "PENDING" : "PENDING",
           ninNumber: idNumber || targetUser.ninNumber,
-          ninStatus: "PENDING",
+          ninStatus: isDraft ? targetUser.ninStatus || "PENDING" : "PENDING",
         },
       }).catch((uErr) => console.warn("[User Pro Role Update Warn]:", uErr));
 
@@ -100,14 +170,18 @@ export async function POST(request: Request) {
         where: { userId: targetUser.id },
       });
 
+      const nextStatus = isDraft
+        ? existingPro?.verificationStatus || "UNVERIFIED"
+        : "PENDING";
+
       if (!existingPro) {
         proRecord = await prisma.professional.create({
           data: {
             userId: targetUser.id,
             digitalId: generateDigitalIdFromSeed(targetUser.id),
-            verificationStatus: "PENDING",
+            verificationStatus: nextStatus,
             idType: idType || "NIN",
-            idNumber: idNumber || "NIN-89302194812",
+            idNumber: idNumber || "",
             idUrl: idDocumentUrl || selfieUrl || "",
             addressProofUrl: addressProofUrl || "",
             documents: JSON.stringify(verificationPayload),
@@ -120,7 +194,7 @@ export async function POST(request: Request) {
           where: { id: existingPro.id },
           data: {
             digitalId: existingPro.digitalId || generateDigitalIdFromSeed(existingPro.id),
-            verificationStatus: "PENDING",
+            verificationStatus: nextStatus,
             idType: idType || existingPro.idType,
             idNumber: idNumber || existingPro.idNumber,
             idUrl: idDocumentUrl || selfieUrl || existingPro.idUrl,
@@ -132,42 +206,47 @@ export async function POST(request: Request) {
         });
       }
 
-      // 3. Record Audit Log for Admin Dashboard
-      try {
-        await prisma.auditLog.create({
-          data: {
-            userId: targetUser.id,
-            action: "ARTISAN_VERIFICATION_SUBMITTED",
-            entity: "Professional",
-            entityId: proRecord.id,
-            details: JSON.stringify({
-              email: targetUser.email,
-              name: `${targetUser.firstName} ${targetUser.lastName}`,
-              idType: idType || "NIN",
-              operatingState: operatingState || "FCT Abuja",
-              notes: "Dossier uploaded and queued for admin review",
-            }),
-          },
-        });
-      } catch {}
+      if (!isDraft) {
+        // 3. Record Audit Log for Admin Dashboard
+        try {
+          await prisma.auditLog.create({
+            data: {
+              userId: targetUser.id,
+              action: "ARTISAN_VERIFICATION_SUBMITTED",
+              entity: "Professional",
+              entityId: proRecord.id,
+              details: JSON.stringify({
+                email: targetUser.email,
+                name: `${targetUser.firstName} ${targetUser.lastName}`,
+                idType: idType || "NIN",
+                operatingState: operatingState || "FCT Abuja",
+                notes: "Dossier uploaded and queued for admin review",
+              }),
+            },
+          });
+        } catch {}
 
-      // 4. Notify User
-      try {
-        await prisma.notification.create({
-          data: {
-            userId: targetUser.id,
-            type: "SYSTEM",
-            title: "Verification Dossier Under Admin Review 📄",
-            message: "Your 4-step verification audit (Govt ID, Selfie, Trade Certificate, Guarantors, Trade Quiz) is currently being reviewed by the compliance team.",
-          },
-        });
-      } catch {}
+        // 4. Notify User
+        try {
+          await prisma.notification.create({
+            data: {
+              userId: targetUser.id,
+              type: "SYSTEM",
+              title: "Verification Dossier Under Admin Review 📄",
+              message: "Your 4-step verification audit (Govt ID, Selfie, Trade Certificate, Guarantors, Trade Quiz) is currently being reviewed by the compliance team.",
+            },
+          });
+        } catch {}
+      }
     }
 
     return NextResponse.json({
       success: true,
-      verificationStatus: "PENDING",
-      message: "Verification audit dossier submitted successfully for Admin review! 🎉",
+      verificationStatus: isDraft ? "DRAFT_SAVED" : "PENDING",
+      isDraft: Boolean(isDraft),
+      message: isDraft
+        ? "Verification progress auto-saved successfully! You can pick up where you left off at any time."
+        : "Verification audit dossier submitted successfully for Admin review! 🎉",
       proRecord,
     });
   } catch (error: any) {

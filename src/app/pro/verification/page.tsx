@@ -83,8 +83,39 @@ export default function ProVerificationPage() {
   const [addressProofUrl, setAddressProofUrl] = useState("");
   const [addressUploading, setAddressUploading] = useState(false);
 
-  // Fetch pro account profile & initial registered skillset
-  useEffect(() => {
+  // Draft Auto-Save & Recovery States
+  const [draftSavedTime, setDraftSavedTime] = useState<string>("");
+  const [restoredFromDraft, setRestoredFromDraft] = useState<boolean>(false);
+
+  // Helper Auto-Save Function (Local + Cloud Database)
+  const saveDraftState = (targetStep?: number, overrides?: Record<string, any>) => {
+    const curStep = targetStep || step;
+    const draftPayload = {
+      step: curStep,
+      category: overrides?.category ?? category,
+      idType: overrides?.idType ?? idType,
+      idNumber: overrides?.idNumber ?? idNumber,
+      operatingState: overrides?.operatingState ?? operatingState,
+      homeAddress: overrides?.homeAddress ?? homeAddress,
+      lga: overrides?.lga ?? lga,
+      idDocumentUrl: overrides?.idDocumentUrl ?? idDocumentUrl,
+      selfieUrl: overrides?.selfieUrl ?? selfieUrl,
+      addressProofUrl: overrides?.addressProofUrl ?? addressProofUrl,
+      tradeCertUrl: overrides?.tradeCertUrl ?? tradeCertUrl,
+      portfolioUrls: overrides?.portfolioUrls ?? portfolioUrls,
+      g1: overrides?.g1 ?? g1,
+      g2: overrides?.g2 ?? g2,
+      selectedAnswers: overrides?.selectedAnswers ?? selectedAnswers,
+      savedAt: new Date().toISOString(),
+    };
+
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.setItem("handyhub_pro_verification_draft", JSON.stringify(draftPayload));
+        setDraftSavedTime(new Date().toLocaleTimeString());
+      } catch (e) {}
+    }
+
     let activeUserId = "";
     let activeEmail = "";
     try {
@@ -97,34 +128,108 @@ export default function ProVerificationPage() {
     } catch {}
 
     if (activeUserId || activeEmail) {
-      fetch(`/api/pro/dashboard?userId=${activeUserId}&email=${encodeURIComponent(activeEmail)}`)
+      fetch("/api/pro/verification", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId: activeUserId,
+          email: activeEmail,
+          isDraft: true,
+          currentStep: curStep,
+          ...draftPayload,
+          serviceCategory: overrides?.category ?? category,
+          guarantor1: overrides?.g1 ?? g1,
+          guarantor2: overrides?.g2 ?? g2,
+        }),
+      }).catch(() => {});
+    }
+  };
+
+  // Restore draft progress on initial load & fetch registered profile
+  useEffect(() => {
+    let activeUserId = "";
+    let activeEmail = "";
+    try {
+      const stored = localStorage.getItem("handyhub_user") || localStorage.getItem("handyhub_pro_session") || sessionStorage.getItem("handyhub_active_session");
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        activeUserId = parsed.id || parsed.user?.id || "";
+        activeEmail = parsed.email || parsed.user?.email || "";
+      }
+    } catch {}
+
+    // 1. Restore from local storage draft if present
+    let localDraft: any = null;
+    if (typeof window !== "undefined") {
+      try {
+        const rawDraft = localStorage.getItem("handyhub_pro_verification_draft");
+        if (rawDraft) {
+          localDraft = JSON.parse(rawDraft);
+          if (localDraft) {
+            if (localDraft.step && localDraft.step >= 1 && localDraft.step <= 4) {
+              setStep(localDraft.step);
+            }
+            if (localDraft.category) {
+              setCategory(localDraft.category);
+              setInitialCategory(localDraft.category);
+            }
+            if (localDraft.idType) setIdType(localDraft.idType);
+            if (localDraft.idNumber) setIdNumber(localDraft.idNumber);
+            if (localDraft.operatingState) setOperatingState(localDraft.operatingState);
+            if (localDraft.homeAddress) setHomeAddress(localDraft.homeAddress);
+            if (localDraft.lga) setLga(localDraft.lga);
+            if (localDraft.idDocumentUrl) setIdDocumentUrl(localDraft.idDocumentUrl);
+            if (localDraft.selfieUrl) setSelfieUrl(localDraft.selfieUrl);
+            if (localDraft.addressProofUrl) setAddressProofUrl(localDraft.addressProofUrl);
+            if (localDraft.tradeCertUrl) setTradeCertUrl(localDraft.tradeCertUrl);
+            if (Array.isArray(localDraft.portfolioUrls)) setPortfolioUrls(localDraft.portfolioUrls);
+            if (localDraft.g1) setG1(localDraft.g1);
+            if (localDraft.g2) setG2(localDraft.g2);
+            if (localDraft.selectedAnswers) setSelectedAnswers(localDraft.selectedAnswers);
+            setRestoredFromDraft(true);
+            if (localDraft.savedAt) {
+              setDraftSavedTime(new Date(localDraft.savedAt).toLocaleTimeString());
+            }
+          }
+        }
+      } catch {}
+    }
+
+    // 2. Fetch server database state
+    if (activeUserId || activeEmail) {
+      fetch(`/api/pro/verification?userId=${activeUserId}&email=${encodeURIComponent(activeEmail)}`)
         .then((r) => r.json())
         .then((data) => {
-          if (data && data.success) {
-            let registeredSkill = "";
-            if (data.docs?.serviceCategory) {
-              registeredSkill = data.docs.serviceCategory.toLowerCase();
-            } else if (data.specialty) {
-              registeredSkill = data.specialty.toLowerCase();
-            } else if (Array.isArray(data.skillsList) && data.skillsList.length > 0) {
-              registeredSkill = data.skillsList[0].toLowerCase();
-            }
-
+          if (data && data.success && data.docs) {
+            const docs = data.docs;
+            let registeredSkill = docs.serviceCategory ? docs.serviceCategory.toLowerCase() : "";
             if (registeredSkill) {
               const matchedOption = PRO_VERIFICATION_CATEGORIES
                 .map((c) => c.value)
                 .find((opt) => registeredSkill.includes(opt));
-
               const finalSlug = matchedOption || (registeredSkill.startsWith("other") ? "others" : "plumbing");
               setInitialCategory(finalSlug);
-              setCategory(finalSlug);
+              if (!localDraft?.category) setCategory(finalSlug);
             }
 
-            if (data.docs?.idType) setIdType(data.docs.idType);
-            if (data.docs?.idNumber) setIdNumber(data.docs.idNumber);
-            if (data.docs?.operatingState) setOperatingState(data.docs.operatingState);
-            if (data.docs?.homeAddress) setHomeAddress(data.docs.homeAddress);
-            if (data.docs?.lga) setLga(data.docs.lga);
+            if (docs.idType && !localDraft?.idType) setIdType(docs.idType);
+            if (docs.idNumber && !localDraft?.idNumber) setIdNumber(docs.idNumber);
+            if (docs.operatingState && !localDraft?.operatingState) setOperatingState(docs.operatingState);
+            if (docs.homeAddress && !localDraft?.homeAddress) setHomeAddress(docs.homeAddress);
+            if (docs.lga && !localDraft?.lga) setLga(docs.lga);
+            if (docs.idDocumentUrl && !localDraft?.idDocumentUrl) setIdDocumentUrl(docs.idDocumentUrl);
+            if (docs.selfieUrl && !localDraft?.selfieUrl) setSelfieUrl(docs.selfieUrl);
+            if (docs.addressProofUrl && !localDraft?.addressProofUrl) setAddressProofUrl(docs.addressProofUrl);
+            if (docs.tradeCertUrl && !localDraft?.tradeCertUrl) setTradeCertUrl(docs.tradeCertUrl);
+            if (Array.isArray(docs.portfolioUrls) && docs.portfolioUrls.length > 0 && (!localDraft?.portfolioUrls || localDraft.portfolioUrls.length === 0)) {
+              setPortfolioUrls(docs.portfolioUrls);
+            }
+            if (docs.guarantor1 && !localDraft?.g1) setG1(docs.guarantor1);
+            if (docs.guarantor2 && !localDraft?.g2) setG2(docs.guarantor2);
+            if (docs.lastSavedStep && !localDraft?.step) {
+              setStep(docs.lastSavedStep);
+              setRestoredFromDraft(true);
+            }
           }
         })
         .catch(() => {});
@@ -394,6 +499,41 @@ export default function ProVerificationPage() {
     }
   };
 
+  // Step Validation Flags
+  const isStep1Valid = Boolean(
+    idType &&
+    idNumber.trim().length >= 4 &&
+    operatingState.trim() &&
+    homeAddress.trim().length >= 5 &&
+    idDocumentUrl &&
+    selfieUrl &&
+    addressProofUrl &&
+    !idUploading &&
+    !selfieUploading &&
+    !addressUploading
+  );
+
+  const isStep2Valid = Boolean(
+    tradeCertUrl &&
+    !certUploading &&
+    !portfolioUploading.some(Boolean) &&
+    portfolioUrls.filter(Boolean).length >= 1
+  );
+
+  const isStep3Valid = Boolean(
+    g1.name.trim().length >= 3 &&
+    g1.phone.trim().length >= 7 &&
+    g1.nin.trim().length >= 6 &&
+    g2.name.trim().length >= 3 &&
+    g2.phone.trim().length >= 7 &&
+    g2.nin.trim().length >= 6
+  );
+
+  const isStep4Valid = Boolean(
+    Object.keys(selectedAnswers).length === quizQuestions.length &&
+    !submitting
+  );
+
   return (
     <div className={styles.verifyPage}>
       {/* Top Banner */}
@@ -403,14 +543,51 @@ export default function ProVerificationPage() {
             <ArrowLeft size={18} />
             Back to Pro Dashboard
           </Link>
-          <div className={styles.headerBadge}>
-            <ShieldCheck size={18} />
-            <span>HandyHub Verification Portal</span>
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            {draftSavedTime && (
+              <span style={{ fontSize: "11px", color: "#10B981", background: "rgba(16,185,129,0.1)", padding: "4px 10px", borderRadius: 99, border: "1px solid rgba(16,185,129,0.2)" }}>
+                ✓ Progress Auto-Saved ({draftSavedTime})
+              </span>
+            )}
+            <div className={styles.headerBadge}>
+              <ShieldCheck size={18} />
+              <span>HandyHub Verification Portal</span>
+            </div>
           </div>
         </div>
       </header>
 
       <div className="container" style={{ padding: "var(--space-8) 0", maxWidth: 900 }}>
+        {/* Progress Restoration Banner */}
+        {restoredFromDraft && (
+          <div
+            style={{
+              background: "rgba(14, 165, 233, 0.12)",
+              border: "1px solid rgba(14, 165, 233, 0.35)",
+              borderRadius: "12px",
+              padding: "12px 18px",
+              marginBottom: "20px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <CheckCircle size={18} color="#0EA5E9" />
+              <span style={{ fontSize: "13px", color: "#E2E8F0" }}>
+                <strong>Progress Restored:</strong> You have resumed your verification from where you left off (Step {step} of 4).
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setRestoredFromDraft(false)}
+              style={{ background: "none", border: "none", color: "#94A3B8", cursor: "pointer", fontSize: "16px" }}
+            >
+              ✕
+            </button>
+          </div>
+        )}
+
         {/* Title */}
         <div style={{ textAlign: "center", marginBottom: "var(--space-8)" }}>
           <h1 className="h2" style={{ marginBottom: "var(--space-2)" }}>Professional Authentication & Checkmate</h1>
@@ -647,6 +824,7 @@ export default function ProVerificationPage() {
                         try {
                           const url = await uploadToSupabase(file, "government_ids");
                           setIdDocumentUrl(url);
+                          saveDraftState(1, { idDocumentUrl: url });
                         } catch (err: any) {
                           alert(err.message || "Failed to upload ID document");
                         } finally {
@@ -667,12 +845,12 @@ export default function ProVerificationPage() {
                       ) : idDocumentUrl ? (
                         <>
                           <CheckCircle size={24} color="#10B981" />
-                          <span style={{ color: "#10B981" }}>✓ ID Photo Uploaded to Supabase</span>
+                          <span style={{ color: "#10B981" }}>✓ ID Document Uploaded to Supabase</span>
                         </>
                       ) : (
                         <>
                           <UploadCloud size={24} />
-                          <span>Upload Government ID Document Photo</span>
+                          <span>Upload Government ID Document Photo <span style={{ color: "#EF4444" }}>*</span></span>
                         </>
                       )}
                     </div>
@@ -690,6 +868,7 @@ export default function ProVerificationPage() {
                         try {
                           const url = await uploadToSupabase(file, "selfies");
                           setSelfieUrl(url);
+                          saveDraftState(1, { selfieUrl: url });
                         } catch (err: any) {
                           alert(err.message || "Failed to upload selfie photo");
                         } finally {
@@ -716,7 +895,7 @@ export default function ProVerificationPage() {
                         ) : (
                           <>
                             <Camera size={24} />
-                            <span>Take Live Facial Verification Photo</span>
+                            <span>Take Live Facial Verification Photo <span style={{ color: "#EF4444" }}>*</span></span>
                           </>
                         )}
                       </div>
@@ -755,6 +934,7 @@ export default function ProVerificationPage() {
                         try {
                           const url = await uploadToSupabase(file, "proof_of_address");
                           setAddressProofUrl(url);
+                          saveDraftState(1, { addressProofUrl: url });
                         } catch (err: any) {
                           alert(err.message || "Failed to upload Proof of Address");
                         } finally {
@@ -780,19 +960,29 @@ export default function ProVerificationPage() {
                       ) : (
                         <>
                           <FileText size={24} color="#F59E0B" />
-                          <span>Upload Proof of Address (Utility Bill / Tenancy Receipt)</span>
+                          <span>Upload Proof of Address (Utility Bill / Tenancy) <span style={{ color: "#EF4444" }}>*</span></span>
                         </>
                       )}
                     </div>
                   </div>
                 </div>
 
+                {/* Step 1 Mandatory Completion Notice */}
+                {!isStep1Valid && (
+                  <div style={{ background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.25)", borderRadius: "8px", padding: "10px 14px", marginTop: "16px", fontSize: "12px", color: "#FCA5A5" }}>
+                    <strong>Step 1 Requirements:</strong> Please confirm ID number, home address, upload your Government ID document, take your facial selfie photo, and provide proof of address (utility bill) before continuing.
+                  </div>
+                )}
+
                 <div className={styles.actions}>
                   <div />
                   <button
                     className="btn btn-primary btn-md"
-                    onClick={() => setStep(2)}
-                    disabled={!idType || !idNumber.trim() || !homeAddress.trim() || !operatingState || (!idDocumentUrl && !idUploading) || (!selfieUrl && !selfieUploading)}
+                    onClick={() => {
+                      saveDraftState(2);
+                      setStep(2);
+                    }}
+                    disabled={!isStep1Valid}
                   >
                     Continue to Trade Credentials
                     <ArrowRight size={18} />
@@ -814,7 +1004,9 @@ export default function ProVerificationPage() {
 
                 <div className={styles.formGrid}>
                   <div className={styles.uploadArea}>
-                    <label className={styles.label}>Trade Certificate / Master Apprenticeship Document</label>
+                    <label className={styles.label}>
+                      Trade Certificate / Master Apprenticeship Document <span style={{ color: "#EF4444" }}>*</span>
+                    </label>
                     <input
                       type="file"
                       ref={certInputRef}
@@ -827,6 +1019,7 @@ export default function ProVerificationPage() {
                         try {
                           const url = await uploadToSupabase(file, "certificates");
                           setTradeCertUrl(url);
+                          saveDraftState(2, { tradeCertUrl: url });
                         } catch (err: any) {
                           alert(err.message || "Failed to upload trade certificate");
                         } finally {
@@ -852,14 +1045,16 @@ export default function ProVerificationPage() {
                       ) : (
                         <>
                           <FileText size={32} />
-                          <span>Upload Trade Certificate, License, or Master Craftsman Apprenticeship Document</span>
+                          <span>Upload Trade Certificate, License, or Master Craftsman Apprenticeship Document *</span>
                         </>
                       )}
                     </div>
                   </div>
 
                   <div className={styles.uploadArea}>
-                    <label className={styles.label}>Past Work Portfolio (Upload Up to 4 Photos of Past Jobs)</label>
+                    <label className={styles.label}>
+                      Past Work Portfolio (Upload At Least 1 Photo of Past Jobs) <span style={{ color: "#EF4444" }}>*</span>
+                    </label>
                     <div className={styles.portfolioGrid}>
                       {[0, 1, 2, 3].map((idx) => {
                         const num = idx + 1;
@@ -883,11 +1078,10 @@ export default function ProVerificationPage() {
                                 });
                                 try {
                                   const url = await uploadToSupabase(file, "portfolio");
-                                  setPortfolioUrls((prev) => {
-                                    const next = [...prev];
-                                    next[idx] = url;
-                                    return next;
-                                  });
+                                  const next = [...portfolioUrls];
+                                  next[idx] = url;
+                                  setPortfolioUrls(next);
+                                  saveDraftState(2, { portfolioUrls: next });
                                 } catch (err: any) {
                                   alert(err.message || "Failed to upload portfolio photo");
                                 } finally {
@@ -914,7 +1108,7 @@ export default function ProVerificationPage() {
                               ) : (
                                 <>
                                   <Camera size={20} />
-                                  <span>+ Add Photo #{num}</span>
+                                  <span>+ Add Photo #{num} {idx === 0 ? "*" : ""}</span>
                                 </>
                               )}
                             </div>
@@ -925,6 +1119,13 @@ export default function ProVerificationPage() {
                   </div>
                 </div>
 
+                {/* Step 2 Mandatory Completion Notice */}
+                {!isStep2Valid && (
+                  <div style={{ background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.25)", borderRadius: "8px", padding: "10px 14px", marginTop: "16px", fontSize: "12px", color: "#FCA5A5" }}>
+                    <strong>Step 2 Requirements:</strong> Please upload your Trade Certificate/License and at least 1 photo of your past work before continuing to Guarantors.
+                  </div>
+                )}
+
                 <div className={styles.actions}>
                   <button className="btn btn-secondary btn-md" onClick={() => setStep(1)}>
                     <ArrowLeft size={18} />
@@ -932,8 +1133,11 @@ export default function ProVerificationPage() {
                   </button>
                   <button
                     className="btn btn-primary btn-md"
-                    onClick={() => setStep(3)}
-                    disabled={(!tradeCertUrl && !certUploading)}
+                    onClick={() => {
+                      saveDraftState(3);
+                      setStep(3);
+                    }}
+                    disabled={!isStep2Valid}
                   >
                     Continue to Guarantors
                     <ArrowRight size={18} />
@@ -955,59 +1159,96 @@ export default function ProVerificationPage() {
 
                 <div className={styles.formGrid}>
                   <div className={styles.guarantorCard}>
-                    <h4>Guarantor #1 (Landlord / Community Leader)</h4>
+                    <h4>Guarantor #1 (Landlord / Community Leader) <span style={{ color: "#EF4444" }}>*</span></h4>
                     <div className={styles.gRow}>
                       <input
                         type="text"
                         className={styles.input}
-                        placeholder="Full Name"
+                        placeholder="Full Name *"
                         value={g1.name}
-                        onChange={(e) => setG1({ ...g1, name: e.target.value })}
+                        onChange={(e) => {
+                          const updated = { ...g1, name: e.target.value };
+                          setG1(updated);
+                          saveDraftState(3, { g1: updated });
+                        }}
+                        required
                       />
                       <input
                         type="tel"
                         className={styles.input}
-                        placeholder="Phone Number (+234)"
+                        placeholder="Phone Number (+234) *"
                         value={g1.phone}
-                        onChange={(e) => setG1({ ...g1, phone: e.target.value })}
+                        onChange={(e) => {
+                          const updated = { ...g1, phone: e.target.value };
+                          setG1(updated);
+                          saveDraftState(3, { g1: updated });
+                        }}
+                        required
                       />
                       <input
                         type="text"
                         className={styles.input}
-                        placeholder="NIN Number"
+                        placeholder="11-digit NIN Number *"
                         value={g1.nin}
-                        onChange={(e) => setG1({ ...g1, nin: e.target.value })}
+                        onChange={(e) => {
+                          const updated = { ...g1, nin: e.target.value };
+                          setG1(updated);
+                          saveDraftState(3, { g1: updated });
+                        }}
+                        required
                       />
                     </div>
                   </div>
 
                   <div className={styles.guarantorCard}>
-                    <h4>Guarantor #2 (Former Employer / Master Craftsman)</h4>
+                    <h4>Guarantor #2 (Former Employer / Master Craftsman) <span style={{ color: "#EF4444" }}>*</span></h4>
                     <div className={styles.gRow}>
                       <input
                         type="text"
                         className={styles.input}
-                        placeholder="Full Name"
+                        placeholder="Full Name *"
                         value={g2.name}
-                        onChange={(e) => setG2({ ...g2, name: e.target.value })}
+                        onChange={(e) => {
+                          const updated = { ...g2, name: e.target.value };
+                          setG2(updated);
+                          saveDraftState(3, { g2: updated });
+                        }}
+                        required
                       />
                       <input
                         type="tel"
                         className={styles.input}
-                        placeholder="Phone Number (+234)"
+                        placeholder="Phone Number (+234) *"
                         value={g2.phone}
-                        onChange={(e) => setG2({ ...g2, phone: e.target.value })}
+                        onChange={(e) => {
+                          const updated = { ...g2, phone: e.target.value };
+                          setG2(updated);
+                          saveDraftState(3, { g2: updated });
+                        }}
+                        required
                       />
                       <input
                         type="text"
                         className={styles.input}
-                        placeholder="NIN Number"
+                        placeholder="11-digit NIN Number *"
                         value={g2.nin}
-                        onChange={(e) => setG2({ ...g2, nin: e.target.value })}
+                        onChange={(e) => {
+                          const updated = { ...g2, nin: e.target.value };
+                          setG2(updated);
+                          saveDraftState(3, { g2: updated });
+                        }}
+                        required
                       />
                     </div>
                   </div>
                 </div>
+
+                {/* Step 3 Mandatory Completion Notice */}
+                {!isStep3Valid && (
+                  <div style={{ background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.25)", borderRadius: "8px", padding: "10px 14px", marginTop: "16px", fontSize: "12px", color: "#FCA5A5" }}>
+                    <strong>Step 3 Requirements:</strong> Please provide complete details (Full Name, Phone Number, and NIN) for both Guarantors before proceeding.
+                  </div>
+                )}
 
                 <div className={styles.actions}>
                   <button className="btn btn-secondary btn-md" onClick={() => setStep(2)}>
@@ -1016,8 +1257,11 @@ export default function ProVerificationPage() {
                   </button>
                   <button
                     className="btn btn-primary btn-md"
-                    onClick={() => setStep(4)}
-                    disabled={!g1.name || !g1.phone || !g2.name || !g2.phone}
+                    onClick={() => {
+                      saveDraftState(4);
+                      setStep(4);
+                    }}
+                    disabled={!isStep3Valid}
                   >
                     Proceed to Skill Assessment
                     <ArrowRight size={18} />
@@ -1033,7 +1277,7 @@ export default function ProVerificationPage() {
                   <Sparkles className={styles.stepIcon} size={24} />
                   <div>
                     <h3>Step 4: Category Trade Competency Assessment ({category.toUpperCase()})</h3>
-                    <p>Answer 5 practical trade safety questions to authenticate your technical knowledge.</p>
+                    <p>Answer all 5 practical trade safety questions to authenticate your technical knowledge.</p>
                   </div>
                 </div>
 
@@ -1050,7 +1294,11 @@ export default function ProVerificationPage() {
                             className={`${styles.quizOptBtn} ${
                               selectedAnswers[q.id] === oIdx ? styles.quizOptSelected : ""
                             }`}
-                            onClick={() => handleAnswerSelect(q.id, oIdx)}
+                            onClick={() => {
+                              handleAnswerSelect(q.id, oIdx);
+                              const nextAns = { ...selectedAnswers, [q.id]: oIdx };
+                              saveDraftState(4, { selectedAnswers: nextAns });
+                            }}
                           >
                             <span className={styles.optLetter}>{String.fromCharCode(65 + oIdx)}.</span>
                             <span>{opt}</span>
@@ -1061,6 +1309,12 @@ export default function ProVerificationPage() {
                   ))}
                 </div>
 
+                {!isStep4Valid && (
+                  <div style={{ background: "rgba(14,165,233,0.08)", border: "1px solid rgba(14,165,233,0.25)", borderRadius: "8px", padding: "10px 14px", marginTop: "16px", fontSize: "12px", color: "#38BDF8" }}>
+                    Answered {Object.keys(selectedAnswers).length} of {quizQuestions.length} questions. Please answer all questions to submit.
+                  </div>
+                )}
+
                 <div className={styles.actions}>
                   <button className="btn btn-secondary btn-md" onClick={() => setStep(3)}>
                     <ArrowLeft size={18} />
@@ -1069,7 +1323,7 @@ export default function ProVerificationPage() {
                   <button
                     className={`btn btn-primary btn-lg ${submitting ? "btn-loading" : ""}`}
                     onClick={handleSubmitFinal}
-                    disabled={Object.keys(selectedAnswers).length < quizQuestions.length || submitting}
+                    disabled={!isStep4Valid}
                   >
                     {submitting ? "Submitting Audit..." : "Submit Verification Audit"}
                   </button>
