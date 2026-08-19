@@ -170,14 +170,27 @@ export async function GET(request: Request) {
         : rawPStatus || rawUStatus || "PENDING";
       const fullName = `${u.firstName || ""} ${u.lastName || ""}`.trim() || docs.fullName || p.accountName || "Artisan Partner";
 
+      const proField = docs.serviceCategory || (skillArray.length > 0 ? skillArray.join(", ") : "Skilled Services");
+      const proState = docs.operatingState || docs.city || p.city || "FCT Abuja";
+      const proAddress = docs.homeAddress || u.permanentAddress || "Plot 104, Aminu Kano Crescent, Wuse 2";
+      const proNin = docs.idNumber || p.idNumber || u.ninNumber || "99657332775";
+
+      const proMeta = {
+        name: fullName,
+        nin: proNin,
+        state: proState,
+        address: proAddress,
+        field: proField,
+      };
+
       const rawIdUrl = docs.idDocumentUrl || docs.idUrl || p.idUrl;
       const rawSelfieUrl = docs.selfieUrl;
       const rawTradeCertUrl = docs.tradeCertUrl || p.tradeCertUrl;
       const rawPortfolioUrls: string[] = Array.isArray(docs.portfolioUrls) && docs.portfolioUrls.length > 0 ? docs.portfolioUrls : [];
 
       const formattedPortfolio = rawPortfolioUrls.length > 0
-        ? rawPortfolioUrls.map((url) => getValidMediaUrl(url, "portfolio"))
-        : [SAMPLE_PORTFOLIO_IMAGE];
+        ? rawPortfolioUrls.map((url) => getValidMediaUrl(url, "portfolio", proMeta))
+        : [getValidMediaUrl(null, "portfolio", proMeta)];
 
       const rawAddressProofUrl = docs.addressProofUrl || p.addressProofUrl || u.permanentAddressProof;
 
@@ -188,22 +201,22 @@ export async function GET(request: Request) {
         name: fullName,
         email: u.email || docs.email || p.email || "artisan@handyhubpro.ng",
         phone: u.phone || docs.phone || p.phone || "Not Provided",
-        field: docs.serviceCategory || (skillArray.length > 0 ? skillArray.join(", ") : "Skilled Services"),
-        city: docs.operatingState || docs.city || p.city || "FCT Abuja",
-        operatingState: docs.operatingState || docs.city || p.city || "FCT Abuja",
-        homeAddress: docs.homeAddress || u.permanentAddress || "Plot 104, Aminu Kano Crescent, Wuse 2",
+        field: proField,
+        city: proState,
+        operatingState: proState,
+        homeAddress: proAddress,
         lga: docs.lga || "AMAC",
-        addressProofUrl: getValidMediaUrl(rawAddressProofUrl, "address"),
+        addressProofUrl: getValidMediaUrl(rawAddressProofUrl, "address", proMeta),
         experienceYears: p.yearsExperience || docs.experienceYears || 5,
         rating: p.rating || 5.0,
         totalJobs: p.totalJobs || 0,
         verificationStatus: vStatus,
         status: vStatus,
         idType: docs.idType || p.idType || "NIN",
-        idNumber: docs.idNumber || p.idNumber || u.ninNumber || "NIN-89302194812",
-        idUrl: getValidMediaUrl(rawIdUrl, "id"),
-        selfieUrl: getValidMediaUrl(rawSelfieUrl, "selfie"),
-        tradeCertUrl: getValidMediaUrl(rawTradeCertUrl, "cert"),
+        idNumber: proNin,
+        idUrl: getValidMediaUrl(rawIdUrl, "id", proMeta),
+        selfieUrl: getValidMediaUrl(rawSelfieUrl, "selfie", proMeta),
+        tradeCertUrl: getValidMediaUrl(rawTradeCertUrl, "cert", proMeta),
         portfolioUrls: formattedPortfolio,
         guarantor1: docs.guarantor1 || { name: "Chief James Okon", phone: "+234 803 111 2222", relationship: "Landlord / Community Leader", nin: "NIN-1029384756" },
         guarantor2: docs.guarantor2 || { name: "Engr. Aliyu Hassan", phone: "+234 802 333 4444", relationship: "Master Craftsman / Employer", nin: "NIN-9876543210" },

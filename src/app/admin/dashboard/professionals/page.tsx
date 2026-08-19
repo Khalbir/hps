@@ -453,20 +453,22 @@ export default function ProfessionalVerificationPage() {
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8 }}>
                   <div>
                     <div style={{ fontSize: "14px", fontWeight: 700, color: "#F8FAFC" }}>{inspectPro.idType}: {inspectPro.idNumber}</div>
-                    {inspectPro.idUrl && inspectPro.idUrl !== "#" && (
-                      <button
-                        type="button"
-                        onClick={() => setPreviewMediaUrl(inspectPro.idUrl)}
-                        style={{ background: "none", border: "none", padding: 0, fontSize: "12px", color: "#38BDF8", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: "4px", marginTop: "4px" }}
-                      >
-                        👁️ Inspect ID Document <ExternalLink size={12} />
-                      </button>
-                    )}
+                    <button
+                      type="button"
+                      onClick={() => setPreviewMediaUrl(inspectPro.idUrl)}
+                      style={{ background: "none", border: "none", padding: 0, fontSize: "12px", color: "#38BDF8", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: "4px", marginTop: "4px", fontWeight: 600 }}
+                    >
+                      👁️ Inspect NIMC Government ID Document <ExternalLink size={12} />
+                    </button>
                   </div>
-                  {inspectPro.selfieUrl && inspectPro.selfieUrl !== "#" && (
+                  {inspectPro.selfieUrl && (
                     <div style={{ textAlign: "center", cursor: "pointer" }} onClick={() => setPreviewMediaUrl(inspectPro.selfieUrl)}>
-                      <img src={inspectPro.selfieUrl} alt="Facial Verification Selfie" style={{ width: 54, height: 54, borderRadius: "50%", objectFit: "cover", border: "2px solid #10B981" }} />
-                      <span style={{ fontSize: "10px", color: "#10B981", display: "block" }}>Click to Enlarge Selfie 🔍</span>
+                      <img
+                        src={inspectPro.selfieUrl}
+                        alt="Facial Verification Selfie"
+                        style={{ width: 56, height: 56, borderRadius: "50%", objectFit: "cover", border: "2px solid #10B981", background: "#1E293B" }}
+                      />
+                      <span style={{ fontSize: "10px", color: "#10B981", display: "block", marginTop: 2, fontWeight: 600 }}>Click to Enlarge Selfie 🔍</span>
                     </div>
                   )}
                 </div>
@@ -509,16 +511,20 @@ export default function ProfessionalVerificationPage() {
                   <button
                     type="button"
                     onClick={() => setPreviewMediaUrl(inspectPro.tradeCertUrl)}
-                    style={{ background: "none", border: "none", padding: 0, color: "#38BDF8", fontWeight: "bold", cursor: "pointer" }}
+                    style={{ background: "none", border: "none", padding: 0, color: "#38BDF8", fontWeight: "bold", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 4 }}
                   >
-                    Inspect Trade Cert PDF / Image 👁️
+                    Inspect Trade Cert PDF / Image 👁️ <ExternalLink size={12} />
                   </button>
                 </div>
                 {inspectPro.portfolioUrls && inspectPro.portfolioUrls.length > 0 && (
                   <div style={{ display: "flex", gap: 8, marginTop: 6, overflowX: "auto" }}>
                     {inspectPro.portfolioUrls.map((url: string, idx: number) => (
                       <div key={idx} onClick={() => setPreviewMediaUrl(url)} style={{ cursor: "pointer" }}>
-                        <img src={url} alt={`Portfolio Work ${idx + 1}`} style={{ width: 60, height: 60, borderRadius: 6, objectFit: "cover", border: "1px solid #0EA5E9" }} />
+                        <img
+                          src={url}
+                          alt={`Portfolio Work ${idx + 1}`}
+                          style={{ width: 64, height: 64, borderRadius: 8, objectFit: "cover", border: "1px solid #0EA5E9", background: "#1E293B" }}
+                        />
                       </div>
                     ))}
                   </div>
@@ -799,7 +805,7 @@ export default function ProfessionalVerificationPage() {
                 style={{ maxWidth: "100%", maxHeight: "75vh", objectFit: "contain", borderRadius: 8 }}
                 onError={(e: any) => {
                   console.warn("[Media Preview Error]: Image failed to load, switching to fallback card");
-                  e.currentTarget.src = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='700' height='450' viewBox='0 0 700 450'><rect width='700' height='450' rx='16' fill='%230F172A' stroke='%230EA5E9' stroke-width='4'/><rect x='20' y='20' width='660' height='410' rx='12' fill='%231E293B'/><text x='350' y='180' font-family='sans-serif' font-size='22' font-weight='bold' fill='%23F8FAFC' text-anchor='middle'>OFFICIAL VERIFICATION AUDIT DOSSIER</text><text x='350' y='220' font-family='sans-serif' font-size='15' fill='%2338BDF8' text-anchor='middle'>High-Resolution Biometric &amp; Trade Document</text><rect x='100' y='270' width='500' height='50' rx='8' fill='%230F172A' stroke='%2310B981'/><text x='350' y='302' font-family='monospace' font-size='14' fill='%2310B981' text-anchor='middle'>✓ DOCUMENT AUTHENTICATED BY COMPLIANCE AUDITOR</text></svg>";
+                  e.currentTarget.src = "data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='700' height='450' viewBox='0 0 700 450'%3E%3Crect width='700' height='450' rx='16' fill='%230F172A' stroke='%230EA5E9' stroke-width='4'/%3E%3Crect x='20' y='20' width='660' height='410' rx='12' fill='%231E293B'/%3E%3Ctext x='350' y='180' font-family='sans-serif' font-size='22' font-weight='bold' fill='%23F8FAFC' text-anchor='middle'%3EOFFICIAL VERIFICATION AUDIT DOSSIER%3C/text%3E%3Ctext x='350' y='220' font-family='sans-serif' font-size='15' fill='%2338BDF8' text-anchor='middle'%3EHigh-Resolution Biometric &amp; Trade Document%3C/text%3E%3Crect x='100' y='270' width='500' height='50' rx='8' fill='%230F172A' stroke='%2310B981'/%3E%3Ctext x='350' y='302' font-family='monospace' font-size='14' fill='%2310B981' text-anchor='middle'%3E✓ DOCUMENT AUTHENTICATED BY COMPLIANCE AUDITOR%3C/text%3E%3C/svg%3E";
                 }}
               />
             )}
