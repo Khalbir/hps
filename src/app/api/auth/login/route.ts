@@ -146,6 +146,52 @@ export async function POST(request: Request) {
     if (dbUser) {
       const isGoogleAccount = !dbUser.password || dbUser.password.startsWith("google_oauth_");
 
+      // Helper function to sanitize user object and strip out heavy documents/base64 blobs
+      const sanitizeUser = (userObj: any) => {
+        const isPro = userObj.role === "PROFESSIONAL" || Boolean(userObj.professional);
+        const isAdminRole = ADMIN_ROLES.includes(userObj.role);
+
+        let sanitizedProfessional = null;
+        if (userObj.professional) {
+          const { documents, ...profFields } = userObj.professional;
+          sanitizedProfessional = {
+            ...profFields,
+            hasDocuments: Boolean(documents && documents !== "{}" && documents !== "[]"),
+          };
+        }
+
+        const {
+          password: _,
+          documents: __,
+          permanentAddressProof: ___,
+          pendingPermanentAddressProof: ____,
+          ...cleanUserFields
+        } = userObj;
+
+        return {
+          ...cleanUserFields,
+          professional: sanitizedProfessional,
+          isProfessional: isPro,
+          canSwitchToClient: isPro,
+          canSwitchToPro: isPro,
+          roleLabel: userObj.role === "PROFESSIONAL" ? "Artisan / Professional" : isAdminRole ? "Platform Administrator" : "Client / Customer",
+          digitalId: userObj.professional?.digitalId || (isPro ? "HHP-PRO-VERIFIED" : undefined),
+        };
+      };
+
+      const getCookiePayload = (cleanUser: any) => ({
+        id: cleanUser.id,
+        email: cleanUser.email,
+        firstName: cleanUser.firstName,
+        lastName: cleanUser.lastName,
+        role: cleanUser.role,
+        phone: cleanUser.phone || null,
+        avatar: cleanUser.avatar || null,
+        isVerified: cleanUser.isVerified ?? true,
+        isProfessional: cleanUser.isProfessional,
+        digitalId: cleanUser.digitalId || null,
+      });
+
       if (isGoogleAccount) {
         const newHash = await hash(cleanPassword, 10);
         try {
@@ -158,7 +204,7 @@ export async function POST(request: Request) {
           console.warn("[Login Google Account Password Set Warning]:", updErr);
         }
 
-        const { password: _, ...userWithoutPassword } = dbUser;
+        const userWithoutPassword = sanitizeUser(dbUser);
         storeCredential(cleanEmail, cleanPassword, userWithoutPassword);
 
         const isAdminRole = ADMIN_ROLES.includes(dbUser.role);
@@ -172,7 +218,7 @@ export async function POST(request: Request) {
 
         const cookieName = dbUser.role === "PROFESSIONAL" ? "handyhub_pro_session" : isAdminRole ? "handyhub_admin_session" : "handyhub_user_session";
         response.cookies.set(cookieName, "authenticated", { path: "/", maxAge: 86400 * 30, sameSite: "lax" });
-        response.cookies.set("handyhub_user_data", JSON.stringify(userWithoutPassword), { path: "/", maxAge: 86400 * 30, sameSite: "lax" });
+        response.cookies.set("handyhub_user_data", JSON.stringify(getCookiePayload(userWithoutPassword)), { path: "/", maxAge: 86400 * 30, sameSite: "lax" });
         return response;
       }
 
@@ -214,19 +260,11 @@ export async function POST(request: Request) {
           }
         }
 
-        const isPro = dbUser.role === "PROFESSIONAL" || Boolean(dbUser.professional);
-        const isAdminRole = ADMIN_ROLES.includes(dbUser.role);
-        const { password: _, ...rawUser } = dbUser;
-        const userWithoutPassword = {
-          ...rawUser,
-          isProfessional: isPro,
-          canSwitchToClient: isPro,
-          canSwitchToPro: isPro,
-          roleLabel: dbUser.role === "PROFESSIONAL" ? "Artisan / Professional" : isAdminRole ? "Platform Administrator" : "Client / Customer",
-          digitalId: dbUser.professional?.digitalId || (isPro ? "HHP-PRO-VERIFIED" : undefined),
-        };
+        const userWithoutPassword = sanitizeUser(dbUser);
         storeCredential(cleanEmail, cleanPassword, userWithoutPassword);
 
+        const isPro = userWithoutPassword.isProfessional;
+        const isAdminRole = ADMIN_ROLES.includes(dbUser.role);
         const redirectUrl = dbUser.role === "PROFESSIONAL" ? "/pro" : isAdminRole ? "/admin/dashboard" : "/dashboard";
 
         const response = NextResponse.json({
@@ -242,7 +280,7 @@ export async function POST(request: Request) {
           // Pros have verified credentials and can switch to client view anytime
           response.cookies.set("handyhub_user_session", "authenticated", { path: "/", maxAge: 86400 * 30, sameSite: "lax" });
         }
-        response.cookies.set("handyhub_user_data", JSON.stringify(userWithoutPassword), { path: "/", maxAge: 86400 * 30, sameSite: "lax" });
+        response.cookies.set("handyhub_user_data", JSON.stringify(getCookiePayload(userWithoutPassword)), { path: "/", maxAge: 86400 * 30, sameSite: "lax" });
         return response;
       }
     }

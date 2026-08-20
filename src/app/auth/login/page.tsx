@@ -61,29 +61,44 @@ export default function LoginPage() {
         timestamp: Date.now(),
       };
 
+      const cookiePayload = {
+        id: data.user.id,
+        email: data.user.email,
+        firstName: data.user.firstName,
+        lastName: data.user.lastName,
+        role: data.user.role,
+        phone: data.user.phone || null,
+        avatar: data.user.avatar || null,
+        isProfessional: Boolean(data.user.isProfessional || data.user.role === "PROFESSIONAL"),
+        digitalId: data.user.digitalId || null,
+      };
+
       // Always save active session to sessionStorage for single-window context scoping
       sessionStorage.setItem("handyhub_active_session", JSON.stringify(sessionPayload));
       localStorage.setItem("handyhub_user", JSON.stringify(data.user));
 
       const ADMIN_ROLES = ["SUPER_ADMIN", "EXECUTIVE_OPERATIONS_MANAGER", "ADMIN", "OPERATIONS_MANAGER", "MARKETPLACE_MANAGER", "VERIFICATION_OFFICER", "CUSTOMER_SUPPORT", "FINANCE"];
+      const cookieDataStr = encodeURIComponent(JSON.stringify(cookiePayload));
+
       if (ADMIN_ROLES.includes(data.user.role)) {
         localStorage.setItem("handyhub_admin_session", JSON.stringify(sessionPayload));
         document.cookie = "handyhub_admin_session=authenticated; path=/; max-age=2592000; SameSite=Lax";
-        document.cookie = `handyhub_user_data=${encodeURIComponent(JSON.stringify(data.user))}; path=/; max-age=2592000; SameSite=Lax`;
+        document.cookie = `handyhub_user_data=${cookieDataStr}; path=/; max-age=2592000; SameSite=Lax`;
         window.location.href = data.redirect || "/admin/dashboard";
-      } else if (data.user.role === "PROFESSIONAL") {
+      } else if (data.user.role === "PROFESSIONAL" || data.user.isProfessional) {
         localStorage.setItem("handyhub_pro_session", JSON.stringify(sessionPayload));
         document.cookie = "handyhub_pro_session=authenticated; path=/; max-age=2592000; SameSite=Lax";
-        document.cookie = `handyhub_user_data=${encodeURIComponent(JSON.stringify(data.user))}; path=/; max-age=2592000; SameSite=Lax`;
-        router.push("/pro");
+        document.cookie = `handyhub_user_data=${cookieDataStr}; path=/; max-age=2592000; SameSite=Lax`;
+        window.location.href = "/pro";
       } else {
         localStorage.setItem("handyhub_user_session", JSON.stringify(sessionPayload));
         document.cookie = "handyhub_user_session=authenticated; path=/; max-age=2592000; SameSite=Lax";
-        document.cookie = `handyhub_user_data=${encodeURIComponent(JSON.stringify(data.user))}; path=/; max-age=2592000; SameSite=Lax`;
-        router.push("/dashboard");
+        document.cookie = `handyhub_user_data=${cookieDataStr}; path=/; max-age=2592000; SameSite=Lax`;
+        window.location.href = "/dashboard";
       }
-    } catch {
-      setError("Something went wrong. Please try again.");
+    } catch (err) {
+      console.error("Login client error:", err);
+      setError("Something went wrong. Please check your network connection and try again.");
       setLoading(false);
     }
   };
