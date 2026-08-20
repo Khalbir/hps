@@ -144,11 +144,27 @@ function BookingContent() {
       });
 
       if (resolved.categoryId) {
-        setBooking((prev) => ({
-          ...prev,
-          serviceCategory: resolved.categoryId || "",
-          initialQuery: queryParam || undefined,
-        }));
+        setStep(1);
+        saveToStorage(STORAGE_KEYS.BOOKING_STEP, 1);
+
+        const matched = resolved.matchedService;
+        const pModel = matched?.pricingModel || "FIXED";
+        const price = matched?.price || 0;
+
+        setBooking((prev) => {
+          const updated: BookingData = {
+            ...prev,
+            serviceCategory: resolved.categoryId || "",
+            serviceId: matched ? matched.id : prev.serviceId,
+            serviceName: matched ? matched.name : prev.serviceName,
+            servicePrice: matched ? price : prev.servicePrice,
+            pricingModel: matched ? pModel : prev.pricingModel,
+            totalPrice: matched ? price : (prev.totalPrice || price),
+            initialQuery: queryParam || undefined,
+          };
+          saveToStorage(STORAGE_KEYS.PENDING_BOOKING, updated);
+          return updated;
+        });
       }
     }
   }, [searchParams]);

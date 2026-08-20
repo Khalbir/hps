@@ -291,13 +291,15 @@ export function StepService({ booking, updateBooking, onNext }: StepProps) {
                 pricingRules
               );
 
+              const isSelected = booking.serviceId === svc.id;
+
               return (
                 <div
                   key={svc.id}
                   className="card card-hover"
                   style={{
-                    background: "#1E293B",
-                    border: "1px solid #334155",
+                    background: isSelected ? "linear-gradient(135deg, rgba(14,165,233,0.08) 0%, #1E293B 100%)" : "#1E293B",
+                    border: isSelected ? "1.5px solid #0EA5E9" : "1px solid #334155",
                     borderRadius: "16px",
                     padding: "16px 18px",
                     marginBottom: "16px",
@@ -307,12 +309,18 @@ export function StepService({ booking, updateBooking, onNext }: StepProps) {
                     width: "100%",
                     boxSizing: "border-box",
                     overflow: "hidden",
+                    boxShadow: isSelected ? "0 0 20px rgba(14,165,233,0.2)" : "none",
                   }}
                 >
                   <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", flexWrap: "wrap", gap: "10px", width: "100%" }}>
                     <div style={{ flex: 1, minWidth: "200px" }}>
                       <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px", flexWrap: "wrap" }}>
                         <h3 style={{ margin: 0, color: "#F8FAFC", fontSize: "16px", fontWeight: 700 }}>{svc.name}</h3>
+                        {isSelected && (
+                          <span style={{ fontSize: "10px", fontWeight: 800, padding: "2px 8px", borderRadius: "10px", background: "rgba(14,165,233,0.2)", color: "#38BDF8", border: "1px solid rgba(14,165,233,0.4)" }}>
+                            ACTIVE CHOICE
+                          </span>
+                        )}
                         <span
                           style={{
                             fontSize: "10px",
