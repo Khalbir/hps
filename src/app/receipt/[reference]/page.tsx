@@ -357,7 +357,7 @@ export default function DigitalReceiptPage() {
                   Artisan Dispatch & Assignment
                 </h4>
                 <p style={{ margin: 0, fontSize: 13, color: "#94A3B8", lineHeight: 1.5 }}>
-                  Our dispatch team is matching the top-rated verified artisan nearest to your location. Dispatch is confirmed within 15 minutes.
+                  Our dispatch team is matching the top-rated verified artisan nearest to your location. Dispatch is confirmed within 30 minutes.
                 </p>
               </div>
 

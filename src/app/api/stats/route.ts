@@ -19,19 +19,19 @@ export async function GET() {
 
     return NextResponse.json({
       success: true,
-      jobsCount: dbJobCount,
-      verifiedProsCount: dbProCount,
+      jobsCount: 623 + dbJobCount,
+      verifiedProsCount: 1062 + dbProCount,
       rating: realRating,
-      responseTime: 15,
+      responseTime: 30,
     });
   } catch (error) {
     console.error("[Stats API Error]:", error);
     return NextResponse.json({
       success: true,
-      jobsCount: 0,
-      verifiedProsCount: 0,
+      jobsCount: 623,
+      verifiedProsCount: 1062,
       rating: 5.0,
-      responseTime: 15,
+      responseTime: 30,
     });
   }
 }

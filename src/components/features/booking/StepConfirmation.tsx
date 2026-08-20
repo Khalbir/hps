@@ -237,7 +237,7 @@ export function StepConfirmation({ booking }: Props) {
 
           <div style={{ background: "#0F172A", border: "1px solid rgba(14,165,233,0.4)", borderRadius: 10, padding: 12 }}>
             <span style={{ fontSize: 11, fontWeight: 700, color: "#38BDF8", display: "block", marginBottom: 4 }}>2. ARTISAN MATCHING ⚡</span>
-            <span style={{ fontSize: 12, color: "#CBD5E1" }}>Top-rated verified technician dispatched to your location within 15 minutes.</span>
+            <span style={{ fontSize: 12, color: "#CBD5E1" }}>Top-rated verified technician dispatched to your location within 30 minutes.</span>
           </div>
 
           <div style={{ background: "#0F172A", border: "1px solid #334155", borderRadius: 10, padding: 12 }}>

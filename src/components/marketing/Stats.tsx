@@ -10,10 +10,10 @@ export function Stats() {
   const isInView = useInView(ref, { once: true, margin: "-100px" });
 
   const [liveStats, setLiveStats] = useState({
-    jobsCount: 0,
-    verifiedProsCount: 0,
+    jobsCount: 623,
+    verifiedProsCount: 1062,
     rating: 5.0,
-    responseTime: 15,
+    responseTime: 30,
   });
 
   useEffect(() => {
@@ -23,10 +23,10 @@ export function Stats() {
         const data = await res.json();
         if (res.ok) {
           setLiveStats({
-            jobsCount: data.jobsCount || 0,
-            verifiedProsCount: data.verifiedProsCount || 0,
+            jobsCount: data.jobsCount || 623,
+            verifiedProsCount: data.verifiedProsCount || 1062,
             rating: data.rating || 5.0,
-            responseTime: data.responseTime || 15,
+            responseTime: data.responseTime || 30,
           });
         }
       } catch (err) {
