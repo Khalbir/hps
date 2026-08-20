@@ -238,7 +238,7 @@ export function Header() {
               </AnimatePresence>
             </button>
             {isLoggedIn ? (
-              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <div className={styles.authGroup}>
                 {userRole === "SUPER_ADMIN" || userRole === "ADMIN" ? (
                   <Link href="/admin/dashboard" className={styles.profileBtn} title="Admin Control Center">
                     <User size={16} />
@@ -246,12 +246,12 @@ export function Header() {
                   </Link>
                 ) : isProfessional ? (
                   <>
-                    <Link href="/pro" className={styles.profileBtn} style={{ background: "rgba(139, 92, 246, 0.15)", borderColor: "#8B5CF6", color: "#C084FC" }} title="Artisan Workspace">
+                    <Link href="/pro" className={styles.profileBtn} style={{ background: "rgba(139, 92, 246, 0.15)", borderColor: "rgba(139, 92, 246, 0.4)", color: "#C084FC" }} title="Artisan Workspace">
                       <Wrench size={15} color="#A855F7" />
                       <span className={styles.profileText}>Artisan Portal</span>
                     </Link>
                     <Link href="/dashboard" className={styles.switchBtn} title="Switch to Client Mode">
-                      <User size={14} />
+                      <User size={15} />
                       <span className={styles.switchText}>Client View</span>
                     </Link>
                   </>
@@ -274,12 +274,12 @@ export function Header() {
               Book Now
             </Link>
             <button
-              className={styles.menuBtn}
+              className={`${styles.menuBtn} ${mobileOpen ? styles.menuBtnActive : ""}`}
               onClick={() => setMobileOpen(!mobileOpen)}
               aria-label="Toggle menu"
               aria-expanded={mobileOpen}
             >
-              {mobileOpen ? <X size={24} /> : <Menu size={24} />}
+              {mobileOpen ? <X size={20} /> : <Menu size={20} />}
             </button>
           </div>
         </div>
@@ -306,13 +306,27 @@ export function Header() {
             >
               <div className={styles.mobileMenuContent}>
                 <div className={styles.mobileMenuHeader}>
-                  <span className={styles.mobileMenuTitle}>Menu</span>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <span style={{ width: 10, height: 10, borderRadius: "50%", background: "#F97316", display: "inline-block" }} />
+                    <span className={styles.mobileMenuTitle}>HandyHub Menu</span>
+                  </div>
                   <button
                     onClick={() => setMobileOpen(false)}
-                    className="btn btn-icon btn-ghost"
                     aria-label="Close menu"
+                    style={{
+                      color: "#F97316",
+                      width: 36,
+                      height: 36,
+                      borderRadius: 10,
+                      background: "rgba(249,115,22,0.12)",
+                      border: "1.5px solid rgba(249,115,22,0.35)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      cursor: "pointer",
+                    }}
                   >
-                    <X size={24} />
+                    <X size={18} />
                   </button>
                 </div>
                 <div className={styles.mobileLinks}>
@@ -329,7 +343,7 @@ export function Header() {
                       />
                     </button>
                     {mobileServicesOpen && (
-                      <div style={{ paddingLeft: 12, borderLeft: "2px solid var(--color-primary-500)", margin: "4px 0 12px 12px", display: "flex", flexDirection: "column", gap: 6 }}>
+                      <div style={{ paddingLeft: 12, borderLeft: "2px solid #0EA5E9", margin: "4px 0 12px 12px", display: "flex", flexDirection: "column", gap: 6 }}>
                         {services.map((s) => {
                           const IconComp = s.icon;
                           return (
@@ -340,7 +354,7 @@ export function Header() {
                               onClick={() => setMobileOpen(false)}
                               style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 10px", borderRadius: 6, fontSize: "13px", color: "var(--text-secondary)" }}
                             >
-                              <IconComp size={16} color="var(--color-primary-500)" style={{ flexShrink: 0 }} />
+                              <IconComp size={16} color="#0EA5E9" style={{ flexShrink: 0 }} />
                               <span>{s.name}</span>
                             </Link>
                           );
@@ -398,9 +412,19 @@ export function Header() {
                             href="/dashboard"
                             className={styles.mobileLink}
                             onClick={() => setMobileOpen(false)}
-                            style={{ color: "#38BDF8", display: "flex", alignItems: "center", gap: 8 }}
+                            style={{
+                              color: "#0EA5E9",
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 8,
+                              background: "rgba(14, 165, 233, 0.08)",
+                              padding: "10px 14px",
+                              borderRadius: 10,
+                              border: "1.5px solid rgba(14, 165, 233, 0.25)",
+                              fontWeight: 600,
+                            }}
                           >
-                            <User size={18} />
+                            <User size={18} color="#0EA5E9" />
                             <span>Switch to Client Mode (Book Services)</span>
                           </Link>
                         </>
@@ -462,8 +486,14 @@ export function Header() {
                     href="/book"
                     className="btn btn-primary btn-lg w-full"
                     onClick={() => setMobileOpen(false)}
+                    style={{
+                      background: "linear-gradient(135deg, #0EA5E9 0%, #0284C7 100%)",
+                      boxShadow: "0 4px 16px rgba(14, 165, 233, 0.35)",
+                      fontWeight: 700,
+                      borderRadius: 12,
+                    }}
                   >
-                    Book a Service
+                    Book a Service ➔
                   </Link>
                   <button
                     onClick={toggleTheme}
