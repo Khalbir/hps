@@ -216,6 +216,98 @@ export async function POST(request: Request) {
       });
     }
 
+    // Action 8: Mark Artisan Withdrawal Request as Settled / Paid
+    if (action === "SETTLE_WITHDRAWAL" || action === "APPROVE_WITHDRAWAL") {
+      const { withdrawalId, reference } = body;
+      const targetWithdrawal = await prisma.withdrawalRequest.findFirst({
+        where: { OR: [{ id: withdrawalId || "" }, { reference: reference || "" }] },
+        include: { wallet: { include: { user: true } } },
+      });
+
+      if (!targetWithdrawal) {
+        return NextResponse.json({ error: "Withdrawal request not found" }, { status: 404 });
+      }
+
+      await prisma.withdrawalRequest.update({
+        where: { id: targetWithdrawal.id },
+        data: { status: "COMPLETED" },
+      });
+
+      await prisma.auditLog.create({
+        data: {
+          userId: adminUserId || "ADMIN_SESSION",
+          action: "WITHDRAWAL_SETTLED",
+          entity: "WithdrawalRequest",
+          entityId: targetWithdrawal.id,
+          details: JSON.stringify({
+            amount: targetWithdrawal.amount,
+            reference: targetWithdrawal.reference,
+            bankName: targetWithdrawal.bankName,
+            accountNumber: targetWithdrawal.accountNumber,
+            notes: notes || "Payout disbursed to artisan bank account",
+          }),
+        },
+      });
+
+      return NextResponse.json({
+        success: true,
+        message: `Payout of ₦${targetWithdrawal.amount.toLocaleString()} for ref #${targetWithdrawal.reference} marked as SETTLED / PAID! 🎉`,
+      });
+    }
+
+    // Action 9: Reject Artisan Withdrawal & Refund to Wallet
+    if (action === "REJECT_WITHDRAWAL") {
+      const { withdrawalId, reference } = body;
+      const targetWithdrawal = await prisma.withdrawalRequest.findFirst({
+        where: { OR: [{ id: withdrawalId || "" }, { reference: reference || "" }] },
+        include: { wallet: true },
+      });
+
+      if (!targetWithdrawal) {
+        return NextResponse.json({ error: "Withdrawal request not found" }, { status: 404 });
+      }
+
+      // Return funds to wallet
+      await prisma.$transaction(async (tx: any) => {
+        await tx.wallet.update({
+          where: { id: targetWithdrawal.walletId },
+          data: { balance: { increment: targetWithdrawal.amount } },
+        });
+        await tx.withdrawalRequest.update({
+          where: { id: targetWithdrawal.id },
+          data: { status: "REJECTED" },
+        });
+        await tx.walletTransaction.create({
+          data: {
+            walletId: targetWithdrawal.walletId,
+            type: "CREDIT",
+            amount: targetWithdrawal.amount,
+            description: `Withdrawal Refund (Rejected: ${reason || "Account detail discrepancy"})`,
+            reference: `REJ_${targetWithdrawal.reference}`,
+            gateway: "WALLET",
+          },
+        });
+        await tx.auditLog.create({
+          data: {
+            userId: adminUserId || "ADMIN_SESSION",
+            action: "WITHDRAWAL_REJECTED_REFUNDED",
+            entity: "WithdrawalRequest",
+            entityId: targetWithdrawal.id,
+            details: JSON.stringify({
+              amount: targetWithdrawal.amount,
+              reference: targetWithdrawal.reference,
+              reason: reason || "Account detail discrepancy",
+            }),
+          },
+        });
+      });
+
+      return NextResponse.json({
+        success: true,
+        message: `Withdrawal #${targetWithdrawal.reference} rejected. ₦${targetWithdrawal.amount.toLocaleString()} has been refunded to the artisan's wallet balance.`,
+      });
+    }
+
     return NextResponse.json({ error: "Invalid admin action specified" }, { status: 400 });
   } catch (error: any) {
     console.error("[Admin Action Error]:", error);

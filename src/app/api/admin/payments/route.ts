@@ -143,10 +143,54 @@ export async function GET(request: Request) {
       (p) => !p.user || !DEMO_EMAILS.includes(p.user.email)
     );
 
-    const successPayments = filteredPayments.filter((p) => p.status === "SUCCESS");
-    const totalSuccessNgn = successPayments.reduce((acc, curr) => acc + curr.amount, 0);
+    // 4. Fetch Artisan Bank Withdrawal Requests
+    let rawWithdrawals: any[] = [];
+    try {
+      rawWithdrawals = await prisma.withdrawalRequest.findMany({
+        orderBy: { createdAt: "desc" },
+        include: {
+          wallet: {
+            include: {
+              user: {
+                select: {
+                  id: true,
+                  firstName: true,
+                  lastName: true,
+                  email: true,
+                  phone: true,
+                  professional: { select: { id: true, digitalId: true } },
+                },
+              },
+            },
+          },
+        },
+      });
+    } catch (wErr) {
+      console.warn("[Admin Payments DB Warning - Withdrawals]:", wErr);
+    }
 
-    const paystackSuccessPayments = successPayments.filter(
+    const formattedWithdrawals = rawWithdrawals.map((w) => ({
+      id: w.id,
+      reference: w.reference,
+      amount: w.amount,
+      bankName: w.bankName,
+      bankCode: w.bankCode,
+      accountNumber: w.accountNumber,
+      accountName: w.accountName,
+      status: w.status || "PROCESSING",
+      createdAt: w.createdAt,
+      date: new Date(w.createdAt).toLocaleString(),
+      artisanName: w.wallet?.user ? `${w.wallet.user.firstName} ${w.wallet.user.lastName}` : w.accountName,
+      artisanEmail: w.wallet?.user?.email || "artisan@handyhubpro.ng",
+      artisanPhone: w.wallet?.user?.phone || "N/A",
+      digitalId: w.wallet?.user?.professional?.digitalId || "HHP-PRO",
+      walletId: w.walletId,
+    }));
+
+    const totalSuccessPayments = filteredPayments.filter((p) => p.status === "SUCCESS");
+    const totalSuccessNgn = totalSuccessPayments.reduce((acc, curr) => acc + curr.amount, 0);
+
+    const paystackSuccessPayments = totalSuccessPayments.filter(
       (p) => p.provider === "PAYSTACK" || p.provider === "PAYSTACK_LIVE"
     );
     const paystackVolumeNgn = paystackSuccessPayments.reduce((acc, curr) => acc + curr.amount, 0);
@@ -154,15 +198,25 @@ export async function GET(request: Request) {
     // Active escrow holding (80% net artisan funds held before job sign-off)
     const escrowHeldNgn = Math.round(totalSuccessNgn * 0.80);
     const platformFeeNgn = Math.round(totalSuccessNgn * 0.20);
+    const totalWithdrawnNgn = formattedWithdrawals
+      .filter((w) => w.status === "COMPLETED" || w.status === "APPROVED")
+      .reduce((acc, curr) => acc + curr.amount, 0);
+    const pendingWithdrawalNgn = formattedWithdrawals
+      .filter((w) => w.status === "PROCESSING" || w.status === "PENDING")
+      .reduce((acc, curr) => acc + curr.amount, 0);
 
     return NextResponse.json({
       success: true,
       payments: filteredPayments,
+      withdrawals: formattedWithdrawals,
       stats: {
         totalSuccessNgn,
         paystackVolumeNgn: paystackVolumeNgn || totalSuccessNgn,
         platformFeeNgn,
         escrowHeldNgn,
+        totalWithdrawnNgn,
+        pendingWithdrawalNgn,
+        pendingWithdrawalsCount: formattedWithdrawals.filter((w) => w.status === "PROCESSING" || w.status === "PENDING").length,
         failedCount: filteredPayments.filter((p) => p.status === "FAILED").length,
         totalCount: filteredPayments.length,
         livePaystackCount: livePaystackTxs.length,
