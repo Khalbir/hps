@@ -42,8 +42,8 @@ export function Hero() {
             animate={isInView ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.5, delay: 0.1 }}
           >
-            <Sparkles size={14} />
-            <span>#1 Home Services Platform in Abuja</span>
+            <Sparkles size={15} className={styles.badgeIcon} />
+            <span>#1 Home Services in Nigeria</span>
           </motion.div>
 
           {/* Headline */}

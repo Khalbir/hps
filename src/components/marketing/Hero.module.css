@@ -78,21 +78,29 @@
 .badge {
   display: inline-flex;
   align-items: center;
-  gap: var(--space-2);
-  padding: var(--space-2) var(--space-4);
-  background: var(--color-primary-50);
+  gap: 8px;
+  padding: 8px 18px;
+  background: linear-gradient(135deg, rgba(14, 165, 233, 0.08) 0%, rgba(16, 185, 129, 0.08) 100%);
   color: var(--color-primary-600);
-  border: 1px solid var(--color-primary-200);
+  border: 1.5px solid rgba(14, 165, 233, 0.35);
   border-radius: var(--radius-full);
-  font-size: var(--fs-sm);
-  font-weight: var(--fw-semibold);
+  font-size: 13.5px;
+  font-weight: 700;
   margin-bottom: var(--space-6);
+  box-shadow: 0 4px 16px rgba(14, 165, 233, 0.1);
+  letter-spacing: -0.01em;
+}
+
+.badgeIcon {
+  color: #0EA5E9;
+  flex-shrink: 0;
 }
 
 [data-theme="dark"] .badge {
-  background: rgba(14, 165, 233, 0.1);
-  border-color: rgba(14, 165, 233, 0.2);
-  color: var(--color-primary-400);
+  background: linear-gradient(135deg, rgba(14, 165, 233, 0.14) 0%, rgba(16, 185, 129, 0.1) 100%);
+  border-color: rgba(56, 189, 248, 0.35);
+  color: #38BDF8;
+  box-shadow: 0 4px 20px rgba(14, 165, 233, 0.15);
 }
 
 .headline {

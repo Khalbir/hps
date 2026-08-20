@@ -250,8 +250,9 @@ export function Header() {
                       <Wrench size={15} color="#A855F7" />
                       <span className={styles.profileText}>Artisan Portal</span>
                     </Link>
-                    <Link href="/dashboard" className="btn btn-ghost btn-sm" style={{ fontSize: "12px", color: "#38BDF8", padding: "4px 8px", display: "flex", alignItems: "center", gap: 4 }} title="Switch to Client Mode">
-                      <User size={14} /> Switch to Client View
+                    <Link href="/dashboard" className={styles.switchBtn} title="Switch to Client Mode">
+                      <User size={14} />
+                      <span className={styles.switchText}>Client View</span>
                     </Link>
                   </>
                 ) : (

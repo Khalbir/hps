@@ -189,8 +189,26 @@
 }
 
 .themeBtn {
-  width: 40px;
-  height: 40px;
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  min-height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-lg);
+  flex-shrink: 0;
+  border: 1px solid var(--border-primary);
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  cursor: pointer;
+  padding: 0;
+  transition: all var(--duration-short) var(--ease-default);
+}
+
+.themeBtn:hover {
+  background: var(--bg-elevated);
+  border-color: var(--color-primary-400);
 }
 
 .loginBtn {
@@ -355,6 +373,32 @@
   display: inline;
 }
 
+.switchBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: var(--fw-semibold);
+  color: #38BDF8;
+  background: rgba(14, 165, 233, 0.08);
+  border: 1px solid rgba(14, 165, 233, 0.25);
+  padding: 6px 10px;
+  border-radius: var(--radius-lg);
+  text-decoration: none;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: all var(--duration-short) var(--ease-default);
+}
+
+.switchBtn:hover {
+  background: rgba(14, 165, 233, 0.18);
+  border-color: #38BDF8;
+}
+
+.switchText {
+  display: inline;
+}
+
 /* Responsive */
 @media (max-width: 1024px) {
   .container {
@@ -382,13 +426,20 @@
 
 @media (max-width: 768px) {
   .actions {
-    gap: var(--space-2);
+    gap: 6px;
   }
   .profileText {
     display: none;
   }
   .profileBtn {
-    padding: 6px 10px;
+    padding: 6px 8px;
+    border-radius: var(--radius-md);
+  }
+  .switchText {
+    display: none;
+  }
+  .switchBtn {
+    padding: 6px 8px;
     border-radius: var(--radius-md);
   }
 }
