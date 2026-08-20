@@ -114,7 +114,7 @@ export async function GET(request: Request) {
 
     // 4. Self-Healing Receipt Builder for Demo/Client-Initialized Checkout References
     const customer = payment?.user || booking?.customer;
-    const amountNgn = payment?.amount || booking?.finalPrice || booking?.estimatedPrice || passedAmount || 15000;
+    const amountNgn = payment?.amount || booking?.finalPrice || booking?.estimatedPrice || passedAmount || booking?.service?.basePrice || 0;
     
     // Resolve service name dynamically from DB or reference category token
     let serviceName = booking?.service?.name;

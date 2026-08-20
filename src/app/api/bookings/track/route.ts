@@ -169,7 +169,7 @@ export async function GET(request: Request) {
       customerPhone: dbBooking?.customer?.phone || "+234 812 222 2936",
       serviceAddress: dbBooking?.address || "Federal Capital Territory, Abuja, Nigeria",
       scheduledDate: dbBooking?.scheduledDate ? new Date(dbBooking.scheduledDate).toLocaleDateString() + (dbBooking.scheduledTime ? `, ${dbBooking.scheduledTime}` : "") : "Today (Immediate Dispatch)",
-      amountNgn: dbBooking?.finalPrice || dbBooking?.estimatedPrice || 15000,
+      amountNgn: dbBooking?.finalPrice || dbBooking?.estimatedPrice || dbBooking?.service?.basePrice || 0,
       paymentStatus: dbBooking?.paymentStatus === "SUCCESS" || dbBooking?.paymentStatus === "PAID" ? "PAID (Paystack Escrow)" : "PAID (Escrow Protected)",
       status: bookingStatus,
       currentStep,

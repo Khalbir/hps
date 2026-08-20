@@ -95,7 +95,7 @@ export async function POST(request: Request) {
         customer: booking.customer,
         professional: booking.professional as any,
         service: booking.service,
-        estimatedPrice: booking.finalPrice || booking.estimatedPrice || 15000,
+        estimatedPrice: booking.finalPrice || booking.estimatedPrice || booking.service?.basePrice || 0,
       });
     } catch (e) {}
 

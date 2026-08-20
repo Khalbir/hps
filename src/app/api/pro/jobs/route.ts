@@ -159,7 +159,7 @@ export async function POST(request: Request) {
           customer: updated.customer,
           professional: updated.professional as any,
           service: updated.service,
-          estimatedPrice: updated.finalPrice || updated.estimatedPrice || 15000,
+          estimatedPrice: updated.finalPrice || updated.estimatedPrice || updated.service?.basePrice || 0,
         });
       } catch {}
 
@@ -187,7 +187,7 @@ export async function POST(request: Request) {
           customer: updated.customer,
           professional: updated.professional as any,
           service: updated.service,
-          estimatedPrice: updated.finalPrice || updated.estimatedPrice || 15000,
+          estimatedPrice: updated.finalPrice || updated.estimatedPrice || updated.service?.basePrice || 0,
         });
       } catch {}
 
@@ -223,7 +223,7 @@ export async function POST(request: Request) {
           customer: updated.customer,
           professional: updated.professional as any,
           service: updated.service,
-          estimatedPrice: updated.finalPrice || updated.estimatedPrice || 15000,
+          estimatedPrice: updated.finalPrice || updated.estimatedPrice || updated.service?.basePrice || 0,
         });
       } catch {}
 
@@ -275,7 +275,7 @@ export async function POST(request: Request) {
           customer: updated.customer,
           professional: updated.professional as any,
           service: updated.service,
-          estimatedPrice: updated.finalPrice || updated.estimatedPrice || 15000,
+          estimatedPrice: updated.finalPrice || updated.estimatedPrice || updated.service?.basePrice || 0,
         });
       } catch {}
 

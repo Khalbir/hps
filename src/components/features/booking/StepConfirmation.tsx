@@ -20,11 +20,18 @@ export function StepConfirmation({ booking }: Props) {
 
   const catalogService = SERVICE_CATEGORIES.flatMap((c) => c.services).find(
     (s) =>
-      s.id === booking.serviceId ||
+      (booking.serviceId && s.id.toLowerCase() === booking.serviceId.toLowerCase()) ||
       (booking.serviceName && s.name.toLowerCase() === booking.serviceName.toLowerCase())
   );
-  const effectivePrice = booking.totalPrice || booking.servicePrice || catalogService?.price || 15000;
-  const finalPrice = effectivePrice - (booking.discountAmount || 0);
+  const effectivePrice =
+    booking.totalPrice && booking.totalPrice > 0
+      ? booking.totalPrice
+      : booking.servicePrice && booking.servicePrice > 0
+      ? booking.servicePrice
+      : catalogService?.price !== undefined && catalogService.price >= 0
+      ? catalogService.price
+      : 0;
+  const finalPrice = Math.max(0, effectivePrice - (booking.discountAmount || 0));
 
   useEffect(() => {
     if (typeof window !== "undefined") {

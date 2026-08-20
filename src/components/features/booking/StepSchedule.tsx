@@ -71,20 +71,27 @@ export function StepSchedule({ booking, updateBooking, onNext, onBack }: StepPro
 
     const catalogService = SERVICE_CATEGORIES.flatMap((c) => c.services).find(
       (s) =>
-        s.id === booking.serviceId ||
+        (booking.serviceId && s.id.toLowerCase() === booking.serviceId.toLowerCase()) ||
         (booking.serviceName && s.name.toLowerCase() === booking.serviceName.toLowerCase())
     );
 
     const effectiveBasePrice =
       booking.servicePrice && booking.servicePrice > 0
         ? booking.servicePrice
-        : catalogService?.price || 15000;
+        : catalogService?.price !== undefined && catalogService.price >= 0
+        ? catalogService.price
+        : booking.totalPrice && booking.totalPrice > 0
+        ? booking.totalPrice
+        : 0;
 
     const effectivePricingModel =
       (booking.pricingModel as PricingModel) || catalogService?.pricingModel || "FIXED";
 
+    const effectiveServiceId =
+      booking.serviceId || catalogService?.id || booking.serviceCategory || "general-handyman";
+
     const calc = calculateJobPrice({
-      serviceId: booking.serviceId || catalogService?.id || booking.serviceCategory || "cleaning",
+      serviceId: effectiveServiceId,
       pricingModel: effectivePricingModel,
       basePrice: effectiveBasePrice,
       bedrooms: booking.bedrooms || 2,
@@ -121,20 +128,27 @@ export function StepSchedule({ booking, updateBooking, onNext, onBack }: StepPro
 
     const catalogService = SERVICE_CATEGORIES.flatMap((c) => c.services).find(
       (s) =>
-        s.id === booking.serviceId ||
+        (booking.serviceId && s.id.toLowerCase() === booking.serviceId.toLowerCase()) ||
         (booking.serviceName && s.name.toLowerCase() === booking.serviceName.toLowerCase())
     );
 
     const effectiveBasePrice =
       booking.servicePrice && booking.servicePrice > 0
         ? booking.servicePrice
-        : catalogService?.price || 15000;
+        : catalogService?.price !== undefined && catalogService.price >= 0
+        ? catalogService.price
+        : booking.totalPrice && booking.totalPrice > 0
+        ? booking.totalPrice
+        : 0;
 
     const effectivePricingModel =
       (booking.pricingModel as PricingModel) || catalogService?.pricingModel || "FIXED";
 
+    const effectiveServiceId =
+      booking.serviceId || catalogService?.id || booking.serviceCategory || "general-handyman";
+
     const calc = calculateJobPrice({
-      serviceId: booking.serviceId || catalogService?.id || booking.serviceCategory || "cleaning",
+      serviceId: effectiveServiceId,
       pricingModel: effectivePricingModel,
       basePrice: effectiveBasePrice,
       bedrooms: booking.bedrooms || 2,

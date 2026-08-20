@@ -150,8 +150,8 @@ export async function POST(request: Request) {
       if (promo && promo.isActive && promo.usedCount < promo.maxUses) {
         if (promo.discountType === "PERCENTAGE") {
           finalDiscount = Math.min(
-            ((totalPrice || 15000) * promo.discountValue) / 100,
-            promo.maxDiscount || (totalPrice || 15000)
+            ((totalPrice || 0) * promo.discountValue) / 100,
+            promo.maxDiscount || (totalPrice || 0)
           );
         } else {
           finalDiscount = promo.discountValue;
@@ -164,7 +164,7 @@ export async function POST(request: Request) {
       }
     }
 
-    const calculatedPrice = Math.max(0, (totalPrice || 15000) - finalDiscount);
+    const calculatedPrice = Math.max(0, (totalPrice || 0) - finalDiscount);
 
     // Create the booking record
     const booking = await prisma.booking.create({

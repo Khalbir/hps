@@ -167,21 +167,28 @@ export function StepPayment({ booking, updateBooking, onNext, onBack }: StepProp
 
   const catalogService = SERVICE_CATEGORIES.flatMap((c) => c.services).find(
     (s) =>
-      s.id === booking.serviceId ||
+      (booking.serviceId && s.id.toLowerCase() === booking.serviceId.toLowerCase()) ||
       (booking.serviceName && s.name.toLowerCase() === booking.serviceName.toLowerCase())
   );
 
   const effectiveBasePrice =
     booking.servicePrice && booking.servicePrice > 0
       ? booking.servicePrice
-      : catalogService?.price || 15000;
+      : catalogService?.price !== undefined && catalogService.price >= 0
+      ? catalogService.price
+      : booking.totalPrice && booking.totalPrice > 0
+      ? booking.totalPrice
+      : 0;
 
   const effectivePricingModel =
     (booking.pricingModel as PricingModel) || catalogService?.pricingModel || "FIXED";
 
+  const effectiveServiceId =
+    booking.serviceId || catalogService?.id || booking.serviceCategory || "general-handyman";
+
   const jobCalculation = calculateJobPrice(
     {
-      serviceId: booking.serviceId || catalogService?.id || booking.serviceCategory || "cleaning",
+      serviceId: effectiveServiceId,
       pricingModel: effectivePricingModel,
       basePrice: effectiveBasePrice,
       bedrooms: booking.bedrooms || 2,
@@ -195,7 +202,15 @@ export function StepPayment({ booking, updateBooking, onNext, onBack }: StepProp
     pricingRules
   );
 
-  const finalPrice = Math.max(0, jobCalculation.totalPriceNgn - booking.discountAmount);
+  const calculatedTotal = jobCalculation.isCustomQuote ? 0 : jobCalculation.totalPriceNgn;
+  const rawBaseTotal =
+    booking.totalPrice && booking.totalPrice > 0
+      ? booking.totalPrice
+      : calculatedTotal > 0
+      ? calculatedTotal
+      : effectiveBasePrice;
+
+  const finalPrice = Math.max(0, rawBaseTotal - booking.discountAmount);
 
   const applyPromo = () => {
     setPromoError("");
@@ -578,7 +593,7 @@ export function StepPayment({ booking, updateBooking, onNext, onBack }: StepProp
       <div className={styles.priceSummary}>
         <div className={styles.priceRow}>
           <span>{booking.serviceName || "Home Service"}</span>
-          <span>₦{(booking.totalPrice || booking.servicePrice || 15000).toLocaleString()}</span>
+          <span>₦{rawBaseTotal.toLocaleString()}</span>
         </div>
         {booking.isEmergency && (
           <div className={styles.priceRow}>
@@ -594,7 +609,7 @@ export function StepPayment({ booking, updateBooking, onNext, onBack }: StepProp
         )}
         <div className={`${styles.priceRow} ${styles.priceTotal}`}>
           <span>Total</span>
-          <span>₦{Math.max(0, finalPrice || 15000).toLocaleString()}</span>
+          <span>₦{Math.max(0, finalPrice).toLocaleString()}</span>
         </div>
       </div>
 
@@ -638,7 +653,7 @@ export function StepPayment({ booking, updateBooking, onNext, onBack }: StepProp
               Connecting to Paystack Gateway...
             </>
           ) : (
-            `Confirm & Pay ₦${Math.max(0, finalPrice || 15000).toLocaleString()}`
+            `Confirm & Pay ₦${Math.max(0, finalPrice).toLocaleString()}`
           )}
         </button>
       </div>

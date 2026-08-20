@@ -125,7 +125,7 @@ function BookingContent() {
         ...restoredData,
         paymentMethod: "paystack",
         serviceName: restoredData.serviceName || prev.serviceName || "Verified Property Service",
-        totalPrice: restoredData.totalPrice || prev.totalPrice || 15000,
+        totalPrice: restoredData.totalPrice || prev.totalPrice || 0,
         address: restoredData.address || prev.address || "Abuja, FCT, Nigeria",
       }));
 
@@ -321,7 +321,7 @@ function BookingContent() {
       {step < 6 && (() => {
         const matchedSvc = SERVICE_CATEGORIES.flatMap((c) => c.services).find(
           (s) =>
-            s.id === booking.serviceId ||
+            (booking.serviceId && s.id.toLowerCase() === booking.serviceId.toLowerCase()) ||
             (booking.serviceName && s.name.toLowerCase() === booking.serviceName.toLowerCase())
         );
         const isCustomQuote = booking.pricingModel === "CUSTOM_QUOTE" || matchedSvc?.pricingModel === "CUSTOM_QUOTE";
@@ -330,7 +330,9 @@ function BookingContent() {
             ? booking.totalPrice
             : booking.servicePrice > 0
             ? booking.servicePrice
-            : matchedSvc?.price || 15000;
+            : matchedSvc?.price !== undefined && matchedSvc.price >= 0
+            ? matchedSvc.price
+            : 0;
 
         return (
           <div className={styles.mobileStickyBar}>
