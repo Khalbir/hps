@@ -85,14 +85,20 @@ export async function GET(request: Request) {
         if (isValidProofUrl(b.afterPhotos)) afterPhoto = b.afterPhotos;
       }
 
+      const rawDate = b.scheduledDate || b.createdAt;
+      const formattedDate = new Date(rawDate).toLocaleDateString();
+      const formattedTime = b.scheduledTime || new Date(rawDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
       return {
         id: b.reference,
         service: b.service?.name || "Service Dispatch",
         customer: b.customer ? `${b.customer.firstName} ${b.customer.lastName.charAt(0)}.` : "Client User",
         phone: b.customer?.phone || "+234 800 000 0000",
         address: addrStr,
-        date: new Date(b.createdAt).toLocaleDateString(),
-        time: new Date(b.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        date: formattedDate,
+        time: formattedTime,
+        scheduledDate: new Date(rawDate).toISOString(),
+        rawDate: new Date(rawDate).getTime(),
         price: `₦${b.estimatedPrice.toLocaleString()}`,
         status: b.status,
         otpCode: getBookingOtp(b),

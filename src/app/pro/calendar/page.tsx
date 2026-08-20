@@ -17,6 +17,7 @@ export default function ProCalendarPage() {
   ]);
 
   const [upcomingBookings, setUpcomingBookings] = useState<any[]>([]);
+  const [pastBookings, setPastBookings] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchRealCalendarBookings = async () => {
@@ -38,7 +39,30 @@ export default function ProCalendarPage() {
       const res = await fetch(`/api/pro/jobs?userId=${activeUserId}&email=${encodeURIComponent(activeEmail)}`);
       const data = await res.json();
       if (res.ok && data.jobs) {
-        setUpcomingBookings(data.jobs);
+        const now = new Date();
+        const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+
+        const upcoming: any[] = [];
+        const past: any[] = [];
+
+        data.jobs.forEach((job: any) => {
+          const rawTime = job.rawDate ? Number(job.rawDate) : new Date(job.scheduledDate || job.date).getTime();
+          const isTerminal = ["COMPLETED", "CANCELLED", "REFUNDED"].includes(job.status?.toUpperCase());
+
+          if (!isTerminal && rawTime >= startOfToday) {
+            upcoming.push(job);
+          } else {
+            past.push(job);
+          }
+        });
+
+        // Sort upcoming ascending (soonest first)
+        upcoming.sort((a, b) => (a.rawDate || 0) - (b.rawDate || 0));
+        // Sort past descending (most recent first)
+        past.sort((a, b) => (b.rawDate || 0) - (a.rawDate || 0));
+
+        setUpcomingBookings(upcoming);
+        setPastBookings(past);
       }
     } catch (err) {
       console.warn("Failed to fetch calendar bookings:", err);
@@ -98,26 +122,62 @@ export default function ProCalendarPage() {
         </div>
 
         {/* Scheduled Appointments Summary */}
-        <div className="card">
-          <h3 className="h4" style={{ marginBottom: "var(--space-4)" }}>Upcoming Bookings</h3>
-
-          {loading ? (
-            <div style={{ padding: 20, textAlign: "center", color: "var(--text-tertiary)", fontSize: "var(--fs-xs)" }}>Loading real bookings...</div>
-          ) : upcomingBookings.length === 0 ? (
-            <div style={{ padding: "30px 16px", textAlign: "center", background: "var(--bg-tertiary)", borderRadius: "var(--radius-lg)", border: "1px solid var(--border-primary)" }}>
-              <Inbox size={32} color="#0EA5E9" style={{ opacity: 0.6, marginBottom: 8 }} />
-              <strong style={{ display: "block", fontSize: "var(--fs-sm)", color: "var(--text-primary)" }}>No Scheduled Bookings</strong>
-              <p style={{ fontSize: "var(--fs-xs)", color: "var(--text-tertiary)", margin: "4px 0 0" }}>When clients book your services, appointment dates will display here.</p>
+        <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+          {/* Upcoming Bookings Card */}
+          <div className="card">
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "var(--space-4)" }}>
+              <h3 className="h4" style={{ margin: 0, display: "flex", alignItems: "center", gap: 8 }}>
+                <Calendar size={18} color="#0EA5E9" /> Upcoming Bookings
+              </h3>
+              {upcomingBookings.length > 0 && (
+                <span style={{ fontSize: "11px", fontWeight: 700, background: "rgba(14,165,233,0.15)", color: "#38BDF8", padding: "2px 8px", borderRadius: 10 }}>
+                  {upcomingBookings.length} Future {upcomingBookings.length === 1 ? "Job" : "Jobs"}
+                </span>
+              )}
             </div>
-          ) : (
-            <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
-              {upcomingBookings.map((b) => (
-                <div key={b.id} style={{ padding: "var(--space-3)", background: "rgba(14,165,233,0.1)", borderRadius: "var(--radius-lg)", border: "1px solid rgba(14,165,233,0.25)" }}>
-                  <strong style={{ display: "block", fontSize: "var(--fs-sm)", color: "#0EA5E9" }}>{b.date} • {b.time}</strong>
-                  <span style={{ fontSize: "var(--fs-xs)", color: "var(--text-primary)", fontWeight: "bold" }}>{b.service} — {b.customer}</span>
-                  <p style={{ fontSize: "11px", color: "var(--text-tertiary)", margin: "2px 0 0" }}>{b.address}</p>
-                </div>
-              ))}
+
+            {loading ? (
+              <div style={{ padding: 20, textAlign: "center", color: "var(--text-tertiary)", fontSize: "var(--fs-xs)" }}>Loading bookings...</div>
+            ) : upcomingBookings.length === 0 ? (
+              <div style={{ padding: "30px 16px", textAlign: "center", background: "var(--bg-tertiary)", borderRadius: "var(--radius-lg)", border: "1px solid var(--border-primary)" }}>
+                <Inbox size={32} color="#0EA5E9" style={{ opacity: 0.6, marginBottom: 8 }} />
+                <strong style={{ display: "block", fontSize: "var(--fs-sm)", color: "var(--text-primary)" }}>No Upcoming Bookings</strong>
+                <p style={{ fontSize: "var(--fs-xs)", color: "var(--text-tertiary)", margin: "4px 0 0" }}>When clients schedule appointments for upcoming dates, they will appear here.</p>
+              </div>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
+                {upcomingBookings.map((b) => (
+                  <div key={b.id} style={{ padding: "var(--space-3)", background: "rgba(14,165,233,0.1)", borderRadius: "var(--radius-lg)", border: "1.5px solid rgba(14,165,233,0.3)" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+                      <strong style={{ fontSize: "var(--fs-sm)", color: "#0EA5E9" }}>{b.date} • {b.time}</strong>
+                      <span style={{ fontSize: "10px", fontWeight: 800, background: "rgba(16,185,129,0.15)", color: "#10B981", padding: "2px 6px", borderRadius: 6 }}>UPCOMING</span>
+                    </div>
+                    <span style={{ fontSize: "var(--fs-xs)", color: "var(--text-primary)", fontWeight: "bold" }}>{b.service} — {b.customer}</span>
+                    <p style={{ fontSize: "11px", color: "var(--text-tertiary)", margin: "2px 0 0" }}>{b.address}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Past Bookings Card */}
+          {pastBookings.length > 0 && (
+            <div className="card" style={{ opacity: 0.9 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "var(--space-3)" }}>
+                <h4 style={{ margin: 0, fontSize: "14px", color: "var(--text-secondary)" }}>Past / Completed Jobs</h4>
+                <span style={{ fontSize: "11px", color: "var(--text-tertiary)" }}>{pastBookings.length} {pastBookings.length === 1 ? "record" : "records"}</span>
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
+                {pastBookings.map((b) => (
+                  <div key={b.id} style={{ padding: "10px 12px", background: "var(--bg-tertiary)", borderRadius: "var(--radius-md)", border: "1px solid var(--border-primary)" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 2 }}>
+                      <span style={{ fontSize: "12px", color: "var(--text-secondary)", fontWeight: 600 }}>{b.date} • {b.time}</span>
+                      <span style={{ fontSize: "10px", fontWeight: 700, color: "var(--text-tertiary)" }}>{b.status}</span>
+                    </div>
+                    <span style={{ fontSize: "12px", color: "var(--text-tertiary)" }}>{b.service} — {b.customer}</span>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
         </div>
