@@ -8,6 +8,7 @@ import {
   Inbox, RefreshCw, AlertCircle, Loader2, Image as ImageIcon, RotateCcw, Check, Sparkles, Eye,
   Wrench, Ticket, ShieldCheck, DollarSign, FileText, CheckCircle2
 } from "lucide-react";
+import { optimizeDocumentFile } from "@/lib/image-compression";
 import styles from "../pro.module.css";
 
 export interface ActiveJob {
@@ -141,8 +142,11 @@ export default function ProJobsPage() {
     setOtpError("");
 
     try {
+      // Auto-compress and optimize job execution photo
+      const { file: optimizedFile } = await optimizeDocumentFile(file);
+
       const formData = new FormData();
-      formData.append("file", file);
+      formData.append("file", optimizedFile);
       formData.append("folder", "job-execution-proofs");
 
       const res = await fetch("/api/upload", {
@@ -154,18 +158,18 @@ export default function ProJobsPage() {
       if (res.ok && data.url) {
         if (type === "before") {
           setBeforePhotoUrl(data.url);
-          setSuccessMessage("📸 Before-job photo successfully uploaded!");
+          setSuccessMessage("📸 Before-job photo successfully uploaded & optimized!");
         } else {
           setAfterPhotoUrl(data.url);
-          setSuccessMessage("📸 After-job photo successfully uploaded!");
+          setSuccessMessage("📸 After-job photo successfully uploaded & optimized!");
         }
         setTimeout(() => setSuccessMessage(""), 3500);
       } else {
         setOtpError(data.error || "Failed to upload photo. Please try again.");
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error("Photo upload error:", err);
-      setOtpError("Network error while uploading photo. Please check your connection.");
+      setOtpError(err.message || "Network error while uploading photo. Please check your connection.");
     } finally {
       if (type === "before") setUploadingBefore(false);
       else setUploadingAfter(false);
@@ -182,8 +186,9 @@ export default function ProJobsPage() {
     setUploadingEvidence(true);
     setPartError("");
     try {
+      const { file: optimizedFile } = await optimizeDocumentFile(file);
       const formData = new FormData();
-      formData.append("file", file);
+      formData.append("file", optimizedFile);
       formData.append("folder", "damaged-part-evidence");
       const res = await fetch("/api/upload", { method: "POST", body: formData });
       const data = await res.json();
@@ -192,8 +197,8 @@ export default function ProJobsPage() {
       } else {
         setPartError(data.error || "Failed to upload part photo.");
       }
-    } catch {
-      setPartError("Network error uploading photo.");
+    } catch (err: any) {
+      setPartError(err.message || "Network error uploading photo.");
     } finally {
       setUploadingEvidence(false);
       e.target.value = "";
@@ -263,8 +268,9 @@ export default function ProJobsPage() {
     setUploadingReceipt(true);
     setInstallError("");
     try {
+      const { file: optimizedFile } = await optimizeDocumentFile(file);
       const formData = new FormData();
-      formData.append("file", file);
+      formData.append("file", optimizedFile);
       formData.append("folder", "part-receipts");
       const res = await fetch("/api/upload", { method: "POST", body: formData });
       const data = await res.json();
@@ -273,8 +279,8 @@ export default function ProJobsPage() {
       } else {
         setInstallError(data.error || "Failed to upload receipt.");
       }
-    } catch {
-      setInstallError("Network error uploading receipt.");
+    } catch (err: any) {
+      setInstallError(err.message || "Network error uploading receipt.");
     } finally {
       setUploadingReceipt(false);
       e.target.value = "";
@@ -287,8 +293,9 @@ export default function ProJobsPage() {
     setUploadingInstalled(true);
     setInstallError("");
     try {
+      const { file: optimizedFile } = await optimizeDocumentFile(file);
       const formData = new FormData();
-      formData.append("file", file);
+      formData.append("file", optimizedFile);
       formData.append("folder", "installed-parts");
       const res = await fetch("/api/upload", { method: "POST", body: formData });
       const data = await res.json();
@@ -297,8 +304,8 @@ export default function ProJobsPage() {
       } else {
         setInstallError(data.error || "Failed to upload installed photo.");
       }
-    } catch {
-      setInstallError("Network error uploading installed photo.");
+    } catch (err: any) {
+      setInstallError(err.message || "Network error uploading installed photo.");
     } finally {
       setUploadingInstalled(false);
       e.target.value = "";

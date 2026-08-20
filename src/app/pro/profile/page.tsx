@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { ProLayoutShell } from "@/components/layout/ProLayoutShell";
 import { User, ShieldCheck, Award, Star, MapPin, Camera, FileText, RefreshCw, AlertCircle, Copy, Check, Fingerprint, BadgeCheck } from "lucide-react";
+import { optimizeDocumentFile } from "@/lib/image-compression";
 import styles from "../dashboard/dashboard.module.css";
 
 export default function ProProfilePage() {
@@ -83,8 +84,11 @@ export default function ProProfilePage() {
     setAvatarMsg("");
 
     try {
+      // Auto-compress and optimize image before upload
+      const { file: optimizedFile } = await optimizeDocumentFile(file);
+
       const formData = new FormData();
-      formData.append("file", file);
+      formData.append("file", optimizedFile);
       formData.append("folder", "avatars");
 
       const res = await fetch("/api/upload", {
@@ -94,19 +98,19 @@ export default function ProProfilePage() {
       const data = await res.json();
 
       if (res.ok && data.url) {
-        const updateRes = await fetch("/api/user/profile", {
+        await fetch("/api/user/profile", {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ avatar: data.url }),
         });
 
         setProfile((prev: any) => ({ ...prev, avatar: data.url }));
-        setAvatarMsg("Profile picture updated successfully! ✅");
+        setAvatarMsg("Profile picture updated & optimized! ✅");
       } else {
-        setAvatarMsg("Upload failed. Please try a smaller image.");
+        setAvatarMsg(data.error || "Upload failed. Please try a smaller image.");
       }
-    } catch (err) {
-      setAvatarMsg("Upload error. Please check your connection.");
+    } catch (err: any) {
+      setAvatarMsg(err.message || "Upload error. Please check your connection.");
     } finally {
       setUploadingAvatar(false);
     }

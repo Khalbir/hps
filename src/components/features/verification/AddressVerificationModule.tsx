@@ -21,6 +21,7 @@ import {
 import { TrustBadge } from "@/components/common/TrustBadge";
 import { BookingAddressItem, PermanentAddressStatus } from "@/lib/verification/types";
 import { parseBookingAddresses } from "@/lib/verification/verification-service";
+import { optimizeDocumentFile } from "@/lib/image-compression";
 
 interface AddressVerificationModuleProps {
   userEmail: string;
@@ -148,14 +149,17 @@ export function AddressVerificationModule({
     refreshAddressState();
   }, [userEmail]);
 
-  // Upload proof document
+  // Upload proof document with auto-compression
   const handleFileUpload = async (file: File, isChange: boolean = false) => {
     if (isChange) setChangeUploading(true);
     else setUploadingProof(true);
 
     try {
+      // Auto-compress and optimize image/PDF
+      const { file: optimizedFile } = await optimizeDocumentFile(file);
+
       const formData = new FormData();
-      formData.append("file", file);
+      formData.append("file", optimizedFile);
 
       const res = await fetch("/api/upload", {
         method: "POST",
@@ -166,13 +170,13 @@ export function AddressVerificationModule({
       if (res.ok && data.url) {
         if (isChange) setChangeProofUrl(data.url);
         else setUploadedProofUrl(data.url);
-        showToast("Proof document uploaded successfully! 📄");
+        showToast("Proof document uploaded & optimized successfully! 📄");
       } else {
         alert(data.error || "Failed to upload document.");
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      alert("Error uploading proof document.");
+      alert(err.message || "Error uploading proof document.");
     } finally {
       if (isChange) setChangeUploading(false);
       else setUploadingProof(false);

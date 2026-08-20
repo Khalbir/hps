@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { getQuizForCategory, QuizQuestion } from "@/lib/quiz";
 import { getValidMediaUrl } from "@/lib/sample-documents";
+import { optimizeDocumentFile } from "@/lib/image-compression";
 import styles from "../pro.module.css";
 
 const steps = [
@@ -392,13 +393,16 @@ export default function ProVerificationPage() {
       } finally {
         setSelfieUploading(false);
       }
-    }, "image/jpeg", 0.9);
+    }, "image/jpeg", 0.82);
   };
 
-  // Helper Supabase File Upload Function
+  // Helper Supabase File Upload Function with In-Browser Auto-Compression
   const uploadToSupabase = async (file: File, folder: string): Promise<string> => {
+    // Automatically downscale and compress document before network transmission
+    const { file: optimizedFile } = await optimizeDocumentFile(file);
+
     const formData = new FormData();
-    formData.append("file", file);
+    formData.append("file", optimizedFile);
     formData.append("folder", folder);
 
     const res = await fetch("/api/upload", {
@@ -410,7 +414,7 @@ export default function ProVerificationPage() {
     if (res.ok && data.url) {
       return data.url;
     }
-    throw new Error(data.error || "Upload failed");
+    throw new Error(data.error || "Upload failed. Please check file size and format.");
   };
 
   // Step 3 State
@@ -884,27 +888,32 @@ export default function ProVerificationPage() {
                         }
                       }}
                     />
-                    <div
-                      className={`${styles.uploadBox} ${idDocumentUrl ? styles.uploadBoxDone : ""}`}
-                      onClick={() => idInputRef.current?.click()}
-                      style={{ cursor: "pointer", position: "relative" }}
-                    >
-                      {idUploading ? (
-                        <>
-                          <Loader2 size={24} className="animate-spin" color="#0EA5E9" />
-                          <span>Uploading ID to Supabase...</span>
-                        </>
-                      ) : idDocumentUrl ? (
-                        <>
-                          <CheckCircle size={24} color="#10B981" />
-                          <span style={{ color: "#10B981" }}>✓ ID Document Uploaded to Supabase</span>
-                        </>
-                      ) : (
-                        <>
-                          <UploadCloud size={24} />
-                          <span>Upload Government ID Document Photo <span style={{ color: "#EF4444" }}>*</span></span>
-                        </>
-                      )}
+                    <div style={{ display: "flex", flexDirection: "column", gap: 4, width: "100%" }}>
+                      <div
+                        className={`${styles.uploadBox} ${idDocumentUrl ? styles.uploadBoxDone : ""}`}
+                        onClick={() => idInputRef.current?.click()}
+                        style={{ cursor: "pointer", position: "relative" }}
+                      >
+                        {idUploading ? (
+                          <>
+                            <Loader2 size={24} className="animate-spin" color="#0EA5E9" />
+                            <span>Uploading ID (Auto-optimizing)...</span>
+                          </>
+                        ) : idDocumentUrl ? (
+                          <>
+                            <CheckCircle size={24} color="#10B981" />
+                            <span style={{ color: "#10B981" }}>✓ ID Document Uploaded to Supabase</span>
+                          </>
+                        ) : (
+                          <>
+                            <UploadCloud size={24} />
+                            <span>Upload Government ID Document Photo <span style={{ color: "#EF4444" }}>*</span></span>
+                          </>
+                        )}
+                      </div>
+                      <span style={{ fontSize: "11px", color: "#94A3B8", paddingLeft: 4 }}>
+                        📎 Max: 2MB • JPG, PNG, PDF (Auto-optimized to &lt;250KB)
+                      </span>
                     </div>
 
                     <input
@@ -928,7 +937,7 @@ export default function ProVerificationPage() {
                         }
                       }}
                     />
-                    <div style={{ display: "flex", flexDirection: "column", gap: 6, width: "100%" }}>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 4, width: "100%" }}>
                       <div
                         className={`${styles.uploadBox} ${selfieUrl ? styles.uploadBoxDone : ""}`}
                         onClick={startLiveFacialCamera}
@@ -952,8 +961,11 @@ export default function ProVerificationPage() {
                         )}
                       </div>
 
-                      {!selfieUrl && (
-                        <div style={{ textAlign: "center", marginTop: 2 }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingLeft: 4 }}>
+                        <span style={{ fontSize: "11px", color: "#94A3B8" }}>
+                          📷 Live Camera / Photo • Auto-optimized
+                        </span>
+                        {!selfieUrl && (
                           <button
                             type="button"
                             onClick={() => selfieInputRef.current?.click()}
@@ -961,16 +973,16 @@ export default function ProVerificationPage() {
                               background: "none",
                               border: "none",
                               color: "#38BDF8",
-                              fontSize: "12px",
+                              fontSize: "11px",
                               cursor: "pointer",
                               textDecoration: "underline",
-                              padding: "2px 6px",
+                              padding: "0 4px",
                             }}
                           >
-                            📷 Or Snap Photo with Native Device Camera
+                            Snap with Device Camera
                           </button>
-                        </div>
-                      )}
+                        )}
+                      </div>
                     </div>
 
                     {/* Proof of Address File Upload */}
@@ -994,27 +1006,32 @@ export default function ProVerificationPage() {
                         }
                       }}
                     />
-                    <div
-                      className={`${styles.uploadBox} ${addressProofUrl ? styles.uploadBoxDone : ""}`}
-                      onClick={() => addressInputRef.current?.click()}
-                      style={{ cursor: "pointer", position: "relative" }}
-                    >
-                      {addressUploading ? (
-                        <>
-                          <Loader2 size={24} className="animate-spin" color="#0EA5E9" />
-                          <span>Uploading Proof of Address...</span>
-                        </>
-                      ) : addressProofUrl ? (
-                        <>
-                          <CheckCircle size={24} color="#10B981" />
-                          <span style={{ color: "#10B981" }}>✓ Proof of Address Uploaded (Utility Bill)</span>
-                        </>
-                      ) : (
-                        <>
-                          <FileText size={24} color="#F59E0B" />
-                          <span>Upload Proof of Address (Utility Bill / Tenancy) <span style={{ color: "#EF4444" }}>*</span></span>
-                        </>
-                      )}
+                    <div style={{ display: "flex", flexDirection: "column", gap: 4, width: "100%" }}>
+                      <div
+                        className={`${styles.uploadBox} ${addressProofUrl ? styles.uploadBoxDone : ""}`}
+                        onClick={() => addressInputRef.current?.click()}
+                        style={{ cursor: "pointer", position: "relative" }}
+                      >
+                        {addressUploading ? (
+                          <>
+                            <Loader2 size={24} className="animate-spin" color="#0EA5E9" />
+                            <span>Uploading Proof of Address...</span>
+                          </>
+                        ) : addressProofUrl ? (
+                          <>
+                            <CheckCircle size={24} color="#10B981" />
+                            <span style={{ color: "#10B981" }}>✓ Proof of Address Uploaded (Utility Bill)</span>
+                          </>
+                        ) : (
+                          <>
+                            <FileText size={24} color="#F59E0B" />
+                            <span>Upload Proof of Address (Utility Bill / Tenancy) <span style={{ color: "#EF4444" }}>*</span></span>
+                          </>
+                        )}
+                      </div>
+                      <span style={{ fontSize: "11px", color: "#94A3B8", paddingLeft: 4 }}>
+                        📎 Max: 2MB • JPG, PNG, PDF (Auto-optimized to &lt;250KB)
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -1087,7 +1104,7 @@ export default function ProVerificationPage() {
                       {certUploading ? (
                         <>
                           <Loader2 size={32} className="animate-spin" color="#0EA5E9" />
-                          <span>Uploading Trade Document to Supabase...</span>
+                          <span>Uploading Trade Document (Auto-optimizing)...</span>
                         </>
                       ) : tradeCertUrl ? (
                         <>
@@ -1101,6 +1118,9 @@ export default function ProVerificationPage() {
                         </>
                       )}
                     </div>
+                    <span style={{ fontSize: "11px", color: "#94A3B8", marginTop: 4, display: "block" }}>
+                      📎 Max: 2MB • JPG, PNG, PDF (Auto-optimized to &lt;250KB for fast review)
+                    </span>
                   </div>
 
                   <div className={styles.uploadArea}>
@@ -1168,6 +1188,9 @@ export default function ProVerificationPage() {
                         );
                       })}
                     </div>
+                    <span style={{ fontSize: "11px", color: "#94A3B8", marginTop: 4, display: "block" }}>
+                      📷 Max: 2MB per photo • JPG, PNG (Auto-compressed to &lt;200KB)
+                    </span>
                   </div>
                 </div>
 

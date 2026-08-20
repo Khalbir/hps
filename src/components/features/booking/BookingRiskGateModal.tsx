@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { Lock, ShieldAlert, Upload, CheckCircle2, ArrowRight, X, AlertTriangle, FileText, Clock } from "lucide-react";
 import { TrustBadge } from "@/components/common/TrustBadge";
+import { optimizeDocumentFile } from "@/lib/image-compression";
 
 interface BookingRiskGateModalProps {
   isOpen: boolean;
@@ -36,8 +37,9 @@ export function BookingRiskGateModal({
   const handleFileUpload = async (file: File) => {
     setUploading(true);
     try {
+      const { file: optimizedFile } = await optimizeDocumentFile(file);
       const formData = new FormData();
-      formData.append("file", file);
+      formData.append("file", optimizedFile);
       const res = await fetch("/api/upload", {
         method: "POST",
         body: formData,
@@ -48,8 +50,8 @@ export function BookingRiskGateModal({
       } else {
         alert(data.error || "Failed to upload document.");
       }
-    } catch (err) {
-      alert("Failed to upload proof document.");
+    } catch (err: any) {
+      alert(err.message || "Failed to upload proof document.");
     } finally {
       setUploading(false);
     }

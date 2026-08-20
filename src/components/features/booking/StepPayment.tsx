@@ -8,6 +8,7 @@ import { BookingRiskGateModal } from "@/components/features/booking/BookingRiskG
 import { TrustBadge } from "@/components/common/TrustBadge";
 import { evaluateBookingRiskGate, isServiceHighRisk } from "@/lib/verification/verification-service";
 import { calculateJobPrice, DEFAULT_PRICING_RULES } from "@/lib/pricingEngine";
+import { optimizeDocumentFile } from "@/lib/image-compression";
 import styles from "./Steps.module.css";
 
 interface StepProps {
@@ -93,8 +94,9 @@ export function StepPayment({ booking, updateBooking, onNext, onBack }: StepProp
   const handleInlineUpload = async (file: File) => {
     setInlineUploading(true);
     try {
+      const { file: optimizedFile } = await optimizeDocumentFile(file);
       const formData = new FormData();
-      formData.append("file", file);
+      formData.append("file", optimizedFile);
       const res = await fetch("/api/upload", {
         method: "POST",
         body: formData,
@@ -105,8 +107,8 @@ export function StepPayment({ booking, updateBooking, onNext, onBack }: StepProp
       } else {
         alert(data.error || "File upload failed.");
       }
-    } catch {
-      alert("Error uploading file to server.");
+    } catch (err: any) {
+      alert(err.message || "Error uploading file to server.");
     } finally {
       setInlineUploading(false);
     }

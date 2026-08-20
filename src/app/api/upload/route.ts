@@ -3,6 +3,15 @@ import { supabase } from "@/lib/supabase";
 
 export const dynamic = "force-dynamic";
 
+const MAX_ALLOWED_FILE_SIZE = 2 * 1024 * 1024; // 2 MB
+const ALLOWED_CONTENT_TYPES = [
+  "image/jpeg",
+  "image/jpg",
+  "image/png",
+  "image/webp",
+  "application/pdf",
+];
+
 export async function POST(request: Request) {
   try {
     const formData = await request.formData();
@@ -11,6 +20,25 @@ export async function POST(request: Request) {
 
     if (!file) {
       return NextResponse.json({ error: "No file provided for upload" }, { status: 400 });
+    }
+
+    // Enforce 2MB size restriction
+    if (file.size > MAX_ALLOWED_FILE_SIZE) {
+      const sizeMb = (file.size / (1024 * 1024)).toFixed(2);
+      return NextResponse.json(
+        { error: `File size (${sizeMb}MB) exceeds the maximum allowed limit of 2MB. Please select an optimized document.` },
+        { status: 413 }
+      );
+    }
+
+    // Validate MIME type
+    const fileType = file.type?.toLowerCase();
+    const isAllowedType = !fileType || ALLOWED_CONTENT_TYPES.includes(fileType) || fileType.startsWith("image/");
+    if (!isAllowedType) {
+      return NextResponse.json(
+        { error: "Invalid file format. Supported file formats are JPG, PNG, WEBP, and PDF." },
+        { status: 415 }
+      );
     }
 
     const fileBuffer = await file.arrayBuffer();
@@ -51,6 +79,7 @@ export async function POST(request: Request) {
       fileName: file.name,
       sizeBytes: file.size,
       contentType: file.type,
+      maxAllowedBytes: MAX_ALLOWED_FILE_SIZE,
     });
   } catch (error) {
     console.error("[Upload API Error]:", error);
