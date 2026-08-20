@@ -79,12 +79,12 @@ export async function POST(request: Request) {
     const reference = `WTH_${Date.now().toString(36).toUpperCase()}_${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
 
     // Atomic Database Transaction: Deduct Balance & Create Records
-    const [updatedWallet, withdrawalRecord, transactionRecord] = await prisma.$transaction([
-      prisma.wallet.update({
+    const { updatedWallet, withdrawalRecord, transactionRecord } = await prisma.$transaction(async (tx: any) => {
+      const w = await tx.wallet.update({
         where: { id: wallet.id },
         data: { balance: { decrement: withdrawAmount } },
-      }),
-      prisma.withdrawalRequest.create({
+      });
+      const wr = await tx.withdrawalRequest.create({
         data: {
           walletId: wallet.id,
           amount: withdrawAmount,
@@ -95,8 +95,8 @@ export async function POST(request: Request) {
           status: "PROCESSING",
           reference,
         },
-      }),
-      prisma.walletTransaction.create({
+      });
+      const tr = await tx.walletTransaction.create({
         data: {
           walletId: wallet.id,
           type: "DEBIT",
@@ -105,8 +105,8 @@ export async function POST(request: Request) {
           reference,
           gateway: "NUBAN_TRANSFER",
         },
-      }),
-      prisma.auditLog.create({
+      });
+      await tx.auditLog.create({
         data: {
           userId: user.id,
           action: "WITHDRAWAL_REQUESTED",
@@ -120,8 +120,9 @@ export async function POST(request: Request) {
             remainingBalance: wallet.balance - withdrawAmount,
           }),
         },
-      }),
-    ]);
+      });
+      return { updatedWallet: w, withdrawalRecord: wr, transactionRecord: tr };
+    });
 
     // Dispatch Payout Notification
     await sendMultiChannelNotification({

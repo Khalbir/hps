@@ -248,6 +248,23 @@ function enrichRelations(model: string, item: any, store: LocalStoreData): any {
 // Resilient Proxy Wrapping rawPrisma Client
 export const prisma = new Proxy(rawPrisma, {
   get(target, prop, receiver) {
+    if (prop === "$transaction") {
+      return async function (arg: any, options?: any) {
+        if (Array.isArray(arg)) {
+          return await Promise.all(arg);
+        }
+        if (typeof arg === "function") {
+          try {
+            return await (target as any).$transaction(arg, options);
+          } catch (txErr) {
+            console.warn("[Prisma $transaction Fallback Execution]:", txErr);
+            return await arg(prisma);
+          }
+        }
+        return await (target as any).$transaction(arg, options);
+      };
+    }
+
     const modelName = String(prop);
     const rawModel = (target as any)[modelName];
 

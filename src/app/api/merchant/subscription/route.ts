@@ -36,8 +36,8 @@ export async function POST(req: NextRequest) {
       
       const newExpiry = new Date(currentExpiry.getTime() + 30 * 24 * 60 * 60 * 1000);
 
-      const [updatedMerchant, invoice] = await prisma.$transaction([
-        prisma.merchant.update({
+      const { updatedMerchant, invoice } = await prisma.$transaction(async (tx: any) => {
+        const um = await tx.merchant.update({
           where: { id: merchant.id },
           data: {
             subscriptionStatus: "ACTIVE",
@@ -46,8 +46,8 @@ export async function POST(req: NextRequest) {
             subscriptionExpiresAt: newExpiry,
             lastPaymentReference: reference,
           },
-        }),
-        prisma.merchantSubscriptionInvoice.create({
+        });
+        const inv = await tx.merchantSubscriptionInvoice.create({
           data: {
             merchantId: merchant.id,
             amount,
@@ -57,21 +57,24 @@ export async function POST(req: NextRequest) {
             paystackReference: reference,
             paidAt: now,
           },
-        }),
-        prisma.marketplaceAuditLog.create({
+        });
+        await tx.marketplaceAuditLog.create({
           data: {
             merchantId: merchant.id,
             actorId: merchant.userId,
             actorRole: "MERCHANT",
             action: "SUBSCRIPTION_RENEWED",
+            entityType: "MERCHANT_SUBSCRIPTION",
+            entityId: merchant.id,
             details: JSON.stringify({
               amount,
               reference,
               newExpiry: newExpiry.toISOString(),
             }),
           },
-        }),
-      ]);
+        });
+        return { updatedMerchant: um, invoice: inv };
+      });
 
       return NextResponse.json({
         success: true,

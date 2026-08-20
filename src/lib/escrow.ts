@@ -296,15 +296,15 @@ export async function releaseEscrowPayout({
     // Atomic Balance Transfer: Deduct pendingEscrow, credit availableBalance
     const decrementEscrow = Math.min(proWallet.pendingEscrow, breakdown.proNetEarningsNgn);
     
-    await prisma.$transaction([
-      prisma.wallet.update({
+    await prisma.$transaction(async (tx: any) => {
+      await tx.wallet.update({
         where: { id: proWallet.id },
         data: {
           pendingEscrow: { decrement: decrementEscrow },
           balance: { increment: breakdown.proNetEarningsNgn },
         },
-      }),
-      prisma.walletTransaction.create({
+      });
+      await tx.walletTransaction.create({
         data: {
           walletId: proWallet.id,
           type: "ESCROW_RELEASE",
@@ -313,8 +313,8 @@ export async function releaseEscrowPayout({
           reference: releaseRef,
           gateway: "WALLET",
         },
-      }),
-      prisma.auditLog.create({
+      });
+      await tx.auditLog.create({
         data: {
           userId: proUserId,
           action: "ESCROW_PAYOUT_RELEASED",
@@ -330,8 +330,8 @@ export async function releaseEscrowPayout({
             notes: notes || "Escrow disbursed successfully",
           }),
         },
-      }),
-    ]);
+      });
+    });
 
     // Dispatch Payout Confirmation Notification to Professional
     await sendMultiChannelNotification({
@@ -410,28 +410,12 @@ export async function refundEscrowPayment({
     });
   }
 
-  // 2. If pro had pendingEscrow, decrement it
-  let proWalletUpdate = null;
-  if (booking.professional?.user?.id) {
-    const proWallet = await prisma.wallet.findUnique({
-      where: { userId: booking.professional.user.id },
-    });
-
-    if (proWallet && proWallet.pendingEscrow > 0) {
-      const proDeduction = Math.min(proWallet.pendingEscrow, refundTotal);
-      proWalletUpdate = prisma.wallet.update({
-        where: { id: proWallet.id },
-        data: { pendingEscrow: { decrement: proDeduction } },
-      });
-    }
-  }
-
-  await prisma.$transaction([
-    prisma.wallet.update({
+  await prisma.$transaction(async (tx: any) => {
+    await tx.wallet.update({
       where: { id: customerWallet.id },
       data: { balance: { increment: refundTotal } },
-    }),
-    prisma.walletTransaction.create({
+    });
+    await tx.walletTransaction.create({
       data: {
         walletId: customerWallet.id,
         type: "REFUND",
@@ -440,16 +424,16 @@ export async function refundEscrowPayment({
         reference: `REF_${booking.reference}_${Date.now()}`,
         gateway: booking.paymentMethod || "WALLET",
       },
-    }),
-    prisma.booking.update({
+    });
+    await tx.booking.update({
       where: { id: booking.id },
       data: {
         status: "REFUNDED",
         paymentStatus: "REFUNDED",
         refundedAt: new Date(),
       },
-    }),
-    prisma.auditLog.create({
+    });
+    await tx.auditLog.create({
       data: {
         userId: adminUserId,
         action: "ESCROW_REFUND_PROCESSED",
@@ -462,9 +446,18 @@ export async function refundEscrowPayment({
           customerEmail: booking.customer.email,
         }),
       },
-    }),
-    ...(proWalletUpdate ? [proWalletUpdate] : []),
-  ]);
+    });
+    if (booking.professional?.userId) {
+      const proWallet = await tx.wallet.findUnique({ where: { userId: booking.professional.userId } });
+      if (proWallet && proWallet.pendingEscrow > 0) {
+        const proDeduction = Math.min(proWallet.pendingEscrow, refundTotal);
+        await tx.wallet.update({
+          where: { id: proWallet.id },
+          data: { pendingEscrow: { decrement: proDeduction } },
+        });
+      }
+    }
+  });
 
   // Notify Customer of Refund
   await sendMultiChannelNotification({
