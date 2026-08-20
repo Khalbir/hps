@@ -81,7 +81,7 @@ const services = [
     category: "hvac",
     slug: "ac-repair",
     description: "Split unit installation, servicing & gas refill",
-    price: "₦15,000",
+    price: "₦12,000",
     color: "#06B6D4",
     bgColor: "rgba(6, 182, 212, 0.08)",
   },
