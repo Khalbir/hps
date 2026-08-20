@@ -461,57 +461,112 @@
 }
 
 @media (max-width: 768px) {
+  .container {
+    padding-inline: 12px !important;
+    gap: 6px !important;
+  }
   .actions {
-    gap: 8px;
+    gap: 6px;
   }
   .authGroup {
-    gap: 8px;
+    gap: 6px;
   }
   .profileText {
     display: none;
   }
+  .themeBtn {
+    width: 34px;
+    height: 34px;
+    min-width: 34px;
+    min-height: 34px;
+    border-radius: 8px;
+  }
   .profileBtn {
-    width: 36px;
-    height: 36px;
-    min-width: 36px;
+    width: 34px;
+    height: 34px;
+    min-width: 34px;
+    min-height: 34px;
     padding: 0;
     justify-content: center;
-    border-radius: 10px;
+    border-radius: 8px;
   }
   .switchText {
     display: none;
   }
   .switchBtn {
-    width: 36px;
-    height: 36px;
-    min-width: 36px;
+    width: 34px;
+    height: 34px;
+    min-width: 34px;
+    min-height: 34px;
     padding: 0;
     justify-content: center;
-    border-radius: 10px;
+    border-radius: 8px;
   }
   .menuBtn {
     display: inline-flex;
-    width: 36px;
-    height: 36px;
-    min-width: 36px;
-    border-radius: 10px;
+    width: 34px;
+    height: 34px;
+    min-width: 34px;
+    min-height: 34px;
+    border-radius: 8px;
   }
 }
 
 @media (max-width: 480px) {
   .container {
-    padding-inline: var(--space-3) !important;
-    gap: var(--space-2) !important;
+    padding-inline: 10px !important;
+    gap: 4px !important;
+  }
+  .logo {
+    gap: 5px;
+  }
+  .logoIcon {
+    width: 30px;
+    height: 30px;
   }
   .logoName {
-    font-size: 1rem;
+    font-size: 0.98rem;
   }
   .logoPro {
-    font-size: 0.55rem;
+    font-size: 0.52rem;
     padding: 1px 4px;
   }
   .phoneLink {
-    padding: 6px 10px;
-    font-size: 12px;
+    padding: 4px 8px;
+    font-size: 11px;
+  }
+  .actions {
+    gap: 5px;
+  }
+  .authGroup {
+    gap: 5px;
+  }
+  .themeBtn {
+    width: 32px;
+    height: 32px;
+    min-width: 32px;
+    min-height: 32px;
+    border-radius: 8px;
+  }
+  .profileBtn {
+    width: 32px;
+    height: 32px;
+    min-width: 32px;
+    min-height: 32px;
+    border-radius: 8px;
+  }
+  .switchBtn {
+    width: 32px;
+    height: 32px;
+    min-width: 32px;
+    min-height: 32px;
+    border-radius: 8px;
+  }
+  .menuBtn {
+    width: 32px;
+    height: 32px;
+    min-width: 32px;
+    min-height: 32px;
+    border-radius: 8px;
   }
 }

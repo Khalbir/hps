@@ -233,7 +233,7 @@ export function Header() {
                   exit={{ scale: 0, rotate: 90 }}
                   transition={{ duration: 0.2 }}
                 >
-                  {theme === "light" ? <Moon size={18} /> : <Sun size={18} />}
+                  {theme === "light" ? <Moon size={16} /> : <Sun size={16} />}
                 </motion.div>
               </AnimatePresence>
             </button>
@@ -279,7 +279,7 @@ export function Header() {
               aria-label="Toggle menu"
               aria-expanded={mobileOpen}
             >
-              {mobileOpen ? <X size={20} /> : <Menu size={20} />}
+              {mobileOpen ? <X size={18} /> : <Menu size={18} />}
             </button>
           </div>
         </div>
