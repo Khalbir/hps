@@ -5,6 +5,7 @@ import { addDays, format, isToday, isTomorrow } from "date-fns";
 import { AlertTriangle, Zap, Lock } from "lucide-react";
 import type { BookingData } from "@/app/book/page";
 import { calculateJobPrice, PricingModel } from "@/lib/pricingEngine";
+import { SERVICE_CATEGORIES } from "@/lib/services";
 import styles from "./Steps.module.css";
 
 interface StepProps {
@@ -67,10 +68,25 @@ export function StepSchedule({ booking, updateBooking, onNext, onBack }: StepPro
     setIsEmergency(true);
     setShowEmergencyPrompt(false);
     const todayStr = format(today, "yyyy-MM-dd");
+
+    const catalogService = SERVICE_CATEGORIES.flatMap((c) => c.services).find(
+      (s) =>
+        s.id === booking.serviceId ||
+        (booking.serviceName && s.name.toLowerCase() === booking.serviceName.toLowerCase())
+    );
+
+    const effectiveBasePrice =
+      booking.servicePrice && booking.servicePrice > 0
+        ? booking.servicePrice
+        : catalogService?.price || 15000;
+
+    const effectivePricingModel =
+      (booking.pricingModel as PricingModel) || catalogService?.pricingModel || "FIXED";
+
     const calc = calculateJobPrice({
-      serviceId: booking.serviceId || booking.serviceCategory || "cleaning",
-      pricingModel: (booking.pricingModel as PricingModel) || "FIXED",
-      basePrice: booking.servicePrice || 15000,
+      serviceId: booking.serviceId || catalogService?.id || booking.serviceCategory || "cleaning",
+      pricingModel: effectivePricingModel,
+      basePrice: effectiveBasePrice,
       bedrooms: booking.bedrooms || 2,
       bathrooms: booking.bathrooms || 1,
       isFurnished: booking.isFurnished || false,
@@ -103,10 +119,24 @@ export function StepSchedule({ booking, updateBooking, onNext, onBack }: StepPro
       }
     }
 
+    const catalogService = SERVICE_CATEGORIES.flatMap((c) => c.services).find(
+      (s) =>
+        s.id === booking.serviceId ||
+        (booking.serviceName && s.name.toLowerCase() === booking.serviceName.toLowerCase())
+    );
+
+    const effectiveBasePrice =
+      booking.servicePrice && booking.servicePrice > 0
+        ? booking.servicePrice
+        : catalogService?.price || 15000;
+
+    const effectivePricingModel =
+      (booking.pricingModel as PricingModel) || catalogService?.pricingModel || "FIXED";
+
     const calc = calculateJobPrice({
-      serviceId: booking.serviceId || booking.serviceCategory || "cleaning",
-      pricingModel: (booking.pricingModel as PricingModel) || "FIXED",
-      basePrice: booking.servicePrice || 15000,
+      serviceId: booking.serviceId || catalogService?.id || booking.serviceCategory || "cleaning",
+      pricingModel: effectivePricingModel,
+      basePrice: effectiveBasePrice,
       bedrooms: booking.bedrooms || 2,
       bathrooms: booking.bathrooms || 1,
       isFurnished: booking.isFurnished || false,

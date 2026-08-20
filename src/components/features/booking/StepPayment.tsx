@@ -7,7 +7,8 @@ import type { BookingData } from "@/app/book/page";
 import { BookingRiskGateModal } from "@/components/features/booking/BookingRiskGateModal";
 import { TrustBadge } from "@/components/common/TrustBadge";
 import { evaluateBookingRiskGate, isServiceHighRisk } from "@/lib/verification/verification-service";
-import { calculateJobPrice, DEFAULT_PRICING_RULES } from "@/lib/pricingEngine";
+import { calculateJobPrice, DEFAULT_PRICING_RULES, PricingModel } from "@/lib/pricingEngine";
+import { SERVICE_CATEGORIES } from "@/lib/services";
 import { optimizeDocumentFile } from "@/lib/image-compression";
 import styles from "./Steps.module.css";
 
@@ -164,11 +165,25 @@ export function StepPayment({ booking, updateBooking, onNext, onBack }: StepProp
     loadPricingRules();
   }, []);
 
+  const catalogService = SERVICE_CATEGORIES.flatMap((c) => c.services).find(
+    (s) =>
+      s.id === booking.serviceId ||
+      (booking.serviceName && s.name.toLowerCase() === booking.serviceName.toLowerCase())
+  );
+
+  const effectiveBasePrice =
+    booking.servicePrice && booking.servicePrice > 0
+      ? booking.servicePrice
+      : catalogService?.price || 15000;
+
+  const effectivePricingModel =
+    (booking.pricingModel as PricingModel) || catalogService?.pricingModel || "FIXED";
+
   const jobCalculation = calculateJobPrice(
     {
-      serviceId: booking.serviceId || booking.serviceCategory,
-      pricingModel: (booking.pricingModel as any) || "FIXED",
-      basePrice: booking.servicePrice || 15000,
+      serviceId: booking.serviceId || catalogService?.id || booking.serviceCategory || "cleaning",
+      pricingModel: effectivePricingModel,
+      basePrice: effectiveBasePrice,
       bedrooms: booking.bedrooms || 2,
       bathrooms: booking.bathrooms || 1,
       isFurnished: booking.isFurnished || false,

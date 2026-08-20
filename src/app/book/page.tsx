@@ -12,7 +12,7 @@ import { StepTechnician } from "@/components/features/booking/StepTechnician";
 import { StepPayment } from "@/components/features/booking/StepPayment";
 import { StepConfirmation } from "@/components/features/booking/StepConfirmation";
 import { BookingSummary } from "@/components/features/booking/BookingSummary";
-import { resolveServiceCategory } from "@/lib/services";
+import { resolveServiceCategory, SERVICE_CATEGORIES } from "@/lib/services";
 import { STORAGE_KEYS, saveToStorage, loadFromStorage, removeFromStorage } from "@/lib/localStorage-utils";
 import styles from "./book.module.css";
 
@@ -318,29 +318,44 @@ function BookingContent() {
       </div>
 
       {/* Sticky Mobile Summary Bar */}
-      {step < 6 && (
-        <div className={styles.mobileStickyBar}>
-          <div className={styles.mobileStickyInfo}>
-            <span className={styles.mobileStickyLabel}>
-              {booking.serviceName ? booking.serviceName : "Select Service"}
-            </span>
-            <span className={styles.mobileStickyPrice}>
-              ₦{booking.totalPrice.toLocaleString()}
-            </span>
+      {step < 6 && (() => {
+        const matchedSvc = SERVICE_CATEGORIES.flatMap((c) => c.services).find(
+          (s) =>
+            s.id === booking.serviceId ||
+            (booking.serviceName && s.name.toLowerCase() === booking.serviceName.toLowerCase())
+        );
+        const isCustomQuote = booking.pricingModel === "CUSTOM_QUOTE" || matchedSvc?.pricingModel === "CUSTOM_QUOTE";
+        const stickyPrice =
+          booking.totalPrice > 0
+            ? booking.totalPrice
+            : booking.servicePrice > 0
+            ? booking.servicePrice
+            : matchedSvc?.price || 15000;
+
+        return (
+          <div className={styles.mobileStickyBar}>
+            <div className={styles.mobileStickyInfo}>
+              <span className={styles.mobileStickyLabel}>
+                {booking.serviceName ? booking.serviceName : "Select Service"}
+              </span>
+              <span className={styles.mobileStickyPrice}>
+                {isCustomQuote ? "FREE Quote" : `₦${stickyPrice.toLocaleString()}`}
+              </span>
+            </div>
+            <button
+              className="btn btn-primary btn-sm"
+              onClick={() => {
+                const sideCol = document.querySelector(`.${styles.sideCol}`);
+                if (sideCol) {
+                  sideCol.scrollIntoView({ behavior: "smooth" });
+                }
+              }}
+            >
+              View Details
+            </button>
           </div>
-          <button
-            className="btn btn-primary btn-sm"
-            onClick={() => {
-              const sideCol = document.querySelector(`.${styles.sideCol}`);
-              if (sideCol) {
-                sideCol.scrollIntoView({ behavior: "smooth" });
-              }
-            }}
-          >
-            View Details
-          </button>
-        </div>
-      )}
+        );
+      })()}
     </div>
   );
 }

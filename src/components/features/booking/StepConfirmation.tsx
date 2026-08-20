@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import Link from "next/link";
 import { CheckCircle, Calendar, Clock, User, MapPin, Download, MessageCircle, ArrowRight } from "lucide-react";
 import type { BookingData } from "@/app/book/page";
+import { SERVICE_CATEGORIES } from "@/lib/services";
 import styles from "./Steps.module.css";
 
 interface Props {
@@ -16,6 +17,14 @@ export function StepConfirmation({ booking }: Props) {
   const [bookingRef] = useState(() => `HHP-${Date.now().toString(36).toUpperCase()}`);
 
   const [currentUser, setCurrentUser] = useState<any>(null);
+
+  const catalogService = SERVICE_CATEGORIES.flatMap((c) => c.services).find(
+    (s) =>
+      s.id === booking.serviceId ||
+      (booking.serviceName && s.name.toLowerCase() === booking.serviceName.toLowerCase())
+  );
+  const effectivePrice = booking.totalPrice || booking.servicePrice || catalogService?.price || 15000;
+  const finalPrice = effectivePrice - (booking.discountAmount || 0);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -29,23 +38,19 @@ export function StepConfirmation({ booking }: Props) {
   }, []);
 
   useEffect(() => {
-    const timer = setTimeout(() => setShowConfetti(false), 3000);
+    const timer = setTimeout(() => setShowConfetti(false), 4000);
 
+    // Save booking to DB via API
     async function saveBookingToDatabase() {
       try {
         localStorage.setItem("handyhub_last_booking_ref", bookingRef);
-
-        const stored = typeof window !== "undefined" ? localStorage.getItem("handyhub_user") : null;
-        const userObj = stored ? JSON.parse(stored) : null;
-
         await fetch("/api/bookings", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            serviceId: booking.serviceId || booking.serviceCategory,
-            serviceCategory: booking.serviceCategory,
-            serviceName: booking.serviceName || "Property Maintenance",
-            customerEmail: userObj?.email || "customer@handyhubpro.ng",
+            reference: bookingRef,
+            serviceCategory: booking.serviceCategory || "cleaning",
+            serviceId: booking.serviceId || catalogService?.id || "residential-cleaning",
             propertyType: booking.propertyType || "HOME",
             bedrooms: booking.bedrooms || 1,
             bathrooms: booking.bathrooms || 1,
@@ -58,7 +63,7 @@ export function StepConfirmation({ booking }: Props) {
             paymentMethod: booking.paymentMethod || "paystack",
             promoCode: booking.promoCode,
             discountAmount: booking.discountAmount || 0,
-            totalPrice: booking.totalPrice || booking.servicePrice || 15000,
+            totalPrice: effectivePrice,
             technicianId: booking.technicianId,
             autoAssign: booking.autoAssign ?? true,
           }),
@@ -70,9 +75,7 @@ export function StepConfirmation({ booking }: Props) {
 
     saveBookingToDatabase();
     return () => clearTimeout(timer);
-  }, [bookingRef, booking]);
-
-  const finalPrice = (booking.totalPrice || booking.servicePrice || 15000) - booking.discountAmount;
+  }, [bookingRef, booking, effectivePrice, catalogService]);
 
   return (
     <div className={styles.confirmationContainer}>

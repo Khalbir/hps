@@ -3,7 +3,8 @@
 import { useEffect, useState } from "react";
 import type { BookingData } from "@/app/book/page";
 import { ShieldCheck, MapPin, Tag } from "lucide-react";
-import { calculateJobPrice, DEFAULT_PRICING_RULES, PricingRulesConfig } from "@/lib/pricingEngine";
+import { calculateJobPrice, DEFAULT_PRICING_RULES, PricingRulesConfig, PricingModel } from "@/lib/pricingEngine";
+import { SERVICE_CATEGORIES } from "@/lib/services";
 import { TrustBadge } from "@/components/common/TrustBadge";
 import styles from "./Steps.module.css";
 
@@ -31,11 +32,26 @@ export function BookingSummary({ booking, currentStep }: Props) {
     fetchRules();
   }, []);
 
+  // Look up catalog service item by ID or name
+  const catalogService = SERVICE_CATEGORIES.flatMap((c) => c.services).find(
+    (s) =>
+      s.id === booking.serviceId ||
+      (booking.serviceName && s.name.toLowerCase() === booking.serviceName.toLowerCase())
+  );
+
+  const effectiveBasePrice =
+    booking.servicePrice && booking.servicePrice > 0
+      ? booking.servicePrice
+      : catalogService?.price || 15000;
+
+  const effectivePricingModel =
+    (booking.pricingModel as PricingModel) || catalogService?.pricingModel || "FIXED";
+
   const calc = calculateJobPrice(
     {
-      serviceId: booking.serviceId,
-      pricingModel: (booking.pricingModel as any) || "FIXED",
-      basePrice: booking.servicePrice || 15000,
+      serviceId: booking.serviceId || catalogService?.id || "cleaning",
+      pricingModel: effectivePricingModel,
+      basePrice: effectiveBasePrice,
       bedrooms: booking.bedrooms || 2,
       bathrooms: booking.bathrooms || 1,
       isFurnished: booking.isFurnished || false,

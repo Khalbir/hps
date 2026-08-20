@@ -3,6 +3,7 @@
 import type { BookingData } from "@/app/book/page";
 import { Home, Building2, Briefcase, Store } from "lucide-react";
 import { calculateJobPrice, DEFAULT_PRICING_RULES, PricingModel } from "@/lib/pricingEngine";
+import { SERVICE_CATEGORIES } from "@/lib/services";
 import styles from "./Steps.module.css";
 
 const propertyTypes = [
@@ -23,11 +24,25 @@ export function StepDetails({ booking, updateBooking, onNext, onBack }: StepProp
   const isCleaning = booking.serviceCategory === "cleaning";
 
   const getComputedPrice = (bedrooms: number, bathrooms: number) => {
-    const pModel: PricingModel = isCleaning ? "PROPERTY_BASED" : ((booking.pricingModel as PricingModel) || "FIXED");
+    const catalogService = SERVICE_CATEGORIES.flatMap((c) => c.services).find(
+      (s) =>
+        s.id === booking.serviceId ||
+        (booking.serviceName && s.name.toLowerCase() === booking.serviceName.toLowerCase())
+    );
+
+    const effectiveBasePrice =
+      booking.servicePrice && booking.servicePrice > 0
+        ? booking.servicePrice
+        : catalogService?.price || 15000;
+
+    const pModel: PricingModel = isCleaning
+      ? "PROPERTY_BASED"
+      : ((booking.pricingModel as PricingModel) || catalogService?.pricingModel || "FIXED");
+
     const calc = calculateJobPrice({
-      serviceId: booking.serviceId || booking.serviceCategory || "cleaning",
+      serviceId: booking.serviceId || catalogService?.id || booking.serviceCategory || "cleaning",
       pricingModel: pModel,
-      basePrice: booking.servicePrice || 15000,
+      basePrice: effectiveBasePrice,
       bedrooms,
       bathrooms,
       isFurnished: booking.isFurnished || false,
