@@ -59,10 +59,12 @@ export default function ProCalendarPage() {
 
   return (
     <ProLayoutShell>
-      <div style={{ marginBottom: "var(--space-6)", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
+      <div style={{ marginBottom: "24px", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
         <div>
-          <h1 className="h2">Availability & Schedule Calendar</h1>
-          <p style={{ color: "var(--text-secondary)", fontSize: "var(--fs-md)" }}>
+          <h1 style={{ fontSize: "clamp(1.3rem, 3vw, 1.85rem)", fontWeight: 800, color: "var(--text-primary)", margin: 0, letterSpacing: "-0.02em" }}>
+            Availability & Schedule Calendar
+          </h1>
+          <p style={{ color: "var(--text-secondary)", fontSize: "14px", margin: "4px 0 0" }}>
             Set your weekly working hours and manage upcoming job appointments.
           </p>
         </div>
@@ -71,7 +73,7 @@ export default function ProCalendarPage() {
         </button>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: "var(--space-6)" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "20px" }}>
         {/* Weekly Schedule Card */}
         <div className="card">
           <h3 className="h4" style={{ marginBottom: "var(--space-4)", display: "flex", alignItems: "center", gap: "var(--space-2)" }}>

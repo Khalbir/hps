@@ -96,15 +96,17 @@ export default function ProReviewsPage() {
   return (
     <ProLayoutShell>
       {/* Header */}
-      <div style={{ marginBottom: "var(--space-6)", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
+      <div style={{ marginBottom: "24px", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
         <div>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-            <h1 className="h2" style={{ margin: 0 }}>Customer Reviews & Rating Breakdown</h1>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4, flexWrap: "wrap" }}>
+            <h1 style={{ fontSize: "clamp(1.3rem, 3vw, 1.85rem)", fontWeight: 800, color: "var(--text-primary)", margin: 0, letterSpacing: "-0.02em" }}>
+              Customer Reviews & Rating Breakdown
+            </h1>
             <span style={{ fontSize: "11px", background: "rgba(14,165,233,0.15)", color: "#0EA5E9", padding: "2px 8px", borderRadius: 6, fontWeight: "bold" }}>
               {artisanInfo.digitalId}
             </span>
           </div>
-          <p style={{ color: "var(--text-secondary)", fontSize: "var(--fs-md)", margin: 0 }}>
+          <p style={{ color: "var(--text-secondary)", fontSize: "14px", margin: 0 }}>
             Track client ratings transcribed to your verified profile and escrow service performance.
           </p>
         </div>

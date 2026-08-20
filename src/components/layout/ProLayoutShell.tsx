@@ -133,32 +133,59 @@ export function ProLayoutShell({ children }: { children: ReactNode }) {
 
       {/* Main Content */}
       <main className={styles.main}>
-        <div style={{ padding: "0 0 16px 0", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
-          <button className={styles.menuBtn} onClick={() => setSidebarOpen(true)}>
-            <Menu size={24} />
-          </button>
+        {/* Responsive Top Navigation Header Bar */}
+        <div style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          flexWrap: "wrap",
+          gap: "12px",
+          marginBottom: "20px",
+          paddingBottom: "12px",
+          borderBottom: "1px solid var(--border-primary)"
+        }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+            <button
+              className={styles.menuBtn}
+              onClick={() => setSidebarOpen(true)}
+              aria-label="Open Navigation Menu"
+              style={{
+                background: "var(--bg-tertiary)",
+                border: "1px solid var(--border-primary)",
+                borderRadius: "8px",
+                padding: "8px",
+                color: "var(--text-primary)",
+                cursor: "pointer",
+              }}
+            >
+              <Menu size={20} />
+            </button>
+            <span style={{ fontSize: "12px", fontWeight: 700, color: "#38BDF8", display: "inline-flex", alignItems: "center", gap: 5 }}>
+              <ShieldCheck size={15} color="#10B981" /> HandyHub Pro Console
+            </span>
+          </div>
 
           {!isCustomerAccount && (
-            <div style={{ display: "flex", alignItems: "center", gap: 10, marginLeft: "auto" }}>
-              <span style={{ fontSize: "11.5px", color: "var(--text-tertiary)" }}>
-                🛠️ Verified Artisan Account
-              </span>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <Link
                 href="/dashboard"
-                className="btn btn-secondary btn-sm"
+                className="btn btn-secondary btn-xs"
                 style={{
                   display: "inline-flex",
                   alignItems: "center",
-                  gap: 6,
-                  fontSize: "12px",
+                  gap: 5,
+                  fontSize: "11px",
+                  fontWeight: 700,
                   color: "#38BDF8",
                   borderColor: "rgba(14,165,233,0.3)",
                   background: "rgba(14,165,233,0.1)",
                   textDecoration: "none",
+                  padding: "6px 12px",
+                  borderRadius: "8px",
                 }}
                 title="Switch to Client Portal to book services for your own property"
               >
-                🔄 Switch to Client Mode (Book Services)
+                🔄 Switch to Client Mode
               </Link>
             </div>
           )}

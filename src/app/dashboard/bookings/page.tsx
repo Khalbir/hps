@@ -90,51 +90,53 @@ export default function CustomerBookingsPage() {
               <Link href="/book" className="btn btn-primary btn-sm">Book Service Now ➔</Link>
             </div>
           ) : (
-            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "14px", textAlign: "left" }}>
-              <thead>
-                <tr style={{ background: "var(--bg-secondary)", borderBottom: "1px solid var(--border-primary)" }}>
-                  <th style={{ padding: "12px 16px" }}>Ref Code</th>
-                  <th style={{ padding: "12px 16px" }}>Service Category</th>
-                  <th style={{ padding: "12px 16px" }}>Assigned Professional</th>
-                  <th style={{ padding: "12px 16px" }}>Scheduled Date</th>
-                  <th style={{ padding: "12px 16px" }}>Amount</th>
-                  <th style={{ padding: "12px 16px" }}>Status</th>
-                  <th style={{ padding: "12px 16px" }}>Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {bookings.map((b) => (
-                  <tr key={b.id} style={{ borderBottom: "1px solid var(--border-primary)" }}>
-                    <td style={{ padding: "12px 16px", fontWeight: "bold", fontFamily: "monospace" }}>{b.id}</td>
-                    <td style={{ padding: "12px 16px" }}><strong>{b.service}</strong></td>
-                    <td style={{ padding: "12px 16px" }}>{b.pro}</td>
-                    <td style={{ padding: "12px 16px" }}>{b.date}</td>
-                    <td style={{ padding: "12px 16px", fontWeight: "bold", color: "#0EA5E9" }}>{b.price}</td>
-                    <td style={{ padding: "12px 16px" }}>
-                      <span style={{ color: statusColors[b.status] || "#0EA5E9", backgroundColor: `${statusColors[b.status] || "#0EA5E9"}15`, padding: "4px 8px", borderRadius: 4, fontWeight: "bold", fontSize: "12px" }}>
-                        {b.status}
-                      </span>
-                    </td>
-                    <td style={{ padding: "12px 16px" }}>
-                      <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                        <Link href={`/track?ref=${b.id}`} className="btn btn-primary btn-xs">
-                          Track Status 📍
-                        </Link>
-                        {b.status === "COMPLETED" && (
-                          <button
-                            onClick={() => openReviewModal(b)}
-                            className="btn btn-xs"
-                            style={{ background: "rgba(245, 158, 11, 0.15)", color: "#F59E0B", border: "1px solid #F59E0B", fontWeight: 700 }}
-                          >
-                            Rate & Review ⭐
-                          </button>
-                        )}
-                      </div>
-                    </td>
+            <div style={{ width: "100%", overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
+              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "14px", textAlign: "left" }}>
+                <thead>
+                  <tr style={{ background: "var(--bg-secondary)", borderBottom: "1px solid var(--border-primary)" }}>
+                    <th style={{ padding: "12px 16px" }}>Ref Code</th>
+                    <th style={{ padding: "12px 16px" }}>Service Category</th>
+                    <th style={{ padding: "12px 16px" }}>Assigned Professional</th>
+                    <th style={{ padding: "12px 16px" }}>Scheduled Date</th>
+                    <th style={{ padding: "12px 16px" }}>Amount</th>
+                    <th style={{ padding: "12px 16px" }}>Status</th>
+                    <th style={{ padding: "12px 16px" }}>Action</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {bookings.map((b) => (
+                    <tr key={b.id} style={{ borderBottom: "1px solid var(--border-primary)" }}>
+                      <td style={{ padding: "12px 16px", fontWeight: "bold", fontFamily: "monospace" }}>{b.id}</td>
+                      <td style={{ padding: "12px 16px" }}><strong>{b.service}</strong></td>
+                      <td style={{ padding: "12px 16px" }}>{b.pro}</td>
+                      <td style={{ padding: "12px 16px" }}>{b.date}</td>
+                      <td style={{ padding: "12px 16px", fontWeight: "bold", color: "#0EA5E9" }}>{b.price}</td>
+                      <td style={{ padding: "12px 16px" }}>
+                        <span style={{ color: statusColors[b.status] || "#0EA5E9", backgroundColor: `${statusColors[b.status] || "#0EA5E9"}15`, padding: "4px 8px", borderRadius: 4, fontWeight: "bold", fontSize: "12px" }}>
+                          {b.status}
+                        </span>
+                      </td>
+                      <td style={{ padding: "12px 16px" }}>
+                        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                          <Link href={`/track?ref=${b.id}`} className="btn btn-primary btn-xs">
+                            Track Status 📍
+                          </Link>
+                          {b.status === "COMPLETED" && (
+                            <button
+                              onClick={() => openReviewModal(b)}
+                              className="btn btn-xs"
+                              style={{ background: "rgba(245, 158, 11, 0.15)", color: "#F59E0B", border: "1px solid #F59E0B", fontWeight: 700 }}
+                            >
+                              Rate & Review ⭐
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           )}
         </div>
       </div>

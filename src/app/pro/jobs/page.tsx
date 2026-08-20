@@ -560,10 +560,12 @@ export default function ProJobsPage() {
         onChange={handleInstalledUpload}
       />
 
-      <div style={{ marginBottom: "var(--space-6)", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
+      <div style={{ marginBottom: "24px", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
         <div>
-          <h1 className="h2">My Active Jobs & Execution Proof</h1>
-          <p style={{ color: "var(--text-secondary)", fontSize: "var(--fs-md)" }}>
+          <h1 style={{ fontSize: "clamp(1.3rem, 3vw, 1.85rem)", fontWeight: 800, color: "var(--text-primary)", margin: 0, letterSpacing: "-0.02em" }}>
+            My Active Jobs & Execution Proof
+          </h1>
+          <p style={{ color: "var(--text-secondary)", fontSize: "14px", margin: "4px 0 0" }}>
             Accept job dispatches, upload live before/after work evidence, and verify completion OTP to unlock escrow payout.
           </p>
         </div>

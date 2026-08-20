@@ -131,10 +131,10 @@ export default function CustomerWalletPage() {
   };
 
   return (
-    <div style={{ background: "var(--bg-primary)", minHeight: "100vh", padding: "40px 20px" }}>
-      <div className="container" style={{ maxWidth: 800 }}>
+    <div style={{ background: "var(--bg-primary)", minHeight: "100vh", padding: "clamp(16px, 4vw, 40px) clamp(12px, 3vw, 20px)", boxSizing: "border-box" }}>
+      <div className="container" style={{ maxWidth: 800, padding: 0 }}>
         {topUpSuccessAlert && (
-          <div style={{ background: "rgba(16,185,129,0.15)", border: "1px solid #10B981", color: "#10B981", padding: 16, borderRadius: 12, fontSize: 14, fontWeight: 500, marginBottom: 24, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <div style={{ background: "rgba(16,185,129,0.15)", border: "1px solid #10B981", color: "#10B981", padding: 16, borderRadius: 12, fontSize: 14, fontWeight: 500, marginBottom: 24, display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
               <CheckCircle2 size={20} color="#10B981" />
               <span>{topUpSuccessAlert}</span>
@@ -144,9 +144,11 @@ export default function CustomerWalletPage() {
         )}
 
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24, flexWrap: "wrap", gap: 12 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
             <Link href="/dashboard" className="btn btn-secondary btn-sm"><ArrowLeft size={16} /> Back to Dashboard</Link>
-            <h1 className="h3">HandyHub Escrow Wallet</h1>
+            <h1 style={{ fontSize: "clamp(1.3rem, 3vw, 1.75rem)", fontWeight: 800, color: "var(--text-primary)", margin: 0, letterSpacing: "-0.02em" }}>
+              HandyHub Escrow Wallet
+            </h1>
           </div>
           <button onClick={fetchRealWalletBalance} disabled={refreshing} className="btn btn-secondary btn-sm" style={{ display: "flex", alignItems: "center", gap: 6 }}>
             <RefreshCw size={14} className={refreshing ? "animate-spin" : ""} />
@@ -154,7 +156,7 @@ export default function CustomerWalletPage() {
           </button>
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: 20, marginBottom: 24 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 20, marginBottom: 24 }}>
           <div className="card" style={{ background: "linear-gradient(135deg, #0F172A 0%, #1E293B 100%)", color: "white", border: "1px solid rgba(16,185,129,0.3)" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
               <Wallet size={20} color="#10B981" />
@@ -166,7 +168,7 @@ export default function CustomerWalletPage() {
               </span>
             </div>
 
-            <h2 className="h1" style={{ color: "#10B981", fontSize: 36, margin: "10px 0 20px" }}>₦{balance.toLocaleString("en-NG")}</h2>
+            <h2 style={{ color: "#10B981", fontSize: "clamp(1.75rem, 4vw, 2.25rem)", fontWeight: 800, margin: "10px 0 20px" }}>₦{balance.toLocaleString("en-NG")}</h2>
 
             <form onSubmit={handleTopUp} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
               <div>

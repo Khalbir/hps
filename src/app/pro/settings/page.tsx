@@ -76,9 +76,11 @@ export default function ProSettingsPage() {
 
   return (
     <ProLayoutShell>
-      <div style={{ marginBottom: "var(--space-6)" }}>
-        <h1 className="h2">Account Settings & Bank Payout Details</h1>
-        <p style={{ color: "var(--text-secondary)", fontSize: "var(--fs-md)" }}>
+      <div style={{ marginBottom: "24px" }}>
+        <h1 style={{ fontSize: "clamp(1.3rem, 3vw, 1.85rem)", fontWeight: 800, color: "var(--text-primary)", margin: 0, letterSpacing: "-0.02em" }}>
+          Account Settings & Bank Payout Details
+        </h1>
+        <p style={{ color: "var(--text-secondary)", fontSize: "14px", margin: "4px 0 0" }}>
           Manage your bank account details for instant withdrawals and set your preferred service radius.
         </p>
       </div>

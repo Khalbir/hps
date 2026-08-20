@@ -76,50 +76,54 @@ export default function ProDashboard() {
   return (
     <ProLayoutShell>
       {/* Header Banner */}
-      <div style={{ marginBottom: "var(--space-6)" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)", marginBottom: "var(--space-2)", flexWrap: "wrap" }}>
-          <h1 className="h2">Professional Dashboard</h1>
-          
-          {/* Official Digital ID Badge */}
-          {proData.digitalId && (
-            <span style={{
-              fontFamily: "monospace",
-              fontSize: "12px",
-              fontWeight: 800,
-              background: "rgba(14, 165, 233, 0.15)",
-              color: "#38BDF8",
-              padding: "4px 10px",
-              borderRadius: "99px",
-              border: "1px solid rgba(14, 165, 233, 0.35)",
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 5
-            }}>
-              <Fingerprint size={14} color="#0EA5E9" /> ID: {proData.digitalId}
-            </span>
-          )}
+      <div style={{ marginBottom: "24px" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "12px", marginBottom: "8px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
+            <h1 style={{ fontSize: "clamp(1.3rem, 3vw, 1.85rem)", fontWeight: 800, color: "var(--text-primary)", margin: 0, letterSpacing: "-0.02em" }}>
+              Professional Dashboard
+            </h1>
+            
+            {/* Official Digital ID Badge */}
+            {proData.digitalId && (
+              <span style={{
+                fontFamily: "monospace",
+                fontSize: "12px",
+                fontWeight: 800,
+                background: "rgba(14, 165, 233, 0.15)",
+                color: "#38BDF8",
+                padding: "4px 10px",
+                borderRadius: "99px",
+                border: "1px solid rgba(14, 165, 233, 0.35)",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 5
+              }}>
+                <Fingerprint size={14} color="#0EA5E9" /> ID: {proData.digitalId}
+              </span>
+            )}
 
-          {/* Dynamic Verification Badge */}
-          {isVerified ? (
-            <span className="badge" style={{ background: "rgba(16,185,129,0.15)", color: "#10B981", display: "inline-flex", alignItems: "center", gap: 4, fontWeight: 700 }}>
-              <ShieldCheck size={14} /> Account Fully Verified
-            </span>
-          ) : isPendingReview ? (
-            <span className="badge" style={{ background: "rgba(14,165,233,0.15)", color: "#0EA5E9", display: "inline-flex", alignItems: "center", gap: 4, fontWeight: 700 }}>
-              <Clock size={14} /> Audit Pending Admin Review
-            </span>
-          ) : isRejected ? (
-            <span className="badge" style={{ background: "rgba(239,68,68,0.15)", color: "#EF4444", display: "inline-flex", alignItems: "center", gap: 4, fontWeight: 700 }}>
-              <XCircle size={14} /> Audit Action Required
-            </span>
-          ) : (
-            <span className="badge" style={{ background: "rgba(245,158,11,0.15)", color: "#F59E0B", display: "inline-flex", alignItems: "center", gap: 4, fontWeight: 700 }}>
-              <AlertTriangle size={14} /> Verification Required
-            </span>
-          )}
+            {/* Dynamic Verification Badge */}
+            {isVerified ? (
+              <span className="badge" style={{ background: "rgba(16,185,129,0.15)", color: "#10B981", display: "inline-flex", alignItems: "center", gap: 4, fontWeight: 700 }}>
+                <ShieldCheck size={14} /> Account Fully Verified
+              </span>
+            ) : isPendingReview ? (
+              <span className="badge" style={{ background: "rgba(14,165,233,0.15)", color: "#0EA5E9", display: "inline-flex", alignItems: "center", gap: 4, fontWeight: 700 }}>
+                <Clock size={14} /> Audit Pending Admin Review
+              </span>
+            ) : isRejected ? (
+              <span className="badge" style={{ background: "rgba(239,68,68,0.15)", color: "#EF4444", display: "inline-flex", alignItems: "center", gap: 4, fontWeight: 700 }}>
+                <XCircle size={14} /> Audit Action Required
+              </span>
+            ) : (
+              <span className="badge" style={{ background: "rgba(245,158,11,0.15)", color: "#F59E0B", display: "inline-flex", alignItems: "center", gap: 4, fontWeight: 700 }}>
+                <AlertTriangle size={14} /> Verification Required
+              </span>
+            )}
+          </div>
         </div>
 
-        <p style={{ color: "var(--text-secondary)", fontSize: "var(--fs-md)" }}>
+        <p style={{ color: "var(--text-secondary)", fontSize: "14px", margin: 0, lineHeight: 1.5 }}>
           Welcome back, <strong style={{ color: "var(--text-primary)" }}>{proData.proName}</strong>! Here is your live job dispatch overview and earnings.
         </p>
       </div>
@@ -131,7 +135,7 @@ export default function ProDashboard() {
           border: "2px solid #EF4444",
           borderRadius: "16px",
           padding: "16px 20px",
-          marginBottom: "var(--space-6)",
+          marginBottom: "20px",
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
@@ -141,7 +145,7 @@ export default function ProDashboard() {
           <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
             <span style={{ fontSize: "28px" }}>⚡</span>
             <div>
-              <strong style={{ color: "#EF4444", fontSize: "16px", display: "block", fontWeight: 800 }}>
+              <strong style={{ color: "#EF4444", fontSize: "15px", display: "block", fontWeight: 800 }}>
                 🚨 {pendingAcceptanceJobs.length} New Job Dispatch Awaiting Your Acceptance!
               </strong>
               <span style={{ color: "var(--text-secondary)", fontSize: "13px" }}>
@@ -168,11 +172,11 @@ export default function ProDashboard() {
       )}
 
       {/* Anti-Circumvention Mandate Banner */}
-      <div style={{ background: "rgba(239,68,68,0.12)", border: "1.5px solid #EF4444", borderRadius: "14px", padding: "14px 20px", marginBottom: "var(--space-6)", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "12px" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+      <div style={{ background: "rgba(239,68,68,0.12)", border: "1.5px solid #EF4444", borderRadius: "14px", padding: "14px 18px", marginBottom: "20px", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "12px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "10px", flex: 1, minWidth: "260px" }}>
           <span style={{ fontSize: "20px" }}>🚫</span>
           <div>
-            <strong style={{ color: "var(--text-primary)", fontSize: "14px", display: "block" }}>Anti-Circumvention Warning: All Job Payments Must Remain On-Platform!</strong>
+            <strong style={{ color: "var(--text-primary)", fontSize: "13.5px", display: "block" }}>Anti-Circumvention Warning: All Job Payments Must Remain On-Platform!</strong>
             <span style={{ color: "var(--text-secondary)", fontSize: "12px" }}>
               Soliciting cash off-platform violates HandyHub Partner Terms. Violations result in instant account deactivation, escrow forfeiture, and ₦250,000 liquidated damages.
             </span>
@@ -193,19 +197,19 @@ export default function ProDashboard() {
           ? "linear-gradient(135deg, rgba(239,68,68,0.1) 0%, rgba(245,158,11,0.1) 100%)"
           : "linear-gradient(135deg, rgba(245,158,11,0.1) 0%, rgba(14,165,233,0.1) 100%)",
         border: `1.5px solid ${isVerified ? "rgba(16,185,129,0.4)" : isPendingReview ? "rgba(14,165,233,0.4)" : isRejected ? "rgba(239,68,68,0.4)" : "rgba(245,158,11,0.4)"}`,
-        padding: "var(--space-5)",
-        borderRadius: "var(--radius-xl)",
-        marginBottom: "var(--space-6)",
+        padding: "16px 20px",
+        borderRadius: "16px",
+        marginBottom: "24px",
         display: "flex",
         justifyContent: "space-between",
         alignItems: "center",
         flexWrap: "wrap",
-        gap: "var(--space-4)",
+        gap: "14px",
       }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "var(--space-4)" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "14px", flex: 1, minWidth: "260px" }}>
           <div style={{
-            width: 44,
-            height: 44,
+            width: 42,
+            height: 42,
             borderRadius: "50%",
             background: isVerified ? "#10B981" : isPendingReview ? "#0EA5E9" : isRejected ? "#EF4444" : "#F59E0B",
             color: "white",
@@ -214,10 +218,10 @@ export default function ProDashboard() {
             justifyContent: "center",
             flexShrink: 0,
           }}>
-            {isVerified ? <CheckCircle2 size={24} /> : isPendingReview ? <Clock size={24} /> : isRejected ? <XCircle size={24} /> : <ShieldCheck size={24} />}
+            {isVerified ? <CheckCircle2 size={22} /> : isPendingReview ? <Clock size={22} /> : isRejected ? <XCircle size={22} /> : <ShieldCheck size={22} />}
           </div>
           <div>
-            <strong style={{ fontSize: "var(--fs-base)", color: "var(--text-primary)", display: "block" }}>
+            <strong style={{ fontSize: "14px", color: "var(--text-primary)", display: "block" }}>
               {isVerified
                 ? "Multi-Stage Verification Audit Complete ✅"
                 : isPendingReview
@@ -226,7 +230,7 @@ export default function ProDashboard() {
                 ? "Verification Document Audit Flagged"
                 : "Complete Your 4-Step Professional Verification"}
             </strong>
-            <span style={{ fontSize: "var(--fs-xs)", color: "var(--text-secondary)" }}>
+            <span style={{ fontSize: "12px", color: "var(--text-secondary)", lineHeight: 1.4, display: "block" }}>
               {isVerified
                 ? "Government NIN Verified • Trade Cert Audited • 2 Guarantors Approved • Trade Quiz Passed"
                 : isPendingReview
@@ -243,7 +247,8 @@ export default function ProDashboard() {
           className="btn btn-primary btn-sm"
           style={{
             background: isVerified ? "#10B981" : isPendingReview ? "#0EA5E9" : isRejected ? "#EF4444" : "#0EA5E9",
-            fontWeight: "bold",
+            fontWeight: 700,
+            whiteSpace: "nowrap",
           }}
         >
           {isVerified
@@ -257,22 +262,22 @@ export default function ProDashboard() {
       </div>
 
       {/* Real Database Metrics Row with 5-Star Rating Card */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "var(--space-4)", marginBottom: "var(--space-6)" }}>
-        <div className="card" style={{ padding: "var(--space-4)", borderLeft: "4px solid #0EA5E9" }}>
-          <span style={{ fontSize: "var(--fs-xs)", color: "var(--text-tertiary)" }}>Wallet Balance</span>
-          <h3 className="h3" style={{ margin: "4px 0 0", color: "#0EA5E9" }}>₦{(proData.walletBalance || 0).toLocaleString()}</h3>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "14px", marginBottom: "24px" }}>
+        <div className="card" style={{ padding: "16px 18px", borderLeft: "4px solid #0EA5E9" }}>
+          <span style={{ fontSize: "12px", color: "var(--text-tertiary)", fontWeight: 600 }}>Wallet Balance</span>
+          <h3 className="h3" style={{ margin: "4px 0 0", color: "#0EA5E9", fontSize: "1.5rem" }}>₦{(proData.walletBalance || 0).toLocaleString()}</h3>
         </div>
-        <div className="card" style={{ padding: "var(--space-4)", borderLeft: "4px solid #F59E0B" }}>
-          <span style={{ fontSize: "var(--fs-xs)", color: "#F59E0B" }}>Pending Escrow Hold</span>
-          <h3 className="h3" style={{ margin: "4px 0 0", color: "#F59E0B" }}>₦{(proData.pendingEscrow || 0).toLocaleString()}</h3>
+        <div className="card" style={{ padding: "16px 18px", borderLeft: "4px solid #F59E0B" }}>
+          <span style={{ fontSize: "12px", color: "#F59E0B", fontWeight: 600 }}>Pending Escrow Hold</span>
+          <h3 className="h3" style={{ margin: "4px 0 0", color: "#F59E0B", fontSize: "1.5rem" }}>₦{(proData.pendingEscrow || 0).toLocaleString()}</h3>
         </div>
-        <div className="card" style={{ padding: "var(--space-4)", borderLeft: "4px solid #10B981" }}>
-          <span style={{ fontSize: "var(--fs-xs)", color: "#10B981" }}>Completed Jobs</span>
-          <h3 className="h3" style={{ margin: "4px 0 0", color: "#10B981" }}>{proData.completedJobs || 0}</h3>
+        <div className="card" style={{ padding: "16px 18px", borderLeft: "4px solid #10B981" }}>
+          <span style={{ fontSize: "12px", color: "#10B981", fontWeight: 600 }}>Completed Jobs</span>
+          <h3 className="h3" style={{ margin: "4px 0 0", color: "#10B981", fontSize: "1.5rem" }}>{proData.completedJobs || 0}</h3>
         </div>
-        <div className="card" style={{ padding: "var(--space-4)", borderLeft: "4px solid #F59E0B" }}>
+        <div className="card" style={{ padding: "16px 18px", borderLeft: "4px solid #F59E0B" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <span style={{ fontSize: "var(--fs-xs)", color: "#F59E0B", fontWeight: 700 }}>Client Star Rating</span>
+            <span style={{ fontSize: "12px", color: "#F59E0B", fontWeight: 700 }}>Client Star Rating</span>
             <div style={{ display: "inline-flex", gap: 1 }}>
               {[1, 2, 3, 4, 5].map((s) => (
                 <Star
@@ -284,7 +289,7 @@ export default function ProDashboard() {
               ))}
             </div>
           </div>
-          <h3 className="h3" style={{ margin: "4px 0 0", color: "#F59E0B" }}>
+          <h3 className="h3" style={{ margin: "4px 0 0", color: "#F59E0B", fontSize: "1.5rem" }}>
             {Number(proData.rating || 5.0).toFixed(1)}★
           </h3>
           <span style={{ fontSize: "11px", color: "var(--text-secondary)" }}>
@@ -299,37 +304,37 @@ export default function ProDashboard() {
         border: "1px solid rgba(14, 165, 233, 0.3)",
         borderRadius: "16px",
         padding: "16px 20px",
-        marginBottom: "var(--space-6)",
+        marginBottom: "24px",
         display: "flex",
         alignItems: "center",
         justifyContent: "space-between",
         flexWrap: "wrap",
         gap: "14px",
       }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-          <div style={{ width: 40, height: 40, borderRadius: "50%", background: "rgba(245, 158, 11, 0.15)", color: "#F59E0B", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 14, flex: 1, minWidth: "260px" }}>
+          <div style={{ width: 40, height: 40, borderRadius: "50%", background: "rgba(245, 158, 11, 0.15)", color: "#F59E0B", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
             <Award size={22} />
           </div>
           <div>
-            <strong style={{ color: "var(--text-primary)", fontSize: "14px", display: "block" }}>
+            <strong style={{ color: "var(--text-primary)", fontSize: "13.5px", display: "block" }}>
               Artisan Competence & Quality Standards: Maintain 4.8★ - 5.0★ Rating
             </strong>
-            <span style={{ color: "var(--text-secondary)", fontSize: "12px" }}>
+            <span style={{ color: "var(--text-secondary)", fontSize: "12px", lineHeight: 1.4, display: "block" }}>
               High client star ratings qualify you for priority booking dispatches in your area, rapid escrow releases, and top-tier artisan badges.
             </span>
           </div>
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 8, background: "rgba(16, 185, 129, 0.15)", padding: "6px 12px", borderRadius: "8px", border: "1px solid #10B981" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, background: "rgba(16, 185, 129, 0.15)", padding: "6px 12px", borderRadius: "8px", border: "1px solid #10B981", whiteSpace: "nowrap" }}>
           <TrendingUp size={16} color="#10B981" />
           <span style={{ fontSize: "12px", fontWeight: 700, color: "#10B981" }}>Top-Tier Artisan Status</span>
         </div>
       </div>
 
       {/* Active Jobs Dispatch Card */}
-      <div className="card" style={{ marginBottom: "var(--space-6)" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "var(--space-4)", flexWrap: "wrap", gap: 12 }}>
-          <h3 className="h4">Active & Upcoming Job Dispatches</h3>
-          <div style={{ display: "flex", gap: 8 }}>
+      <div className="card" style={{ marginBottom: "24px" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px", flexWrap: "wrap", gap: 12 }}>
+          <h3 className="h4" style={{ margin: 0 }}>Active & Upcoming Job Dispatches</h3>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             <button onClick={fetchProDashboardTelemetry} className="btn btn-secondary btn-xs" style={{ display: "flex", alignItems: "center", gap: 4 }}>
               <RefreshCw size={12} /> Sync
             </button>
@@ -342,23 +347,23 @@ export default function ProDashboard() {
         {loading ? (
           <div style={{ padding: "40px", textAlign: "center", color: "var(--text-tertiary)" }}>Loading real database job dispatches...</div>
         ) : !proData.activeJobs || proData.activeJobs.length === 0 ? (
-          <div style={{ padding: "50px", textAlign: "center", background: "var(--bg-tertiary)", borderRadius: "var(--radius-xl)", border: "1px solid var(--border-primary)" }}>
-            <Inbox size={40} color="#0EA5E9" style={{ opacity: 0.6, marginBottom: 12 }} />
+          <div style={{ padding: "40px 20px", textAlign: "center", background: "var(--bg-tertiary)", borderRadius: "14px", border: "1px solid var(--border-primary)" }}>
+            <Inbox size={36} color="#0EA5E9" style={{ opacity: 0.6, marginBottom: 10 }} />
             <h4 className="h4" style={{ margin: "0 0 6px 0", color: "var(--text-primary)" }}>No Active Job Dispatches</h4>
-            <p style={{ margin: 0, fontSize: "var(--fs-sm)", color: "var(--text-secondary)", maxWidth: "450px", marginLeft: "auto", marginRight: "auto" }}>
+            <p style={{ margin: 0, fontSize: "13px", color: "var(--text-secondary)", maxWidth: "450px", marginLeft: "auto", marginRight: "auto" }}>
               You currently have 0 active job assignments. When customers book your category services in your area, new dispatches will arrive here for 1-click acceptance.
             </p>
           </div>
         ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
             {proData.activeJobs.map((job: any) => (
-              <div key={job.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "var(--space-4)", background: "var(--bg-tertiary)", borderRadius: "var(--radius-xl)", border: "1px solid var(--border-primary)", flexWrap: "wrap", gap: "var(--space-3)" }}>
+              <div key={job.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px", background: "var(--bg-tertiary)", borderRadius: "14px", border: "1px solid var(--border-primary)", flexWrap: "wrap", gap: "12px" }}>
                 <div>
-                  <strong style={{ display: "block", fontSize: "var(--fs-base)" }}>{job.service}</strong>
-                  <span style={{ fontSize: "var(--fs-xs)", color: "var(--text-secondary)" }}>Client: {job.customer} • Address: {job.address}</span>
+                  <strong style={{ display: "block", fontSize: "14.5px" }}>{job.service}</strong>
+                  <span style={{ fontSize: "12px", color: "var(--text-secondary)" }}>Client: {job.customer} • Address: {job.address}</span>
                 </div>
-                <div style={{ display: "flex", alignItems: "center", gap: "var(--space-4)" }}>
-                  <span style={{ fontSize: "var(--fs-md)", fontWeight: "bold", color: "var(--color-primary-400)" }}>{job.price}</span>
+                <div style={{ display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
+                  <span style={{ fontSize: "15px", fontWeight: "bold", color: "var(--color-primary-400)" }}>{job.price}</span>
                   <Link href="/pro/jobs" className="btn btn-primary btn-xs">
                     Execution Proof & OTP <ArrowRight size={14} />
                   </Link>

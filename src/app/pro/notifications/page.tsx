@@ -69,17 +69,19 @@ export default function ProNotificationsPage() {
 
   return (
     <ProLayoutShell>
-      <div style={{ marginBottom: "var(--space-6)", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
+      <div style={{ marginBottom: "24px", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
         <div>
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <h1 className="h2">Notifications & Job Alerts</h1>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+            <h1 style={{ fontSize: "clamp(1.3rem, 3vw, 1.85rem)", fontWeight: 800, color: "var(--text-primary)", margin: 0, letterSpacing: "-0.02em" }}>
+              Notifications & Job Alerts
+            </h1>
             {unreadCount > 0 && (
               <span className="badge" style={{ background: "#EF4444", color: "#FFFFFF", fontWeight: 800 }}>
                 {unreadCount} New
               </span>
             )}
           </div>
-          <p style={{ color: "var(--text-secondary)", fontSize: "var(--fs-md)" }}>
+          <p style={{ color: "var(--text-secondary)", fontSize: "14px", margin: "4px 0 0" }}>
             Real-time alerts for booking dispatches, client acceptance requests, and escrow payouts.
           </p>
         </div>

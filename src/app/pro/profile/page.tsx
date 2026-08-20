@@ -121,10 +121,12 @@ export default function ProProfilePage() {
 
   return (
     <ProLayoutShell>
-      <div style={{ marginBottom: "var(--space-6)", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
+      <div style={{ marginBottom: "24px", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
         <div>
-          <h1 className="h2">Public Profile & Verification Badge</h1>
-          <p style={{ color: "var(--text-secondary)", fontSize: "var(--fs-md)" }}>
+          <h1 style={{ fontSize: "clamp(1.3rem, 3vw, 1.85rem)", fontWeight: 800, color: "var(--text-primary)", margin: 0, letterSpacing: "-0.02em" }}>
+            Public Profile & Verification Badge
+          </h1>
+          <p style={{ color: "var(--text-secondary)", fontSize: "14px", margin: "4px 0 0" }}>
             Preview how your professional profile appears to customers during service booking.
           </p>
         </div>
@@ -133,7 +135,7 @@ export default function ProProfilePage() {
         </button>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr", gap: "var(--space-6)" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "20px" }}>
         {/* Profile Card */}
         <div className="card" style={{ textAlign: "center" }}>
           {/* Avatar Container with Upload overlay */}

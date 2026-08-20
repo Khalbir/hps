@@ -125,6 +125,12 @@
   flex: 1;
   margin-left: 260px;
   min-height: 100vh;
+  min-width: 0;
+  width: calc(100% - 260px);
+  max-width: calc(100% - 260px);
+  box-sizing: border-box;
+  padding: var(--space-8);
+  overflow-x: hidden;
 }
 
 .topBar {
@@ -409,7 +415,7 @@
 }
 
 /* ============================================
-   RESPONSIVE
+   RESPONSIVE BREAKPOINTS (Mobile, Tablet, Desktop)
    ============================================ */
 
 @media (max-width: 1200px) {
@@ -425,6 +431,7 @@
   .sidebar {
     transform: translateX(-100%);
     width: 280px !important;
+    max-width: 85vw !important;
     z-index: 999;
   }
   .sidebarOpen {
@@ -435,18 +442,24 @@
   }
   .main {
     margin-left: 0 !important;
-    width: 100vw !important;
-    max-width: 100vw !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    padding: 24px 20px !important;
+    box-sizing: border-box !important;
+    overflow-x: hidden !important;
   }
   .topBar {
     padding: var(--space-4) var(--space-4) !important;
   }
   .content {
-    padding: var(--space-4) !important;
+    padding: 0 !important;
     gap: var(--space-4) !important;
   }
   .menuBtn {
-    display: block;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
   .overlay {
     display: block;
@@ -463,11 +476,15 @@
 }
 
 @media (max-width: 768px) {
+  .main {
+    padding: 16px 14px !important;
+  }
   .topBar {
-    padding: var(--space-3) var(--space-4);
+    padding: 12px 14px !important;
   }
   .content {
-    padding: var(--space-3) var(--space-4);
+    padding: 0 !important;
+    gap: 16px !important;
   }
   .greeting {
     font-size: var(--fs-lg);
@@ -480,15 +497,19 @@
   }
   .statsGrid {
     grid-template-columns: 1fr 1fr;
+    gap: 12px;
   }
 }
 
 @media (max-width: 640px) {
+  .main {
+    padding: 14px 12px !important;
+  }
   .topBar {
     flex-direction: column !important;
     align-items: stretch !important;
     gap: var(--space-3) !important;
-    padding: var(--space-3) var(--space-4) !important;
+    padding: 12px 14px !important;
   }
   .topBarLeft {
     justify-content: flex-start;
@@ -514,10 +535,15 @@
 }
 
 @media (max-width: 480px) {
+  .main {
+    padding: 12px 8px !important;
+  }
   .statsGrid {
     grid-template-columns: 1fr;
+    gap: 10px;
   }
   .adminStatsGrid {
     grid-template-columns: 1fr;
+    gap: 10px;
   }
 }

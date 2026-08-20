@@ -159,10 +159,12 @@ export default function ProEarningsPage() {
 
   return (
     <ProLayoutShell>
-      <div style={{ marginBottom: "var(--space-6)", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
+      <div style={{ marginBottom: "24px", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
         <div>
-          <h1 className="h2">Earnings & Wallet Payouts</h1>
-          <p style={{ color: "var(--text-secondary)", fontSize: "var(--fs-md)" }}>
+          <h1 style={{ fontSize: "clamp(1.3rem, 3vw, 1.85rem)", fontWeight: 800, color: "var(--text-primary)", margin: 0, letterSpacing: "-0.02em" }}>
+            Earnings & Wallet Payouts
+          </h1>
+          <p style={{ color: "var(--text-secondary)", fontSize: "14px", margin: "4px 0 0" }}>
             Withdraw available earnings to your Nigerian bank account and monitor real-time escrow protection.
           </p>
         </div>
@@ -172,57 +174,65 @@ export default function ProEarningsPage() {
       </div>
 
       {/* Financial Overview Cards */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "var(--space-4)", marginBottom: "var(--space-6)" }}>
-        <div className="card" style={{ padding: "var(--space-5)", borderLeft: "4px solid #0EA5E9", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "14px", marginBottom: "24px" }}>
+        <div className="card" style={{ padding: "16px 18px", borderLeft: "4px solid #0EA5E9", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
           <div>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <span style={{ fontSize: "var(--fs-xs)", color: "var(--text-tertiary)", fontWeight: 600, textTransform: "uppercase" }}>Available for Withdrawal</span>
+              <span style={{ fontSize: "11px", color: "var(--text-tertiary)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>Available for Withdrawal</span>
               <Wallet size={18} color="#0EA5E9" />
             </div>
-            <h2 className="h2" style={{ color: "#0EA5E9", margin: "8px 0 var(--space-4)" }}>₦{walletStats.walletBalance.toLocaleString()}</h2>
+            <h2 style={{ color: "#0EA5E9", margin: "8px 0 14px", fontSize: "clamp(1.35rem, 2.5vw, 1.75rem)", fontWeight: 800 }}>
+              ₦{walletStats.walletBalance.toLocaleString()}
+            </h2>
           </div>
-          <button className="btn btn-primary btn-sm w-full" style={{ background: "#0EA5E9" }} onClick={() => setWithdrawModal(true)}>
+          <button className="btn btn-primary btn-sm w-full" style={{ background: "#0EA5E9", width: "100%", justifyContent: "center" }} onClick={() => setWithdrawModal(true)}>
             Withdraw Funds to Bank ➔
           </button>
         </div>
 
-        <div className="card" style={{ padding: "var(--space-5)", borderLeft: "4px solid #F59E0B" }}>
+        <div className="card" style={{ padding: "16px 18px", borderLeft: "4px solid #F59E0B" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <span style={{ fontSize: "var(--fs-xs)", color: "#F59E0B", fontWeight: 600, textTransform: "uppercase" }}>Pending Escrow Vault</span>
+            <span style={{ fontSize: "11px", color: "#F59E0B", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>Pending Escrow Vault</span>
             <Lock size={18} color="#F59E0B" />
           </div>
-          <h2 className="h2" style={{ color: "#F59E0B", margin: "8px 0 4px" }}>₦{walletStats.pendingEscrow.toLocaleString()}</h2>
-          <span style={{ fontSize: "11px", color: "var(--text-tertiary)", display: "flex", alignItems: "center", gap: 4 }}>
-            <ShieldCheck size={12} color="#F59E0B" /> 100% Protected — Disburses automatically on job completion
+          <h2 style={{ color: "#F59E0B", margin: "8px 0 4px", fontSize: "clamp(1.35rem, 2.5vw, 1.75rem)", fontWeight: 800 }}>
+            ₦{walletStats.pendingEscrow.toLocaleString()}
+          </h2>
+          <span style={{ fontSize: "11px", color: "var(--text-tertiary)", display: "flex", alignItems: "center", gap: 4, marginTop: 4 }}>
+            <ShieldCheck size={12} color="#F59E0B" /> 100% Protected — Disburses on completion
           </span>
         </div>
 
-        <div className="card" style={{ padding: "var(--space-5)", borderLeft: "4px solid #10B981" }}>
+        <div className="card" style={{ padding: "16px 18px", borderLeft: "4px solid #10B981" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <span style={{ fontSize: "var(--fs-xs)", color: "#10B981", fontWeight: 600, textTransform: "uppercase" }}>Lifetime Net Earnings</span>
+            <span style={{ fontSize: "11px", color: "#10B981", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>Lifetime Net Earnings</span>
             <DollarSign size={18} color="#10B981" />
           </div>
-          <h2 className="h2" style={{ color: "#10B981", margin: "8px 0 4px" }}>₦{walletStats.lifetimeEarnings.toLocaleString()}</h2>
-          <span style={{ fontSize: "11px", color: "var(--text-tertiary)" }}>Completed {walletStats.completedJobs} verified jobs</span>
+          <h2 style={{ color: "#10B981", margin: "8px 0 4px", fontSize: "clamp(1.35rem, 2.5vw, 1.75rem)", fontWeight: 800 }}>
+            ₦{walletStats.lifetimeEarnings.toLocaleString()}
+          </h2>
+          <span style={{ fontSize: "11px", color: "var(--text-tertiary)", display: "block", marginTop: 4 }}>
+            Completed {walletStats.completedJobs} verified jobs
+          </span>
         </div>
       </div>
 
       {/* Real-Time Wallet Transaction Ledger */}
-      <div className="card" style={{ padding: 0, overflow: "hidden" }}>
-        <div style={{ padding: "var(--space-4)", borderBottom: "1px solid var(--border-primary)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+      <div className="card" style={{ padding: 0, overflow: "hidden", marginBottom: "24px" }}>
+        <div style={{ padding: "16px 20px", borderBottom: "1px solid var(--border-primary)", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8 }}>
           <h3 className="h4" style={{ margin: 0 }}>Live Escrow & Payout Ledger</h3>
-          <span style={{ fontSize: "var(--fs-xs)", color: "var(--text-tertiary)" }}>{walletStats.transactions.length} record(s)</span>
+          <span style={{ fontSize: "12px", color: "var(--text-tertiary)" }}>{walletStats.transactions.length} record(s)</span>
         </div>
         {loading ? (
           <div style={{ padding: 40, textAlign: "center", color: "var(--text-tertiary)" }}>Loading database transactions...</div>
         ) : walletStats.transactions.length === 0 ? (
-          <div style={{ padding: "50px 20px", textAlign: "center", color: "var(--text-tertiary)" }}>
-            <Inbox size={40} color="#0EA5E9" style={{ opacity: 0.6, marginBottom: 8 }} />
-            <strong style={{ display: "block", color: "var(--text-primary)", fontSize: "var(--fs-sm)" }}>No Ledger Transactions Recorded Yet</strong>
-            <p style={{ fontSize: "var(--fs-xs)", margin: "4px 0 0" }}>Escrow holds from assigned bookings and bank payout withdrawals will log here automatically.</p>
+          <div style={{ padding: "40px 20px", textAlign: "center", color: "var(--text-tertiary)" }}>
+            <Inbox size={36} color="#0EA5E9" style={{ opacity: 0.6, marginBottom: 8 }} />
+            <strong style={{ display: "block", color: "var(--text-primary)", fontSize: "14px" }}>No Ledger Transactions Recorded Yet</strong>
+            <p style={{ fontSize: "12px", margin: "4px 0 0", color: "var(--text-secondary)" }}>Escrow holds from assigned bookings and bank payout withdrawals will log here automatically.</p>
           </div>
         ) : (
-          <div style={{ overflowX: "auto" }}>
+          <div style={{ width: "100%", overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
             <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left", fontSize: "var(--fs-sm)" }}>
               <thead>
                 <tr style={{ background: "var(--bg-tertiary)", borderBottom: "1px solid var(--border-primary)", color: "var(--text-secondary)" }}>
