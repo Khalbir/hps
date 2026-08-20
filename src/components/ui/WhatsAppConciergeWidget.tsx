@@ -36,17 +36,20 @@ export function WhatsAppConciergeWidget() {
     setIsOpen(false);
   };
 
+  const isBookingFlow = pathname?.startsWith("/book");
+  const bottomOffset = isBookingFlow ? "calc(76px + env(safe-area-inset-bottom, 0px))" : "calc(20px + env(safe-area-inset-bottom, 0px))";
+
   return (
-    <div style={{ position: "fixed", bottom: "calc(20px + env(safe-area-inset-bottom, 0px))", right: "16px", zIndex: 99999, fontFamily: "system-ui, -apple-system, sans-serif" }}>
+    <div style={{ position: "fixed", bottom: bottomOffset, right: "16px", zIndex: 99999, fontFamily: "system-ui, -apple-system, sans-serif" }}>
       {/* Floating Concierge Chat Window */}
       {isOpen && (
         <div
           style={{
             position: "absolute",
-            bottom: "64px",
+            bottom: "52px",
             right: "0",
             width: "calc(100vw - 32px)",
-            maxWidth: "340px",
+            maxWidth: "320px",
             background: "#1E293B",
             borderRadius: "16px",
             border: "1px solid #334155",
@@ -201,33 +204,40 @@ export function WhatsAppConciergeWidget() {
         </div>
       )}
 
-      {/* Main Floating Trigger Button */}
+      {/* Main Floating Trigger Button - Translucent & Compact */}
       <button
         onClick={() => setIsOpen(!isOpen)}
         style={{
-          background: "linear-gradient(135deg, #25D366 0%, #128C7E 100%)",
+          background: "rgba(18, 140, 126, 0.76)",
+          backdropFilter: "blur(8px)",
+          WebkitBackdropFilter: "blur(8px)",
           color: "#FFFFFF",
-          border: "none",
-          borderRadius: "50px",
-          padding: "12px 18px",
+          border: "1px solid rgba(255, 255, 255, 0.22)",
+          borderRadius: "30px",
+          padding: "7px 12px",
           display: "flex",
           alignItems: "center",
-          gap: "8px",
-          boxShadow: "0 8px 24px rgba(37, 211, 102, 0.4)",
+          gap: "6px",
+          boxShadow: "0 4px 14px rgba(0, 0, 0, 0.25)",
           cursor: "pointer",
-          fontWeight: 700,
-          fontSize: "13px",
-          transition: "transform 0.2s ease, box-shadow 0.2s ease",
+          fontWeight: 600,
+          fontSize: "12px",
+          transition: "all 0.2s ease",
+          opacity: 0.9,
         }}
         onMouseEnter={(e) => {
-          e.currentTarget.style.transform = "scale(1.05)";
+          e.currentTarget.style.opacity = "1";
+          e.currentTarget.style.background = "rgba(18, 140, 126, 0.95)";
+          e.currentTarget.style.transform = "scale(1.03)";
         }}
         onMouseLeave={(e) => {
+          e.currentTarget.style.opacity = "0.9";
+          e.currentTarget.style.background = "rgba(18, 140, 126, 0.76)";
           e.currentTarget.style.transform = "scale(1)";
         }}
       >
-        <MessageSquare size={18} fill="#FFFFFF" />
-        <span>Live Support Concierge</span>
+        <MessageSquare size={15} fill="#FFFFFF" />
+        <span style={{ letterSpacing: "-0.01em" }}>Live Support Concierge</span>
       </button>
     </div>
   );

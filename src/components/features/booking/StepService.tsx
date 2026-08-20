@@ -156,9 +156,9 @@ export function StepService({ booking, updateBooking, onNext }: StepProps) {
                 </p>
               </div>
 
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "16px" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: "12px" }}>
                 {/* Bedrooms Counter */}
-                <div style={{ background: "#0F172A", padding: "12px 16px", borderRadius: "12px", border: "1px solid #334155" }}>
+                <div style={{ background: "#0F172A", padding: "12px 14px", borderRadius: "12px", border: "1px solid #334155" }}>
                   <span style={{ fontSize: "12px", color: "#94A3B8", fontWeight: 600 }}>Bedrooms</span>
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: "8px" }}>
                     <button
@@ -299,92 +299,122 @@ export function StepService({ booking, updateBooking, onNext }: StepProps) {
                     background: "#1E293B",
                     border: "1px solid #334155",
                     borderRadius: "16px",
-                    padding: "20px",
+                    padding: "16px 18px",
                     marginBottom: "16px",
                     display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    flexWrap: "wrap",
-                    gap: "16px",
+                    flexDirection: "column",
+                    gap: "12px",
+                    width: "100%",
+                    boxSizing: "border-box",
+                    overflow: "hidden",
                   }}
                 >
-                  <div style={{ flex: 1, minWidth: "240px" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px" }}>
-                      <h3 style={{ margin: 0, color: "#F8FAFC", fontSize: "16px", fontWeight: 700 }}>{svc.name}</h3>
-                      <span
-                        style={{
-                          fontSize: "10px",
-                          fontWeight: 800,
-                          padding: "2px 8px",
-                          borderRadius: "10px",
-                          background:
-                            svc.pricingModel === "PROPERTY_BASED"
-                              ? "rgba(14,165,233,0.15)"
-                              : svc.pricingModel === "QUANTITY_BASED"
-                              ? "rgba(245,158,11,0.15)"
-                              : svc.pricingModel === "CUSTOM_QUOTE"
-                              ? "rgba(139,92,246,0.15)"
-                              : "rgba(16,185,129,0.15)",
-                          color:
-                            svc.pricingModel === "PROPERTY_BASED"
-                              ? "#38BDF8"
-                              : svc.pricingModel === "QUANTITY_BASED"
-                              ? "#F59E0B"
-                              : svc.pricingModel === "CUSTOM_QUOTE"
-                              ? "#C084FC"
-                              : "#10B981",
-                        }}
-                      >
-                        {svc.pricingModel === "PROPERTY_BASED"
-                          ? "PROPERTY SIZED"
-                          : svc.pricingModel === "QUANTITY_BASED"
-                          ? `UNIT (${svc.unitLabel || "per item"})`
-                          : svc.pricingModel === "CUSTOM_QUOTE"
-                          ? "FREE INSPECTION & QUOTE"
-                          : "FIXED RATE"}
-                      </span>
+                  <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", flexWrap: "wrap", gap: "10px", width: "100%" }}>
+                    <div style={{ flex: 1, minWidth: "200px" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px", flexWrap: "wrap" }}>
+                        <h3 style={{ margin: 0, color: "#F8FAFC", fontSize: "16px", fontWeight: 700 }}>{svc.name}</h3>
+                        <span
+                          style={{
+                            fontSize: "10px",
+                            fontWeight: 800,
+                            padding: "2px 8px",
+                            borderRadius: "10px",
+                            background:
+                              svc.pricingModel === "PROPERTY_BASED"
+                                ? "rgba(14,165,233,0.15)"
+                                : svc.pricingModel === "QUANTITY_BASED"
+                                ? "rgba(245,158,11,0.15)"
+                                : svc.pricingModel === "CUSTOM_QUOTE"
+                                ? "rgba(139,92,246,0.15)"
+                                : "rgba(16,185,129,0.15)",
+                            color:
+                              svc.pricingModel === "PROPERTY_BASED"
+                                ? "#38BDF8"
+                                : svc.pricingModel === "QUANTITY_BASED"
+                                ? "#F59E0B"
+                                : svc.pricingModel === "CUSTOM_QUOTE"
+                                ? "#C084FC"
+                                : "#10B981",
+                          }}
+                        >
+                          {svc.pricingModel === "PROPERTY_BASED"
+                            ? "PROPERTY SIZED"
+                            : svc.pricingModel === "QUANTITY_BASED"
+                            ? `UNIT (${svc.unitLabel || "per item"})`
+                            : svc.pricingModel === "CUSTOM_QUOTE"
+                            ? "FREE INSPECTION & QUOTE"
+                            : "FIXED RATE"}
+                        </span>
+                      </div>
+                      <p style={{ margin: 0, fontSize: "13px", color: "#94A3B8", lineHeight: 1.4 }}>{svc.desc}</p>
                     </div>
-                    <p style={{ margin: 0, fontSize: "13px", color: "#94A3B8" }}>{svc.desc}</p>
+
+                    {/* Quantity Counter for Quantity-Based Model */}
+                    {svc.pricingModel === "QUANTITY_BASED" && (
+                      <div style={{ display: "flex", alignItems: "center", gap: "8px", background: "#0F172A", padding: "4px 10px", borderRadius: "8px", border: "1px solid #334155" }}>
+                        <span style={{ fontSize: "11px", color: "#94A3B8" }}>Qty:</span>
+                        <button
+                          type="button"
+                          onClick={() => handleQuantityChange((booking.quantity || 1) - 1)}
+                          style={{ background: "#1E293B", border: "none", color: "#F8FAFC", width: 24, height: 24, borderRadius: 4, cursor: "pointer", fontWeight: "bold" }}
+                        >
+                          -
+                        </button>
+                        <span style={{ fontSize: "13px", fontWeight: "bold", color: "#F8FAFC", minWidth: 18, textAlign: "center" }}>
+                          {booking.quantity || 1}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => handleQuantityChange((booking.quantity || 1) + 1)}
+                          style={{ background: "#1E293B", border: "none", color: "#F8FAFC", width: 24, height: 24, borderRadius: 4, cursor: "pointer", fontWeight: "bold" }}
+                        >
+                          +
+                        </button>
+                      </div>
+                    )}
                   </div>
 
-                  {/* Quantity Counter for Quantity-Based Model */}
-                  {svc.pricingModel === "QUANTITY_BASED" && (
-                    <div style={{ display: "flex", alignItems: "center", gap: "8px", background: "#0F172A", padding: "6px 12px", borderRadius: "10px", border: "1px solid #334155" }}>
-                      <span style={{ fontSize: "12px", color: "#94A3B8" }}>Qty:</span>
-                      <button
-                        type="button"
-                        onClick={() => handleQuantityChange((booking.quantity || 1) - 1)}
-                        style={{ background: "#1E293B", border: "none", color: "#F8FAFC", width: 26, height: 26, borderRadius: 4, cursor: "pointer", fontWeight: "bold" }}
-                      >
-                        -
-                      </button>
-                      <span style={{ fontSize: "14px", fontWeight: "bold", color: "#F8FAFC", minWidth: 20, textAlign: "center" }}>
-                        {booking.quantity || 1}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => handleQuantityChange((booking.quantity || 1) + 1)}
-                        style={{ background: "#1E293B", border: "none", color: "#F8FAFC", width: 26, height: 26, borderRadius: 4, cursor: "pointer", fontWeight: "bold" }}
-                      >
-                        +
-                      </button>
-                    </div>
-                  )}
-
-                  <div style={{ textAlign: "right", display: "flex", alignItems: "center", gap: "16px" }}>
+                  {/* Clean Bottom Action Row: Calculated Amount + Fully Contained Button */}
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      flexWrap: "wrap",
+                      gap: "10px",
+                      paddingTop: "12px",
+                      borderTop: "1px solid rgba(51,65,85,0.6)",
+                      width: "100%",
+                      boxSizing: "border-box",
+                    }}
+                  >
                     <div>
-                      <span style={{ fontSize: "11px", color: "#94A3B8", display: "block" }}>
+                      <span style={{ fontSize: "11px", color: "#94A3B8", display: "block", marginBottom: "2px" }}>
                         {svc.pricingModel === "CUSTOM_QUOTE" ? "Assessment Deposit" : "Calculated Amount"}
                       </span>
-                      <strong style={{ fontSize: "1.25rem", color: svc.pricingModel === "CUSTOM_QUOTE" ? "#C084FC" : "#10B981", fontWeight: 800 }}>
+                      <strong style={{ fontSize: "1.15rem", color: svc.pricingModel === "CUSTOM_QUOTE" ? "#C084FC" : "#10B981", fontWeight: 800 }}>
                         {svc.pricingModel === "CUSTOM_QUOTE" ? "FREE Quote" : `₦${calc.totalPriceNgn.toLocaleString()}`}
                       </strong>
                     </div>
 
                     <button
                       onClick={() => selectService(selectedCategory, svc)}
-                      className="btn btn-primary btn-md"
-                      style={{ background: svc.pricingModel === "CUSTOM_QUOTE" ? "#8B5CF6" : "#0EA5E9", fontWeight: 700 }}
+                      className="btn btn-primary btn-sm"
+                      style={{
+                        background: svc.pricingModel === "CUSTOM_QUOTE" ? "#8B5CF6" : "#0EA5E9",
+                        fontWeight: 700,
+                        fontSize: "12px",
+                        padding: "8px 14px",
+                        borderRadius: "10px",
+                        border: "none",
+                        cursor: "pointer",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        gap: "6px",
+                        whiteSpace: "nowrap",
+                        boxSizing: "border-box",
+                      }}
                     >
                       {svc.pricingModel === "CUSTOM_QUOTE" ? "Request Free Inspection ➔" : "Select & Continue ➔"}
                     </button>
