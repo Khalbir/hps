@@ -274,23 +274,24 @@
 
 .mobileMenu {
   position: fixed;
-  top: 0;
+  top: var(--header-height);
   right: 0;
   bottom: 0;
-  height: 100dvh;
+  height: calc(100dvh - var(--header-height));
   width: 100%;
   max-width: 380px;
   background: var(--bg-primary);
-  z-index: var(--z-modal);
+  z-index: 999;
   overflow-y: auto;
   box-shadow: var(--shadow-2xl);
+  border-top: 1px solid var(--border-primary);
 }
 
 .mobileMenuContent {
   display: flex;
   flex-direction: column;
   min-height: 100%;
-  padding: var(--space-6);
+  padding: var(--space-4) var(--space-6);
   padding-bottom: calc(var(--space-6) + env(safe-area-inset-bottom, 0px));
 }
 

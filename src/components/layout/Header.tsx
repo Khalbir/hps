@@ -194,19 +194,19 @@ export function Header() {
               href="/auth/register?role=PROFESSIONAL"
               className={styles.navLink}
               style={{
-                color: "#8B5CF6",
+                color: "#FF6B00",
                 fontWeight: 700,
                 display: "inline-flex",
                 alignItems: "center",
                 gap: 5,
-                background: "rgba(139, 92, 246, 0.1)",
+                background: "rgba(255, 107, 0, 0.1)",
                 padding: "5px 12px",
                 borderRadius: "99px",
-                border: "1px solid rgba(139, 92, 246, 0.25)",
+                border: "1px solid rgba(255, 107, 0, 0.3)",
               }}
               title="Sign up as an Artisan / Verified Professional"
             >
-              <Wrench size={13} color="#8B5CF6" /> Become a Pro
+              <Wrench size={13} color="#FF6B00" /> Become a Pro
             </Link>
           </nav>
 
@@ -305,30 +305,6 @@ export function Header() {
               aria-label="Mobile navigation"
             >
               <div className={styles.mobileMenuContent}>
-                <div className={styles.mobileMenuHeader}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <span style={{ width: 10, height: 10, borderRadius: "50%", background: "#F97316", display: "inline-block" }} />
-                    <span className={styles.mobileMenuTitle}>HandyHub Menu</span>
-                  </div>
-                  <button
-                    onClick={() => setMobileOpen(false)}
-                    aria-label="Close menu"
-                    style={{
-                      color: "#F97316",
-                      width: 36,
-                      height: 36,
-                      borderRadius: 10,
-                      background: "rgba(249,115,22,0.12)",
-                      border: "1.5px solid rgba(249,115,22,0.35)",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      cursor: "pointer",
-                    }}
-                  >
-                    <X size={18} />
-                  </button>
-                </div>
                 <div className={styles.mobileLinks}>
                   <div>
                     <button
@@ -403,7 +379,7 @@ export function Header() {
                             href="/pro"
                             className={styles.mobileLink}
                             onClick={() => setMobileOpen(false)}
-                            style={{ color: "#C084FC", fontWeight: "bold", display: "flex", alignItems: "center", gap: 8 }}
+                            style={{ color: "#FF6B00", fontWeight: "bold", display: "flex", alignItems: "center", gap: 8 }}
                           >
                             <Wrench size={18} />
                             <span>Artisan Workspace (Pro)</span>
@@ -461,21 +437,28 @@ export function Header() {
                       </Link>
                       <Link
                         href="/auth/register?role=PROFESSIONAL"
-                        className={styles.mobileLink}
                         onClick={() => setMobileOpen(false)}
                         style={{
-                          color: "#8B5CF6",
-                          fontWeight: "bold",
+                          color: "#FF6B00",
+                          fontWeight: 700,
                           display: "flex",
                           alignItems: "center",
+                          justifyContent: "center",
                           gap: 8,
-                          background: "rgba(139, 92, 246, 0.08)",
-                          padding: "10px 14px",
-                          borderRadius: "10px",
-                          border: "1.5px solid rgba(139, 92, 246, 0.25)",
+                          background: "linear-gradient(135deg, rgba(255, 107, 0, 0.08) 0%, rgba(249, 115, 22, 0.14) 100%)",
+                          padding: "0 16px",
+                          height: 44,
+                          minHeight: 44,
+                          borderRadius: 12,
+                          border: "1.5px solid rgba(255, 107, 0, 0.4)",
+                          fontSize: "14px",
+                          textDecoration: "none",
+                          boxShadow: "0 2px 8px rgba(255, 107, 0, 0.12)",
+                          transition: "all 0.2s ease",
+                          boxSizing: "border-box",
                         }}
                       >
-                        <Wrench size={18} color="#8B5CF6" />
+                        <Wrench size={16} color="#FF6B00" />
                         <span>Join as a Pro (Artisan Sign Up)</span>
                       </Link>
                     </div>
@@ -484,13 +467,20 @@ export function Header() {
                 <div className={styles.mobileMenuFooter}>
                   <Link
                     href="/book"
-                    className="btn btn-primary btn-lg w-full"
+                    className="btn btn-primary w-full"
                     onClick={() => setMobileOpen(false)}
                     style={{
                       background: "linear-gradient(135deg, #0EA5E9 0%, #0284C7 100%)",
                       boxShadow: "0 4px 16px rgba(14, 165, 233, 0.35)",
                       fontWeight: 700,
+                      fontSize: "14px",
+                      height: 44,
+                      minHeight: 44,
                       borderRadius: 12,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      boxSizing: "border-box",
                     }}
                   >
                     Book a Service ➔
