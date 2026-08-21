@@ -70,13 +70,29 @@ export default function AdminDashboardPage() {
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [lastUpdated, setLastUpdated] = useState<string>("");
   const [loading, setLoading] = useState(true);
-  const [telemetry, setTelemetry] = useState<any>(null);
+  const [telemetry, setTelemetry] = useState<any>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const cached = localStorage.getItem("hhp_admin_telemetry_cache");
+        if (cached) return JSON.parse(cached);
+      } catch {}
+    }
+    return null;
+  });
 
   // Executive Perspective Mode (Super Admin vs CAO Executive Operations)
   const [executiveView, setExecutiveView] = useState<"SUPER_ADMIN" | "EXECUTIVE_OPERATIONS_MANAGER">("SUPER_ADMIN");
 
   // AI Executive Operations Analyst State
-  const [aiAnalyst, setAiAnalyst] = useState<any>(null);
+  const [aiAnalyst, setAiAnalyst] = useState<any>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const cached = localStorage.getItem("hhp_admin_ai_analyst_cache");
+        if (cached) return JSON.parse(cached);
+      } catch {}
+    }
+    return null;
+  });
   const [loadingAi, setLoadingAi] = useState(true);
 
   // High-Risk Approvals Queue State
@@ -91,6 +107,9 @@ export default function AdminDashboardPage() {
       if (res.ok && data.success) {
         setTelemetry(data);
         setLastUpdated(new Date().toLocaleTimeString());
+        try {
+          localStorage.setItem("hhp_admin_telemetry_cache", JSON.stringify(data));
+        } catch {}
       }
     } catch (err) {
       console.warn("Failed to fetch telemetry:", err);
@@ -105,6 +124,9 @@ export default function AdminDashboardPage() {
       const data = await res.json();
       if (res.ok && data.success) {
         setAiAnalyst(data);
+        try {
+          localStorage.setItem("hhp_admin_ai_analyst_cache", JSON.stringify(data));
+        } catch {}
       }
     } catch (err) {
       console.warn("Failed to load AI analyst:", err);
