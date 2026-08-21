@@ -46,6 +46,29 @@ export function StepService({ booking, updateBooking, onNext }: StepProps) {
 
   const activeCategory = SERVICE_CATEGORIES.find((c) => c.id === selectedCategory);
 
+  const [serviceQuantities, setServiceQuantities] = useState<Record<string, number>>({});
+
+  const getServiceQuantity = (serviceId: string) => {
+    if (serviceQuantities[serviceId] !== undefined) {
+      return serviceQuantities[serviceId];
+    }
+    if (booking.serviceId === serviceId && booking.quantity) {
+      return booking.quantity;
+    }
+    return 1;
+  };
+
+  const handleServiceQuantityChange = (serviceId: string, qty: number) => {
+    const safeQty = Math.max(1, qty);
+    setServiceQuantities((prev) => ({
+      ...prev,
+      [serviceId]: safeQty,
+    }));
+    if (booking.serviceId === serviceId) {
+      updateBooking({ quantity: safeQty });
+    }
+  };
+
   // Auto-synchronize booking total price with effective card price on Step 1
   useEffect(() => {
     if (!selectedCategory || !activeCategory) return;
@@ -53,6 +76,7 @@ export function StepService({ booking, updateBooking, onNext }: StepProps) {
     if (rawSvc) {
       const svc = getEffectiveServiceItem(rawSvc, pricingRules);
       const pModel = (svc.pricingModel as PricingModel) || "FIXED";
+      const svcQty = getServiceQuantity(svc.id);
       const calc = calculateJobPrice(
         {
           serviceId: svc.id,
@@ -62,16 +86,17 @@ export function StepService({ booking, updateBooking, onNext }: StepProps) {
           bathrooms: booking.bathrooms || 1,
           isFurnished: booking.isFurnished || false,
           dirtLevel: booking.dirtLevel || "MODERATE",
-          quantity: booking.quantity || 1,
+          quantity: svcQty,
           regionalZoneId: booking.regionalZoneId || "abuja-suburbs",
           isExpressSchedule: booking.isEmergency || false,
         },
         pricingRules
       );
-      if (booking.totalPrice !== calc.totalPriceNgn || booking.servicePrice !== svc.price) {
+      if (booking.totalPrice !== calc.totalPriceNgn || booking.servicePrice !== svc.price || booking.quantity !== svcQty) {
         updateBooking({
           servicePrice: svc.price,
           pricingModel: pModel,
+          quantity: svcQty,
           totalPrice: calc.totalPriceNgn,
         });
       }
@@ -85,7 +110,7 @@ export function StepService({ booking, updateBooking, onNext }: StepProps) {
     booking.bathrooms,
     booking.isFurnished,
     booking.dirtLevel,
-    booking.quantity,
+    serviceQuantities,
   ]);
 
   const filteredCategories = searchQuery
@@ -112,13 +137,10 @@ export function StepService({ booking, updateBooking, onNext }: StepProps) {
     updateBooking({ dirtLevel });
   };
 
-  const handleQuantityChange = (quantity: number) => {
-    updateBooking({ quantity: Math.max(1, quantity) });
-  };
-
   const selectService = (catId: string, rawSvc: any) => {
     const svc = getEffectiveServiceItem(rawSvc, pricingRules);
     const pModel = (svc.pricingModel as PricingModel) || "FIXED";
+    const svcQty = getServiceQuantity(svc.id);
     const calc = calculateJobPrice(
       {
         serviceId: svc.id,
@@ -128,7 +150,7 @@ export function StepService({ booking, updateBooking, onNext }: StepProps) {
         bathrooms: booking.bathrooms || 1,
         isFurnished: booking.isFurnished || false,
         dirtLevel: booking.dirtLevel || "MODERATE",
-        quantity: booking.quantity || 1,
+        quantity: svcQty,
         regionalZoneId: booking.regionalZoneId || "abuja-suburbs",
         isExpressSchedule: booking.isEmergency || false,
       },
@@ -141,6 +163,7 @@ export function StepService({ booking, updateBooking, onNext }: StepProps) {
       serviceName: svc.name,
       servicePrice: svc.price,
       pricingModel: pModel,
+      quantity: svcQty,
       totalPrice: calc.totalPriceNgn,
     });
     onNext();
@@ -317,6 +340,7 @@ export function StepService({ booking, updateBooking, onNext }: StepProps) {
             {activeCategory?.services.map((rawSvc: any) => {
               const svc = getEffectiveServiceItem(rawSvc, pricingRules);
               const pModel = (svc.pricingModel as PricingModel) || "FIXED";
+              const svcQty = getServiceQuantity(svc.id);
               const calc = calculateJobPrice(
                 {
                   serviceId: svc.id,
@@ -326,7 +350,7 @@ export function StepService({ booking, updateBooking, onNext }: StepProps) {
                   bathrooms: booking.bathrooms || 1,
                   isFurnished: booking.isFurnished || false,
                   dirtLevel: booking.dirtLevel || "MODERATE",
-                  quantity: booking.quantity || 1,
+                  quantity: svcQty,
                   regionalZoneId: booking.regionalZoneId || "abuja-suburbs",
                   isExpressSchedule: booking.isEmergency || false,
                 },
@@ -405,17 +429,18 @@ export function StepService({ booking, updateBooking, onNext }: StepProps) {
                         <span style={{ fontSize: "11px", color: "#94A3B8" }}>Qty:</span>
                         <button
                           type="button"
-                          onClick={() => handleQuantityChange((booking.quantity || 1) - 1)}
+                          onClick={() => handleServiceQuantityChange(svc.id, svcQty - 1)}
                           style={{ background: "#1E293B", border: "none", color: "#F8FAFC", width: 24, height: 24, borderRadius: 4, cursor: "pointer", fontWeight: "bold" }}
+                          disabled={svcQty <= 1}
                         >
                           -
                         </button>
                         <span style={{ fontSize: "13px", fontWeight: "bold", color: "#F8FAFC", minWidth: 18, textAlign: "center" }}>
-                          {booking.quantity || 1}
+                          {svcQty}
                         </span>
                         <button
                           type="button"
-                          onClick={() => handleQuantityChange((booking.quantity || 1) + 1)}
+                          onClick={() => handleServiceQuantityChange(svc.id, svcQty + 1)}
                           style={{ background: "#1E293B", border: "none", color: "#F8FAFC", width: 24, height: 24, borderRadius: 4, cursor: "pointer", fontWeight: "bold" }}
                         >
                           +
