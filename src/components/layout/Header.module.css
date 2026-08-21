@@ -22,14 +22,16 @@
 }
 
 .container {
-  max-width: var(--container-max);
+  width: 100%;
+  max-width: 1440px;
   margin-inline: auto;
-  padding-inline: var(--container-padding);
+  padding-inline: clamp(12px, 2vw, 24px);
   height: 100%;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--space-8);
+  gap: 12px;
+  box-sizing: border-box;
 }
 
 /* Logo */
@@ -42,8 +44,8 @@
 }
 
 .logoIcon {
-  width: 38px;
-  height: 38px;
+  width: 36px;
+  height: 36px;
   overflow: hidden;
   position: relative;
   border-radius: 8px;
@@ -67,7 +69,7 @@
 
 .logoName {
   font-family: var(--font-display);
-  font-size: 1.25rem;
+  font-size: 1.2rem;
   font-weight: 700;
   color: var(--text-primary);
   letter-spacing: -0.02em;
@@ -75,7 +77,7 @@
 
 .logoPro {
   font-family: var(--font-display);
-  font-size: 0.65rem;
+  font-size: 0.62rem;
   font-weight: 800;
   color: var(--color-primary-500);
   letter-spacing: 0.1em;
@@ -93,7 +95,7 @@
 .nav {
   display: flex;
   align-items: center;
-  gap: var(--space-1);
+  gap: 6px;
 }
 
 .navItem {
@@ -103,10 +105,10 @@
 .navLink {
   display: flex;
   align-items: center;
-  gap: var(--space-1);
-  padding: var(--space-2) var(--space-3);
-  font-size: var(--fs-sm);
-  font-weight: var(--fw-medium);
+  gap: 4px;
+  padding: 6px 10px;
+  font-size: 13px;
+  font-weight: 600;
   color: var(--text-secondary);
   border-radius: var(--radius-md);
   transition: all var(--duration-short) var(--ease-default);
@@ -114,6 +116,7 @@
   background: none;
   border: none;
   white-space: nowrap;
+  text-decoration: none;
 }
 
 .navLink:hover {
@@ -138,25 +141,27 @@
   min-width: 240px;
   background: var(--bg-elevated);
   border: 1px solid var(--border-primary);
-  border-radius: var(--radius-xl);
-  padding: var(--space-2);
+  border-radius: var(--radius-lg);
   box-shadow: var(--shadow-xl);
-  z-index: var(--z-dropdown);
+  padding: var(--space-2);
+  z-index: 1001;
 }
 
 .dropdownItem {
-  display: block;
-  padding: var(--space-3) var(--space-4);
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
   font-size: var(--fs-sm);
-  font-weight: var(--fw-medium);
   color: var(--text-secondary);
   border-radius: var(--radius-md);
-  transition: all var(--duration-micro) var(--ease-default);
+  transition: all var(--duration-short) var(--ease-default);
+  text-decoration: none;
 }
 
 .dropdownItem:hover {
+  color: var(--text-primary);
   background: var(--bg-tertiary);
-  color: var(--color-primary-500);
 }
 
 .dropdownItem:last-child {
@@ -170,12 +175,12 @@
 .becomeProLink {
   color: #FF6B00;
   font-weight: 700;
-  font-size: 13px;
+  font-size: 12px;
   display: inline-flex;
   align-items: center;
   gap: 5px;
   background: rgba(255, 107, 0, 0.08);
-  padding: 5px 12px;
+  padding: 5px 10px;
   border-radius: 99px;
   border: 1px solid rgba(255, 107, 0, 0.25);
   text-decoration: none;
@@ -193,7 +198,7 @@
 .actions {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   flex-shrink: 0;
   flex-wrap: nowrap;
 }
@@ -201,7 +206,7 @@
 .authGroup {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
   flex-shrink: 0;
 }
 
@@ -209,8 +214,8 @@
 .callSupportBtn {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 6px 12px;
+  gap: 5px;
+  padding: 5px 10px;
   font-size: 12px;
   font-weight: 700;
   color: #0284C7;
@@ -251,8 +256,8 @@
 .whatsappBtn {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 6px 12px;
+  gap: 5px;
+  padding: 5px 10px;
   font-size: 12px;
   font-weight: 700;
   color: #15803D;
@@ -284,7 +289,7 @@
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  padding: 6px 11px;
+  padding: 5px 9px;
   font-size: 12px;
   font-weight: 700;
   border-radius: 8px;
@@ -340,26 +345,27 @@
   transform: translateY(-1px);
 }
 
-/* Log Out Button */
+/* Log Out Icon Button */
 .logoutBtn {
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  min-height: 32px;
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  padding: 6px 10px;
-  font-size: 12px;
-  font-weight: 600;
+  justify-content: center;
   color: #EF4444;
   background: rgba(239, 68, 68, 0.08);
   border: 1px solid rgba(239, 68, 68, 0.2);
   border-radius: 8px;
   cursor: pointer;
-  font-family: inherit;
+  padding: 0;
   transition: all 0.2s ease;
-  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .logoutBtn:hover {
-  background: rgba(239, 68, 68, 0.18);
+  background: rgba(239, 68, 68, 0.2);
   border-color: #EF4444;
   color: #DC2626;
   transform: translateY(-1px);
@@ -390,10 +396,10 @@
 }
 
 .themeBtn {
-  width: 34px;
-  height: 34px;
-  min-width: 34px;
-  min-height: 34px;
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  min-height: 32px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -415,10 +421,10 @@
 }
 
 .loginBtn {
-  font-size: var(--fs-sm);
+  font-size: 12px;
   font-weight: var(--fw-semibold);
   color: var(--text-secondary);
-  padding: 6px 12px;
+  padding: 5px 10px;
   border-radius: var(--radius-md);
   text-decoration: none;
   white-space: nowrap;
@@ -430,19 +436,19 @@
   background: var(--bg-tertiary);
 }
 
-/* Mobile Dropdown Menu Button - Brand Warm Orange (complements house door) */
+/* Slide-over Menu Drawer Toggle Button */
 .menuBtn {
-  display: none;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 34px;
-  height: 34px;
-  min-width: 34px;
-  min-height: 34px;
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  min-height: 32px;
   border-radius: 8px;
   color: #F97316;
-  background: rgba(249, 115, 22, 0.12);
-  border: 1.5px solid rgba(249, 115, 22, 0.4);
+  background: rgba(249, 115, 22, 0.1);
+  border: 1.5px solid rgba(249, 115, 22, 0.35);
   cursor: pointer;
   padding: 0;
   flex-shrink: 0;
@@ -636,132 +642,144 @@
 
 /* Responsive Rules */
 @media (max-width: 1200px) {
+  .container {
+    padding-inline: 14px;
+    gap: 8px;
+  }
   .navLink {
-    padding: 6px 8px;
+    padding: 5px 7px;
     font-size: 12px;
+  }
+  .becomeProLink {
+    padding: 4px 8px;
+    font-size: 11px;
   }
   .callSupportBtn,
   .whatsappBtn {
-    padding: 5px 9px;
+    padding: 5px 8px;
     font-size: 11px;
+    gap: 4px;
   }
   .portalBtn {
-    padding: 5px 9px;
+    padding: 5px 8px;
     font-size: 11px;
   }
 }
 
 @media (max-width: 1024px) {
   .container {
-    gap: var(--space-3);
+    padding-inline: 12px;
+    gap: 6px;
   }
   .nav {
     display: none;
   }
+  .callSupportBtn span,
+  .whatsappBtn span {
+    display: none;
+  }
   .callSupportBtn,
   .whatsappBtn {
-    display: none;
+    width: 32px;
+    height: 32px;
+    min-width: 32px;
+    min-height: 32px;
+    padding: 0;
+    justify-content: center;
   }
   .loginBtn {
     display: none;
   }
-  .bookNowBtn {
-    display: none !important;
+  .actions {
+    gap: 5px;
   }
-  .menuBtn {
-    display: inline-flex;
-  }
-  .actions .btn-primary {
-    display: none !important;
+  .authGroup {
+    gap: 5px;
   }
 }
 
 @media (max-width: 768px) {
   .container {
-    padding-inline: 12px !important;
-    gap: 6px !important;
+    padding-inline: 10px !important;
+    gap: 5px !important;
   }
   .actions {
-    gap: 6px;
+    gap: 4px;
   }
   .authGroup {
-    gap: 6px;
+    gap: 4px;
+  }
+  .callSupportBtn,
+  .whatsappBtn {
+    display: none;
   }
   .portalBtn span {
     display: none;
   }
   .portalBtn {
-    width: 34px;
-    height: 34px;
-    min-width: 34px;
-    min-height: 34px;
+    width: 32px;
+    height: 32px;
+    min-width: 32px;
+    min-height: 32px;
     padding: 0;
     justify-content: center;
     border-radius: 8px;
-  }
-  .logoutBtn span {
-    display: none;
   }
   .logoutBtn {
-    width: 34px;
-    height: 34px;
-    min-width: 34px;
-    min-height: 34px;
-    padding: 0;
-    justify-content: center;
-    border-radius: 8px;
+    width: 32px;
+    height: 32px;
+    min-width: 32px;
+    min-height: 32px;
   }
   .themeBtn {
-    width: 34px;
-    height: 34px;
-    min-width: 34px;
-    min-height: 34px;
-    border-radius: 8px;
+    width: 32px;
+    height: 32px;
+    min-width: 32px;
+    min-height: 32px;
   }
-  .menuBtn {
-    display: inline-flex;
-    width: 34px;
-    height: 34px;
-    min-width: 34px;
-    min-height: 34px;
-    border-radius: 8px;
-  }
-}
-
-@media (max-width: 480px) {
-  .container {
-    padding-inline: 10px !important;
-    gap: 4px !important;
-  }
-  .logo {
-    gap: 5px;
-  }
-  .logoIcon {
-    width: 30px;
-    height: 30px;
-  }
-  .logoName {
-    font-size: 0.98rem;
-  }
-  .logoPro {
-    font-size: 0.52rem;
-    padding: 1px 4px;
-  }
-  .actions {
-    gap: 4px;
-  }
-  .authGroup {
-    gap: 4px;
-  }
-  .themeBtn,
-  .portalBtn,
-  .logoutBtn,
   .menuBtn {
     width: 32px;
     height: 32px;
     min-width: 32px;
     min-height: 32px;
-    border-radius: 8px;
   }
 }
+
+@media (max-width: 480px) {
+  .container {
+    padding-inline: 8px !important;
+    gap: 3px !important;
+  }
+  .logo {
+    gap: 4px;
+  }
+  .logoIcon {
+    width: 28px;
+    height: 28px;
+  }
+  .logoName {
+    font-size: 0.92rem;
+  }
+  .logoPro {
+    font-size: 0.5rem;
+    padding: 1px 3px;
+  }
+  .actions {
+    gap: 3px;
+  }
+  .authGroup {
+    gap: 3px;
+  }
+  .themeBtn,
+  .portalBtn,
+  .logoutBtn,
+  .menuBtn {
+    width: 30px;
+    height: 30px;
+    min-width: 30px;
+    min-height: 30px;
+    border-radius: 6px;
+  }
+}
+
 

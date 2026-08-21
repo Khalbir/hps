@@ -45,7 +45,6 @@ export function Header() {
   }, []);
 
   useEffect(() => {
-    // Check if user is logged in across cookies, localStorage, and sessionStorage
     const checkAuth = () => {
       const hasCookieSession = document.cookie.includes("handyhub_user_session=authenticated") ||
                                document.cookie.includes("handyhub_pro_session=authenticated") ||
@@ -89,22 +88,9 @@ export function Header() {
     window.location.href = "/";
   };
 
-  useEffect(() => {
-    if (mobileOpen) {
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "";
-    }
-    return () => {
-      document.body.style.overflow = "";
-    };
-  }, [mobileOpen]);
-
   return (
     <>
-      <header
-        className={`${styles.header} ${isScrolled ? styles.scrolled : ""}`}
-      >
+      <header className={`${styles.header} ${isScrolled ? styles.scrolled : ""}`}>
         <div className={styles.container}>
           {/* Logo */}
           <Link href="/" className={styles.logo} aria-label="HandyHub Pro Home">
@@ -162,12 +148,6 @@ export function Header() {
                 )}
               </AnimatePresence>
             </div>
-            <Link href="/marketplace" className={styles.navLink} style={{ color: "#00A8B5", fontWeight: 700, display: "inline-flex", alignItems: "center", gap: 5 }}>
-              <ShoppingBag size={14} /> Marketplace
-            </Link>
-            <Link href="/about" className={styles.navLink}>
-              About
-            </Link>
             <Link href="/track" className={styles.navLink} style={{ color: "#10B981", fontWeight: 700 }}>
               Track Booking
             </Link>
@@ -224,24 +204,20 @@ export function Header() {
                 </motion.div>
               </AnimatePresence>
             </button>
+
+            {/* Auth / Role Switch Group */}
             {isLoggedIn ? (
               <div className={styles.authGroup}>
                 {userRole === "SUPER_ADMIN" || userRole === "ADMIN" ? (
                   <Link href="/admin/dashboard" className={`${styles.portalBtn} ${styles.adminBadge}`} title="Admin Control Center">
                     <User size={13} />
-                    <span>Admin Portal</span>
+                    <span>Admin</span>
                   </Link>
                 ) : isProfessional ? (
-                  <>
-                    <Link href="/pro" className={`${styles.portalBtn} ${styles.artisanBadge}`} title="Artisan Workspace">
-                      <Wrench size={13} color="#A855F7" />
-                      <span>Artisan Portal</span>
-                    </Link>
-                    <Link href="/dashboard" className={`${styles.portalBtn} ${styles.clientBadge}`} title="Switch to Client Mode">
-                      <User size={13} />
-                      <span>Client View</span>
-                    </Link>
-                  </>
+                  <Link href="/pro" className={`${styles.portalBtn} ${styles.artisanBadge}`} title="Artisan Workspace">
+                    <Wrench size={13} color="#A855F7" />
+                    <span>Artisan Portal</span>
+                  </Link>
                 ) : (
                   <Link href="/dashboard" className={styles.portalBtn} title="Client Dashboard">
                     <User size={13} />
@@ -255,7 +231,6 @@ export function Header() {
                   aria-label="Log Out"
                 >
                   <LogOut size={13} />
-                  <span>Log Out</span>
                 </button>
               </div>
             ) : (
@@ -263,14 +238,14 @@ export function Header() {
                 Log In
               </Link>
             )}
-            <Link href="/book" className={styles.bookNowBtn}>
-              Book Now
-            </Link>
+
+            {/* Slide-over Menu Drawer Toggle (Always available on desktop, tablet, and mobile) */}
             <button
               className={`${styles.menuBtn} ${mobileOpen ? styles.menuBtnActive : ""}`}
               onClick={() => setMobileOpen(!mobileOpen)}
-              aria-label="Toggle menu"
+              aria-label="Toggle menu drawer"
               aria-expanded={mobileOpen}
+              title="Open Navigation Menu"
             >
               {mobileOpen ? <X size={18} /> : <Menu size={18} />}
             </button>
@@ -278,7 +253,7 @@ export function Header() {
         </div>
       </header>
 
-      {/* Mobile Menu */}
+      {/* Slide-over Menu Drawer */}
       <AnimatePresence>
         {mobileOpen && (
           <>
@@ -295,24 +270,60 @@ export function Header() {
               animate={{ x: 0 }}
               exit={{ x: "100%" }}
               transition={{ type: "spring", damping: 25, stiffness: 200 }}
-              aria-label="Mobile navigation"
+              aria-label="Main menu drawer"
             >
               <div className={styles.mobileMenuContent}>
+                <div className={styles.mobileMenuHeader}>
+                  <BrandLogo size="sm" />
+                  <button
+                    onClick={() => setMobileOpen(false)}
+                    style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-secondary)", padding: 6 }}
+                    aria-label="Close menu"
+                  >
+                    <X size={20} />
+                  </button>
+                </div>
+
                 <div className={styles.mobileLinks}>
+                  {/* Marketplace Drawer Link (Moved here from top navbar) */}
+                  <Link
+                    href="/marketplace"
+                    className={styles.mobileLink}
+                    onClick={() => setMobileOpen(false)}
+                    style={{
+                      color: "#00A8B5",
+                      fontWeight: 700,
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 10,
+                      background: "rgba(0, 168, 181, 0.08)",
+                      border: "1.5px solid rgba(0, 168, 181, 0.25)",
+                      borderRadius: 10,
+                      padding: "10px 14px",
+                    }}
+                  >
+                    <ShoppingBag size={18} color="#00A8B5" />
+                    <span>Marketplace & Spare Parts</span>
+                  </Link>
+
+                  {/* Services Accordion */}
                   <div>
                     <button
                       className={styles.mobileLink}
                       onClick={() => setMobileServicesOpen(!mobileServicesOpen)}
                       style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between" }}
                     >
-                      <span>Our Services</span>
+                      <span style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                        <Layers size={18} color="var(--color-primary-500)" />
+                        <span>All Home Services</span>
+                      </span>
                       <ChevronDown
                         size={18}
                         style={{ transform: mobileServicesOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s ease" }}
                       />
                     </button>
                     {mobileServicesOpen && (
-                      <div style={{ paddingLeft: 12, borderLeft: "2px solid #00A8B5", margin: "4px 0 12px 12px", display: "flex", flexDirection: "column", gap: 6 }}>
+                      <div style={{ paddingLeft: 12, borderLeft: "2px solid var(--color-primary-500)", margin: "4px 0 12px 12px", display: "flex", flexDirection: "column", gap: 6 }}>
                         {services.map((s) => {
                           const IconComp = s.icon;
                           return (
@@ -323,7 +334,7 @@ export function Header() {
                               onClick={() => setMobileOpen(false)}
                               style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 10px", borderRadius: 6, fontSize: "13px", color: "var(--text-secondary)" }}
                             >
-                              <IconComp size={16} color="#00A8B5" style={{ flexShrink: 0 }} />
+                              <IconComp size={16} color="var(--color-primary-500)" style={{ flexShrink: 0 }} />
                               <span>{s.name}</span>
                             </Link>
                           );
@@ -331,6 +342,16 @@ export function Header() {
                       </div>
                     )}
                   </div>
+
+                  <Link
+                    href="/track"
+                    className={styles.mobileLink}
+                    onClick={() => setMobileOpen(false)}
+                    style={{ color: "#10B981", fontWeight: "bold" }}
+                  >
+                    Track Booking Status
+                  </Link>
+
                   <Link
                     href="/about"
                     className={styles.mobileLink}
@@ -338,24 +359,45 @@ export function Header() {
                   >
                     About Us
                   </Link>
+
                   <Link
                     href="/contact"
                     className={styles.mobileLink}
                     onClick={() => setMobileOpen(false)}
                   >
-                    Contact & Support
+                    Contact & Customer Support
                   </Link>
-                  <Link
-                    href="/track"
-                    className={styles.mobileLink}
-                    onClick={() => setMobileOpen(false)}
-                    style={{ color: "#00A8B5", fontWeight: "bold" }}
-                  >
-                    Track My Booking
-                  </Link>
+
                   <div className={styles.mobileDivider} />
+
+                  {/* Pro / Artisan Registration Card */}
+                  <Link
+                    href="/auth/register?role=PROFESSIONAL"
+                    onClick={() => setMobileOpen(false)}
+                    style={{
+                      color: "#FF6B00",
+                      fontWeight: 700,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: 8,
+                      background: "linear-gradient(135deg, rgba(255, 107, 0, 0.08) 0%, rgba(249, 115, 22, 0.14) 100%)",
+                      padding: "12px 16px",
+                      borderRadius: 12,
+                      border: "1.5px solid rgba(255, 107, 0, 0.4)",
+                      fontSize: "14px",
+                      textDecoration: "none",
+                      boxShadow: "0 2px 8px rgba(255, 107, 0, 0.12)",
+                      transition: "all 0.2s ease",
+                      boxSizing: "border-box",
+                    }}
+                  >
+                    <Wrench size={16} color="#FF6B00" />
+                    <span>Become a Verified Pro (Artisan Sign Up)</span>
+                  </Link>
+
                   {isLoggedIn ? (
-                    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 8 }}>
                       {userRole === "SUPER_ADMIN" || userRole === "ADMIN" ? (
                         <Link
                           href="/admin/dashboard"
@@ -375,25 +417,25 @@ export function Header() {
                             style={{ color: "#FF6B00", fontWeight: "bold", display: "flex", alignItems: "center", gap: 8 }}
                           >
                             <Wrench size={18} />
-                            <span>Artisan Workspace (Pro)</span>
+                            <span>Artisan Workspace (Pro Portal)</span>
                           </Link>
                           <Link
                             href="/dashboard"
                             className={styles.mobileLink}
                             onClick={() => setMobileOpen(false)}
                             style={{
-                              color: "#00A8B5",
+                              color: "#0EA5E9",
                               display: "flex",
                               alignItems: "center",
                               gap: 8,
-                              background: "rgba(0, 168, 181, 0.08)",
+                              background: "rgba(14, 165, 233, 0.08)",
                               padding: "10px 14px",
                               borderRadius: 10,
-                              border: "1.5px solid rgba(0, 168, 181, 0.25)",
+                              border: "1.5px solid rgba(14, 165, 233, 0.25)",
                               fontWeight: 600,
                             }}
                           >
-                            <User size={18} color="#00A8B5" />
+                            <User size={18} color="#0EA5E9" />
                             <span>Switch to Client Mode (Book Services)</span>
                           </Link>
                         </>
@@ -402,7 +444,7 @@ export function Header() {
                           href="/dashboard"
                           className={styles.mobileLink}
                           onClick={() => setMobileOpen(false)}
-                          style={{ color: "#00A8B5", fontWeight: "bold", display: "flex", alignItems: "center", gap: 8 }}
+                          style={{ color: "#0EA5E9", fontWeight: "bold", display: "flex", alignItems: "center", gap: 8 }}
                         >
                           <User size={18} />
                           <span>Client Dashboard</span>
@@ -414,13 +456,14 @@ export function Header() {
                           handleLogout();
                         }}
                         className={styles.mobileLink}
-                        style={{ width: "100%", textAlign: "left", background: "none", border: "none", cursor: "pointer", fontFamily: "inherit", opacity: 0.8 }}
+                        style={{ width: "100%", textAlign: "left", background: "none", border: "none", cursor: "pointer", fontFamily: "inherit", color: "#EF4444", fontWeight: 600, display: "flex", alignItems: "center", gap: 8 }}
                       >
-                        Log Out
+                        <LogOut size={16} />
+                        <span>Log Out</span>
                       </button>
                     </div>
                   ) : (
-                    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 8 }}>
                       <Link
                         href="/auth/login"
                         className={styles.mobileLink}
@@ -428,35 +471,10 @@ export function Header() {
                       >
                         Log In
                       </Link>
-                      <Link
-                        href="/auth/register?role=PROFESSIONAL"
-                        onClick={() => setMobileOpen(false)}
-                        style={{
-                          color: "#FF6B00",
-                          fontWeight: 700,
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          gap: 8,
-                          background: "linear-gradient(135deg, rgba(255, 107, 0, 0.08) 0%, rgba(249, 115, 22, 0.14) 100%)",
-                          padding: "0 16px",
-                          height: 44,
-                          minHeight: 44,
-                          borderRadius: 12,
-                          border: "1.5px solid rgba(255, 107, 0, 0.4)",
-                          fontSize: "14px",
-                          textDecoration: "none",
-                          boxShadow: "0 2px 8px rgba(255, 107, 0, 0.12)",
-                          transition: "all 0.2s ease",
-                          boxSizing: "border-box",
-                        }}
-                      >
-                        <Wrench size={16} color="#FF6B00" />
-                        <span>Join as a Pro (Artisan Sign Up)</span>
-                      </Link>
                     </div>
                   )}
                 </div>
+
                 <div className={styles.mobileMenuFooter}>
                   {/* Contact Hotline & WhatsApp Cards for Mobile */}
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 12 }}>
