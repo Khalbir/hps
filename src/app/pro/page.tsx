@@ -447,40 +447,50 @@ export default function ProDashboard() {
             </p>
           </div>
         ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
             {proData.reviews.map((rev: any) => (
               <div
                 key={rev.id}
                 style={{
-                  padding: "16px",
-                  background: "var(--bg-tertiary)",
+                  padding: "14px 16px",
+                  background: "rgba(30, 41, 59, 0.6)",
                   borderRadius: "12px",
-                  border: "1px solid var(--border-primary)",
+                  border: "1px solid rgba(255, 255, 255, 0.07)",
                 }}
               >
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6, flexWrap: "wrap", gap: 8 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8, flexWrap: "wrap", gap: 8 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <strong style={{ fontSize: "14px", color: "var(--text-primary)" }}>{rev.clientName}</strong>
-                    <span style={{ fontSize: "11px", color: "var(--text-secondary)" }}>• {rev.serviceName}</span>
+                    <div style={{ width: 28, height: 28, borderRadius: "50%", background: "linear-gradient(135deg, #00A8B5, #008B97)", color: "#FFFFFF", fontSize: "12px", fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center", textTransform: "uppercase" }}>
+                      {rev.clientName ? rev.clientName.charAt(0) : "C"}
+                    </div>
+                    <strong style={{ fontSize: "13.5px", color: "var(--text-primary)" }}>{rev.clientName}</strong>
+                    <span style={{ fontSize: "10px", color: "#10B981", background: "rgba(16, 185, 129, 0.12)", border: "1px solid rgba(16, 185, 129, 0.25)", padding: "1px 6px", borderRadius: 99, fontWeight: 700 }}>
+                      ✓ Verified Client
+                    </span>
+                    <span style={{ fontSize: "11px", color: "#00C4D4", background: "rgba(0, 168, 181, 0.1)", padding: "2px 6px", borderRadius: 4, fontWeight: 600 }}>
+                      {rev.serviceName}
+                    </span>
                   </div>
-                  <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                    <div style={{ display: "inline-flex", gap: 2 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                    <div style={{ display: "inline-flex", gap: 2, background: "rgba(245, 158, 11, 0.1)", padding: "3px 6px", borderRadius: 6 }}>
                       {[1, 2, 3, 4, 5].map((s) => (
                         <Star
                           key={s}
-                          size={12}
-                          fill={s <= rev.rating ? "#F59E0B" : "transparent"}
-                          color={s <= rev.rating ? "#F59E0B" : "rgba(245,158,11,0.3)"}
+                          size={11}
+                          fill={s <= rev.rating ? "#F59E0B" : "none"}
+                          stroke="#F59E0B"
                         />
                       ))}
+                      <span style={{ fontSize: "11.5px", fontWeight: 800, color: "#F59E0B", marginLeft: 2 }}>{rev.rating}.0</span>
                     </div>
-                    <span style={{ fontSize: "12px", fontWeight: 700, color: "#F59E0B" }}>{rev.rating}.0★</span>
-                    <span style={{ fontSize: "11px", color: "var(--text-tertiary)", marginLeft: 6 }}>{rev.date}</span>
+                    <span style={{ fontSize: "11px", color: "var(--text-tertiary)" }}>{rev.date}</span>
                   </div>
                 </div>
-                <p style={{ margin: 0, fontSize: "13px", color: "var(--text-secondary)", fontStyle: "italic" }}>
-                  "{rev.comment}"
-                </p>
+                <div style={{ background: "rgba(15, 23, 42, 0.4)", borderLeft: "2.5px solid #00A8B5", borderRadius: 6, padding: "8px 12px" }}>
+                  <p style={{ margin: 0, fontSize: "12.5px", color: "var(--text-secondary)", fontStyle: "italic", lineHeight: 1.5 }}>
+                    &ldquo;{rev.comment}&rdquo;
+                  </p>
+                </div>
               </div>
             ))}
           </div>
