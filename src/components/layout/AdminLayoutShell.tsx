@@ -145,19 +145,17 @@ export function AdminLayoutShell({ children }: { children: ReactNode }) {
       <aside className={`${styles.adminSidebar} ${sidebarOpen ? styles.adminSidebarOpen : ""}`}>
         <div className={styles.adminSidebarHeader}>
           <Link href="/admin/dashboard" className={styles.adminLogo} style={{ gap: "12px", textDecoration: "none" }}>
-            <div style={{
-              width: 38,
-              height: 38,
-              borderRadius: 12,
-              background: "linear-gradient(135deg, #0EA5E9 0%, #2563EB 100%)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              boxShadow: "0 0 16px rgba(14, 165, 233, 0.4)",
-              flexShrink: 0,
-            }}>
-              <Shield size={20} color="#FFFFFF" />
-            </div>
+            <img
+              src="/logo.png"
+              alt="HandyHub Pro"
+              style={{
+                width: 38,
+                height: 38,
+                objectFit: "contain",
+                flexShrink: 0,
+                filter: "drop-shadow(0 2px 8px rgba(0, 168, 181, 0.35))",
+              }}
+            />
             <div style={{ display: "flex", flexDirection: "column", gap: "1px", minWidth: 0 }}>
               <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
                 <span style={{ fontSize: "16px", fontWeight: 800, color: "#F8FAFC", letterSpacing: "-0.4px" }}>HandyHub</span>

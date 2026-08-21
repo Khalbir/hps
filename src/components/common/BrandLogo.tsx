@@ -11,9 +11,9 @@ interface BrandLogoProps {
 
 export function BrandLogo({ size = "md", showText = true, className = "", lightText = false }: BrandLogoProps) {
   const iconSizes = {
-    sm: 34,
-    md: 42,
-    lg: 54,
+    sm: 38,
+    md: 48,
+    lg: 64,
   };
 
   const fontSizes = {

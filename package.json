@@ -38,6 +38,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.2.10",
     "pdfkit": "^0.19.1",
+    "sharp": "^0.35.3",
     "typescript": "^5"
   }
 }
