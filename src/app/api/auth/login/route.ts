@@ -5,9 +5,9 @@ import { authenticateStaffAccount, findStaffAccount } from "@/lib/staff-registry
 import { storeCredential } from "@/lib/credentials-store";
 
 // Built-in high-availability seed test accounts
-const SEED_ACCOUNTS: Record<string, { pass: string; user: any }> = {
+const SEED_ACCOUNTS: Record<string, { pass: string | string[]; user: any }> = {
   "khalbir@hotmail.com": {
-    pass: "AdminPass123!",
+    pass: ["AdminPass123!", "Chinedu2019!"],
     user: {
       id: "usr_admin_khalbir_hotmail",
       email: "khalbir@hotmail.com",
@@ -27,6 +27,33 @@ const SEED_ACCOUNTS: Record<string, { pass: string; user: any }> = {
         digitalId: "HHP-PRO-00001",
         isAvailable: true,
         rating: 5.0,
+      },
+    },
+  },
+  "khaleid.kabir@gmail.com": {
+    pass: ["Chinedu2019!", "AdminPass123!"],
+    user: {
+      id: "cmsz1dnze0000ld04s0l2660v",
+      email: "khaleid.kabir@gmail.com",
+      firstName: "KHALID",
+      lastName: "KABIR",
+      phone: "08122222936",
+      role: "PROFESSIONAL",
+      isVerified: true,
+      verificationStatus: "VERIFIED",
+      digitalId: "HHP-PRO-27139",
+      isProfessional: true,
+      canSwitchToPro: true,
+      canSwitchToClient: true,
+      roleLabel: "Artisan / Professional",
+      professional: {
+        id: "cmsz1do9d0004ld04hwq2slri",
+        verificationStatus: "VERIFIED",
+        digitalId: "HHP-PRO-27139",
+        isAvailable: true,
+        rating: 5.0,
+        totalJobs: 2,
+        hasDocuments: true,
       },
     },
   },
@@ -57,27 +84,58 @@ export async function POST(request: Request) {
 
     // 1. High-Availability Seed / Staff Accounts Check & PostgreSQL Sync
     const seed = SEED_ACCOUNTS[cleanEmail];
+    const isSeedPassMatch = seed && (
+      (Array.isArray(seed.pass) && seed.pass.some(p => p === cleanPassword || p === password)) ||
+      seed.pass === cleanPassword ||
+      seed.pass === password
+    );
+
     const staffAccount = authenticateStaffAccount(cleanEmail, cleanPassword);
 
-    if (seed && (seed.pass === cleanPassword || seed.pass === password)) {
+    if (seed && isSeedPassMatch) {
       const userPayload = seed.user;
       
-      // Ensure seed account exists in PostgreSQL Database for reporting
+      // Ensure seed account and pro profile exist in PostgreSQL Database
       try {
         const hashedPassword = await hash(cleanPassword, 10);
-        await prisma.user.upsert({
+        const upUser = await prisma.user.upsert({
           where: { email: cleanEmail },
-          update: { role: userPayload.role, isVerified: true },
+          update: {
+            role: userPayload.role,
+            isVerified: true,
+            password: hashedPassword,
+          },
           create: {
             id: userPayload.id,
             email: cleanEmail,
             firstName: userPayload.firstName,
             lastName: userPayload.lastName,
+            phone: userPayload.phone || null,
             password: hashedPassword,
             role: userPayload.role,
             isVerified: true,
           },
         });
+
+        if (userPayload.professional) {
+          await prisma.professional.upsert({
+            where: { userId: upUser.id },
+            update: {
+              verificationStatus: "VERIFIED",
+              digitalId: userPayload.digitalId,
+              isAvailable: true,
+            },
+            create: {
+              id: userPayload.professional.id || `pro_${upUser.id}`,
+              userId: upUser.id,
+              verificationStatus: "VERIFIED",
+              digitalId: userPayload.digitalId,
+              isAvailable: true,
+              yearsExperience: 5,
+              bio: "Verified Senior Home Services Specialist",
+            },
+          });
+        }
       } catch (err) {
         console.warn("[Login Seed Sync Warning]:", err);
       }
@@ -94,6 +152,9 @@ export async function POST(request: Request) {
 
       const cookieName = userPayload.role === "PROFESSIONAL" ? "handyhub_pro_session" : isAdmin ? "handyhub_admin_session" : "handyhub_user_session";
       response.cookies.set(cookieName, "authenticated", { path: "/", maxAge: 86400 * 30, sameSite: "lax" });
+      if (userPayload.role === "PROFESSIONAL") {
+        response.cookies.set("handyhub_user_session", "authenticated", { path: "/", maxAge: 86400 * 30, sameSite: "lax" });
+      }
       response.cookies.set("handyhub_user_data", JSON.stringify(userPayload), { path: "/", maxAge: 86400 * 30, sameSite: "lax" });
       return response;
     }
