@@ -56,7 +56,7 @@ export function BrandLogo({ size = "md", showText = true, className = "", lightT
               letterSpacing: "-0.02em",
             }}
           >
-            HandyHub
+            Handy<span style={{ color: "#00A8B5" }}>Hub</span>
           </span>
           <span
             style={{
@@ -66,10 +66,11 @@ export function BrandLogo({ size = "md", showText = true, className = "", lightT
               background: "linear-gradient(135deg, #00A8B5 0%, #FF6B00 100%)",
               color: "#FFFFFF",
               padding: proBadges[size].padding,
-              borderRadius: "5px",
+              borderRadius: "6px",
               letterSpacing: "0.08em",
               textTransform: "uppercase",
-              boxShadow: "0 2px 8px rgba(255, 107, 0, 0.3)",
+              boxShadow: "0 2px 10px rgba(255, 107, 0, 0.35)",
+              border: "1px solid rgba(255, 255, 255, 0.25)",
             }}
           >
             PRO

@@ -181,7 +181,7 @@ export function Header() {
                 )}
               </AnimatePresence>
             </div>
-            <Link href="/marketplace" className={styles.navLink} style={{ color: "#0EA5E9", fontWeight: 700, display: "inline-flex", alignItems: "center", gap: 5 }}>
+            <Link href="/marketplace" className={styles.navLink} style={{ color: "#00A8B5", fontWeight: 700, display: "inline-flex", alignItems: "center", gap: 5 }}>
               <ShoppingBag size={15} /> Marketplace
             </Link>
             <Link href="/about" className={styles.navLink}>
@@ -319,7 +319,7 @@ export function Header() {
                       />
                     </button>
                     {mobileServicesOpen && (
-                      <div style={{ paddingLeft: 12, borderLeft: "2px solid #0EA5E9", margin: "4px 0 12px 12px", display: "flex", flexDirection: "column", gap: 6 }}>
+                      <div style={{ paddingLeft: 12, borderLeft: "2px solid #00A8B5", margin: "4px 0 12px 12px", display: "flex", flexDirection: "column", gap: 6 }}>
                         {services.map((s) => {
                           const IconComp = s.icon;
                           return (
@@ -330,7 +330,7 @@ export function Header() {
                               onClick={() => setMobileOpen(false)}
                               style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 10px", borderRadius: 6, fontSize: "13px", color: "var(--text-secondary)" }}
                             >
-                              <IconComp size={16} color="#0EA5E9" style={{ flexShrink: 0 }} />
+                              <IconComp size={16} color="#00A8B5" style={{ flexShrink: 0 }} />
                               <span>{s.name}</span>
                             </Link>
                           );
@@ -356,7 +356,7 @@ export function Header() {
                     href="/track"
                     className={styles.mobileLink}
                     onClick={() => setMobileOpen(false)}
-                    style={{ color: "#0EA5E9", fontWeight: "bold" }}
+                    style={{ color: "#00A8B5", fontWeight: "bold" }}
                   >
                     Track My Booking
                   </Link>
@@ -389,18 +389,18 @@ export function Header() {
                             className={styles.mobileLink}
                             onClick={() => setMobileOpen(false)}
                             style={{
-                              color: "#0EA5E9",
+                              color: "#00A8B5",
                               display: "flex",
                               alignItems: "center",
                               gap: 8,
-                              background: "rgba(14, 165, 233, 0.08)",
+                              background: "rgba(0, 168, 181, 0.08)",
                               padding: "10px 14px",
                               borderRadius: 10,
-                              border: "1.5px solid rgba(14, 165, 233, 0.25)",
+                              border: "1.5px solid rgba(0, 168, 181, 0.25)",
                               fontWeight: 600,
                             }}
                           >
-                            <User size={18} color="#0EA5E9" />
+                            <User size={18} color="#00A8B5" />
                             <span>Switch to Client Mode (Book Services)</span>
                           </Link>
                         </>
@@ -409,7 +409,7 @@ export function Header() {
                           href="/dashboard"
                           className={styles.mobileLink}
                           onClick={() => setMobileOpen(false)}
-                          style={{ color: "#0EA5E9", fontWeight: "bold", display: "flex", alignItems: "center", gap: 8 }}
+                          style={{ color: "#00A8B5", fontWeight: "bold", display: "flex", alignItems: "center", gap: 8 }}
                         >
                           <User size={18} />
                           <span>Client Dashboard</span>
@@ -470,8 +470,8 @@ export function Header() {
                     className="btn btn-primary w-full"
                     onClick={() => setMobileOpen(false)}
                     style={{
-                      background: "linear-gradient(135deg, #0EA5E9 0%, #0284C7 100%)",
-                      boxShadow: "0 4px 16px rgba(14, 165, 233, 0.35)",
+                      background: "linear-gradient(135deg, #00A8B5 0%, #008B97 100%)",
+                      boxShadow: "0 4px 16px rgba(0, 168, 181, 0.35)",
                       fontWeight: 700,
                       fontSize: "14px",
                       height: 44,

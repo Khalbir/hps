@@ -23,7 +23,7 @@
   width: 600px;
   height: 600px;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(14, 165, 233, 0.08) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(0, 168, 181, 0.08) 0%, transparent 70%);
   animation: float 8s ease-in-out infinite;
 }
 
@@ -34,7 +34,7 @@
   width: 500px;
   height: 500px;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(249, 115, 22, 0.06) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(255, 107, 0, 0.06) 0%, transparent 70%);
   animation: float 10s ease-in-out infinite reverse;
 }
 
@@ -45,7 +45,7 @@
   width: 300px;
   height: 300px;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(14, 165, 233, 0.04) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(0, 168, 181, 0.04) 0%, transparent 70%);
   animation: float 12s ease-in-out infinite;
 }
 
@@ -80,27 +80,27 @@
   align-items: center;
   gap: 8px;
   padding: 8px 18px;
-  background: linear-gradient(135deg, rgba(14, 165, 233, 0.08) 0%, rgba(16, 185, 129, 0.08) 100%);
+  background: linear-gradient(135deg, rgba(0, 168, 181, 0.08) 0%, rgba(255, 107, 0, 0.08) 100%);
   color: var(--color-primary-600);
-  border: 1.5px solid rgba(14, 165, 233, 0.35);
+  border: 1.5px solid rgba(0, 168, 181, 0.35);
   border-radius: var(--radius-full);
   font-size: 13.5px;
   font-weight: 700;
   margin-bottom: var(--space-6);
-  box-shadow: 0 4px 16px rgba(14, 165, 233, 0.1);
+  box-shadow: 0 4px 16px rgba(0, 168, 181, 0.1);
   letter-spacing: -0.01em;
 }
 
 .badgeIcon {
-  color: #0EA5E9;
+  color: #00A8B5;
   flex-shrink: 0;
 }
 
 [data-theme="dark"] .badge {
-  background: linear-gradient(135deg, rgba(14, 165, 233, 0.14) 0%, rgba(16, 185, 129, 0.1) 100%);
-  border-color: rgba(56, 189, 248, 0.35);
-  color: #38BDF8;
-  box-shadow: 0 4px 20px rgba(14, 165, 233, 0.15);
+  background: linear-gradient(135deg, rgba(0, 168, 181, 0.14) 0%, rgba(255, 107, 0, 0.1) 100%);
+  border-color: rgba(0, 196, 212, 0.35);
+  color: #00C4D4;
+  box-shadow: 0 4px 20px rgba(0, 168, 181, 0.15);
 }
 
 .headline {
