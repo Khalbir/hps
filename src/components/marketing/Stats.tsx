@@ -12,7 +12,7 @@ export function Stats() {
   const [liveStats, setLiveStats] = useState({
     jobsCount: 623,
     verifiedProsCount: 1062,
-    rating: 5.0,
+    rating: 4.5,
     responseTime: 30,
   });
 
@@ -25,7 +25,7 @@ export function Stats() {
           setLiveStats({
             jobsCount: data.jobsCount || 623,
             verifiedProsCount: data.verifiedProsCount || 1062,
-            rating: data.rating || 5.0,
+            rating: data.rating || 4.5,
             responseTime: data.responseTime || 30,
           });
         }

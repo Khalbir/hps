@@ -124,7 +124,7 @@ export default function DashboardPage() {
   const [platformStats, setPlatformStats] = useState({
     verifiedProsCount: 1062,
     jobsCount: 623,
-    rating: 5.0,
+    rating: 4.5,
     responseTime: 30,
   });
 
@@ -136,7 +136,7 @@ export default function DashboardPage() {
         setPlatformStats({
           verifiedProsCount: data.verifiedProsCount || 1062,
           jobsCount: data.jobsCount || 623,
-          rating: data.rating || 5.0,
+          rating: data.rating || 4.5,
           responseTime: data.responseTime || 30,
         });
       }
@@ -629,7 +629,7 @@ export default function DashboardPage() {
                 <div className={`card ${styles.statCard}`}>
                   <div className={styles.statIcon} style={{ background: "rgba(245,158,11,0.15)", color: "#F59E0B" }}><Star size={20} /></div>
                   <div>
-                    <span className={styles.statValue}>5.0★</span>
+                    <span className={styles.statValue}>{platformStats.rating ? platformStats.rating.toFixed(1) : "4.5"}★</span>
                     <span className={styles.statLabel}>Satisfaction Rating</span>
                     <span className={styles.statChange}>Verified Client</span>
                   </div>

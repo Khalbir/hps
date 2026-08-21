@@ -68,7 +68,7 @@ export async function ensureDefaultSuppliers() {
       paystackRecipientCode: "RCP_wuse_power_03",
       settlementType: "INSTANT_TRANSFER",
       isVerified: true,
-      rating: 5.0,
+      rating: 4.5,
     },
     {
       name: "Apo Artisan Hardware & Timber Depo",

@@ -10,10 +10,10 @@ export async function GET() {
       prisma.booking.count().catch(() => 0),
       prisma.professional.count({ where: { verificationStatus: "VERIFIED" } }).catch(() => 0),
       prisma.user.count({ where: { role: "PROFESSIONAL" } }).catch(() => 0),
-      prisma.review.aggregate({ _avg: { rating: true } }).catch(() => ({ _avg: { rating: 5.0 } })),
+      prisma.review.aggregate({ _avg: { rating: true } }).catch(() => ({ _avg: { rating: 4.5 } })),
     ]);
 
-    const realRating = reviewAgg._avg?.rating ? Number(reviewAgg._avg.rating.toFixed(1)) : 5.0;
+    const realRating = reviewAgg._avg?.rating ? Number(reviewAgg._avg.rating.toFixed(1)) : 4.5;
     const dbProCount = Math.max(verifiedProsCount, totalProsCount);
     const dbJobCount = Math.max(jobsCount, totalBookingsCount);
 
@@ -30,7 +30,7 @@ export async function GET() {
       success: true,
       jobsCount: 623,
       verifiedProsCount: 1062,
-      rating: 5.0,
+      rating: 4.5,
       responseTime: 30,
     });
   }

@@ -14,7 +14,7 @@ export default function AboutPage() {
   const [liveStats, setLiveStats] = useState({
     jobsCount: 0,
     verifiedProsCount: 0,
-    rating: 4.9,
+    rating: 4.5,
   });
 
   useEffect(() => {
@@ -26,7 +26,7 @@ export default function AboutPage() {
           setLiveStats({
             jobsCount: data.jobsCount || 0,
             verifiedProsCount: data.verifiedProsCount || 0,
-            rating: data.rating || 4.9,
+            rating: data.rating || 4.5,
           });
         }
       } catch (err) {

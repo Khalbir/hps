@@ -289,7 +289,7 @@ export default function ProductDetailPage() {
                   </span>
                 </div>
                 <div style={{ background: "rgba(16,185,129,0.15)", color: "#10B981", padding: "4px 10px", borderRadius: 8, fontSize: "12px", fontWeight: 700, display: "flex", alignItems: "center", gap: 4 }}>
-                  <Star size={12} fill="#10B981" /> {product.merchant?.rating || 5.0} Rating
+                  <Star size={12} fill="#10B981" /> {product.merchant?.rating || 4.5} Rating
                 </div>
               </div>
             </div>

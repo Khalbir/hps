@@ -212,7 +212,7 @@ export async function GET(request: Request) {
         lga: docs.lga || "AMAC",
         addressProofUrl: getValidMediaUrl(rawAddressProofUrl, "address", proMeta),
         experienceYears: p.yearsExperience || docs.experienceYears || 5,
-        rating: p.rating || 5.0,
+        rating: p.rating || 4.5,
         totalJobs: p.totalJobs || 0,
         verificationStatus: vStatus,
         status: vStatus,

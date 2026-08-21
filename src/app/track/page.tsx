@@ -519,7 +519,7 @@ function TrackContent() {
                             />
                           ))}
                         </span>
-                        <span>{Number(booking.artisan.rating || 5.0).toFixed(1)} Rating</span>
+                        <span>{Number(booking.artisan.rating || 4.5).toFixed(1)} Rating</span>
                       </span>
                       <span>• {booking.artisan.totalJobs} Jobs Completed</span>
                     </div>

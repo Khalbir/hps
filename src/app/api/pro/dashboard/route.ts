@@ -48,7 +48,7 @@ export async function GET(request: Request) {
               verificationStatus: "VERIFIED",
               digitalId: "HHP-PRO-00001",
               isAvailable: true,
-              rating: 5.0,
+              rating: 4.5,
               totalJobs: 18,
               skills: JSON.stringify(["Electrical", "Plumbing", "HVAC", "Facility Engineering"]),
               documents: JSON.stringify({
@@ -95,13 +95,13 @@ export async function GET(request: Request) {
         walletBalance: wallet?.balance || 0,
         pendingEscrow: 0,
         completedJobs: 0,
-        rating: 5.0,
+        rating: 4.5,
       });
     }
 
     const walletBalance = wallet?.balance || 0;
     const pendingEscrow = wallet?.pendingEscrow || 0;
-    const rating = pro?.rating || 5.0;
+    const rating = pro?.rating || 4.5;
     const completedJobs = pro?.totalJobs || 0;
 
     let hasSubmittedDocs = false;
@@ -306,7 +306,7 @@ export async function GET(request: Request) {
       walletBalance: 0,
       pendingEscrow: 0,
       completedJobs: 0,
-      rating: 5.0,
+      rating: 4.5,
       totalReviews: 0,
       reviews: [],
       activeJobs: [],

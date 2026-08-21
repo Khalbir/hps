@@ -339,7 +339,7 @@ export async function PUT(request: Request) {
               bio: `Verified Skilled Artisan in ${resolvedField}`,
               skills: JSON.stringify(skillsList),
               verificationStatus: "VERIFIED",
-              rating: 5.0,
+              rating: 4.5,
               totalJobs: 0,
             },
           }).catch(() => {});

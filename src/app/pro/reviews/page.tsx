@@ -31,7 +31,7 @@ export default function ProReviewsPage() {
   const [reviews, setReviews] = useState<ReviewItem[]>([]);
   const [selectedFilter, setSelectedFilter] = useState<number | "ALL">("ALL");
   const [ratingStats, setRatingStats] = useState<StatsData>({
-    avg: 5.0,
+    avg: 4.5,
     count: 0,
     fiveStarPct: "100%",
     fourStarPct: "0%",

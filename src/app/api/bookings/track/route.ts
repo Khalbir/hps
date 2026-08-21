@@ -121,7 +121,7 @@ export async function GET(request: Request) {
 
     const proRating = dbBooking?.professional?.rating && dbBooking.professional.rating > 0
       ? dbBooking.professional.rating
-      : 5.0;
+      : 4.5;
 
     const proTotalJobs = dbBooking?.professional?.totalJobs || 0;
     const proAvatar = dbBooking?.professional?.user?.avatar || null;

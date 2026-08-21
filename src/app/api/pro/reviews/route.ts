@@ -49,7 +49,7 @@ export async function GET(request: Request) {
         success: true,
         reviews: [],
         stats: {
-          avg: 5.0,
+          avg: 4.5,
           count: 0,
           fiveStarPct: "0%",
           fourStarPct: "0%",
@@ -87,7 +87,7 @@ export async function GET(request: Request) {
       sumRating += rev.rating;
     }
 
-    const avgRating = totalCount > 0 ? Number((sumRating / totalCount).toFixed(1)) : (professional.rating || 5.0);
+    const avgRating = totalCount > 0 ? Number((sumRating / totalCount).toFixed(1)) : (professional.rating || 4.5);
 
     const getPct = (stars: number) => {
       if (totalCount === 0) return "0%";

@@ -75,7 +75,7 @@ export async function GET(request: Request) {
         id: p.id,
         name: p.user ? `${p.user.firstName} ${p.user.lastName.charAt(0)}.` : "Artisan Partner",
         trade: skills,
-        rating: p.rating || 5.0,
+        rating: p.rating || 4.5,
         locationName: `${city} GPS`,
         lat,
         lng,

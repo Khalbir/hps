@@ -40,7 +40,7 @@ const getInitialProData = () => {
           walletBalance: userObj.walletBalance || 0,
           pendingEscrow: userObj.pendingEscrow || 0,
           completedJobs: userObj.completedJobs || (isUserVerified ? 18 : 0),
-          rating: userObj.rating || 5.0,
+          rating: userObj.rating || 4.5,
           totalReviews: userObj.totalReviews || 0,
           reviews: userObj.reviews || [],
           activeJobs: userObj.activeJobs || [],
@@ -57,7 +57,7 @@ const getInitialProData = () => {
     walletBalance: 0,
     pendingEscrow: 0,
     completedJobs: 0,
-    rating: 5.0,
+    rating: 4.5,
     totalReviews: 0,
     reviews: [],
     activeJobs: [],
@@ -342,7 +342,7 @@ export default function ProDashboard() {
             </div>
           </div>
           <h3 className="h3" style={{ margin: "4px 0 0", color: "#F59E0B", fontSize: "1.5rem" }}>
-            {Number(proData.rating || 5.0).toFixed(1)}★
+            {Number(proData.rating || 4.5).toFixed(1)}★
           </h3>
           <span style={{ fontSize: "11px", color: "var(--text-secondary)" }}>
             {proData.totalReviews > 0 ? `${proData.totalReviews} verified client reviews` : "Initial verified rating"}
@@ -369,7 +369,7 @@ export default function ProDashboard() {
           </div>
           <div>
             <strong style={{ color: "var(--text-primary)", fontSize: "13.5px", display: "block" }}>
-              Artisan Competence & Quality Standards: Maintain 4.8★ - 5.0★ Rating
+              Artisan Competence & Quality Standards: Maintain 4.5★+ Rating
             </strong>
             <span style={{ color: "var(--text-secondary)", fontSize: "12px", lineHeight: 1.4, display: "block" }}>
               High client star ratings qualify you for priority booking dispatches in your area, rapid escrow releases, and top-tier artisan badges.

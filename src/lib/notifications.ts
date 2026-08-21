@@ -404,7 +404,7 @@ export async function notifyBookingStatusChange(booking: {
         name: proName,
         phone: proPhone,
         trade: serviceName,
-        rating: booking.professional.rating || 5.0,
+        rating: booking.professional.rating || 4.5,
       }
     : undefined;
 

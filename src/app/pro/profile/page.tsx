@@ -57,7 +57,7 @@ export default function ProProfilePage() {
           avatar: data.avatar || null,
           isCustomer,
           digitalId: data.digitalId || "HHP-PRO-84920",
-          rating: data.rating || 5.0,
+          rating: data.rating || 4.5,
           totalReviews: data.totalReviews || 0,
           totalJobs: data.completedJobs || 0,
           reviews: data.reviews || [],
@@ -301,10 +301,10 @@ export default function ProProfilePage() {
                   ))}
                 </div>
                 <span style={{ fontSize: "14px", fontWeight: 700, color: "#F59E0B", display: "block" }}>
-                  {Number(profile.rating || 5.0).toFixed(1)}★ Overall Star Rating
+                  {Number(profile.rating || 4.5).toFixed(1)}★ Overall Star Rating
                 </span>
                 <span style={{ fontSize: "12px", color: "var(--text-secondary)" }}>
-                  {profile.totalReviews > 0 ? `${profile.totalReviews} verified client reviews • ${profile.totalJobs} completed jobs` : "5.0 initial verified rating"}
+                  {profile.totalReviews > 0 ? `${profile.totalReviews} verified client reviews • ${profile.totalJobs} completed jobs` : "4.5 initial verified rating"}
                 </span>
               </div>
             </>
