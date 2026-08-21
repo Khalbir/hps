@@ -46,6 +46,48 @@ export function StepService({ booking, updateBooking, onNext }: StepProps) {
 
   const activeCategory = SERVICE_CATEGORIES.find((c) => c.id === selectedCategory);
 
+  // Auto-synchronize booking total price with effective card price on Step 1
+  useEffect(() => {
+    if (!selectedCategory || !activeCategory) return;
+    const rawSvc = activeCategory.services.find((s) => s.id === booking.serviceId);
+    if (rawSvc) {
+      const svc = getEffectiveServiceItem(rawSvc, pricingRules);
+      const pModel = (svc.pricingModel as PricingModel) || "FIXED";
+      const calc = calculateJobPrice(
+        {
+          serviceId: svc.id,
+          pricingModel: pModel,
+          basePrice: svc.price,
+          bedrooms: booking.bedrooms || 2,
+          bathrooms: booking.bathrooms || 1,
+          isFurnished: booking.isFurnished || false,
+          dirtLevel: booking.dirtLevel || "MODERATE",
+          quantity: booking.quantity || 1,
+          regionalZoneId: booking.regionalZoneId || "abuja-suburbs",
+          isExpressSchedule: booking.isEmergency || false,
+        },
+        pricingRules
+      );
+      if (booking.totalPrice !== calc.totalPriceNgn || booking.servicePrice !== svc.price) {
+        updateBooking({
+          servicePrice: svc.price,
+          pricingModel: pModel,
+          totalPrice: calc.totalPriceNgn,
+        });
+      }
+    }
+  }, [
+    selectedCategory,
+    activeCategory,
+    booking.serviceId,
+    pricingRules,
+    booking.bedrooms,
+    booking.bathrooms,
+    booking.isFurnished,
+    booking.dirtLevel,
+    booking.quantity,
+  ]);
+
   const filteredCategories = searchQuery
     ? SERVICE_CATEGORIES.filter(
         (c) =>
@@ -296,12 +338,11 @@ export function StepService({ booking, updateBooking, onNext }: StepProps) {
               return (
                 <div
                   key={svc.id}
-                  className="card card-hover"
                   style={{
-                    background: isSelected ? "linear-gradient(135deg, rgba(14,165,233,0.08) 0%, #1E293B 100%)" : "#1E293B",
-                    border: isSelected ? "1.5px solid #0EA5E9" : "1px solid #334155",
+                    background: "#1E293B",
+                    border: isSelected ? "2px solid #0EA5E9" : "1px solid #334155",
                     borderRadius: "16px",
-                    padding: "16px 18px",
+                    padding: "18px 20px",
                     marginBottom: "16px",
                     display: "flex",
                     flexDirection: "column",
@@ -309,7 +350,8 @@ export function StepService({ booking, updateBooking, onNext }: StepProps) {
                     width: "100%",
                     boxSizing: "border-box",
                     overflow: "hidden",
-                    boxShadow: isSelected ? "0 0 20px rgba(14,165,233,0.2)" : "none",
+                    boxShadow: isSelected ? "0 0 20px rgba(14,165,233,0.25)" : "none",
+                    transition: "border 0.2s ease, box-shadow 0.2s ease",
                   }}
                 >
                   <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", flexWrap: "wrap", gap: "10px", width: "100%" }}>
