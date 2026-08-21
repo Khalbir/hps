@@ -64,6 +64,10 @@ model User {
   merchant         Merchant?
   marketplaceOrders MarketplaceOrder[]
   marketplaceDisputes MarketplaceDispute[]
+  referralCodes    ReferralCode[]
+  referralsSent    ReferralRecord[] @relation("ReferrerUser")
+  referralsReceived ReferralRecord[] @relation("RefereeUser")
+  referralRewards  ReferralReward[]
 }
 
 model Session {
@@ -818,6 +822,90 @@ model MarketplaceAuditLog {
 
   order     MarketplaceOrder? @relation(fields: [orderId], references: [id], onDelete: Cascade)
 }
+
+// ============================================
+// ENTERPRISE REFERRALS & RECRUITER TIERS
+// ============================================
+
+model ReferralCode {
+  id              String    @id @default(cuid())
+  userId          String
+  code            String    @unique // e.g. "HHP-REF-KABIR78"
+  qrPayload       String?   // Deep-link or encrypted payload
+  clickCount      Int       @default(0)
+  signupCount     Int       @default(0)
+  qualifiedCount  Int       @default(0)
+  isActive        Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  referrals       ReferralRecord[]
+}
+
+model ReferralRecord {
+  id                   String    @id @default(cuid())
+  referralCodeId       String
+  referrerId           String
+  refereeId            String
+  programType          String    // ARTISAN_TO_ARTISAN, CUSTOMER_TO_CUSTOMER, CUSTOMER_TO_ARTISAN
+  status               String    @default("PENDING_VERIFICATION") // PENDING_VERIFICATION, PENDING_FIRST_JOB, QUALIFIED, FLAGGED_FRAUD, REJECTED
+  
+  isVerifiedReferee    Boolean   @default(false)
+  hasCompletedFirstJob Boolean   @default(false)
+  firstJobReference    String?
+  
+  // AI Fraud Score & Checks (0 to 100)
+  fraudScore           Int       @default(0)
+  fraudFlags           String    @default("[]") // JSON array of string flags
+  
+  rewardsIssued        Boolean   @default(false)
+  qualifiedAt          DateTime?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  referralCode         ReferralCode @relation(fields: [referralCodeId], references: [id], onDelete: Cascade)
+  referrer             User         @relation("ReferrerUser", fields: [referrerId], references: [id], onDelete: Cascade)
+  referee              User         @relation("RefereeUser", fields: [refereeId], references: [id], onDelete: Cascade)
+  rewards              ReferralReward[]
+  auditLogs            ReferralAuditLog[]
+}
+
+model ReferralReward {
+  id                String    @id @default(cuid())
+  referralRecordId  String?
+  recipientId       String
+  programType       String    // ARTISAN_TO_ARTISAN, CUSTOMER_TO_CUSTOMER, CUSTOMER_TO_ARTISAN
+  benefitType       String    // SERVICE_CREDIT, COMMISSION_DISCOUNT_TOKEN, TOOL_MARKETPLACE_VOUCHER, INSURANCE_BOOST_TOKEN, EXPRESS_DISPATCH_TOKEN
+  title             String
+  description       String
+  valueNgn          Float     @default(0)
+  discountPercent   Float?    @default(0)
+  remainingUses     Int       @default(1)
+  expiresAt         DateTime
+  isRedeemed        Boolean   @default(false)
+  referenceCode     String    @unique // e.g. HHP-REW-84920
+  metadata          String    @default("{}") // JSON
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  referralRecord    ReferralRecord? @relation(fields: [referralRecordId], references: [id], onDelete: SetNull)
+  recipient         User            @relation(fields: [recipientId], references: [id], onDelete: Cascade)
+}
+
+model ReferralAuditLog {
+  id                String    @id @default(cuid())
+  referralRecordId  String?
+  actorId           String?
+  actorRole         String    // USER, PRO, ADMIN, AI_AGENT, SYSTEM
+  action            String    // CODE_GENERATED, CLICK_TRACKED, ATTRIBUTED, VERIFIED_TRIGGERED, JOB_COMPLETED_TRIGGERED, QUALIFIED, REWARD_DISBURSED, FRAUD_FLAGGED, FRAUD_OVERRIDDEN
+  details           String?   // JSON
+  ipAddress         String?
+  createdAt         DateTime  @default(now())
+
+  referralRecord    ReferralRecord? @relation(fields: [referralRecordId], references: [id], onDelete: Cascade)
+}
+
 
 
 

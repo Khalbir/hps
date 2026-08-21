@@ -6,7 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard, Users, ClipboardList, CreditCard, Star,
   Settings, Shield, ShieldCheck, BarChart3, Tag, Bell, LogOut, Menu, X,
-  MapPin, Lock, Search, AlertCircle, Download, HelpCircle, Wrench, ShoppingBag
+  MapPin, Lock, Search, AlertCircle, Download, HelpCircle, Wrench, ShoppingBag, Gift
 } from "lucide-react";
 import styles from "@/app/admin/admin.module.css";
 import { GlobalSearchModal } from "@/components/admin/GlobalSearchModal";
@@ -33,6 +33,7 @@ const adminNav: NavItem[] = [
   { href: "/admin/dashboard/payments", label: "Payments & Escrow", icon: CreditCard, permissionKey: "payments" },
   { href: "/admin/dashboard/reviews", label: "Customer Reviews", icon: Star, permissionKey: "reviews" },
   { href: "/admin/dashboard/promo-codes", label: "Promo Codes", icon: Tag, permissionKey: "promoCodes" },
+  { href: "/admin/dashboard/referrals", label: "Referral & AI Center", icon: Gift, permissionKey: "referrals" },
   { href: "/admin/dashboard/analytics", label: "Analytics & Reports", icon: BarChart3, permissionKey: "analytics" },
   { href: "/admin/dashboard/notifications", label: "Notifications", icon: Bell, permissionKey: "notifications" },
   { href: "/admin/dashboard/settings", label: "Settings & Backups", icon: Settings, permissionKey: "settings" },

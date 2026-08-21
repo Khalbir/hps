@@ -33,6 +33,7 @@ export interface RolePermissions {
   disputes: boolean;
   reviews: boolean;
   promoCodes: boolean;
+  referrals: boolean;
   analytics: boolean;
   notifications: boolean;
   settings: boolean;
@@ -57,6 +58,7 @@ export const ROLE_PERMISSIONS: Record<string, RolePermissions> = {
     disputes: true,
     reviews: true,
     promoCodes: true,
+    referrals: true,
     analytics: true,
     notifications: true,
     settings: true,
@@ -80,6 +82,7 @@ export const ROLE_PERMISSIONS: Record<string, RolePermissions> = {
     disputes: true,
     reviews: true,
     promoCodes: true,
+    referrals: true,
     analytics: true,
     notifications: true,
     settings: false, // Core system settings restricted to Super Admin
@@ -103,6 +106,7 @@ export const ROLE_PERMISSIONS: Record<string, RolePermissions> = {
     disputes: true,
     reviews: true,
     promoCodes: true,
+    referrals: true,
     analytics: true,
     notifications: true,
     settings: true,
@@ -126,6 +130,7 @@ export const ROLE_PERMISSIONS: Record<string, RolePermissions> = {
     disputes: true,
     reviews: true,
     promoCodes: false,
+    referrals: true,
     analytics: true,
     notifications: true,
     settings: false,
@@ -149,6 +154,7 @@ export const ROLE_PERMISSIONS: Record<string, RolePermissions> = {
     disputes: true, // Marketplace disputes
     reviews: true,
     promoCodes: true,
+    referrals: true,
     analytics: true,
     notifications: true,
     settings: false,
@@ -172,6 +178,7 @@ export const ROLE_PERMISSIONS: Record<string, RolePermissions> = {
     disputes: false,
     reviews: false,
     promoCodes: false,
+    referrals: false,
     analytics: false,
     notifications: true,
     settings: false,
@@ -195,6 +202,7 @@ export const ROLE_PERMISSIONS: Record<string, RolePermissions> = {
     disputes: true,
     reviews: true,
     promoCodes: false,
+    referrals: true,
     analytics: false,
     notifications: true,
     settings: false,
@@ -218,6 +226,7 @@ export const ROLE_PERMISSIONS: Record<string, RolePermissions> = {
     disputes: true,
     reviews: false,
     promoCodes: true,
+    referrals: true,
     analytics: true,
     notifications: true,
     settings: false,

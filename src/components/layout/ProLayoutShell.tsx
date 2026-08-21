@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 import {
   LayoutDashboard, ClipboardList, Calendar, Star, Wallet,
   User, Settings, LogOut, Menu, X, Bell, ShieldCheck,
-  ToggleLeft, ToggleRight, ArrowLeft,
+  ToggleLeft, ToggleRight, ArrowLeft, Gift,
 } from "lucide-react";
 import { BrandLogo } from "@/components/common/BrandLogo";
 import styles from "@/app/dashboard/dashboard.module.css";
@@ -17,6 +17,7 @@ const proNav = [
   { href: "/pro/calendar", label: "Calendar", icon: Calendar, key: "calendar" },
   { href: "/pro/reviews", label: "Reviews", icon: Star, key: "reviews" },
   { href: "/pro/earnings", label: "Earnings", icon: Wallet, key: "earnings" },
+  { href: "/pro/referrals", label: "Refer & Earn", icon: Gift, key: "referrals" },
   { href: "/pro/profile", label: "Profile", icon: User, key: "profile" },
   { href: "/pro/notifications", label: "Notifications", icon: Bell, key: "notifications" },
   { href: "/pro/settings", label: "Settings", icon: Settings, key: "settings" },

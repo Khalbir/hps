@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getValidMediaUrl, SAMPLE_PORTFOLIO_IMAGE } from "@/lib/sample-documents";
 import { formatDigitalId } from "@/lib/digitalId";
+import { evaluateReferralQualification } from "@/lib/referrals/engine";
 
 export const dynamic = "force-dynamic";
 
@@ -377,6 +378,14 @@ export async function POST(request: Request) {
           },
         });
       } catch {}
+
+      // Trigger Referral Qualification Check
+      if (targetStatus === "VERIFIED") {
+        evaluateReferralQualification({
+          refereeUserId: targetUserId,
+          eventType: "VERIFIED",
+        }).catch(() => {});
+      }
     }
 
     return NextResponse.json({

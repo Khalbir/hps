@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { notifyBookingStatusChange } from "@/lib/notifications";
 import { releaseEscrowPayout } from "@/lib/escrow";
+import { evaluateReferralQualification } from "@/lib/referrals/engine";
 
 export async function POST(request: Request) {
   try {
@@ -53,6 +54,22 @@ export async function POST(request: Request) {
         }).catch((escrowErr) => {
           console.warn("[Escrow Release Warning]:", escrowErr);
         });
+      }
+
+      // Trigger Referral Qualification Evaluation
+      if (booking.customerId) {
+        evaluateReferralQualification({
+          refereeUserId: booking.customerId,
+          eventType: "JOB_COMPLETED",
+          jobReference: booking.reference,
+        }).catch(() => {});
+      }
+      if (booking.professional?.userId) {
+        evaluateReferralQualification({
+          refereeUserId: booking.professional.userId,
+          eventType: "JOB_COMPLETED",
+          jobReference: booking.reference,
+        }).catch(() => {});
       }
     }
 
