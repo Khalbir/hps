@@ -120,7 +120,33 @@ export default function DashboardPage() {
   const [staySignedInState, setStaySignedInState] = useState(true);
   const [clientNotice, setClientNotice] = useState<string | null>(null);
 
+  // Platform Trust Stats (Synchronized with Homepage /api/stats)
+  const [platformStats, setPlatformStats] = useState({
+    verifiedProsCount: 1062,
+    jobsCount: 623,
+    rating: 5.0,
+    responseTime: 30,
+  });
+
+  const fetchPlatformStats = async () => {
+    try {
+      const res = await fetch("/api/stats");
+      const data = await res.json();
+      if (res.ok && data) {
+        setPlatformStats({
+          verifiedProsCount: data.verifiedProsCount || 1062,
+          jobsCount: data.jobsCount || 623,
+          rating: data.rating || 5.0,
+          responseTime: data.responseTime || 30,
+        });
+      }
+    } catch (e) {
+      console.warn("Failed to fetch homepage platform stats:", e);
+    }
+  };
+
   const fetchCustomerDashboardData = async () => {
+    fetchPlatformStats();
     setLoading(true);
     let activeUserId = "";
     let activeEmail = "";
@@ -547,23 +573,31 @@ export default function DashboardPage() {
           {/* TAB 1: OVERVIEW */}
           {(activeTab === "overview" || !VALID_TABS.includes(activeTab)) && (
             <div className={styles.tabContainer}>
-              {/* High-Confidence Platform Stats Banner */}
+              {/* High-Confidence Platform Stats Banner (Synchronized with Homepage) */}
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "12px", background: "#1E293B", border: "1px solid #334155", borderRadius: "16px", padding: "16px 20px", marginBottom: "20px" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                   <ShieldCheck size={18} color="#10B981" />
-                  <span style={{ fontSize: "13px", color: "#F8FAFC", fontWeight: 700 }}>327 Verified Professionals</span>
+                  <span style={{ fontSize: "13px", color: "#F8FAFC", fontWeight: 700 }}>
+                    {platformStats.verifiedProsCount.toLocaleString()}+ Verified Professionals
+                  </span>
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                   <CheckCircle size={18} color="#0EA5E9" />
-                  <span style={{ fontSize: "13px", color: "#F8FAFC", fontWeight: 700 }}>1,828 Completed Dispatches</span>
+                  <span style={{ fontSize: "13px", color: "#F8FAFC", fontWeight: 700 }}>
+                    {platformStats.jobsCount.toLocaleString()}+ Completed Dispatches
+                  </span>
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                   <Star size={18} color="#F59E0B" fill="#F59E0B" />
-                  <span style={{ fontSize: "13px", color: "#F8FAFC", fontWeight: 700 }}>4.9★ Customer Rating</span>
+                  <span style={{ fontSize: "13px", color: "#F8FAFC", fontWeight: 700 }}>
+                    {platformStats.rating.toFixed(1)}★ Satisfaction Rating
+                  </span>
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                   <Clock size={18} color="#8B5CF6" />
-                  <span style={{ fontSize: "13px", color: "#F8FAFC", fontWeight: 700 }}>15-Min Rapid Dispatch</span>
+                  <span style={{ fontSize: "13px", color: "#F8FAFC", fontWeight: 700 }}>
+                    {platformStats.responseTime}-Min Rapid Dispatch
+                  </span>
                 </div>
               </div>
               {/* Quick Stats */}
