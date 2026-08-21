@@ -24,7 +24,8 @@ export function StepDetails({ booking, updateBooking, onNext, onBack }: StepProp
   const isCleaning = booking.serviceCategory === "cleaning";
   const isFumigation = booking.serviceCategory === "fumigation" || (booking.serviceId && booking.serviceId.includes("fumigation"));
   const isUpholstery = booking.serviceCategory === "upholstery" || (booking.serviceId && (booking.serviceId.includes("sofa") || booking.serviceId.includes("mattress") || booking.serviceId.includes("rug") || booking.serviceId.includes("upholstery")));
-  const isPropertyBased = isCleaning || isFumigation || booking.pricingModel === "PROPERTY_BASED";
+  const isSubscription = booking.pricingModel === "SUBSCRIPTION";
+  const isPropertyBased = !isSubscription && (isCleaning || isFumigation || booking.pricingModel === "PROPERTY_BASED");
 
   const getComputedPrice = (bedrooms: number, bathrooms: number, qty?: number) => {
     const catalogService = SERVICE_CATEGORIES.flatMap((c) => c.services).find(
@@ -42,7 +43,9 @@ export function StepDetails({ booking, updateBooking, onNext, onBack }: StepProp
         ? booking.totalPrice
         : 0;
 
-    const pModel: PricingModel = isPropertyBased
+    const pModel: PricingModel = isSubscription
+      ? "SUBSCRIPTION"
+      : isPropertyBased
       ? "PROPERTY_BASED"
       : isUpholstery
       ? "QUANTITY_BASED"

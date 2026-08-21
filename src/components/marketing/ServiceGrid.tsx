@@ -158,10 +158,10 @@ const services = [
   },
   {
     icon: TreePine,
-    name: "Gardening",
+    name: "Gardening & Lawn",
     category: "outdoor",
     slug: "gardening",
-    description: "Lawn care, landscaping & plant maintenance",
+    description: "One-time service & monthly routine plans",
     price: "₦12,000",
     color: "#16A34A",
     bgColor: "rgba(22, 163, 74, 0.08)",

@@ -446,6 +446,8 @@ export function StepService({ booking, updateBooking, onNext }: StepProps) {
                                 ? "#F59E0B"
                                 : svc.pricingModel === "CUSTOM_QUOTE"
                                 ? "#C084FC"
+                                : svc.pricingModel === "SUBSCRIPTION"
+                                ? "#34D399"
                                 : "#10B981",
                           }}
                         >
@@ -455,6 +457,8 @@ export function StepService({ booking, updateBooking, onNext }: StepProps) {
                             ? `UNIT (${svc.unitLabel || "per item"})`
                             : svc.pricingModel === "CUSTOM_QUOTE"
                             ? "FREE INSPECTION & QUOTE"
+                            : svc.pricingModel === "SUBSCRIPTION"
+                            ? "MONTHLY SUBSCRIPTION PLAN"
                             : "FIXED RATE"}
                         </span>
                       </div>
@@ -512,10 +516,18 @@ export function StepService({ booking, updateBooking, onNext }: StepProps) {
                   >
                     <div>
                       <span style={{ fontSize: "11px", color: "#94A3B8", display: "block", marginBottom: "2px" }}>
-                        {svc.pricingModel === "CUSTOM_QUOTE" ? "Assessment Deposit" : "Calculated Amount"}
+                        {svc.pricingModel === "CUSTOM_QUOTE"
+                          ? "Assessment Deposit"
+                          : svc.pricingModel === "SUBSCRIPTION"
+                          ? "Monthly Subscription Plan"
+                          : "Calculated Amount"}
                       </span>
                       <strong style={{ fontSize: "1.15rem", color: svc.pricingModel === "CUSTOM_QUOTE" ? "#C084FC" : "#10B981", fontWeight: 800 }}>
-                        {svc.pricingModel === "CUSTOM_QUOTE" ? "FREE Quote" : `₦${calc.totalPriceNgn.toLocaleString()}`}
+                        {svc.pricingModel === "CUSTOM_QUOTE"
+                          ? "FREE Quote"
+                          : svc.pricingModel === "SUBSCRIPTION"
+                          ? `₦${calc.totalPriceNgn.toLocaleString()}/mo`
+                          : `₦${calc.totalPriceNgn.toLocaleString()}`}
                       </strong>
                     </div>
 

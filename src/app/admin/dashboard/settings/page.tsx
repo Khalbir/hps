@@ -594,6 +594,7 @@ export default function SettingsAndBackupsPage() {
                 { id: "PROPERTY_BASED", label: "Property-Based" },
                 { id: "QUANTITY_BASED", label: "Quantity-Based" },
                 { id: "CUSTOM_QUOTE", label: "Custom Quote" },
+                { id: "SUBSCRIPTION", label: "Monthly Subscription" },
               ].map((f) => (
                 <button
                   key={f.id}
@@ -707,13 +708,20 @@ export default function SettingsAndBackupsPage() {
                                 <option value="PROPERTY_BASED">PROPERTY_BASED (Property Size)</option>
                                 <option value="QUANTITY_BASED">QUANTITY_BASED (Per Unit)</option>
                                 <option value="CUSTOM_QUOTE">CUSTOM_QUOTE (Inspection)</option>
+                                <option value="SUBSCRIPTION">SUBSCRIPTION (Monthly Plan)</option>
                               </select>
                             </div>
 
-                            {/* Base Price / Unit Price Input */}
+                            {/* Base Price / Unit Price / Monthly Fee Input */}
                             <div>
                               <span style={{ fontSize: "10px", color: "#94A3B8", display: "block", marginBottom: 2 }}>
-                                {currentModel === "QUANTITY_BASED" ? "Per-Unit Rate (₦)" : currentModel === "CUSTOM_QUOTE" ? "Quote Cost" : "Base Rate (₦)"}
+                                {currentModel === "QUANTITY_BASED"
+                                  ? "Per-Unit Rate (₦)"
+                                  : currentModel === "SUBSCRIPTION"
+                                  ? "Monthly Fee (₦)"
+                                  : currentModel === "CUSTOM_QUOTE"
+                                  ? "Quote Cost"
+                                  : "Base Rate (₦)"}
                               </span>
                               <div style={{ display: "flex", alignItems: "center", background: "#0F172A", border: "1px solid #334155", borderRadius: "6px", padding: "0 8px" }}>
                                 <span style={{ fontSize: "12px", color: "#10B981", fontWeight: 700, marginRight: 4 }}>₦</span>

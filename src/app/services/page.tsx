@@ -5,7 +5,7 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import {
   Sparkles, Wrench, Zap, Snowflake, Paintbrush, Hammer, Camera, SunMedium,
-  CheckCircle2, ArrowRight, ShieldCheck, Star, Clock, MapPin, Users, Bug, Sofa
+  CheckCircle2, ArrowRight, ShieldCheck, Star, Clock, MapPin, Users, Bug, Sofa, TreePine
 } from "lucide-react";
 import { SERVICE_CATEGORIES } from "@/lib/services";
 import { PricingRulesConfig, getEffectiveServiceItem } from "@/lib/pricingEngine";
@@ -100,6 +100,15 @@ const serviceCatalog = [
     desc: "Clean 24/7 solar energy setup, lithium battery bank installation, pure sine wave inverters & roof panel mounting.",
     popularItems: ["1KVA - 5KVA Inverter Setup", "Lithium Battery Upgrade", "Solar Panel Roof Mounting", "Energy Audit & Load Sizing"],
     badge: "24/7 Power",
+  },
+  {
+    id: "outdoor",
+    title: "Gardening & Landscaping",
+    icon: TreePine,
+    price: "From ₦12,000",
+    desc: "Lawn mowing, hedge trimming, weed clearance, and routine monthly groundskeeping subscription plans.",
+    popularItems: ["One-Time Lawn Mowing & Trimming", "Monthly Garden Maintenance Plan", "Hedge Shaping & Tree Pruning", "Compound Weed Clearance"],
+    badge: "One-Time & Monthly Plans",
   },
 ];
 

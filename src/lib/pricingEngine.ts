@@ -1,11 +1,11 @@
-export type PricingModel = "FIXED" | "PROPERTY_BASED" | "QUANTITY_BASED" | "CUSTOM_QUOTE";
+export type PricingModel = "FIXED" | "PROPERTY_BASED" | "QUANTITY_BASED" | "CUSTOM_QUOTE" | "SUBSCRIPTION";
 
 /**
  * Simplified System Prompt for AI Job Estimation and Pricing Classification
  */
 export const PRICING_MODEL_SYSTEM_PROMPT = `
 You are the AI Pricing & Estimation Engine for HandyHub Pro.
-When evaluating home service booking requests, user prompts, or service catalog items, you must classify jobs into exactly ONE of the four supported pricing models:
+When evaluating home service booking requests, user prompts, or service catalog items, you must classify jobs into exactly ONE of the five supported pricing models:
 
 1. FIXED (Fixed Price Model)
    - Scope: Standardized, flat-rate repair or single-task services.
@@ -15,7 +15,7 @@ When evaluating home service booking requests, user prompts, or service catalog 
 2. PROPERTY_BASED (Property-Based Model)
    - Scope: Services where job scale and duration depend on property dimensions and surface area.
    - Key Inputs: Number of bedrooms, number of bathrooms, furnished status, condition level (Light, Moderate, Heavy).
-   - Example: Residential cleaning, deep cleaning, interior wall painting, lawn care.
+   - Example: Residential cleaning, deep cleaning, interior wall painting, one-time lawn care.
    - Pricing Formula: Total = (Base Rate + Bedroom Surcharges + Bathroom Surcharges + Furnished Surcharge) × Condition Multiplier + Regional/Express Surcharges.
 
 3. QUANTITY_BASED (Quantity-Based Model)
@@ -29,6 +29,11 @@ When evaluating home service booking requests, user prompts, or service catalog 
    - Action: Dispatches a free physical on-site inspection. A detailed written quote is provided post-assessment.
    - Example: Full home renovation, electrical rewiring, exterior building painting, solar panel system installation, commercial relocation.
    - Pricing Formula: Upfront Booking Price = ₦0 (Free Physical Site Inspection).
+
+5. SUBSCRIPTION (Monthly / Periodic Recurring Subscription Model)
+   - Scope: Routine recurring estate & groundskeeping maintenance, weekly lawn care, ongoing garden & plant maintenance.
+   - Example: Gardening Monthly Subscription, Routine Facility Groundskeeping.
+   - Pricing Formula: Total = Monthly Plan Base Rate + Regional/Schedule Surcharges.
 `.trim();
 
 export interface RegionalZone {
@@ -166,6 +171,9 @@ export function calculateJobPrice(
   if (activePricingModel === "FIXED") {
     currentSubtotal = activeBasePrice;
     breakdown.push({ label: "Base Service Rate", amountNgn: activeBasePrice });
+  } else if (activePricingModel === "SUBSCRIPTION") {
+    currentSubtotal = activeBasePrice;
+    breakdown.push({ label: "Monthly Routine Maintenance Plan", amountNgn: activeBasePrice });
   } else if (activePricingModel === "QUANTITY_BASED") {
     const qty = Math.max(1, quantity);
     currentSubtotal = activeBasePrice * qty;

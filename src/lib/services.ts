@@ -204,11 +204,25 @@ export const SERVICE_CATEGORIES: ServiceCategory[] = [
   },
   {
     id: "outdoor",
-    name: "Gardening",
+    name: "Gardening & Landscaping",
     color: "#16A34A",
-    keywords: ["garden", "gardening", "lawn", "grass", "landscaping", "plants", "trees", "outdoor"],
+    keywords: ["garden", "gardening", "lawn", "grass", "landscaping", "plants", "trees", "outdoor", "compound", "groundskeeping"],
     services: [
-      { id: "gardening", name: "Gardening", price: 12000, desc: "Lawn care & landscaping", pricingModel: "PROPERTY_BASED" },
+      {
+        id: "gardening",
+        name: "Gardening (One-Time Flat Rate)",
+        price: 12000,
+        desc: "One-time lawn mowing, weed clearance, hedge trimming & compound cleaning",
+        pricingModel: "PROPERTY_BASED",
+      },
+      {
+        id: "gardening-monthly",
+        name: "Gardening (Monthly Subscription)",
+        price: 35000,
+        desc: "Routine weekly garden maintenance, lawn care, tree pruning, soil nourishment & groundskeeping",
+        pricingModel: "SUBSCRIPTION",
+        unitLabel: "per month",
+      },
     ],
   },
   {

@@ -157,9 +157,9 @@ export function BookingSummary({ booking, currentStep }: Props) {
           )}
 
           <div className={`${styles.summaryPriceRow} ${styles.summaryTotal}`}>
-            <span>Total Payable</span>
+            <span>{effectivePricingModel === "SUBSCRIPTION" ? "Monthly Total" : "Total Payable"}</span>
             <span style={{ color: calc.isCustomQuote ? "#C084FC" : "#10B981" }}>
-              {calc.isCustomQuote ? "FREE Quote" : `₦${finalPrice.toLocaleString()}`}
+              {calc.isCustomQuote ? "FREE Quote" : effectivePricingModel === "SUBSCRIPTION" ? `₦${finalPrice.toLocaleString()}/mo` : `₦${finalPrice.toLocaleString()}`}
             </span>
           </div>
         </>
