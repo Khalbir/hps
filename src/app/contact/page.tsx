@@ -67,8 +67,9 @@ export default function ContactPage() {
               rel="noopener noreferrer"
               className="btn btn-primary btn-md w-full"
               style={{ background: "#25D366", borderColor: "#25D366", color: "white" }}
+              title="Chat with Customer Support on WhatsApp"
             >
-              Chat on WhatsApp (+234 812 222 2936)
+              Chat on WhatsApp ➔
             </a>
           </div>
 
@@ -81,8 +82,8 @@ export default function ContactPage() {
             <p style={{ fontSize: "var(--fs-xs)", color: "var(--text-secondary)", marginBottom: "var(--space-4)" }}>
               Call us directly for emergency bookings or inquiries.
             </p>
-            <a href="tel:+2348122222936" className="btn btn-primary btn-md w-full">
-              Call +234 812 222 2936
+            <a href="tel:+2348122222936" className="btn btn-primary btn-md w-full" title="Call 24/7 Priority Support Helpline">
+              Call 24/7 Helpline ➔
             </a>
           </div>
 

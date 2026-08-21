@@ -88,14 +88,26 @@ export function Footer() {
               HandyHub Pro Solutions is Nigeria&apos;s leading tech platform for booking background-verified artisans & facility engineers. Transparent escrow payments, guaranteed quality work.
             </p>
             <div className={styles.contactInfo}>
-              <a href="tel:+2348122222936" className={styles.contactItem} title="Call 24/7 Customer Support">
-                <Phone size={15} color="#00A8B5" />
-                <span>+234 812 222 2936</span>
-              </a>
-              <a href="https://wa.me/2348122222936?text=Hello%20HandyHub%20Support" target="_blank" rel="noopener noreferrer" className={styles.contactItem} style={{ color: "#25D366" }} title="Chat on WhatsApp">
-                <MessageSquare size={15} color="#25D366" />
-                <span>WhatsApp: +234 812 222 2936</span>
-              </a>
+              <div className={styles.contactPillsGroup}>
+                <a
+                  href="tel:+2348122222936"
+                  className={styles.contactPillCall}
+                  title="Call 24/7 Priority Support Helpline"
+                >
+                  <Phone size={14} color="#38BDF8" />
+                  <span>Call 24/7 Helpline</span>
+                </a>
+                <a
+                  href="https://wa.me/2348122222936?text=Hello%20HandyHub%20Support"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={styles.contactPillWhatsApp}
+                  title="Chat with Customer Support on WhatsApp"
+                >
+                  <MessageSquare size={14} color="#4ADE80" />
+                  <span>Chat on WhatsApp</span>
+                </a>
+              </div>
               <a href="mailto:info@handyhubpro.ng" className={styles.contactItem} title="Email Dispatch Support">
                 <Mail size={15} color="#00A8B5" />
                 <span>info@handyhubpro.ng</span>

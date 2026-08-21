@@ -676,10 +676,30 @@ function TrackContent() {
             </div>
 
             {/* Support Guarantee Footer */}
-            <div style={{ textAlign: "center", marginTop: "var(--space-4)" }}>
-              <p style={{ fontSize: "var(--fs-xs)", color: "var(--text-tertiary)" }}>
-                Need help with your dispatch? <a href="tel:+2348122222936" style={{ color: "#0EA5E9", textDecoration: "underline" }}>Call 24/7 Support Hotline (+234 812 222 2936)</a>
-              </p>
+            <div style={{ textAlign: "center", marginTop: "var(--space-4)", display: "flex", alignItems: "center", justifyContent: "center", gap: 10, flexWrap: "wrap" }}>
+              <span style={{ fontSize: "var(--fs-xs)", color: "var(--text-tertiary)" }}>
+                Need help with your dispatch?
+              </span>
+              <a
+                href="tel:+2348122222936"
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 5,
+                  fontSize: "12px",
+                  fontWeight: 700,
+                  color: "#0EA5E9",
+                  background: "rgba(14, 165, 233, 0.1)",
+                  border: "1px solid rgba(14, 165, 233, 0.3)",
+                  padding: "4px 10px",
+                  borderRadius: "6px",
+                  textDecoration: "none",
+                }}
+                title="Call 24/7 Support Hotline"
+              >
+                <Phone size={12} />
+                <span>Call 24/7 Support Hotline</span>
+              </a>
             </div>
           </motion.div>
         )}

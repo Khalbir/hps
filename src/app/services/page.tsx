@@ -231,8 +231,8 @@ export default function ServicesPage() {
             </p>
           </div>
           <div style={{ display: "flex", gap: "var(--space-3)" }}>
-            <a href="tel:+2348122222936" className="btn btn-secondary btn-lg">
-              Call Support (+234 812 222 2936)
+            <a href="tel:+2348122222936" className="btn btn-secondary btn-lg" title="Call 24/7 Customer Support Helpline">
+              Call 24/7 Helpline
             </a>
             <Link href="/book" className="btn btn-primary btn-lg">
               Instant Booking
