@@ -453,9 +453,10 @@ export default function ProDashboard() {
                 key={rev.id}
                 style={{
                   padding: "14px 16px",
-                  background: "rgba(30, 41, 59, 0.6)",
+                  background: "var(--bg-elevated, #FFFFFF)",
                   borderRadius: "12px",
-                  border: "1px solid rgba(255, 255, 255, 0.07)",
+                  border: "1px solid var(--border-primary, #E2E8F0)",
+                  boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
                 }}
               >
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8, flexWrap: "wrap", gap: 8 }}>
@@ -463,16 +464,16 @@ export default function ProDashboard() {
                     <div style={{ width: 28, height: 28, borderRadius: "50%", background: "linear-gradient(135deg, #00A8B5, #008B97)", color: "#FFFFFF", fontSize: "12px", fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center", textTransform: "uppercase" }}>
                       {rev.clientName ? rev.clientName.charAt(0) : "C"}
                     </div>
-                    <strong style={{ fontSize: "13.5px", color: "var(--text-primary)" }}>{rev.clientName}</strong>
-                    <span style={{ fontSize: "10px", color: "#10B981", background: "rgba(16, 185, 129, 0.12)", border: "1px solid rgba(16, 185, 129, 0.25)", padding: "1px 6px", borderRadius: 99, fontWeight: 700 }}>
+                    <strong style={{ fontSize: "13.5px", color: "var(--text-primary, #0F172A)" }}>{rev.clientName}</strong>
+                    <span style={{ fontSize: "10.5px", color: "#047857", background: "#D1FAE5", border: "1px solid #A7F3D0", padding: "1px 6px", borderRadius: 99, fontWeight: 700 }}>
                       ✓ Verified Client
                     </span>
-                    <span style={{ fontSize: "11px", color: "#00C4D4", background: "rgba(0, 168, 181, 0.1)", padding: "2px 6px", borderRadius: 4, fontWeight: 600 }}>
+                    <span style={{ fontSize: "11px", color: "#008B97", background: "rgba(0, 168, 181, 0.1)", border: "1px solid rgba(0, 168, 181, 0.25)", padding: "2px 6px", borderRadius: 4, fontWeight: 600 }}>
                       {rev.serviceName}
                     </span>
                   </div>
                   <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                    <div style={{ display: "inline-flex", gap: 2, background: "rgba(245, 158, 11, 0.1)", padding: "3px 6px", borderRadius: 6 }}>
+                    <div style={{ display: "inline-flex", gap: 2, background: "#FEF3C7", border: "1px solid #FDE68A", padding: "3px 6px", borderRadius: 6 }}>
                       {[1, 2, 3, 4, 5].map((s) => (
                         <Star
                           key={s}
@@ -481,13 +482,13 @@ export default function ProDashboard() {
                           stroke="#F59E0B"
                         />
                       ))}
-                      <span style={{ fontSize: "11.5px", fontWeight: 800, color: "#F59E0B", marginLeft: 2 }}>{rev.rating}.0</span>
+                      <span style={{ fontSize: "11.5px", fontWeight: 800, color: "#D97706", marginLeft: 2 }}>{rev.rating}.0</span>
                     </div>
-                    <span style={{ fontSize: "11px", color: "var(--text-tertiary)" }}>{rev.date}</span>
+                    <span style={{ fontSize: "11.5px", color: "var(--text-secondary, #64748B)" }}>{rev.date}</span>
                   </div>
                 </div>
-                <div style={{ background: "rgba(15, 23, 42, 0.4)", borderLeft: "2.5px solid #00A8B5", borderRadius: 6, padding: "8px 12px" }}>
-                  <p style={{ margin: 0, fontSize: "12.5px", color: "var(--text-secondary)", fontStyle: "italic", lineHeight: 1.5 }}>
+                <div style={{ background: "var(--bg-tertiary, #F8FAFC)", border: "1px solid var(--border-primary, #E2E8F0)", borderLeft: "3.5px solid #00A8B5", borderRadius: 6, padding: "8px 12px" }}>
+                  <p style={{ margin: 0, fontSize: "13px", color: "var(--text-primary, #334155)", fontStyle: "italic", lineHeight: 1.5, fontWeight: 500 }}>
                     &ldquo;{rev.comment}&rdquo;
                   </p>
                 </div>
