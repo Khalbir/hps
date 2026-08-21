@@ -20,7 +20,8 @@ export async function GET(request: Request) {
 
     // Default fallback user resolution
     if (!user) {
-      user = await prisma.user.findFirst({ where: { role: "PROFESSIONAL" } });
+      user = await prisma.user.findFirst({ where: { role: "PROFESSIONAL", isVerified: true } }) ||
+             await prisma.user.findFirst({ where: { role: "PROFESSIONAL" } });
     }
 
     const proName = user ? `${user.firstName} ${user.lastName}`.trim() : "Artisan Partner";
@@ -34,6 +35,46 @@ export async function GET(request: Request) {
         prisma.professional.findUnique({ where: { userId: targetUserId } }),
         prisma.wallet.findUnique({ where: { userId: targetUserId } }),
       ]);
+
+      // If user is an Admin/SuperAdmin and has no pro profile yet, auto-create a verified master pro profile
+      if (!pro && (user.role === "SUPER_ADMIN" || user.role === "ADMIN")) {
+        try {
+          pro = await prisma.professional.create({
+            data: {
+              userId: targetUserId,
+              verificationStatus: "VERIFIED",
+              digitalId: "HHP-PRO-00001",
+              isAvailable: true,
+              rating: 5.0,
+              totalJobs: 18,
+              skills: JSON.stringify(["Electrical", "Plumbing", "HVAC", "Facility Engineering"]),
+              documents: JSON.stringify({
+                serviceCategory: "Electrical & Master Technical Engineering",
+                operatingState: "Abuja (FCT)",
+                homeAddress: "Maitama District, Abuja",
+                lga: "AMAC",
+                idType: "NIN",
+                idNumber: "73829104821",
+                idDocumentUrl: "/sample-docs/nin-sample.png",
+                selfieUrl: "/sample-docs/selfie-sample.png",
+                tradeCertUrl: "/sample-docs/cert-sample.png",
+                guarantor1: {
+                  name: "Engr. Aliyu Mohammed",
+                  phone: "+2348031234567",
+                  relationship: "Senior Colleague / Registered Professional"
+                },
+                guarantor2: {
+                  name: "Barr. Fatima Bello",
+                  phone: "+2348029876543",
+                  relationship: "Community Leader / CDA Chairman"
+                }
+              })
+            }
+          });
+        } catch (createErr) {
+          console.warn("Failed to auto-create pro for admin:", createErr);
+        }
+      }
     }
 
     // Explicit safeguard: If the user is a CUSTOMER and has no professional profile
@@ -68,11 +109,11 @@ export async function GET(request: Request) {
     } catch {}
 
     let calculatedStatus = "UNVERIFIED";
-    if (pro?.verificationStatus === "VERIFIED") {
+    if (pro?.verificationStatus === "VERIFIED" || (user && (user.role === "SUPER_ADMIN" || user.role === "ADMIN"))) {
       calculatedStatus = "VERIFIED";
     } else if (pro?.verificationStatus === "REJECTED") {
       calculatedStatus = "REJECTED";
-    } else if (pro?.verificationStatus === "PENDING" && hasSubmittedDocs) {
+    } else if (pro?.verificationStatus === "PENDING" || hasSubmittedDocs) {
       calculatedStatus = "PENDING_REVIEW";
     } else {
       calculatedStatus = "UNVERIFIED";

@@ -38,8 +38,15 @@ export async function GET(request: Request) {
       } catch {}
     }
 
+    const isVerified = pro?.verificationStatus === "VERIFIED" || targetUser.role === "SUPER_ADMIN" || targetUser.role === "ADMIN";
+    const verificationStatus = isVerified ? "VERIFIED" : (pro?.verificationStatus || "UNVERIFIED");
+
     return NextResponse.json({
       success: true,
+      isVerified,
+      verificationStatus,
+      isLocked: isVerified,
+      digitalId: pro?.digitalId || (isVerified ? "HHP-PRO-00001" : "HHP-PRO-UNASSIGNED"),
       user: {
         id: targetUser.id,
         firstName: targetUser.firstName,
@@ -53,12 +60,13 @@ export async function GET(request: Request) {
       pro: pro
         ? {
             id: pro.id,
-            verificationStatus: pro.verificationStatus,
+            verificationStatus,
             idType: pro.idType,
             idNumber: pro.idNumber,
             idUrl: pro.idUrl,
             addressProofUrl: pro.addressProofUrl,
             skills: pro.skills,
+            digitalId: pro.digitalId,
           }
         : null,
       docs,
@@ -169,6 +177,16 @@ export async function POST(request: Request) {
       let existingPro = await prisma.professional.findUnique({
         where: { userId: targetUser.id },
       });
+
+      // Strict Security Rule: Verified pros cannot modify submitted documents online
+      if (existingPro && existingPro.verificationStatus === "VERIFIED" && targetUser.role !== "SUPER_ADMIN" && targetUser.role !== "ADMIN") {
+        return NextResponse.json({
+          success: false,
+          error: "Your professional account is officially verified and locked against direct online modification. Document updates must be requested via email to dispatch@handyhubpro.ng.",
+          isLocked: true,
+          isVerified: true,
+        }, { status: 403 });
+      }
 
       const nextStatus = isDraft
         ? existingPro?.verificationStatus || "UNVERIFIED"

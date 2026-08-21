@@ -89,16 +89,16 @@ export default function ProDashboard() {
                 fontFamily: "monospace",
                 fontSize: "12px",
                 fontWeight: 800,
-                background: "rgba(14, 165, 233, 0.15)",
-                color: "#38BDF8",
+                background: "rgba(0, 168, 181, 0.15)",
+                color: "#00C4D4",
                 padding: "4px 10px",
                 borderRadius: "99px",
-                border: "1px solid rgba(14, 165, 233, 0.35)",
+                border: "1px solid rgba(0, 168, 181, 0.35)",
                 display: "inline-flex",
                 alignItems: "center",
                 gap: 5
               }}>
-                <Fingerprint size={14} color="#0EA5E9" /> ID: {proData.digitalId}
+                <Fingerprint size={14} color="#00A8B5" /> ID: {proData.digitalId}
               </span>
             )}
 
@@ -246,13 +246,16 @@ export default function ProDashboard() {
           href="/pro/verification"
           className="btn btn-primary btn-sm"
           style={{
-            background: isVerified ? "#10B981" : isPendingReview ? "#0EA5E9" : isRejected ? "#EF4444" : "#0EA5E9",
+            background: isVerified ? "linear-gradient(135deg, #10B981 0%, #059669 100%)" : isPendingReview ? "#00A8B5" : isRejected ? "#EF4444" : "#00A8B5",
             fontWeight: 700,
             whiteSpace: "nowrap",
+            display: "inline-flex",
+            alignItems: "center",
+            gap: "6px",
           }}
         >
           {isVerified
-            ? "View Verification Dossier"
+            ? "View Verified Credentials 👁️"
             : isPendingReview
             ? "View Submitted Dossier ➔"
             : isRejected
