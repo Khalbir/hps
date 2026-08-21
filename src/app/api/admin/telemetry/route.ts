@@ -157,9 +157,15 @@ export async function GET(request: Request) {
 
     // 10. Live Activity Feed from AuditLog
     const recentAuditLogs = await prisma.auditLog.findMany({
-      take: 5,
+      take: 6,
       orderBy: { createdAt: "desc" },
-    });
+    }).catch(() => []);
+
+    // 11. Users & Clients Count
+    const [totalUsersCount, registeredClientsCount] = await Promise.all([
+      prisma.user.count().catch(() => 0),
+      prisma.user.count({ where: { role: "CUSTOMER" } }).catch(() => 0),
+    ]);
 
     return NextResponse.json({
       success: true,
@@ -174,6 +180,8 @@ export async function GET(request: Request) {
         completedJobsCount,
         avgResponseTimeMin,
         totalBookingsAll,
+        totalUsersCount,
+        registeredClientsCount,
       },
       bookingStatusBreakdown: Object.entries(statusCounts).map(([status, count]) => ({
         status,

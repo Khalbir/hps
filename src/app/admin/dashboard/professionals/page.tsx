@@ -27,7 +27,7 @@ export const STANDARD_TRADE_CATEGORIES = [
 ];
 
 export default function ProfessionalVerificationPage() {
-  const [filterStatus, setFilterStatus] = useState("PENDING");
+  const [filterStatus, setFilterStatus] = useState("ALL");
   const [search, setSearch] = useState("");
   const [pros, setPros] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
