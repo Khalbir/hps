@@ -168,14 +168,17 @@ export async function POST(request: Request) {
 
         let sanitizedProfessional = null;
         if (userObj.professional || isPro || isAdminRole) {
-          const profFields = userObj.professional || {};
+          const { documents, idUrl, addressProofUrl, ...profFields } = userObj.professional || {};
           const proStatus = isUserVerified ? "VERIFIED" : (profFields.verificationStatus || "UNVERIFIED");
           const proDigitalId = profFields.digitalId || (isUserVerified ? "HHP-PRO-27139" : "HHP-PRO-UNASSIGNED");
           sanitizedProfessional = {
-            ...profFields,
+            id: profFields.id || userObj.id,
             verificationStatus: proStatus,
             digitalId: proDigitalId,
-            hasDocuments: Boolean(profFields.documents && profFields.documents !== "{}" && profFields.documents !== "[]"),
+            isAvailable: profFields.isAvailable ?? true,
+            rating: profFields.rating || 5.0,
+            totalJobs: profFields.totalJobs || 0,
+            hasDocuments: Boolean(documents && documents !== "{}" && documents !== "[]"),
           };
         }
 
@@ -187,11 +190,23 @@ export async function POST(request: Request) {
           ...cleanUserFields
         } = userObj;
 
+        // Ensure avatar is not a massive base64 blob in the session
+        let avatar = cleanUserFields.avatar;
+        if (avatar && avatar.length > 500 && avatar.startsWith("data:")) {
+          avatar = null;
+        }
+
         const finalStatus = isUserVerified ? "VERIFIED" : (userObj.verificationStatus || "UNVERIFIED");
         const finalDigitalId = sanitizedProfessional?.digitalId || (isUserVerified ? "HHP-PRO-27139" : "HHP-PRO-UNASSIGNED");
 
         return {
-          ...cleanUserFields,
+          id: cleanUserFields.id,
+          email: cleanUserFields.email,
+          firstName: cleanUserFields.firstName,
+          lastName: cleanUserFields.lastName,
+          phone: cleanUserFields.phone || null,
+          role: cleanUserFields.role,
+          avatar,
           isVerified: isUserVerified,
           verificationStatus: finalStatus,
           professional: sanitizedProfessional,

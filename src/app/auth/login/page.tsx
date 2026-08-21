@@ -53,7 +53,9 @@ export default function LoginPage() {
       }
 
       // Always enforce persistent sign-in by default for seamless multi-window & restart support
-      localStorage.setItem("handyhub_stay_signed_in", "true");
+      try {
+        localStorage.setItem("handyhub_stay_signed_in", "true");
+      } catch {}
 
       const sessionPayload = {
         authenticated: true,
@@ -73,32 +75,46 @@ export default function LoginPage() {
         digitalId: data.user.digitalId || null,
       };
 
-      // Always save active session to sessionStorage for single-window context scoping
-      sessionStorage.setItem("handyhub_active_session", JSON.stringify(sessionPayload));
-      localStorage.setItem("handyhub_user", JSON.stringify(data.user));
+      // Always save active session safely
+      try {
+        sessionStorage.setItem("handyhub_active_session", JSON.stringify(sessionPayload));
+        localStorage.setItem("handyhub_user", JSON.stringify(data.user));
+      } catch (storageErr) {
+        console.warn("Storage write warning:", storageErr);
+      }
 
       const ADMIN_ROLES = ["SUPER_ADMIN", "EXECUTIVE_OPERATIONS_MANAGER", "ADMIN", "OPERATIONS_MANAGER", "MARKETPLACE_MANAGER", "VERIFICATION_OFFICER", "CUSTOMER_SUPPORT", "FINANCE"];
       const cookieDataStr = encodeURIComponent(JSON.stringify(cookiePayload));
 
-      if (ADMIN_ROLES.includes(data.user.role)) {
-        localStorage.setItem("handyhub_admin_session", JSON.stringify(sessionPayload));
-        document.cookie = "handyhub_admin_session=authenticated; path=/; max-age=2592000; SameSite=Lax";
-        document.cookie = `handyhub_user_data=${cookieDataStr}; path=/; max-age=2592000; SameSite=Lax`;
-        window.location.href = data.redirect || "/admin/dashboard";
-      } else if (data.user.role === "PROFESSIONAL" || data.user.isProfessional) {
-        localStorage.setItem("handyhub_pro_session", JSON.stringify(sessionPayload));
-        document.cookie = "handyhub_pro_session=authenticated; path=/; max-age=2592000; SameSite=Lax";
-        document.cookie = `handyhub_user_data=${cookieDataStr}; path=/; max-age=2592000; SameSite=Lax`;
-        window.location.href = "/pro";
-      } else {
-        localStorage.setItem("handyhub_user_session", JSON.stringify(sessionPayload));
-        document.cookie = "handyhub_user_session=authenticated; path=/; max-age=2592000; SameSite=Lax";
-        document.cookie = `handyhub_user_data=${cookieDataStr}; path=/; max-age=2592000; SameSite=Lax`;
-        window.location.href = "/dashboard";
+      try {
+        if (ADMIN_ROLES.includes(data.user.role)) {
+          try {
+            localStorage.setItem("handyhub_admin_session", JSON.stringify(sessionPayload));
+          } catch {}
+          document.cookie = "handyhub_admin_session=authenticated; path=/; max-age=2592000; SameSite=Lax";
+          document.cookie = `handyhub_user_data=${cookieDataStr}; path=/; max-age=2592000; SameSite=Lax`;
+          window.location.href = data.redirect || "/admin/dashboard";
+        } else if (data.user.role === "PROFESSIONAL" || data.user.isProfessional) {
+          try {
+            localStorage.setItem("handyhub_pro_session", JSON.stringify(sessionPayload));
+          } catch {}
+          document.cookie = "handyhub_pro_session=authenticated; path=/; max-age=2592000; SameSite=Lax";
+          document.cookie = `handyhub_user_data=${cookieDataStr}; path=/; max-age=2592000; SameSite=Lax`;
+          window.location.href = "/pro";
+        } else {
+          try {
+            localStorage.setItem("handyhub_user_session", JSON.stringify(sessionPayload));
+          } catch {}
+          document.cookie = "handyhub_user_session=authenticated; path=/; max-age=2592000; SameSite=Lax";
+          document.cookie = `handyhub_user_data=${cookieDataStr}; path=/; max-age=2592000; SameSite=Lax`;
+          window.location.href = "/dashboard";
+        }
+      } catch {
+        window.location.href = data.redirect || (data.user.role === "PROFESSIONAL" ? "/pro" : "/dashboard");
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error("Login client error:", err);
-      setError("Something went wrong. Please check your network connection and try again.");
+      setError(err?.message || "Invalid email or password. Please check your credentials.");
       setLoading(false);
     }
   };
