@@ -37,11 +37,24 @@ export function StepTechnician({ booking, updateBooking, onNext, onBack }: StepP
         const data = await res.json();
         if (res.ok && data.professionals) {
           const verified = data.professionals
-            .filter((p: any) => p.verificationStatus === "VERIFIED" || p.verificationStatus === "APPROVED")
+            .filter((p: any) => p.verificationStatus === "VERIFIED" || p.verificationStatus === "APPROVED" || p.status === "VERIFIED")
             .map((p: any) => {
               const fullName = p.name || "Verified Partner";
               const parts = fullName.split(" ");
               const initials = parts.length >= 2 ? `${parts[0].charAt(0)}${parts[1].charAt(0)}` : "VP";
+
+              // Extract all verified trade categories for this artisan
+              const tradeCats: string[] = [];
+              if (p.field) tradeCats.push(p.field.toLowerCase());
+              if (Array.isArray(p.tradeVerifications)) {
+                p.tradeVerifications.forEach((tv: any) => {
+                  if (tv.status === "VERIFIED" && tv.tradeCategory) {
+                    tradeCats.push(tv.tradeCategory.toLowerCase());
+                    if (tv.tradeName) tradeCats.push(tv.tradeName.toLowerCase());
+                  }
+                });
+              }
+
               return {
                 id: p.id,
                 name: fullName,
@@ -49,9 +62,10 @@ export function StepTechnician({ booking, updateBooking, onNext, onBack }: StepP
                 rating: Number(p.rating || 4.9),
                 jobs: Number(p.totalJobs || 0),
                 specialty: p.field || "Certified Service Partner",
-                categories: [p.field ? p.field.toLowerCase() : "general"],
+                categories: Array.from(new Set(tradeCats.length > 0 ? tradeCats : ["general"])),
                 responseTime: 15,
                 available: true,
+                isTradeCertified: false, // populated during filter
               };
             });
 
@@ -67,15 +81,12 @@ export function StepTechnician({ booking, updateBooking, onNext, onBack }: StepP
           let filtered = verified;
           if (booking.serviceCategory) {
             const selectedCat = booking.serviceCategory.toLowerCase().trim();
-            filtered = verified.filter((tech: any) => {
+            const matchingSpecialists = verified.filter((tech: any) => {
               const specialties = tech.categories.join(" ");
               return specialties.includes(selectedCat) || selectedCat.includes(specialties) || specialties.includes("general");
             });
 
-            // If no match in the specific field, fall back to all verified professionals so list is not empty
-            if (filtered.length === 0) {
-              filtered = verified;
-            }
+            filtered = matchingSpecialists.length > 0 ? matchingSpecialists : verified;
           }
 
           setRealTechnicians(filtered);

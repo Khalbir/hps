@@ -22,8 +22,11 @@ interface StepProps {
 
 export function StepDetails({ booking, updateBooking, onNext, onBack }: StepProps) {
   const isCleaning = booking.serviceCategory === "cleaning";
+  const isFumigation = booking.serviceCategory === "fumigation" || (booking.serviceId && booking.serviceId.includes("fumigation"));
+  const isUpholstery = booking.serviceCategory === "upholstery" || (booking.serviceId && (booking.serviceId.includes("sofa") || booking.serviceId.includes("mattress") || booking.serviceId.includes("rug") || booking.serviceId.includes("upholstery")));
+  const isPropertyBased = isCleaning || isFumigation || booking.pricingModel === "PROPERTY_BASED";
 
-  const getComputedPrice = (bedrooms: number, bathrooms: number) => {
+  const getComputedPrice = (bedrooms: number, bathrooms: number, qty?: number) => {
     const catalogService = SERVICE_CATEGORIES.flatMap((c) => c.services).find(
       (s) =>
         (booking.serviceId && s.id.toLowerCase() === booking.serviceId.toLowerCase()) ||
@@ -39,8 +42,10 @@ export function StepDetails({ booking, updateBooking, onNext, onBack }: StepProp
         ? booking.totalPrice
         : 0;
 
-    const pModel: PricingModel = isCleaning
+    const pModel: PricingModel = isPropertyBased
       ? "PROPERTY_BASED"
+      : isUpholstery
+      ? "QUANTITY_BASED"
       : ((booking.pricingModel as PricingModel) || catalogService?.pricingModel || "FIXED");
 
     const effectiveServiceId =
@@ -54,7 +59,7 @@ export function StepDetails({ booking, updateBooking, onNext, onBack }: StepProp
       bathrooms,
       isFurnished: booking.isFurnished || false,
       dirtLevel: booking.dirtLevel || "MODERATE",
-      quantity: booking.quantity || 1,
+      quantity: qty !== undefined ? qty : (booking.quantity || 1),
       regionalZoneId: booking.regionalZoneId || "abuja-suburbs",
       isExpressSchedule: booking.isEmergency || false,
     });
@@ -62,28 +67,34 @@ export function StepDetails({ booking, updateBooking, onNext, onBack }: StepProp
   };
 
   const handlePropertyType = (type: string) => {
-    const total = getComputedPrice(booking.bedrooms || 2, booking.bathrooms || 1);
+    const total = getComputedPrice(booking.bedrooms || 2, booking.bathrooms || 1, booking.quantity || 1);
     updateBooking({ propertyType: type, totalPrice: total });
   };
 
   const handleBedrooms = (n: number) => {
-    const total = getComputedPrice(n, booking.bathrooms || 1);
+    const total = getComputedPrice(n, booking.bathrooms || 1, booking.quantity || 1);
     updateBooking({ bedrooms: n, totalPrice: total });
   };
 
   const handleBathrooms = (n: number) => {
-    const total = getComputedPrice(booking.bedrooms || 2, n);
+    const total = getComputedPrice(booking.bedrooms || 2, n, booking.quantity || 1);
     updateBooking({ bathrooms: n, totalPrice: total });
+  };
+
+  const handleQuantity = (q: number) => {
+    const safeQ = Math.max(1, q);
+    const total = getComputedPrice(booking.bedrooms || 2, booking.bathrooms || 1, safeQ);
+    updateBooking({ quantity: safeQ, totalPrice: total });
   };
 
   return (
     <div className={styles.stepContainer}>
-      <h2 className={styles.stepTitle}>Tell us about your property</h2>
-      <p className={styles.stepSubtitle}>This helps us give you an accurate estimate</p>
+      <h2 className={styles.stepTitle}>Tell us about your property & requirements</h2>
+      <p className={styles.stepSubtitle}>This helps our smart pricing engine give you an accurate upfront estimate</p>
 
       {/* Property Type */}
       <div className={styles.fieldGroup}>
-        <label className={styles.fieldLabel}>Property Type</label>
+        <label className={styles.fieldLabel}>Property / Space Type</label>
         <div className={styles.optionGrid4}>
           {propertyTypes.map((pt) => (
             <button
@@ -99,11 +110,13 @@ export function StepDetails({ booking, updateBooking, onNext, onBack }: StepProp
         </div>
       </div>
 
-      {/* Bedrooms (only for cleaning) */}
-      {isCleaning && (
+      {/* Bedrooms & Bathrooms (For Cleaning & Fumigation) */}
+      {isPropertyBased && (
         <>
           <div className={styles.fieldGroup}>
-            <label className={styles.fieldLabel}>Number of Bedrooms</label>
+            <label className={styles.fieldLabel}>
+              {isFumigation ? "Number of Bedrooms / Main Rooms to Fumigate" : "Number of Bedrooms"}
+            </label>
             <div className={styles.counterRow}>
               {[1, 2, 3, 4, 5].map((n) => (
                 <button
@@ -118,7 +131,7 @@ export function StepDetails({ booking, updateBooking, onNext, onBack }: StepProp
           </div>
 
           <div className={styles.fieldGroup}>
-            <label className={styles.fieldLabel}>Number of Bathrooms</label>
+            <label className={styles.fieldLabel}>Number of Bathrooms / Wet Areas</label>
             <div className={styles.counterRow}>
               {[1, 2, 3, 4].map((n) => (
                 <button
@@ -134,12 +147,45 @@ export function StepDetails({ booking, updateBooking, onNext, onBack }: StepProp
         </>
       )}
 
+      {/* Upholstery Item Count Selector */}
+      {isUpholstery && (
+        <div className={styles.fieldGroup}>
+          <label className={styles.fieldLabel}>Number of Items / Units to Deep Clean</label>
+          <div className={styles.counterRow}>
+            {[1, 2, 3, 4, 5, 6].map((q) => (
+              <button
+                key={q}
+                className={`${styles.counterBtn} ${(booking.quantity || 1) === q ? styles.counterBtnActive : ""}`}
+                onClick={() => handleQuantity(q)}
+              >
+                {q}
+              </button>
+            ))}
+          </div>
+          <span style={{ fontSize: "12px", color: "var(--text-secondary)", marginTop: 6, display: "block" }}>
+            Select quantity of sofa seats, mattresses, rugs, or vehicles.
+          </span>
+        </div>
+      )}
+
+      {/* Fumigation Safety Advisory Notice */}
+      {isFumigation && (
+        <div style={{ background: "rgba(16, 185, 129, 0.08)", border: "1px solid rgba(16, 185, 129, 0.3)", borderRadius: "10px", padding: "14px 16px", marginBottom: "16px" }}>
+          <strong style={{ color: "#10B981", fontSize: "13px", display: "block", marginBottom: 4 }}>
+            🛡️ Certified Fumigation Safety Protocol
+          </strong>
+          <p style={{ color: "var(--text-secondary)", fontSize: "12px", margin: 0, lineHeight: 1.5 }}>
+            Our verified pest control specialists use NAFDAC-approved eco-safe formulations. All humans and pets must vacate the treated premises for 4 to 6 hours following treatment, with all open food stored away safely.
+          </p>
+        </div>
+      )}
+
       {/* Special Notes */}
       <div className={styles.fieldGroup}>
-        <label className={styles.fieldLabel}>Special Requirements (Optional)</label>
+        <label className={styles.fieldLabel}>Specific Requirements & Pests / Stains (Optional)</label>
         <textarea
           className={styles.textarea}
-          placeholder="Any specific instructions or areas of focus..."
+          placeholder={isFumigation ? "E.g. High cockroach infestation in kitchen, termite traces in roof, or outdoor compound spraying..." : isUpholstery ? "E.g. Wine/coffee stain on light beige velvet couch, pet odor on master mattress..." : "Any specific instructions or areas of focus..."}
           value={booking.specialNotes}
           onChange={(e) => updateBooking({ specialNotes: e.target.value })}
           rows={3}
@@ -149,7 +195,7 @@ export function StepDetails({ booking, updateBooking, onNext, onBack }: StepProp
       {/* Price Preview */}
       <div className={styles.pricePreview}>
         <span>Estimated Price</span>
-        <span className={styles.pricePreviewAmount}>₦{(booking.totalPrice || booking.servicePrice).toLocaleString()}</span>
+        <span className={styles.pricePreviewAmount}>₦{(booking.totalPrice || booking.servicePrice || 0).toLocaleString()}</span>
       </div>
 
       {/* Actions */}

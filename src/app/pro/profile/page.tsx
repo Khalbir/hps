@@ -67,6 +67,7 @@ export default function ProProfilePage() {
           ninStatus: isVerified ? "Government NIN Identity Verified ✅" : "NIN Document Pending Audit",
           tradeQuizStatus: isVerified ? "Trade Test Passed (100%) ✅" : "Trade Audit Pending Review",
           guarantorStatus: isVerified ? "2 Guarantors Approved ✅" : "Guarantors Pending Verification",
+          tradeVerifications: data.tradeVerifications || [],
         });
       }
     } catch (err) {
@@ -391,6 +392,115 @@ export default function ProProfilePage() {
                   View Verification Dossier ➔
                 </Link>
               </div>
+            </div>
+
+            {/* Multi-Skilled Trade Verifications Card */}
+            <div className="card">
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "var(--space-4)" }}>
+                <div>
+                  <h3 className="h4" style={{ margin: 0 }}>Registered Trade Skills & Credentials</h3>
+                  <span style={{ fontSize: "12px", color: "var(--text-secondary)" }}>
+                    Each trade is independently audited and verified for client job matching.
+                  </span>
+                </div>
+                <Link
+                  href="/pro/verification"
+                  className="btn btn-secondary btn-xs"
+                  style={{ fontSize: "11.5px", fontWeight: 700, textDecoration: "none" }}
+                >
+                  + Add / Verify Profession
+                </Link>
+              </div>
+
+              {(!profile.tradeVerifications || profile.tradeVerifications.length === 0) ? (
+                <div style={{ padding: "14px", background: "var(--bg-tertiary)", borderRadius: "10px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                  <div>
+                    <strong style={{ fontSize: "13.5px", color: "var(--text-primary)", display: "block" }}>
+                      {profile.specialty} (Primary Profession)
+                    </strong>
+                    <span style={{ fontSize: "12px", color: isVerified ? "#10B981" : "#F59E0B" }}>
+                      {isVerified ? "✓ Verified & Dispatched" : "⏳ Verification In Progress"}
+                    </span>
+                  </div>
+                  <span className="badge" style={{ background: isVerified ? "rgba(16,185,129,0.15)" : "rgba(245,158,11,0.15)", color: isVerified ? "#10B981" : "#F59E0B" }}>
+                    {isVerified ? "VERIFIED" : "PENDING"}
+                  </span>
+                </div>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                  {profile.tradeVerifications.map((tv: any) => {
+                    const isTvVerified = tv.status === "VERIFIED";
+                    const isTvPending = tv.status === "PENDING";
+                    const isTvRejected = tv.status === "REJECTED";
+                    const badgeColor = isTvVerified ? "#10B981" : isTvPending ? "#F59E0B" : isTvRejected ? "#EF4444" : "#94A3B8";
+                    const badgeBg = isTvVerified ? "rgba(16,185,129,0.12)" : isTvPending ? "rgba(245,158,11,0.12)" : isTvRejected ? "rgba(239,68,68,0.12)" : "rgba(148,163,184,0.12)";
+
+                    return (
+                      <div
+                        key={tv.id || tv.tradeCategory}
+                        style={{
+                          padding: "14px 16px",
+                          background: "var(--bg-tertiary)",
+                          border: `1px solid ${isTvVerified ? "rgba(16,185,129,0.3)" : "var(--border-primary)"}`,
+                          borderRadius: "10px",
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                          flexWrap: "wrap",
+                          gap: "10px",
+                        }}
+                      >
+                        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                          <div style={{
+                            width: 34,
+                            height: 34,
+                            borderRadius: "8px",
+                            background: badgeBg,
+                            color: badgeColor,
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            fontWeight: 800,
+                            fontSize: "14px",
+                          }}>
+                            {isTvVerified ? "✓" : "⚙️"}
+                          </div>
+                          <div>
+                            <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                              <strong style={{ fontSize: "13.5px", color: "var(--text-primary)" }}>
+                                {tv.tradeName || tv.tradeCategory}
+                              </strong>
+                              {tv.isPrimary && (
+                                <span style={{ fontSize: "10px", background: "rgba(14,165,233,0.15)", color: "#0EA5E9", padding: "1px 6px", borderRadius: 4, fontWeight: 700 }}>
+                                  PRIMARY
+                                </span>
+                              )}
+                            </div>
+                            <span style={{ fontSize: "11.5px", color: "var(--text-secondary)" }}>
+                              {isTvVerified ? "Accredited for live dispatches" : isTvPending ? "Credentials submitted & under compliance audit" : "Dossier required for job eligibility"}
+                            </span>
+                          </div>
+                        </div>
+
+                        <span
+                          style={{
+                            background: badgeBg,
+                            color: badgeColor,
+                            border: `1px solid ${badgeColor}40`,
+                            padding: "4px 10px",
+                            borderRadius: "99px",
+                            fontSize: "11px",
+                            fontWeight: 700,
+                            letterSpacing: "0.04em",
+                          }}
+                        >
+                          {tv.status || "PENDING"}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
 
             <div className="card">

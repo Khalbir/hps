@@ -19,6 +19,7 @@ import {
   Shirt,
   Truck,
   Settings,
+  Bug,
 } from "lucide-react";
 import { SERVICE_CATEGORIES } from "@/lib/services";
 import { PricingRulesConfig, getEffectiveServiceItem } from "@/lib/pricingEngine";
@@ -36,12 +37,22 @@ const services = [
     bgColor: "rgba(14, 165, 233, 0.08)",
   },
   {
-    icon: Sparkles,
-    name: "Commercial Cleaning",
-    category: "cleaning",
-    slug: "commercial-cleaning",
-    description: "Office and business space cleaning",
-    price: "₦35,000",
+    icon: Bug,
+    name: "Fumigation & Pest Control",
+    category: "fumigation",
+    slug: "residential-fumigation",
+    description: "Eco-safe pest, termite & bedbug eradication",
+    price: "₦25,000",
+    color: "#10B981",
+    bgColor: "rgba(16, 185, 129, 0.08)",
+  },
+  {
+    icon: Sofa,
+    name: "Upholstery & Carpet",
+    category: "upholstery",
+    slug: "sofa-couch-cleaning",
+    description: "Deep steam extraction for sofas & mattresses",
+    price: "₦15,000",
     color: "#8B5CF6",
     bgColor: "rgba(139, 92, 246, 0.08)",
   },

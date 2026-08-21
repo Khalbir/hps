@@ -4,8 +4,8 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Sparkles, Wrench, Zap, Snowflake, Paintbrush, Hammer, Camera, SunMedium,
-  Menu, X, Sun, Moon, ChevronDown, Phone, MessageSquare, ArrowRight, Layers, User, ShoppingBag
+  Sparkles, Bug, Sofa, Wrench, Zap, Snowflake, Paintbrush, Hammer, Camera, SunMedium,
+  Menu, X, Sun, Moon, ChevronDown, PhoneCall, MessageSquare, ArrowRight, Layers, User, ShoppingBag, LogOut
 } from "lucide-react";
 import { useTheme } from "@/components/ThemeProvider";
 import { BrandLogo } from "@/components/common/BrandLogo";
@@ -13,6 +13,8 @@ import styles from "./Header.module.css";
 
 const services = [
   { name: "Cleaning Services", desc: "Residential, Deep & Office Cleaning", href: "/book?category=cleaning", icon: Sparkles },
+  { name: "Fumigation & Pest Control", desc: "NAFDAC-Certified Safe Eradication", href: "/book?category=fumigation", icon: Bug },
+  { name: "Upholstery & Carpet", desc: "Deep Steam Sofa & Mattress Extraction", href: "/book?category=upholstery", icon: Sofa },
   { name: "Plumbing Services", desc: "Pipe Leak Repairs, Pumps & Drainage", href: "/book?category=plumbing", icon: Wrench },
   { name: "Electrical Repairs", desc: "Wiring, Socket Fixes & Fault Checks", href: "/book?category=electrical", icon: Zap },
   { name: "AC Servicing & Repair", desc: "Gas Refill, Installation & Maintenance", href: "/book?category=hvac", icon: Snowflake },
@@ -48,30 +50,15 @@ export function Header() {
       const hasCookieSession = document.cookie.includes("handyhub_user_session=authenticated") ||
                                document.cookie.includes("handyhub_pro_session=authenticated") ||
                                document.cookie.includes("handyhub_admin_session=authenticated");
-      
-      const hasStorageSession = typeof window !== "undefined" && (
-        Boolean(localStorage.getItem("handyhub_user")) ||
-        Boolean(localStorage.getItem("handyhub_user_session")) ||
-        Boolean(localStorage.getItem("handyhub_pro_session")) ||
-        Boolean(localStorage.getItem("handyhub_admin_session")) ||
-        Boolean(sessionStorage.getItem("handyhub_active_session")) ||
-        Boolean(sessionStorage.getItem("handyhub_user_session"))
-      );
+      const localRole = localStorage.getItem("handyhub_user_role");
+      const localEmail = localStorage.getItem("handyhub_user_email") || localStorage.getItem("userEmail");
+      const localName = localStorage.getItem("handyhub_user_name");
 
-      if (hasCookieSession || hasStorageSession) {
+      if (hasCookieSession || localEmail) {
         setIsLoggedIn(true);
-        if (typeof window !== "undefined") {
-          try {
-            const rawUser = localStorage.getItem("handyhub_user");
-            const rawSession = localStorage.getItem("handyhub_user_session") || sessionStorage.getItem("handyhub_active_session");
-            const parsed = rawUser ? JSON.parse(rawUser) : rawSession ? JSON.parse(rawSession).user : null;
-            if (parsed?.role) {
-              setUserRole(parsed.role);
-              setIsProfessional(parsed.role === "PROFESSIONAL" || Boolean(parsed.isProfessional));
-              if (parsed.firstName) setUserName(parsed.firstName);
-            }
-          } catch {}
-        }
+        setUserRole(localRole || "CUSTOMER");
+        setIsProfessional(localRole === "PROFESSIONAL");
+        if (localName) setUserName(localName);
       } else {
         setIsLoggedIn(false);
         setUserRole(null);
@@ -79,32 +66,26 @@ export function Header() {
         setUserName("");
       }
     };
-    
+
     checkAuth();
-    window.addEventListener("focus", checkAuth);
-    return () => window.removeEventListener("focus", checkAuth);
+    window.addEventListener("storage", checkAuth);
+    return () => window.removeEventListener("storage", checkAuth);
   }, []);
 
-  const handleLogout = () => {
-    // Clear all auth cookies
-    document.cookie = "handyhub_user_session=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;";
-    document.cookie = "handyhub_pro_session=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;";
-    document.cookie = "handyhub_admin_session=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;";
-    document.cookie = "handyhub_user_data=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;";
-    
-    // Clear all localStorage session keys
-    localStorage.removeItem("handyhub_user");
-    localStorage.removeItem("handyhub_user_session");
-    localStorage.removeItem("handyhub_pro_session");
-    localStorage.removeItem("handyhub_admin_session");
-    
-    // Clear all sessionStorage session keys
-    sessionStorage.removeItem("handyhub_active_session");
-    sessionStorage.removeItem("handyhub_user_session");
-    
+  const handleLogout = async () => {
+    try {
+      await fetch("/api/auth/logout", { method: "POST" });
+    } catch {}
+    localStorage.removeItem("handyhub_user_role");
+    localStorage.removeItem("handyhub_user_email");
+    localStorage.removeItem("handyhub_user_name");
+    localStorage.removeItem("userEmail");
+    document.cookie = "handyhub_user_session=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+    document.cookie = "handyhub_pro_session=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+    document.cookie = "handyhub_admin_session=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
     setIsLoggedIn(false);
     setUserRole(null);
-    
+    setIsProfessional(false);
     window.location.href = "/";
   };
 
@@ -126,12 +107,12 @@ export function Header() {
       >
         <div className={styles.container}>
           {/* Logo */}
-          <Link href="/" className={styles.logo} aria-label="HandyHub Pro Solutions Home" title="HandyHub Pro Solutions">
+          <Link href="/" className={styles.logo} aria-label="HandyHub Pro Home">
             <BrandLogo size="md" />
           </Link>
 
-          {/* Desktop Nav */}
-          <nav className={styles.nav} aria-label="Main navigation">
+          {/* Desktop Navigation */}
+          <nav className={styles.nav} aria-label="Main Navigation">
             <div
               className={styles.navItem}
               onMouseEnter={() => setServicesOpen(true)}
@@ -143,9 +124,9 @@ export function Header() {
                 aria-haspopup="true"
                 onClick={() => setServicesOpen(!servicesOpen)}
               >
-                Services
+                <span>Services</span>
                 <ChevronDown
-                  size={16}
+                  size={14}
                   className={`${styles.chevron} ${servicesOpen ? styles.chevronOpen : ""}`}
                 />
               </button>
@@ -182,47 +163,53 @@ export function Header() {
               </AnimatePresence>
             </div>
             <Link href="/marketplace" className={styles.navLink} style={{ color: "#00A8B5", fontWeight: 700, display: "inline-flex", alignItems: "center", gap: 5 }}>
-              <ShoppingBag size={15} /> Marketplace
+              <ShoppingBag size={14} /> Marketplace
             </Link>
             <Link href="/about" className={styles.navLink}>
               About
             </Link>
-            <Link href="/track" className={styles.navLink} style={{ color: "#10B981", fontWeight: "bold" }}>
+            <Link href="/track" className={styles.navLink} style={{ color: "#10B981", fontWeight: 700 }}>
               Track Booking
             </Link>
             <Link
               href="/auth/register?role=PROFESSIONAL"
-              className={styles.navLink}
-              style={{
-                color: "#FF6B00",
-                fontWeight: 700,
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 5,
-                background: "rgba(255, 107, 0, 0.1)",
-                padding: "5px 12px",
-                borderRadius: "99px",
-                border: "1px solid rgba(255, 107, 0, 0.3)",
-              }}
+              className={styles.becomeProLink}
               title="Sign up as an Artisan / Verified Professional"
             >
-              <Wrench size={13} color="#FF6B00" /> Become a Pro
+              <Wrench size={12} color="#FF6B00" /> Become a Pro
             </Link>
           </nav>
 
           {/* Right Section */}
           <div className={styles.actions}>
-            <a href="https://wa.me/2348122222936?text=Hello%20HandyHub%20Support" target="_blank" rel="noopener noreferrer" className={styles.phoneLink} style={{ background: "rgba(37,211,102,0.12)", color: "#25D366", borderColor: "rgba(37,211,102,0.3)" }} title="Chat on WhatsApp">
-              <MessageSquare size={16} />
+            {/* Clickable 24/7 Helpline Card (Calls without displaying plain text digits) */}
+            <a
+              href="tel:+2348122222936"
+              className={styles.callSupportBtn}
+              title="Call 24/7 Customer Support Hotline"
+              aria-label="Call 24/7 Support Hotline"
+            >
+              <PhoneCall size={14} className={styles.callIconPulse} />
+              <span>Call Support</span>
+            </a>
+
+            {/* WhatsApp Chat Card */}
+            <a
+              href="https://wa.me/2348122222936?text=Hello%20HandyHub%20Support"
+              target="_blank"
+              rel="noopener noreferrer"
+              className={styles.whatsappBtn}
+              title="Chat on WhatsApp"
+              aria-label="Chat on WhatsApp"
+            >
+              <MessageSquare size={14} />
               <span>WhatsApp</span>
             </a>
-            <a href="tel:+2348122222936" className={styles.phoneLink} title="Call Customer Support (+234 812 222 2936)">
-              <Phone size={16} />
-              <span>+234 812 222 2936</span>
-            </a>
+
+            {/* Theme Toggle */}
             <button
               onClick={toggleTheme}
-              className={`btn btn-icon btn-ghost ${styles.themeBtn}`}
+              className={styles.themeBtn}
               aria-label={`Switch to ${theme === "light" ? "dark" : "light"} mode`}
             >
               <AnimatePresence mode="wait" initial={false}>
@@ -233,44 +220,50 @@ export function Header() {
                   exit={{ scale: 0, rotate: 90 }}
                   transition={{ duration: 0.2 }}
                 >
-                  {theme === "light" ? <Moon size={16} /> : <Sun size={16} />}
+                  {theme === "light" ? <Moon size={15} /> : <Sun size={15} />}
                 </motion.div>
               </AnimatePresence>
             </button>
             {isLoggedIn ? (
               <div className={styles.authGroup}>
                 {userRole === "SUPER_ADMIN" || userRole === "ADMIN" ? (
-                  <Link href="/admin/dashboard" className={styles.profileBtn} title="Admin Control Center">
-                    <User size={16} />
-                    <span className={styles.profileText}>Admin Portal</span>
+                  <Link href="/admin/dashboard" className={`${styles.portalBtn} ${styles.adminBadge}`} title="Admin Control Center">
+                    <User size={13} />
+                    <span>Admin Portal</span>
                   </Link>
                 ) : isProfessional ? (
                   <>
-                    <Link href="/pro" className={styles.profileBtn} style={{ background: "rgba(139, 92, 246, 0.15)", borderColor: "rgba(139, 92, 246, 0.4)", color: "#C084FC" }} title="Artisan Workspace">
-                      <Wrench size={15} color="#A855F7" />
-                      <span className={styles.profileText}>Artisan Portal</span>
+                    <Link href="/pro" className={`${styles.portalBtn} ${styles.artisanBadge}`} title="Artisan Workspace">
+                      <Wrench size={13} color="#A855F7" />
+                      <span>Artisan Portal</span>
                     </Link>
-                    <Link href="/dashboard" className={styles.switchBtn} title="Switch to Client Mode">
-                      <User size={15} />
-                      <span className={styles.switchText}>Client View</span>
+                    <Link href="/dashboard" className={`${styles.portalBtn} ${styles.clientBadge}`} title="Switch to Client Mode">
+                      <User size={13} />
+                      <span>Client View</span>
                     </Link>
                   </>
                 ) : (
-                  <Link href="/dashboard" className={styles.profileBtn} title="Client Dashboard">
-                    <User size={16} />
-                    <span className={styles.profileText}>Client Dashboard</span>
+                  <Link href="/dashboard" className={styles.portalBtn} title="Client Dashboard">
+                    <User size={13} />
+                    <span>Dashboard</span>
                   </Link>
                 )}
-                <button onClick={handleLogout} className={`${styles.loginBtn}`} style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "inherit", opacity: 0.8 }}>
-                  Log Out
+                <button
+                  onClick={handleLogout}
+                  className={styles.logoutBtn}
+                  title="Log Out"
+                  aria-label="Log Out"
+                >
+                  <LogOut size={13} />
+                  <span>Log Out</span>
                 </button>
               </div>
             ) : (
-              <Link href="/auth/login" className={`${styles.loginBtn}`}>
+              <Link href="/auth/login" className={styles.loginBtn}>
                 Log In
               </Link>
             )}
-            <Link href="/book" className={`btn btn-primary btn-md ${styles.bookNowBtn}`}>
+            <Link href="/book" className={styles.bookNowBtn}>
               Book Now
             </Link>
             <button
@@ -465,13 +458,37 @@ export function Header() {
                   )}
                 </div>
                 <div className={styles.mobileMenuFooter}>
+                  {/* Contact Hotline & WhatsApp Cards for Mobile */}
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 12 }}>
+                    <a
+                      href="tel:+2348122222936"
+                      className={styles.callSupportBtn}
+                      style={{ justifyContent: "center", padding: "10px 12px", fontSize: "13px" }}
+                      title="Call 24/7 Support Hotline"
+                    >
+                      <PhoneCall size={15} />
+                      <span>Call Support</span>
+                    </a>
+                    <a
+                      href="https://wa.me/2348122222936?text=Hello%20HandyHub%20Support"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={styles.whatsappBtn}
+                      style={{ justifyContent: "center", padding: "10px 12px", fontSize: "13px" }}
+                      title="Chat on WhatsApp"
+                    >
+                      <MessageSquare size={15} />
+                      <span>WhatsApp</span>
+                    </a>
+                  </div>
+
                   <Link
                     href="/book"
                     className="btn btn-primary w-full"
                     onClick={() => setMobileOpen(false)}
                     style={{
-                      background: "linear-gradient(135deg, #00A8B5 0%, #008B97 100%)",
-                      boxShadow: "0 4px 16px rgba(0, 168, 181, 0.35)",
+                      background: "linear-gradient(135deg, #0EA5E9 0%, #0284C7 100%)",
+                      boxShadow: "0 4px 16px rgba(14, 165, 233, 0.35)",
                       fontWeight: 700,
                       fontSize: "14px",
                       height: 44,
@@ -481,6 +498,7 @@ export function Header() {
                       alignItems: "center",
                       justifyContent: "center",
                       boxSizing: "border-box",
+                      color: "#FFFFFF",
                     }}
                   >
                     Book a Service ➔

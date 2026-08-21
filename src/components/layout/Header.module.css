@@ -167,41 +167,237 @@
   padding-top: var(--space-3);
 }
 
+.becomeProLink {
+  color: #FF6B00;
+  font-weight: 700;
+  font-size: 13px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(255, 107, 0, 0.08);
+  padding: 5px 12px;
+  border-radius: 99px;
+  border: 1px solid rgba(255, 107, 0, 0.25);
+  text-decoration: none;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+
+.becomeProLink:hover {
+  background: rgba(255, 107, 0, 0.16);
+  border-color: #FF6B00;
+  color: #FF6B00;
+  transform: translateY(-1px);
+}
+
 .actions {
   display: flex;
   align-items: center;
-  gap: var(--space-3);
+  gap: 8px;
+  flex-shrink: 0;
+  flex-wrap: nowrap;
 }
 
 .authGroup {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
+  flex-shrink: 0;
 }
 
-.phoneLink {
-  display: flex;
+/* Clickable Call Support Card (Automatic Call without plain digits) */
+.callSupportBtn {
+  display: inline-flex;
   align-items: center;
-  gap: var(--space-2);
-  font-size: var(--fs-sm);
-  font-weight: var(--fw-medium);
-  color: var(--text-secondary);
-  transition: color var(--duration-short) var(--ease-default);
+  gap: 6px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #0284C7;
+  background: rgba(14, 165, 233, 0.1);
+  border: 1.5px solid rgba(14, 165, 233, 0.3);
+  border-radius: 8px;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 1px 2px rgba(14, 165, 233, 0.05);
 }
 
-.phoneLink:hover {
-  color: var(--color-primary-500);
+[data-theme="dark"] .callSupportBtn {
+  color: #38BDF8;
+  background: rgba(14, 165, 233, 0.12);
+  border-color: rgba(56, 189, 248, 0.3);
 }
 
-.themeBtn {
-  width: 36px;
-  height: 36px;
-  min-width: 36px;
-  min-height: 36px;
+.callSupportBtn:hover {
+  background: #0EA5E9;
+  border-color: #0EA5E9;
+  color: #FFFFFF;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(14, 165, 233, 0.35);
+}
+
+.callIconPulse {
+  animation: subtlePulse 2.5s infinite;
+}
+
+@keyframes subtlePulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.15); }
+}
+
+/* WhatsApp Button */
+.whatsappBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #15803D;
+  background: rgba(37, 211, 102, 0.12);
+  border: 1.5px solid rgba(37, 211, 102, 0.3);
+  border-radius: 8px;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+[data-theme="dark"] .whatsappBtn {
+  color: #4ADE80;
+  background: rgba(37, 211, 102, 0.15);
+  border-color: rgba(74, 222, 128, 0.3);
+}
+
+.whatsappBtn:hover {
+  background: #22C55E;
+  border-color: #22C55E;
+  color: #FFFFFF;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(34, 197, 94, 0.35);
+}
+
+/* Portal / Mode Switch Badges */
+.portalBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 11px;
+  font-size: 12px;
+  font-weight: 700;
+  border-radius: 8px;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 1px solid transparent;
+}
+
+.artisanBadge {
+  background: rgba(139, 92, 246, 0.12);
+  border-color: rgba(139, 92, 246, 0.35);
+  color: #9333EA;
+}
+
+[data-theme="dark"] .artisanBadge {
+  background: rgba(168, 85, 247, 0.15);
+  border-color: rgba(192, 132, 252, 0.35);
+  color: #C084FC;
+}
+
+.artisanBadge:hover {
+  background: rgba(139, 92, 246, 0.22);
+  transform: translateY(-1px);
+}
+
+.clientBadge {
+  background: rgba(14, 165, 233, 0.1);
+  border-color: rgba(14, 165, 233, 0.25);
+  color: #0284C7;
+}
+
+[data-theme="dark"] .clientBadge {
+  background: rgba(14, 165, 233, 0.12);
+  border-color: rgba(56, 189, 248, 0.25);
+  color: #38BDF8;
+}
+
+.clientBadge:hover {
+  background: rgba(14, 165, 233, 0.2);
+  transform: translateY(-1px);
+}
+
+.adminBadge {
+  background: rgba(239, 68, 68, 0.1);
+  border-color: rgba(239, 68, 68, 0.3);
+  color: #EF4444;
+}
+
+.adminBadge:hover {
+  background: rgba(239, 68, 68, 0.2);
+  transform: translateY(-1px);
+}
+
+/* Log Out Button */
+.logoutBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #EF4444;
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  border-radius: 8px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.logoutBtn:hover {
+  background: rgba(239, 68, 68, 0.18);
+  border-color: #EF4444;
+  color: #DC2626;
+  transform: translateY(-1px);
+}
+
+/* Book Now CTA */
+.bookNowBtn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: 10px;
+  padding: 7px 15px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #FFFFFF !important;
+  background: linear-gradient(135deg, #0EA5E9 0%, #0284C7 100%);
+  border: none;
+  border-radius: 8px;
+  text-decoration: none;
+  white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(14, 165, 233, 0.3);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.bookNowBtn:hover {
+  background: linear-gradient(135deg, #38BDF8 0%, #0EA5E9 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(14, 165, 233, 0.45);
+}
+
+.themeBtn {
+  width: 34px;
+  height: 34px;
+  min-width: 34px;
+  min-height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
   flex-shrink: 0;
   border: 1.5px solid var(--border-primary);
   background: var(--bg-tertiary);
@@ -222,8 +418,10 @@
   font-size: var(--fs-sm);
   font-weight: var(--fw-semibold);
   color: var(--text-secondary);
-  padding: var(--space-2) var(--space-4);
+  padding: 6px 12px;
   border-radius: var(--radius-md);
+  text-decoration: none;
+  white-space: nowrap;
   transition: all var(--duration-short) var(--ease-default);
 }
 
@@ -237,11 +435,11 @@
   display: none;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
-  min-width: 36px;
-  min-height: 36px;
-  border-radius: 10px;
+  width: 34px;
+  height: 34px;
+  min-width: 34px;
+  min-height: 34px;
+  border-radius: 8px;
   color: #F97316;
   background: rgba(249, 115, 22, 0.12);
   border: 1.5px solid rgba(249, 115, 22, 0.4);
@@ -436,15 +634,32 @@
   display: inline;
 }
 
-/* Responsive */
+/* Responsive Rules */
+@media (max-width: 1200px) {
+  .navLink {
+    padding: 6px 8px;
+    font-size: 12px;
+  }
+  .callSupportBtn,
+  .whatsappBtn {
+    padding: 5px 9px;
+    font-size: 11px;
+  }
+  .portalBtn {
+    padding: 5px 9px;
+    font-size: 11px;
+  }
+}
+
 @media (max-width: 1024px) {
   .container {
-    gap: var(--space-4);
+    gap: var(--space-3);
   }
   .nav {
     display: none;
   }
-  .phoneLink {
+  .callSupportBtn,
+  .whatsappBtn {
     display: none;
   }
   .loginBtn {
@@ -472,35 +687,35 @@
   .authGroup {
     gap: 6px;
   }
-  .profileText {
+  .portalBtn span {
     display: none;
+  }
+  .portalBtn {
+    width: 34px;
+    height: 34px;
+    min-width: 34px;
+    min-height: 34px;
+    padding: 0;
+    justify-content: center;
+    border-radius: 8px;
+  }
+  .logoutBtn span {
+    display: none;
+  }
+  .logoutBtn {
+    width: 34px;
+    height: 34px;
+    min-width: 34px;
+    min-height: 34px;
+    padding: 0;
+    justify-content: center;
+    border-radius: 8px;
   }
   .themeBtn {
     width: 34px;
     height: 34px;
     min-width: 34px;
     min-height: 34px;
-    border-radius: 8px;
-  }
-  .profileBtn {
-    width: 34px;
-    height: 34px;
-    min-width: 34px;
-    min-height: 34px;
-    padding: 0;
-    justify-content: center;
-    border-radius: 8px;
-  }
-  .switchText {
-    display: none;
-  }
-  .switchBtn {
-    width: 34px;
-    height: 34px;
-    min-width: 34px;
-    min-height: 34px;
-    padding: 0;
-    justify-content: center;
     border-radius: 8px;
   }
   .menuBtn {
@@ -532,37 +747,15 @@
     font-size: 0.52rem;
     padding: 1px 4px;
   }
-  .phoneLink {
-    padding: 4px 8px;
-    font-size: 11px;
-  }
   .actions {
-    gap: 5px;
+    gap: 4px;
   }
   .authGroup {
-    gap: 5px;
+    gap: 4px;
   }
-  .themeBtn {
-    width: 32px;
-    height: 32px;
-    min-width: 32px;
-    min-height: 32px;
-    border-radius: 8px;
-  }
-  .profileBtn {
-    width: 32px;
-    height: 32px;
-    min-width: 32px;
-    min-height: 32px;
-    border-radius: 8px;
-  }
-  .switchBtn {
-    width: 32px;
-    height: 32px;
-    min-width: 32px;
-    min-height: 32px;
-    border-radius: 8px;
-  }
+  .themeBtn,
+  .portalBtn,
+  .logoutBtn,
   .menuBtn {
     width: 32px;
     height: 32px;
@@ -571,3 +764,4 @@
     border-radius: 8px;
   }
 }
+

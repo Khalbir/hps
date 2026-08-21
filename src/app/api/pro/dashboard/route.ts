@@ -32,7 +32,10 @@ export async function GET(request: Request) {
 
     if (targetUserId) {
       [pro, wallet] = await Promise.all([
-        prisma.professional.findUnique({ where: { userId: targetUserId } }),
+        prisma.professional.findUnique({
+          where: { userId: targetUserId },
+          include: { tradeVerifications: true },
+        }),
         prisma.wallet.findUnique({ where: { userId: targetUserId } }),
       ]);
 
@@ -275,6 +278,7 @@ export async function GET(request: Request) {
       verificationStatus: calculatedStatus, // VERIFIED | PENDING_REVIEW | REJECTED | UNVERIFIED
       hasSubmittedDocs,
       verificationNotes: pro?.verificationNotes || "",
+      tradeVerifications: (pro as any)?.tradeVerifications || [],
       walletBalance,
       pendingEscrow,
       lifetimeEarnings,

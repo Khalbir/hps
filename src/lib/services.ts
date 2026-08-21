@@ -45,6 +45,18 @@ export const POPULAR_SUGGESTIONS: PopularSuggestion[] = [
     serviceId: "ac-repair",
   },
   {
+    text: "Fumigation & pest control for house",
+    label: "Fumigation & Pest Control",
+    categoryId: "fumigation",
+    serviceId: "residential-fumigation",
+  },
+  {
+    text: "Sofa & mattress deep steam cleaning",
+    label: "Upholstery & Carpet Cleaning",
+    categoryId: "upholstery",
+    serviceId: "sofa-couch-cleaning",
+  },
+  {
     text: "Install CCTV cameras",
     label: "Install CCTV cameras",
     categoryId: "security",
@@ -81,6 +93,30 @@ export const SERVICE_CATEGORIES: ServiceCategory[] = [
       { id: "commercial-cleaning", name: "Commercial Cleaning", price: 35000, desc: "Office and business space cleaning", pricingModel: "QUANTITY_BASED", unitLabel: "per office space" },
       { id: "deep-cleaning", name: "Deep Cleaning", price: 25000, desc: "Thorough deep cleaning of every surface", pricingModel: "PROPERTY_BASED" },
       { id: "post-construction", name: "Post Construction Cleaning", price: 0, desc: "Cleanup after renovation (Free site inspection & quote)", pricingModel: "CUSTOM_QUOTE" },
+    ],
+  },
+  {
+    id: "fumigation",
+    name: "Fumigation & Pest Control",
+    color: "#10B981",
+    keywords: ["fumigation", "fumigate", "pest", "pest control", "insects", "cockroaches", "mosquitoes", "termites", "bedbugs", "bed bug", "rats", "rodents", "bugs", "spraying", "disinfection"],
+    services: [
+      { id: "residential-fumigation", name: "Residential Fumigation", price: 25000, desc: "Complete home & compound pest eradication", pricingModel: "PROPERTY_BASED" },
+      { id: "commercial-fumigation", name: "Commercial Fumigation", price: 45000, desc: "Offices, warehouses & commercial premises", pricingModel: "QUANTITY_BASED", unitLabel: "per commercial space" },
+      { id: "bedbug-eradication", name: "Bedbug Eradication", price: 30000, desc: "Targeted deep heat & residual bedbug elimination", pricingModel: "PROPERTY_BASED" },
+      { id: "termite-control", name: "Anti-Termite Treatment", price: 0, desc: "Comprehensive foundation & woodwork anti-termite barrier", pricingModel: "CUSTOM_QUOTE" },
+    ],
+  },
+  {
+    id: "upholstery",
+    name: "Upholstery & Carpet Cleaning",
+    color: "#8B5CF6",
+    keywords: ["upholstery", "sofa", "couch", "mattress", "carpet", "rug", "chairs", "cushion", "fabric", "stain removal", "car interior", "car seat", "steamer", "extraction"],
+    services: [
+      { id: "sofa-couch-cleaning", name: "Sofa & Couch Extraction", price: 15000, desc: "Deep steam shampoo & stain removal for sofas", pricingModel: "QUANTITY_BASED", unitLabel: "per sofa/set" },
+      { id: "mattress-sanitization", name: "Mattress Sanitization", price: 12000, desc: "Deep dust-mite extraction & anti-allergen steam sanitize", pricingModel: "QUANTITY_BASED", unitLabel: "per mattress" },
+      { id: "rug-carpet-cleaning", name: "Rug & Carpet Shampooing", price: 10000, desc: "Wall-to-wall carpets & luxury area rugs", pricingModel: "QUANTITY_BASED", unitLabel: "per rug/carpet" },
+      { id: "car-interior-detailing", name: "Car Interior Detailing", price: 20000, desc: "Complete vehicle seats, floor & roof lining extraction", pricingModel: "QUANTITY_BASED", unitLabel: "per vehicle" },
     ],
   },
   {

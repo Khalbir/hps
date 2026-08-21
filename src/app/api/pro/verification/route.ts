@@ -28,6 +28,9 @@ export async function GET(request: Request) {
 
     const pro = await prisma.professional.findUnique({
       where: { userId: targetUser.id },
+      include: {
+        tradeVerifications: true,
+      },
     });
 
     let docs: any = {};
@@ -40,6 +43,34 @@ export async function GET(request: Request) {
 
     const isVerified = pro?.verificationStatus === "VERIFIED" || targetUser.role === "SUPER_ADMIN" || targetUser.role === "ADMIN";
     const verificationStatus = isVerified ? "VERIFIED" : (pro?.verificationStatus || "UNVERIFIED");
+
+    // Auto-seed primary trade if pro has no tradeVerifications yet
+    let activeTrades: any[] = pro?.tradeVerifications || [];
+    if (pro && activeTrades.length === 0) {
+      let skills: string[] = [];
+      try {
+        if (pro.skills) skills = JSON.parse(pro.skills);
+      } catch {}
+      const primaryCat = (docs?.serviceCategory || skills[0] || "general").toLowerCase();
+      try {
+        const seeded = await prisma.tradeVerification.create({
+          data: {
+            professionalId: pro.id,
+            tradeCategory: primaryCat,
+            tradeName: primaryCat.charAt(0).toUpperCase() + primaryCat.slice(1),
+            isPrimary: true,
+            status: pro.verificationStatus === "VERIFIED" ? "VERIFIED" : "PENDING",
+            yearsExperience: pro.yearsExperience || 2,
+            certUrl: docs?.tradeCertUrl || null,
+            portfolioUrls: JSON.stringify(docs?.portfolioUrls || []),
+            toolsProofUrl: docs?.addressProofUrl || null,
+            quizScore: docs?.quizScore || 100,
+            verifiedAt: pro.verificationStatus === "VERIFIED" ? new Date() : null,
+          },
+        });
+        activeTrades = [seeded];
+      } catch {}
+    }
 
     return NextResponse.json({
       success: true,
@@ -69,6 +100,7 @@ export async function GET(request: Request) {
             digitalId: pro.digitalId,
           }
         : null,
+      tradeVerifications: activeTrades,
       docs,
     });
   } catch (error: any) {
@@ -178,18 +210,10 @@ export async function POST(request: Request) {
         where: { userId: targetUser.id },
       });
 
-      // Strict Security Rule: Verified pros cannot modify submitted documents online
-      if (existingPro && existingPro.verificationStatus === "VERIFIED" && targetUser.role !== "SUPER_ADMIN" && targetUser.role !== "ADMIN") {
-        return NextResponse.json({
-          success: false,
-          error: "Your professional account is officially verified and locked against direct online modification. Document updates must be requested via email to dispatch@handyhubpro.ng.",
-          isLocked: true,
-          isVerified: true,
-        }, { status: 403 });
-      }
-
       const nextStatus = isDraft
         ? existingPro?.verificationStatus || "UNVERIFIED"
+        : existingPro?.verificationStatus === "VERIFIED"
+        ? "VERIFIED"
         : "PENDING";
 
       if (!existingPro) {
@@ -208,6 +232,14 @@ export async function POST(request: Request) {
           },
         });
       } else {
+        let currentSkills: string[] = [];
+        try {
+          if (existingPro.skills) currentSkills = JSON.parse(existingPro.skills);
+        } catch {}
+        if (serviceCategory && !currentSkills.includes(serviceCategory)) {
+          currentSkills.push(serviceCategory);
+        }
+
         proRecord = await prisma.professional.update({
           where: { id: existingPro.id },
           data: {
@@ -218,11 +250,44 @@ export async function POST(request: Request) {
             idUrl: idDocumentUrl || selfieUrl || existingPro.idUrl,
             addressProofUrl: addressProofUrl || existingPro.addressProofUrl,
             documents: JSON.stringify(verificationPayload),
-            skills: serviceCategory ? JSON.stringify([serviceCategory]) : existingPro.skills,
+            skills: JSON.stringify(currentSkills.length > 0 ? currentSkills : [serviceCategory || "Skilled Services"]),
             bio: serviceCategory ? `Verified ${serviceCategory} artisan based in ${operatingState || "FCT Abuja"}` : existingPro.bio,
           },
         });
       }
+
+      // 3. Upsert Granular TradeVerification Record for This Specific Profession
+      const resolvedTrade = (serviceCategory || "general").toLowerCase().trim();
+      const tradeName = resolvedTrade.charAt(0).toUpperCase() + resolvedTrade.slice(1);
+
+      await prisma.tradeVerification.upsert({
+        where: {
+          professionalId_tradeCategory: {
+            professionalId: proRecord.id,
+            tradeCategory: resolvedTrade,
+          },
+        },
+        create: {
+          professionalId: proRecord.id,
+          tradeCategory: resolvedTrade,
+          tradeName,
+          isPrimary: !existingPro,
+          status: isDraft ? "NOT_SUBMITTED" : "PENDING",
+          yearsExperience: 2,
+          certUrl: tradeCertUrl || "",
+          portfolioUrls: JSON.stringify(portfolioUrls || []),
+          toolsProofUrl: addressProofUrl || idDocumentUrl || "",
+          quizScore: quizScore !== undefined ? quizScore : null,
+        },
+        update: {
+          tradeName,
+          status: isDraft ? undefined : "PENDING",
+          certUrl: tradeCertUrl || undefined,
+          portfolioUrls: portfolioUrls ? JSON.stringify(portfolioUrls) : undefined,
+          toolsProofUrl: addressProofUrl || idDocumentUrl || undefined,
+          quizScore: quizScore !== undefined ? quizScore : undefined,
+        },
+      });
 
       if (!isDraft) {
         // 3. Record Audit Log for Admin Dashboard

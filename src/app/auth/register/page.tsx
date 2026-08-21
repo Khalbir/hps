@@ -13,6 +13,8 @@ import styles from "../auth.module.css";
 
 const PRO_SERVICE_OPTIONS = [
   { value: "cleaning", label: "Cleaning (Residential, Commercial, Deep Clean, Post-Construction)" },
+  { value: "fumigation", label: "Fumigation & Pest Control (Eco-Safe Residential & Commercial Eradication)" },
+  { value: "upholstery", label: "Upholstery & Carpet Cleaning (Sofa, Mattress, Rug Extraction & Detailing)" },
   { value: "plumbing", label: "Plumbing (Pipe Repairs, Drainage & Sewage, Water Heaters)" },
   { value: "electrical", label: "Electrical (Wiring & Rewiring, Sockets, Lighting Installation)" },
   { value: "hvac", label: "AC & HVAC (Split Unit Installation, Servicing, Gas Refill, Repairs)" },

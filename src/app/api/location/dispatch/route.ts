@@ -20,7 +20,7 @@ export async function POST(request: Request) {
     try {
       const dbPros = await prisma.professional.findMany({
         where: { verificationStatus: "VERIFIED" },
-        include: { user: true },
+        include: { user: true, tradeVerifications: true },
       });
 
       liveArtisans = dbPros.map((p) => {
@@ -30,11 +30,21 @@ export async function POST(request: Request) {
           if (p.skills) skills = JSON.parse(p.skills);
         } catch {}
 
+        const verifiedTrades = (p.tradeVerifications || [])
+          .filter((t) => t.status === "VERIFIED")
+          .map((t) => t.tradeCategory.toLowerCase().trim());
+
+        const allCats = Array.from(new Set([
+          ...skills.map((s) => s.toLowerCase().trim()),
+          ...verifiedTrades,
+        ])).filter(Boolean);
+
         return {
           id: p.id,
           name: `${u.firstName || "Artisan"} ${u.lastName || "Pro"}`.trim(),
           phone: u.phone || "+2348000000000",
-          serviceCategory: skills[0] ? skills[0].toLowerCase() : targetCategory,
+          serviceCategory: allCats[0] || targetCategory,
+          serviceCategories: allCats.length > 0 ? allCats : [targetCategory],
           rating: p.rating || 4.9,
           totalJobs: p.totalJobs || 0,
           activeJobsCount: 0,

@@ -379,6 +379,130 @@ export const CATEGORY_QUIZZES: Record<string, QuizQuestion[]> = {
       explanation: "Metallic solar panel frames must be bonded to ground to safely dissipate static and lightning surges."
     }
   ],
+  fumigation: [
+    {
+      id: "f1",
+      question: "Before commencing chemical fumigation inside a residential property, what is the mandatory safety precaution regarding occupants and food?",
+      options: [
+        "Cover food with paper towels and let occupants stay in the bedroom",
+        "Evacuate all humans and pets, seal/remove all open food, utensils, and fish tanks",
+        "Turn on ceiling fans and leave windows wide open during spraying",
+        "Only evacuate infants"
+      ],
+      correctAnswer: 1,
+      explanation: "Total evacuation of humans/pets and airtight sealing/removal of food, drinks, and utensils is mandatory to prevent acute pesticide poisoning."
+    },
+    {
+      id: "f2",
+      question: "What is the recommended minimum re-entry interval (REI) for residents after full interior chemical fumigation?",
+      options: [
+        "15 minutes",
+        "4 to 6 hours minimum, followed by 30 minutes cross-ventilation",
+        "Immediately once spraying stops",
+        "24 hours without opening windows"
+      ],
+      correctAnswer: 1,
+      explanation: "Standard residential fumigation requires 4-6 hours holding time for chemical settlement, followed by 30-45 minutes of active window aeration."
+    },
+    {
+      id: "f3",
+      question: "Which Personal Protective Equipment (PPE) is non-negotiable for a professional technician during chemical spraying and fogging?",
+      options: [
+        "Simple cloth bandana and sunglasses",
+        "Full-face chemical respirator with organic vapor/particulate filter, nitrile gloves, and chemical suit",
+        "Latex medical gloves only",
+        "Dust paper mask"
+      ],
+      correctAnswer: 1,
+      explanation: "Organic vapor dual-cartridge respirators and chemical-resistant nitrile gloves prevent toxic inhalation and dermal absorption."
+    },
+    {
+      id: "f4",
+      question: "What chemical application strategy is most effective for long-term eradication of German cockroaches and bedbugs in crevices?",
+      options: [
+        "Surface water spraying only",
+        "Targeted residual insecticide spray in cracks/crevices combined with insect growth regulators (IGR) and gel baits",
+        "Pouring kerosene into sockets",
+        "Air freshener spray"
+      ],
+      correctAnswer: 1,
+      explanation: "Combining crack/crevice residual treatments with IGRs breaks the reproductive lifecycle and prevents re-infestation."
+    },
+    {
+      id: "f5",
+      question: "When treating subterranean termites, where must the chemical termiticide barrier be established?",
+      options: [
+        "Only on surface wooden doors",
+        "Soil trenching and slab perimeter drilling around the building foundation",
+        "On roof ceiling tiles",
+        "Spraying the lawn grass"
+      ],
+      correctAnswer: 1,
+      explanation: "Subterranean termites originate from underground colonies; continuous perimeter soil barrier trenching stops structural ingress."
+    }
+  ],
+  upholstery: [
+    {
+      id: "u1",
+      question: "Before applying wet extraction shampoo to a client's luxury fabric sofa, what is the essential first step?",
+      options: [
+        "Drench the fabric with hot bleach",
+        "Perform an inconspicuous spot color-fastness / bleeding test",
+        "Scrub with a wire brush",
+        "Apply high heat iron"
+      ],
+      correctAnswer: 1,
+      explanation: "Testing on a hidden seam ensures the cleaning chemistry does not cause dye migration, browning, or fiber shrinkage."
+    },
+    {
+      id: "u2",
+      question: "What cleaning technique and tool setup prevents watermarking and mildew odor in deep couch upholstery cleaning?",
+      options: [
+        "Pour buckets of water over couch cushions",
+        "High-power hot water extraction with minimal moisture injection and maximum vacuum suction recovery",
+        "Use soap bar and air dry for 3 days",
+        "Cover wet couch with plastic wrap"
+      ],
+      correctAnswer: 1,
+      explanation: "Commercial extraction balances minimal water injection with maximum dual-stage vacuum suction to achieve rapid 2-4 hour drying."
+    },
+    {
+      id: "u3",
+      question: "When treating organic stains (e.g. coffee, pet accidents, wine) on fabric upholstery, what chemical pH range is appropriate for delicate fibers?",
+      options: [
+        "Strong caustic soda pH 14",
+        "Mild enzyme-based neutral to slightly acidic rinse (pH 6.0 - 7.5)",
+        "Concentrated battery acid pH 1",
+        "Solvent paint thinner"
+      ],
+      correctAnswer: 1,
+      explanation: "Enzyme pre-treatments break down protein and tannin soils without stripping color or degrading cellulose fibers."
+    },
+    {
+      id: "u4",
+      question: "What is the proper method for deep sanitizing and cleaning a client's mattress?",
+      options: [
+        "Submerge mattress in soapy pool",
+        "High-filtration HEPA vacuuming, anti-dust-mite antimicrobial treatment, low-moisture steam extraction, and accelerated drying",
+        "Soak top with water and leave outdoors",
+        "Spray room perfume"
+      ],
+      correctAnswer: 1,
+      explanation: "Low-moisture steam sanitization kills dust mites and bedbug nymphs at >60°C without saturating internal spring padding."
+    },
+    {
+      id: "u5",
+      question: "How should specialized automotive leather seat upholstery be cleaned and protected?",
+      options: [
+        "Use laundry detergent powder and hard scouring pad",
+        "pH-balanced dedicated leather cleaner with soft horsehair brush, followed by deep conditioner balm",
+        "Clean with gasoline",
+        "Bleach wash"
+      ],
+      correctAnswer: 1,
+      explanation: "Leather requires gentle pH-neutral emulsification and replenishment with conditioning oils to prevent cracking."
+    }
+  ],
   general: [
     {
       id: "g1",

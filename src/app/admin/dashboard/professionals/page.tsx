@@ -11,6 +11,8 @@ import styles from "../../admin.module.css";
 
 export const STANDARD_TRADE_CATEGORIES = [
   "Cleaning",
+  "Fumigation & Pest Control",
+  "Upholstery & Carpet Cleaning",
   "Plumbing",
   "Electrical",
   "AC & HVAC",
@@ -501,35 +503,168 @@ export default function ProfessionalVerificationPage() {
                 </div>
               </div>
 
-              {/* Step 2: Trade Certificate & Portfolio */}
-              <div style={{ background: "#0F172A", padding: "14px", borderRadius: "10px", border: "1px solid #334155" }}>
-                <strong style={{ fontSize: "12px", color: "#8B5CF6", textTransform: "uppercase", display: "block", marginBottom: 6 }}>
-                  2️⃣ Trade Certificate & Work Portfolio
-                </strong>
-                <div style={{ fontSize: "13px", color: "#CBD5E1", marginBottom: 6 }}>
-                  Certification:{" "}
-                  <button
-                    type="button"
-                    onClick={() => setPreviewMediaUrl(inspectPro.tradeCertUrl)}
-                    style={{ background: "none", border: "none", padding: 0, color: "#38BDF8", fontWeight: "bold", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 4 }}
-                  >
-                    Inspect Trade Cert PDF / Image 👁️ <ExternalLink size={12} />
-                  </button>
-                </div>
-                {inspectPro.portfolioUrls && inspectPro.portfolioUrls.length > 0 && (
-                  <div style={{ display: "flex", gap: 8, marginTop: 6, overflowX: "auto" }}>
-                    {inspectPro.portfolioUrls.map((url: string, idx: number) => (
-                      <div key={idx} onClick={() => setPreviewMediaUrl(url)} style={{ cursor: "pointer" }}>
-                        <img
-                          src={url}
-                          alt={`Portfolio Work ${idx + 1}`}
-                          style={{ width: 64, height: 64, borderRadius: 8, objectFit: "cover", border: "1px solid #0EA5E9", background: "#1E293B" }}
-                        />
-                      </div>
-                    ))}
+              {/* Step 2B: Multi-Trade Verification Records — Per-Trade Approval Panel */}
+              {inspectPro.tradeVerifications && inspectPro.tradeVerifications.length > 0 && (
+                <div style={{ background: "#0F172A", padding: "14px", borderRadius: "10px", border: "1px solid #334155" }}>
+                  <strong style={{ fontSize: "12px", color: "#10B981", textTransform: "uppercase", display: "block", marginBottom: 10 }}>
+                    🎓 Multi-Profession Trade Verifications ({inspectPro.tradeVerifications.length} Registered)
+                  </strong>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                    {inspectPro.tradeVerifications.map((tv: any, idx: number) => {
+                      const isTvVerified = tv.status === "VERIFIED";
+                      const isTvRejected = tv.status === "REJECTED";
+                      const tvColor = isTvVerified ? "#10B981" : isTvRejected ? "#EF4444" : "#F59E0B";
+                      return (
+                        <div key={tv.id || idx} style={{ background: "#1E293B", padding: "12px", borderRadius: "8px", border: `1px solid ${tvColor}30` }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
+                            <div>
+                              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                                <strong style={{ fontSize: "13px", color: "#F8FAFC" }}>
+                                  {tv.tradeName || tv.tradeCategory}
+                                </strong>
+                                {tv.isPrimary && (
+                                  <span style={{ fontSize: "10px", background: "rgba(14,165,233,0.2)", color: "#38BDF8", padding: "1px 6px", borderRadius: 4, fontWeight: 700 }}>
+                                    PRIMARY
+                                  </span>
+                                )}
+                              </div>
+                              <span style={{ fontSize: "11px", color: "#94A3B8" }}>
+                                Quiz: {tv.quizScore !== undefined ? `${tv.quizScore}%` : "N/A"} &nbsp;•&nbsp; Experience: {tv.yearsExperience || 2}yrs
+                              </span>
+                            </div>
+                            <span style={{ fontSize: "11px", fontWeight: 700, padding: "3px 8px", borderRadius: 4, background: `${tvColor}20`, color: tvColor }}>
+                              {tv.status || "PENDING"}
+                            </span>
+                          </div>
+                          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 8 }}>
+                            {tv.certUrl && (
+                              <button
+                                type="button"
+                                onClick={() => setPreviewMediaUrl(tv.certUrl)}
+                                style={{ background: "none", border: "1px solid #334155", padding: "4px 8px", borderRadius: 4, color: "#38BDF8", fontWeight: 700, cursor: "pointer", fontSize: "11px", display: "inline-flex", alignItems: "center", gap: 4 }}
+                              >
+                                👁️ Trade Cert
+                              </button>
+                            )}
+                            {tv.toolsProofUrl && (
+                              <button
+                                type="button"
+                                onClick={() => setPreviewMediaUrl(tv.toolsProofUrl)}
+                                style={{ background: "none", border: "1px solid #334155", padding: "4px 8px", borderRadius: 4, color: "#F59E0B", fontWeight: 700, cursor: "pointer", fontSize: "11px", display: "inline-flex", alignItems: "center", gap: 4 }}
+                              >
+                                🔧 Tools Proof
+                              </button>
+                            )}
+                            {tv.portfolioUrls && tv.portfolioUrls.length > 0 && tv.portfolioUrls.map((url: string, pidx: number) => (
+                              <div key={pidx} onClick={() => setPreviewMediaUrl(url)} style={{ cursor: "pointer" }}>
+                                <img src={url} alt={`Work ${pidx+1}`} style={{ width: 44, height: 44, borderRadius: 6, objectFit: "cover", border: "1px solid #0EA5E9" }} />
+                              </div>
+                            ))}
+                          </div>
+                          {/* Per-Trade Approve/Reject buttons */}
+                          {!isTvVerified && !isTvRejected && (
+                            <div style={{ display: "flex", gap: 6 }}>
+                              <button
+                                type="button"
+                                onClick={async () => {
+                                  try {
+                                    const res = await fetch("/api/admin/verification", {
+                                      method: "POST",
+                                      headers: { "Content-Type": "application/json" },
+                                      body: JSON.stringify({
+                                        professionalId: inspectPro.id,
+                                        userId: inspectPro.userId,
+                                        email: inspectPro.email,
+                                        tradeVerificationId: tv.id,
+                                        tradeCategory: tv.tradeCategory,
+                                        tradeStatus: "VERIFIED",
+                                        verificationNotes: officerNotes || "",
+                                      }),
+                                    });
+                                    if (res.ok) {
+                                      setToast(`✅ ${tv.tradeName} trade VERIFIED for ${inspectPro.name}`);
+                                      setInspectPro(null);
+                                      setTimeout(fetchPros, 400);
+                                    }
+                                  } catch {
+                                    setToast("Failed to verify trade");
+                                  }
+                                }}
+                                style={{ background: "rgba(16,185,129,0.2)", border: "1px solid #10B981", color: "#10B981", borderRadius: 6, padding: "4px 10px", fontSize: "11px", fontWeight: 700, cursor: "pointer" }}
+                              >
+                                ✓ Approve Trade
+                              </button>
+                              <button
+                                type="button"
+                                onClick={async () => {
+                                  try {
+                                    const res = await fetch("/api/admin/verification", {
+                                      method: "POST",
+                                      headers: { "Content-Type": "application/json" },
+                                      body: JSON.stringify({
+                                        professionalId: inspectPro.id,
+                                        userId: inspectPro.userId,
+                                        email: inspectPro.email,
+                                        tradeVerificationId: tv.id,
+                                        tradeCategory: tv.tradeCategory,
+                                        tradeStatus: "REJECTED",
+                                        rejectionReason: officerNotes || "Documents insufficient",
+                                      }),
+                                    });
+                                    if (res.ok) {
+                                      setToast(`❌ ${tv.tradeName} trade REJECTED for ${inspectPro.name}`);
+                                      setInspectPro(null);
+                                      setTimeout(fetchPros, 400);
+                                    }
+                                  } catch {
+                                    setToast("Failed to reject trade");
+                                  }
+                                }}
+                                style={{ background: "rgba(239,68,68,0.15)", border: "1px solid #EF4444", color: "#EF4444", borderRadius: 6, padding: "4px 10px", fontSize: "11px", fontWeight: 700, cursor: "pointer" }}
+                              >
+                                ✕ Reject Trade
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
-                )}
-              </div>
+                </div>
+              )}
+
+              {/* Step 2C: Fallback single Trade Certificate (when no tradeVerifications array) */}
+              {(!inspectPro.tradeVerifications || inspectPro.tradeVerifications.length === 0) && (
+                <div style={{ background: "#0F172A", padding: "14px", borderRadius: "10px", border: "1px solid #334155" }}>
+                  <strong style={{ fontSize: "12px", color: "#8B5CF6", textTransform: "uppercase", display: "block", marginBottom: 6 }}>
+                    2️⃣ Trade Certificate & Work Portfolio
+                  </strong>
+                  <div style={{ fontSize: "13px", color: "#CBD5E1", marginBottom: 6 }}>
+                    Certification:{" "}
+                    <button
+                      type="button"
+                      onClick={() => setPreviewMediaUrl(inspectPro.tradeCertUrl)}
+                      style={{ background: "none", border: "none", padding: 0, color: "#38BDF8", fontWeight: "bold", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 4 }}
+                    >
+                      Inspect Trade Cert PDF / Image 👁️ <ExternalLink size={12} />
+                    </button>
+                  </div>
+                  {inspectPro.portfolioUrls && inspectPro.portfolioUrls.length > 0 && (
+                    <div style={{ display: "flex", gap: 8, marginTop: 6, overflowX: "auto" }}>
+                      {inspectPro.portfolioUrls.map((url: string, idx: number) => (
+                        <div key={idx} onClick={() => setPreviewMediaUrl(url)} style={{ cursor: "pointer" }}>
+                          <img
+                            src={url}
+                            alt={`Portfolio Work ${idx + 1}`}
+                            style={{ width: 64, height: 64, borderRadius: 8, objectFit: "cover", border: "1px solid #0EA5E9", background: "#1E293B" }}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
 
               {/* Step 3: Guarantor Check */}
               <div style={{ background: "#0F172A", padding: "14px", borderRadius: "10px", border: "1px solid #334155" }}>

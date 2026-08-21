@@ -120,8 +120,34 @@ model Professional {
   bookings Booking[] @relation("ProfessionalBookings")
   reviews  Review[]  @relation("ProfessionalReviews")
   services ProfessionalService[]
+  tradeVerifications TradeVerification[]
   disputes Dispute[]  @relation("ProfessionalDisputes")
   replacementParts ReplacementPart[] @relation("ProfessionalParts")
+}
+
+model TradeVerification {
+  id              String    @id @default(cuid())
+  professionalId  String
+  tradeCategory   String    // e.g. "fumigation", "upholstery", "cleaning", "plumbing", "electrical", "hvac", "painting", "carpentry", etc.
+  tradeName       String    // e.g. "Fumigation & Pest Control", "Upholstery Deep Cleaning"
+  isPrimary       Boolean   @default(false)
+  status          String    @default("PENDING") // NOT_SUBMITTED, PENDING, VERIFIED, REJECTED
+  yearsExperience Int       @default(0)
+  certUrl         String?   // Certificate / Trade License URL
+  portfolioUrls   String    @default("[]") // JSON array of past work photos
+  toolsProofUrl   String?   // Equipment / PPE verification photo
+  quizScore       Int?      // Technical competency assessment score %
+  notes           String?   // Compliance auditor notes
+  rejectionReason String?
+  verifiedAt      DateTime?
+  verifiedBy      String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  professional    Professional @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+
+  @@unique([professionalId, tradeCategory])
+  @@index([tradeCategory, status])
 }
 
 model ProfessionalService {

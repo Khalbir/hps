@@ -14,6 +14,7 @@ export interface ArtisanLocationProfile {
   name: string;
   phone: string;
   serviceCategory: string;
+  serviceCategories?: string[];
   rating: number;
   totalJobs: number;
   activeJobsCount: number;
@@ -163,9 +164,21 @@ export function rankArtisansForBooking(
   allArtisans: ArtisanLocationProfile[],
   maxRadiusKm: number = 25
 ): RankedArtisanScore[] {
+  const targetCat = serviceCategory.toLowerCase().trim();
   const candidates = allArtisans.filter((artisan) => {
     if (!artisan.isAvailable || !artisan.isVerified) return false;
-    if (artisan.serviceCategory.toLowerCase() !== serviceCategory.toLowerCase()) return false;
+    
+    // Check multi-skills and trade categories
+    const cats: string[] = [];
+    if (Array.isArray(artisan.serviceCategories)) {
+      cats.push(...artisan.serviceCategories.map((c) => c.toLowerCase().trim()));
+    }
+    if (artisan.serviceCategory) {
+      cats.push(...artisan.serviceCategory.toLowerCase().split(/[,;|\s]+/).map((c) => c.trim()));
+    }
+
+    const matchesCategory = cats.length === 0 || cats.some((c) => c.includes(targetCat) || targetCat.includes(c) || c === "general");
+    if (!matchesCategory) return false;
 
     const distance = calculateHaversineDistanceKm(bookingLocation, artisan.location);
     return distance <= Math.min(artisan.serviceRadiusKm, maxRadiusKm);

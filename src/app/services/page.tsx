@@ -5,7 +5,7 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import {
   Sparkles, Wrench, Zap, Snowflake, Paintbrush, Hammer, Camera, SunMedium,
-  CheckCircle2, ArrowRight, ShieldCheck, Star, Clock, MapPin, Users
+  CheckCircle2, ArrowRight, ShieldCheck, Star, Clock, MapPin, Users, Bug, Sofa
 } from "lucide-react";
 import { SERVICE_CATEGORIES } from "@/lib/services";
 import { PricingRulesConfig, getEffectiveServiceItem } from "@/lib/pricingEngine";
@@ -16,9 +16,27 @@ const serviceCatalog = [
     title: "Residential & Deep Cleaning",
     icon: Sparkles,
     price: "From ₦15,000",
-    desc: "Complete home sanitization, kitchen degreasing, bathroom scrubbing, carpet extraction & post-construction cleaning.",
-    popularItems: ["Full Flat Deep Cleaning", "Sofa & Upholstery Wash", "Post-Construction Cleaning", "Move-in / Move-out Scrub"],
+    desc: "Complete home sanitization, kitchen degreasing, bathroom scrubbing, and post-construction cleaning.",
+    popularItems: ["Full Flat Deep Cleaning", "Move-in / Move-out Scrub", "Post-Construction Cleaning", "Commercial Janitorial"],
     badge: "Most Popular",
+  },
+  {
+    id: "fumigation",
+    title: "Fumigation & Pest Eradication",
+    icon: Bug,
+    price: "From ₦25,000",
+    desc: "Eco-safe NAFDAC approved fumigation, subterranean termite barriers, residual bedbug heat treatment & rodent control.",
+    popularItems: ["Full Home & Compound Fumigation", "Bedbug Deep Heat Treatment", "Anti-Termite Perimeter Barrier", "Commercial Office Pest Control"],
+    badge: "Eco-Safe Certified",
+  },
+  {
+    id: "upholstery",
+    title: "Upholstery & Carpet Steam Extraction",
+    icon: Sofa,
+    price: "From ₦15,000",
+    desc: "Industrial hot-water extraction, stain removal, anti-allergen mattress sanitization & vehicle upholstery detailing.",
+    popularItems: ["Fabric & Leather Sofa Deep Wash", "Mattress Sanitization & Deodorize", "Area Rugs & Wall Carpet Shampoo", "Car Interior Detailing"],
+    badge: "Deep Extraction",
   },
   {
     id: "plumbing",

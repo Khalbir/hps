@@ -296,24 +296,52 @@ export async function broadcastNewJobToArtisans(booking: {
   scheduledDate: string | Date;
   scheduledTime?: string;
   address?: string;
+  tradeCategories?: string[];  // Trade-gating: only notify pros verified for these trades
 }) {
   try {
+    const tradeSlugs = booking.tradeCategories || [];
+
+    // Build trade-gated filter: if tradeCategories provided, match only pros with those verified trades
+    const tradeFilter = tradeSlugs.length > 0
+      ? {
+          tradeVerifications: {
+            some: {
+              status: "VERIFIED",
+              tradeCategory: { in: tradeSlugs },
+            },
+          },
+        }
+      : {};
+
     const verifiedPros = await prisma.professional.findMany({
       where: {
         verificationStatus: { in: ["VERIFIED", "APPROVED"] },
         isAvailable: true,
+        ...tradeFilter,
       },
       include: {
         user: { select: { id: true, firstName: true, lastName: true, phone: true, email: true } },
+        tradeVerifications: { select: { tradeCategory: true, status: true } },
       },
-      take: 5,
+      take: 8,
     });
+
+    // Fallback: if no trade-specific pros found, broadcast to all verified pros
+    const targetPros = verifiedPros.length > 0
+      ? verifiedPros
+      : await prisma.professional.findMany({
+          where: { verificationStatus: { in: ["VERIFIED", "APPROVED"] }, isAvailable: true },
+          include: {
+            user: { select: { id: true, firstName: true, lastName: true, phone: true, email: true } },
+          },
+          take: 5,
+        });
 
     const dateStr = typeof booking.scheduledDate === "string"
       ? booking.scheduledDate
       : new Date(booking.scheduledDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 
-    for (const pro of verifiedPros) {
+    for (const pro of targetPros) {
       if (pro.user?.phone) {
         await sendArtisanNewJobAlert({
           artisanPhone: pro.user.phone,
@@ -331,6 +359,7 @@ export async function broadcastNewJobToArtisans(booking: {
     console.warn("[Broadcast New Job Error]:", err);
   }
 }
+
 
 /**
  * Dispatch Comprehensive Booking Lifecycle Stage Notifications to Client & Artisan

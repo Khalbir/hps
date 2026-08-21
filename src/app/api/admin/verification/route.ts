@@ -16,6 +16,7 @@ export async function GET(request: Request) {
     try {
       dbPros = await prisma.professional.findMany({
         include: {
+          tradeVerifications: true,
           user: {
             select: {
               id: true,
@@ -37,7 +38,9 @@ export async function GET(request: Request) {
     } catch (err) {
       console.warn("[Admin Verification DB Warning - Professionals include user]:", err);
       try {
-        dbPros = await prisma.professional.findMany();
+        dbPros = await prisma.professional.findMany({
+          include: { tradeVerifications: true },
+        });
       } catch (err2) {
         console.warn("[Admin Verification DB Warning - Professionals basic]:", err2);
       }
@@ -225,6 +228,44 @@ export async function GET(request: Request) {
         addressVerified: Boolean(p.addressVerified || u.permanentAddressStatus === "VERIFIED"),
         notes: p.verificationNotes || docs.notes || "",
         submittedAt: docs.submittedAt || p.createdAt || new Date().toISOString(),
+        tradeVerifications: (p.tradeVerifications && p.tradeVerifications.length > 0)
+          ? p.tradeVerifications.map((tv: any) => {
+              let pUrls: string[] = [];
+              try {
+                if (tv.portfolioUrls) pUrls = typeof tv.portfolioUrls === "string" ? JSON.parse(tv.portfolioUrls) : tv.portfolioUrls;
+              } catch {}
+              return {
+                id: tv.id,
+                tradeCategory: tv.tradeCategory,
+                tradeName: tv.tradeName || tv.tradeCategory,
+                isPrimary: tv.isPrimary,
+                status: tv.status || "PENDING",
+                yearsExperience: tv.yearsExperience || 2,
+                certUrl: getValidMediaUrl(tv.certUrl, "cert", proMeta),
+                portfolioUrls: pUrls.length > 0 ? pUrls.map((u) => getValidMediaUrl(u, "portfolio", proMeta)) : formattedPortfolio,
+                toolsProofUrl: getValidMediaUrl(tv.toolsProofUrl, "address", proMeta),
+                quizScore: tv.quizScore !== undefined && tv.quizScore !== null ? tv.quizScore : 100,
+                notes: tv.notes || "",
+                rejectionReason: tv.rejectionReason || "",
+                verifiedAt: tv.verifiedAt,
+              };
+            })
+          : [
+              {
+                id: `tv_${p.id}`,
+                tradeCategory: (proField || "general").toLowerCase().replace(/\s+/g, "-"),
+                tradeName: proField || "General Skilled Services",
+                isPrimary: true,
+                status: vStatus === "VERIFIED" ? "VERIFIED" : "PENDING",
+                yearsExperience: p.yearsExperience || docs.experienceYears || 5,
+                certUrl: getValidMediaUrl(rawTradeCertUrl, "cert", proMeta),
+                portfolioUrls: formattedPortfolio,
+                toolsProofUrl: getValidMediaUrl(rawAddressProofUrl, "address", proMeta),
+                quizScore: docs.quizScore !== undefined ? docs.quizScore : 100,
+                notes: p.verificationNotes || "",
+                verifiedAt: vStatus === "VERIFIED" ? new Date() : null,
+              },
+            ],
       };
     });
 
@@ -307,6 +348,96 @@ export async function POST(request: Request) {
         skillUpdate.skills = JSON.stringify(sArr);
       }
     }
+
+    // 3A. Handle per-trade (granular) approval/rejection when tradeVerificationId or tradeCategory is provided
+    const tradeVerId = body.tradeVerificationId;
+    const tradeCat = body.tradeCategory;
+    const tradeStatus = (body.tradeStatus || "").toUpperCase() as "VERIFIED" | "REJECTED" | "";
+    const rejectionReason = body.rejectionReason || "";
+
+    if (pro && (tradeVerId || tradeCat) && (tradeStatus === "VERIFIED" || tradeStatus === "REJECTED")) {
+      // Update the specific TradeVerification record
+      if (tradeVerId && !tradeVerId.startsWith("tv_")) {
+        // Real DB ID — direct update
+        await prisma.tradeVerification.update({
+          where: { id: tradeVerId },
+          data: {
+            status: tradeStatus,
+            verifiedAt: tradeStatus === "VERIFIED" ? new Date() : null,
+            notes: notes,
+            rejectionReason: tradeStatus === "REJECTED" ? (rejectionReason || notes) : null,
+          },
+        }).catch((e: any) => console.warn("[Trade Verify Update warn]:", e));
+      } else if (tradeCat) {
+        // Upsert by professionalId + tradeCategory
+        await prisma.tradeVerification.upsert({
+          where: {
+            professionalId_tradeCategory: {
+              professionalId: pro.id,
+              tradeCategory: tradeCat.toLowerCase().trim(),
+            },
+          },
+          create: {
+            professionalId: pro.id,
+            tradeCategory: tradeCat.toLowerCase().trim(),
+            tradeName: tradeCat,
+            isPrimary: false,
+            status: tradeStatus,
+            verifiedAt: tradeStatus === "VERIFIED" ? new Date() : null,
+            notes,
+            rejectionReason: tradeStatus === "REJECTED" ? (rejectionReason || notes) : null,
+          },
+          update: {
+            status: tradeStatus,
+            verifiedAt: tradeStatus === "VERIFIED" ? new Date() : null,
+            notes,
+            rejectionReason: tradeStatus === "REJECTED" ? (rejectionReason || notes) : null,
+          },
+        }).catch((e: any) => console.warn("[Trade Upsert warn]:", e));
+      }
+
+      // After granular trade update, recalculate top-level pro status
+      // — A pro becomes VERIFIED only if all non-rejected trades include at least 1 VERIFIED
+      const allTrades = await prisma.tradeVerification.findMany({ where: { professionalId: pro.id } });
+      const hasVerifiedTrade = allTrades.some((t) => t.status === "VERIFIED");
+      const updatedProStatus = hasVerifiedTrade ? "VERIFIED" : pro.verificationStatus;
+
+      await prisma.professional.update({
+        where: { id: pro.id },
+        data: {
+          verificationStatus: updatedProStatus,
+          isAvailable: hasVerifiedTrade,
+          verifiedAt: hasVerifiedTrade ? new Date() : pro.verifiedAt,
+          verificationNotes: notes,
+        },
+      }).catch((e: any) => console.warn("[Pro status recalc warn]:", e));
+
+      // Notify artisan about their specific trade
+      const targetUserId2 = pro.userId;
+      if (targetUserId2) {
+        await prisma.notification.create({
+          data: {
+            userId: targetUserId2,
+            type: "SYSTEM",
+            title: tradeStatus === "VERIFIED"
+              ? `✅ ${tradeCat} Trade Verification Approved!`
+              : `❌ ${tradeCat} Trade Verification Rejected`,
+            message: tradeStatus === "VERIFIED"
+              ? `Your ${tradeCat} trade credentials have been verified. You are now eligible to receive and accept ${tradeCat} job bookings on HandyHub.`
+              : `Your ${tradeCat} trade application was reviewed. Notes: ${rejectionReason || notes}. Please re-upload your credentials to re-apply.`,
+          },
+        }).catch(() => {});
+      }
+
+      return NextResponse.json({
+        success: true,
+        message: `Trade '${tradeCat}' ${tradeStatus} successfully for ${pro.id}.`,
+        tradeStatus,
+        professionalId: pro.id,
+      });
+    }
+
+    // 3B. Global Professional status update (when no tradeVerificationId — full profile decision)
 
     if (!pro && user) {
       pro = await prisma.professional.create({

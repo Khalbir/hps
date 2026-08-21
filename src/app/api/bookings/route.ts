@@ -6,6 +6,63 @@ import { getBookingOtp } from "@/lib/bookingOtp";
 
 export const dynamic = "force-dynamic";
 
+/**
+ * Trade-Gated Dispatch Engine Helpers
+ * Maps service categories/slugs to the normalized tradeCategory values stored in TradeVerification
+ */
+const TRADE_SLUG_MAP: Record<string, string[]> = {
+  cleaning: ["cleaning", "residential-cleaning", "commercial-cleaning", "deep-cleaning", "post-construction"],
+  fumigation: ["fumigation", "pest-control", "residential-fumigation", "commercial-fumigation"],
+  upholstery: ["upholstery", "carpet", "sofa", "mattress", "carpet-cleaning", "sofa-couch-cleaning"],
+  plumbing: ["plumbing", "pipe", "drainage", "water-heater", "borehole"],
+  electrical: ["electrical", "wiring", "socket", "circuit", "lighting"],
+  hvac: ["hvac", "ac", "air-conditioning", "aircon", "split-unit", "gas-refill"],
+  painting: ["painting", "wall", "pop", "screeding", "exterior-painting"],
+  carpentry: ["carpentry", "furniture", "cabinet", "wardrobe", "woodwork"],
+  security: ["security", "cctv", "camera", "intercom", "surveillance"],
+  solar: ["solar", "inverter", "generator", "battery", "panel"],
+  "home-improvement": ["home-improvement", "renovation", "interior", "decoration"],
+  outdoor: ["outdoor", "gardening", "landscaping", "lawn"],
+  laundry: ["laundry", "garment", "washing", "ironing", "dry-cleaning"],
+  moving: ["moving", "relocation", "logistics"],
+  general: ["general", "handyman", "maintenance", "odd-jobs"],
+};
+
+/**
+ * Converts a raw service category string into a list of candidate trade slugs for matching
+ */
+function normalizeTradeSlugs(raw: string): string[] {
+  const normalized = raw.toLowerCase().replace(/[^a-z0-9-\s]/g, "").trim();
+  const slugs = new Set<string>();
+  slugs.add(normalized.replace(/\s+/g, "-"));
+
+  for (const [key, aliases] of Object.entries(TRADE_SLUG_MAP)) {
+    if (aliases.some((alias) => normalized.includes(alias) || alias.includes(normalized))) {
+      slugs.add(key);
+      aliases.forEach((a) => slugs.add(a));
+    }
+  }
+  return Array.from(slugs).filter(Boolean);
+}
+
+/**
+ * Checks whether a professional has a VERIFIED TradeVerification for any of the requested trade slugs.
+ * Falls back to allowing VERIFIED professionals without TradeVerification records (backwards compat).
+ */
+function isProEligibleForTrade(pro: any, tradeSlugs: string[]): boolean {
+  if (!pro) return false;
+  if (pro.verificationStatus !== "VERIFIED") return false;
+  if (!pro.tradeVerifications || pro.tradeVerifications.length === 0) {
+    // Legacy pro with no granular trade records — allow if globally verified
+    return true;
+  }
+  return pro.tradeVerifications.some(
+    (tv: any) => tv.status === "VERIFIED" && tradeSlugs.some((s) => tv.tradeCategory?.includes(s) || s.includes(tv.tradeCategory || ""))
+  );
+}
+
+
+
 // POST: Create a new booking
 export async function POST(request: Request) {
   try {
@@ -112,31 +169,56 @@ export async function POST(request: Request) {
       });
     }
 
-    // 4. MANDATORY ARTISAN VERIFICATION GATING CHECK
+    // 4. TRADE-GATED DISPATCH ENGINE
+    // Normalize the requested service category into a trade slug for matching
+    const requestedTradeSlugs = normalizeTradeSlugs(serviceCategory || serviceName || "");
+
     let assignedProfessionalId: string | null = null;
+
     if (!autoAssign && technicianId) {
+      // Direct technician requested — gate: ensure they are verified for this specific trade
       const selectedPro = await prisma.professional.findUnique({
         where: { id: technicianId },
+        include: { tradeVerifications: true },
       });
 
-      if (selectedPro && (selectedPro.verificationStatus === "VERIFIED" || selectedPro.verificationStatus === "APPROVED")) {
-        assignedProfessionalId = selectedPro.id;
+      const isEligible = selectedPro && isProEligibleForTrade(selectedPro, requestedTradeSlugs);
+      if (isEligible) {
+        assignedProfessionalId = selectedPro!.id;
       }
+      // If not eligible, fall through to auto-assign from trade-verified pool
     }
 
     if (!assignedProfessionalId) {
-      // Auto-assign: Only select from VERIFIED professionals
-      const availablePro = await prisma.professional.findFirst({
+      // Auto-assign: Find pros verified for THIS specific trade category, ordered by rating
+      const candidates = await prisma.professional.findMany({
         where: {
           isAvailable: true,
           verificationStatus: "VERIFIED",
+          tradeVerifications: {
+            some: {
+              status: "VERIFIED",
+              tradeCategory: { in: requestedTradeSlugs },
+            },
+          },
         },
-        orderBy: { rating: "desc" },
+        include: { tradeVerifications: true },
+        orderBy: [{ rating: "desc" }, { totalJobs: "desc" }],
+        take: 5,
       });
-      if (availablePro) {
-        assignedProfessionalId = availablePro.id;
+
+      if (candidates.length > 0) {
+        assignedProfessionalId = candidates[0].id;
+      } else {
+        // Fallback: any VERIFIED pro (no trade-gating) — for markets without enough specialists
+        const fallbackPro = await prisma.professional.findFirst({
+          where: { isAvailable: true, verificationStatus: "VERIFIED" },
+          orderBy: { rating: "desc" },
+        });
+        if (fallbackPro) assignedProfessionalId = fallbackPro.id;
       }
     }
+
 
     const ref = `HHP-${Date.now().toString(36).toUpperCase()}`;
 
@@ -223,7 +305,7 @@ export async function POST(request: Request) {
         scheduledTime: scheduledTime,
       });
 
-      // Broadcast WhatsApp notification to verified artisans in the vicinity
+      // Broadcast WhatsApp notification to trade-verified artisans only
       if (!assignedProfessionalId) {
         await broadcastNewJobToArtisans({
           id: booking.id,
@@ -234,6 +316,7 @@ export async function POST(request: Request) {
           scheduledDate: booking.scheduledDate,
           scheduledTime: scheduledTime,
           address: sanitizedAddress,
+          tradeCategories: requestedTradeSlugs,  // Gate broadcast to trade-eligible artisans
         });
       }
     } catch (notifErr) {
