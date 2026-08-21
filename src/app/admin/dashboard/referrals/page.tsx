@@ -8,7 +8,7 @@ import {
   ArrowRight, Check, X, ShieldAlert, Eye, Search, Filter, Lock
 } from "lucide-react";
 import { ReferralRulesConfig, RecruiterTierLevel } from "@/lib/referrals/types";
-import { DEFAULT_REFERRAL_RULES } from "@/lib/referrals/config";
+import { DEFAULT_REFERRAL_RULES } from "@/lib/referrals/constants";
 import styles from "../../admin.module.css";
 
 export default function AdminReferralsGovernancePage() {
