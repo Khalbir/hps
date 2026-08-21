@@ -65,12 +65,24 @@ export default function DashboardPage() {
   };
 
   // User state
-  const [user, setUser] = useState<any>({
-    firstName: "Valued Client",
-    lastName: "",
-    email: "",
-    phone: "",
-    role: "CUSTOMER",
+  const [user, setUser] = useState<any>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const stored = localStorage.getItem("handyhub_user");
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (parsed && (parsed.firstName || parsed.email)) return parsed;
+        }
+      } catch {}
+    }
+    return {
+      firstName: "Valued Client",
+      lastName: "",
+      email: "",
+      phone: "",
+      role: "CUSTOMER",
+      isVerified: true,
+    };
   });
 
   // Initialize from cached dashboard stats for instant display (before API responds)

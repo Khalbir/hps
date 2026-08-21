@@ -14,6 +14,20 @@ const SEED_ACCOUNTS: Record<string, { pass: string; user: any }> = {
       firstName: "KHALID",
       lastName: "KABIR",
       role: "SUPER_ADMIN",
+      isVerified: true,
+      verificationStatus: "VERIFIED",
+      digitalId: "HHP-PRO-00001",
+      isProfessional: true,
+      canSwitchToPro: true,
+      canSwitchToClient: true,
+      roleLabel: "Platform Administrator & Super Admin",
+      professional: {
+        id: "pro_admin_khalbir",
+        verificationStatus: "VERIFIED",
+        digitalId: "HHP-PRO-00001",
+        isAvailable: true,
+        rating: 5.0,
+      },
     },
   },
 };
@@ -150,13 +164,18 @@ export async function POST(request: Request) {
       const sanitizeUser = (userObj: any) => {
         const isPro = userObj.role === "PROFESSIONAL" || Boolean(userObj.professional);
         const isAdminRole = ADMIN_ROLES.includes(userObj.role);
+        const isUserVerified = Boolean(userObj.isVerified || isAdminRole || userObj.professional?.verificationStatus === "VERIFIED");
 
         let sanitizedProfessional = null;
-        if (userObj.professional) {
-          const { documents, ...profFields } = userObj.professional;
+        if (userObj.professional || isPro || isAdminRole) {
+          const profFields = userObj.professional || {};
+          const proStatus = isUserVerified ? "VERIFIED" : (profFields.verificationStatus || "UNVERIFIED");
+          const proDigitalId = profFields.digitalId || (isUserVerified ? "HHP-PRO-27139" : "HHP-PRO-UNASSIGNED");
           sanitizedProfessional = {
             ...profFields,
-            hasDocuments: Boolean(documents && documents !== "{}" && documents !== "[]"),
+            verificationStatus: proStatus,
+            digitalId: proDigitalId,
+            hasDocuments: Boolean(profFields.documents && profFields.documents !== "{}" && profFields.documents !== "[]"),
           };
         }
 
@@ -168,14 +187,19 @@ export async function POST(request: Request) {
           ...cleanUserFields
         } = userObj;
 
+        const finalStatus = isUserVerified ? "VERIFIED" : (userObj.verificationStatus || "UNVERIFIED");
+        const finalDigitalId = sanitizedProfessional?.digitalId || (isUserVerified ? "HHP-PRO-27139" : "HHP-PRO-UNASSIGNED");
+
         return {
           ...cleanUserFields,
+          isVerified: isUserVerified,
+          verificationStatus: finalStatus,
           professional: sanitizedProfessional,
-          isProfessional: isPro,
-          canSwitchToClient: isPro,
-          canSwitchToPro: isPro,
+          isProfessional: isPro || isAdminRole,
+          canSwitchToClient: isPro || isAdminRole,
+          canSwitchToPro: isPro || isAdminRole,
           roleLabel: userObj.role === "PROFESSIONAL" ? "Artisan / Professional" : isAdminRole ? "Platform Administrator" : "Client / Customer",
-          digitalId: userObj.professional?.digitalId || (isPro ? "HHP-PRO-VERIFIED" : undefined),
+          digitalId: finalDigitalId,
         };
       };
 
