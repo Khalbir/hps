@@ -58,14 +58,46 @@ export function StepService({ booking, updateBooking, onNext }: StepProps) {
     return 1;
   };
 
+  const activateServiceCard = (rawSvc: any, customQty?: number) => {
+    const svc = getEffectiveServiceItem(rawSvc, pricingRules);
+    const pModel = (svc.pricingModel as PricingModel) || "FIXED";
+    const svcQty = customQty !== undefined ? customQty : getServiceQuantity(svc.id);
+    const calc = calculateJobPrice(
+      {
+        serviceId: svc.id,
+        pricingModel: pModel,
+        basePrice: svc.price,
+        bedrooms: booking.bedrooms || 2,
+        bathrooms: booking.bathrooms || 1,
+        isFurnished: booking.isFurnished || false,
+        dirtLevel: booking.dirtLevel || "MODERATE",
+        quantity: svcQty,
+        regionalZoneId: booking.regionalZoneId || "abuja-suburbs",
+        isExpressSchedule: booking.isEmergency || false,
+      },
+      pricingRules
+    );
+
+    updateBooking({
+      serviceCategory: selectedCategory,
+      serviceId: svc.id,
+      serviceName: svc.name,
+      servicePrice: svc.price,
+      pricingModel: pModel,
+      quantity: svcQty,
+      totalPrice: calc.totalPriceNgn,
+    });
+  };
+
   const handleServiceQuantityChange = (serviceId: string, qty: number) => {
     const safeQty = Math.max(1, qty);
     setServiceQuantities((prev) => ({
       ...prev,
       [serviceId]: safeQty,
     }));
-    if (booking.serviceId === serviceId) {
-      updateBooking({ quantity: safeQty });
+    const rawSvc = activeCategory?.services.find((s) => s.id === serviceId);
+    if (rawSvc) {
+      activateServiceCard(rawSvc, safeQty);
     }
   };
 
@@ -362,6 +394,11 @@ export function StepService({ booking, updateBooking, onNext }: StepProps) {
               return (
                 <div
                   key={svc.id}
+                  onClick={() => {
+                    if (!isSelected) {
+                      activateServiceCard(rawSvc);
+                    }
+                  }}
                   style={{
                     background: "#1E293B",
                     border: isSelected ? "2px solid #0EA5E9" : "1px solid #334155",
@@ -376,6 +413,7 @@ export function StepService({ booking, updateBooking, onNext }: StepProps) {
                     overflow: "hidden",
                     boxShadow: isSelected ? "0 0 20px rgba(14,165,233,0.25)" : "none",
                     transition: "border 0.2s ease, box-shadow 0.2s ease",
+                    cursor: isSelected ? "default" : "pointer",
                   }}
                 >
                   <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", flexWrap: "wrap", gap: "10px", width: "100%" }}>
@@ -425,11 +463,17 @@ export function StepService({ booking, updateBooking, onNext }: StepProps) {
 
                     {/* Quantity Counter for Quantity-Based Model */}
                     {svc.pricingModel === "QUANTITY_BASED" && (
-                      <div style={{ display: "flex", alignItems: "center", gap: "8px", background: "#0F172A", padding: "4px 10px", borderRadius: "8px", border: "1px solid #334155" }}>
+                      <div
+                        style={{ display: "flex", alignItems: "center", gap: "8px", background: "#0F172A", padding: "4px 10px", borderRadius: "8px", border: "1px solid #334155" }}
+                        onClick={(e) => e.stopPropagation()}
+                      >
                         <span style={{ fontSize: "11px", color: "#94A3B8" }}>Qty:</span>
                         <button
                           type="button"
-                          onClick={() => handleServiceQuantityChange(svc.id, svcQty - 1)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleServiceQuantityChange(svc.id, svcQty - 1);
+                          }}
                           style={{ background: "#1E293B", border: "none", color: "#F8FAFC", width: 24, height: 24, borderRadius: 4, cursor: "pointer", fontWeight: "bold" }}
                           disabled={svcQty <= 1}
                         >
@@ -440,7 +484,10 @@ export function StepService({ booking, updateBooking, onNext }: StepProps) {
                         </span>
                         <button
                           type="button"
-                          onClick={() => handleServiceQuantityChange(svc.id, svcQty + 1)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleServiceQuantityChange(svc.id, svcQty + 1);
+                          }}
                           style={{ background: "#1E293B", border: "none", color: "#F8FAFC", width: 24, height: 24, borderRadius: 4, cursor: "pointer", fontWeight: "bold" }}
                         >
                           +
@@ -473,7 +520,10 @@ export function StepService({ booking, updateBooking, onNext }: StepProps) {
                     </div>
 
                     <button
-                      onClick={() => selectService(selectedCategory, svc)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        selectService(selectedCategory, svc);
+                      }}
                       className="btn btn-primary btn-sm"
                       style={{
                         background: svc.pricingModel === "CUSTOM_QUOTE" ? "#8B5CF6" : "#0EA5E9",

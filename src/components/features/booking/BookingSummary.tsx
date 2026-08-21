@@ -32,27 +32,31 @@ export function BookingSummary({ booking, currentStep }: Props) {
     fetchRules();
   }, []);
 
-  // Look up catalog service item by ID or name (case-insensitive)
-  const catalogService = SERVICE_CATEGORIES.flatMap((c) => c.services).find(
-    (s) =>
-      (booking.serviceId && s.id.toLowerCase() === booking.serviceId.toLowerCase()) ||
-      (booking.serviceName && s.name.toLowerCase() === booking.serviceName.toLowerCase())
-  );
+  const hasSelectedService = Boolean(booking.serviceId || booking.serviceName);
 
-  const effectiveBasePrice =
-    booking.servicePrice && booking.servicePrice > 0
+  // Look up catalog service item by ID or name (case-insensitive) strictly if selected
+  const catalogService = hasSelectedService
+    ? SERVICE_CATEGORIES.flatMap((c) => c.services).find(
+        (s) =>
+          (booking.serviceId && s.id.toLowerCase() === booking.serviceId.toLowerCase()) ||
+          (booking.serviceName && s.name.toLowerCase() === booking.serviceName.toLowerCase())
+      )
+    : undefined;
+
+  const effectiveBasePrice = hasSelectedService
+    ? booking.servicePrice && booking.servicePrice > 0
       ? booking.servicePrice
       : catalogService?.price !== undefined && catalogService.price >= 0
       ? catalogService.price
       : booking.totalPrice && booking.totalPrice > 0
       ? booking.totalPrice
-      : 0;
+      : 0
+    : 0;
 
   const effectivePricingModel =
     (booking.pricingModel as PricingModel) || catalogService?.pricingModel || "FIXED";
 
-  const effectiveServiceId =
-    booking.serviceId || catalogService?.id || booking.serviceCategory || "general-handyman";
+  const effectiveServiceId = booking.serviceId || catalogService?.id || "";
 
   const calc = calculateJobPrice(
     {
@@ -70,7 +74,7 @@ export function BookingSummary({ booking, currentStep }: Props) {
     rulesConfig
   );
 
-  const calculatedTotal = calc.isCustomQuote ? 0 : calc.totalPriceNgn;
+  const calculatedTotal = !hasSelectedService || calc.isCustomQuote ? 0 : calc.totalPriceNgn;
   const rawPrice =
     booking.totalPrice && booking.totalPrice > 0 && currentStep === 1
       ? booking.totalPrice
@@ -84,7 +88,7 @@ export function BookingSummary({ booking, currentStep }: Props) {
     <div className={`card ${styles.summaryCard}`}>
       <h3 className={styles.summaryTitle}>Booking Summary</h3>
 
-      {booking.serviceName ? (
+      {hasSelectedService && booking.serviceName ? (
         <>
           <div className={styles.summarySection}>
             <span className={styles.summaryLabel}>Service</span>
@@ -160,8 +164,14 @@ export function BookingSummary({ booking, currentStep }: Props) {
           </div>
         </>
       ) : (
-        <div className={styles.summaryEmpty}>
-          <p>Select a service to see your booking summary</p>
+        <div className={styles.summaryEmpty} style={{ padding: "20px 8px", textAlign: "center" }}>
+          <Tag size={24} style={{ opacity: 0.4, margin: "0 auto 8px", color: "#38BDF8", display: "block" }} />
+          <p style={{ margin: 0, fontWeight: 600, color: "#94A3B8", fontSize: "13px" }}>
+            No Service Selected
+          </p>
+          <span style={{ fontSize: "11px", color: "#64748B", marginTop: "4px", display: "block", lineHeight: 1.4 }}>
+            Choose any service card to view its live itemized price and details.
+          </span>
         </div>
       )}
 
