@@ -181,7 +181,7 @@ const services = [
     category: "general",
     slug: "general-handyman",
     description: "Furniture assembly, odd jobs & repairs",
-    price: "₦8,000",
+    price: "₦15,000",
     color: "#64748B",
     bgColor: "rgba(100, 116, 139, 0.08)",
   },

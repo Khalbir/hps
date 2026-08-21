@@ -199,7 +199,7 @@ export const SERVICE_CATEGORIES: ServiceCategory[] = [
     color: "#64748B",
     keywords: ["handyman", "odd jobs", "repairs", "fixing", "maintenance", "fix"],
     services: [
-      { id: "general-handyman", name: "General Handyman", price: 8000, desc: "Odd jobs & minor repairs", pricingModel: "FIXED" },
+      { id: "general-handyman", name: "General Handyman", price: 15000, desc: "Odd jobs & minor repairs", pricingModel: "FIXED" },
     ],
   },
 ];
