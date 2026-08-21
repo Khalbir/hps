@@ -170,7 +170,9 @@
 
 .greetingSub {
   font-size: var(--fs-sm);
-  color: var(--text-tertiary);
+  color: var(--text-secondary);
+  font-weight: var(--fw-medium);
+  margin-top: 2px;
 }
 
 .topBarRight {

@@ -462,9 +462,14 @@ export default function DashboardPage() {
             <div>
               <h1 className={styles.greeting}>Welcome back, {user.firstName || "Valued Client"}! 👋</h1>
               <p className={styles.greetingSub}>
-                {(user.role === "PROFESSIONAL" || Boolean(user.isProfessional))
-                  ? "Artisan Account • Browsing in Client Mode"
-                  : "Here's what's happening with your property"}
+                {(user.role === "PROFESSIONAL" || Boolean(user.isProfessional)) ? (
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: 6, color: "var(--color-primary-600, #0284C7)", fontWeight: 600 }}>
+                    <span style={{ display: "inline-block", width: 7, height: 7, borderRadius: "50%", background: "#8B5CF6" }} />
+                    Artisan Account • Browsing in Client Mode
+                  </span>
+                ) : (
+                  "Here's what's happening with your property"
+                )}
               </p>
             </div>
           </div>
@@ -472,20 +477,26 @@ export default function DashboardPage() {
             {(user.role === "PROFESSIONAL" || Boolean(user.isProfessional)) && (
               <Link
                 href="/pro"
-                className="btn btn-secondary btn-sm"
                 style={{
-                  display: "flex",
+                  display: "inline-flex",
                   alignItems: "center",
-                  gap: 6,
-                  color: "#C084FC",
-                  borderColor: "rgba(139,92,246,0.4)",
-                  background: "rgba(139,92,246,0.1)",
+                  gap: 8,
+                  background: "linear-gradient(135deg, #7C3AED 0%, #6D28D9 100%)",
+                  color: "#FFFFFF",
+                  padding: "8px 18px",
+                  borderRadius: "10px",
                   textDecoration: "none",
-                  fontWeight: 600,
+                  fontWeight: 700,
+                  fontSize: "13px",
+                  boxShadow: "0 4px 14px rgba(124, 58, 237, 0.35)",
+                  border: "1px solid rgba(255, 255, 255, 0.2)",
+                  letterSpacing: "0.2px",
+                  transition: "transform 0.15s ease, box-shadow 0.15s ease",
                 }}
                 title="Return to your Artisan Workspace"
               >
-                <Wrench size={14} color="#A855F7" /> Artisan Portal
+                <Wrench size={15} color="#FFFFFF" />
+                <span>Artisan Portal</span>
               </Link>
             )}
             <button onClick={fetchCustomerDashboardData} className="btn btn-secondary btn-sm" style={{ display: "flex", alignItems: "center", gap: 6 }}>
@@ -513,36 +524,20 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* Banner if Pro is Browsing in Client Mode */}
-        {(user.role === "PROFESSIONAL" || Boolean(user.isProfessional)) && (
-          <div style={{ background: "linear-gradient(135deg, rgba(139, 92, 246, 0.12) 0%, rgba(14, 165, 233, 0.12) 100%)", border: "1.5px solid #8B5CF6", borderRadius: "14px", padding: "14px 20px", marginBottom: "20px", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "12px" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-              <span style={{ fontSize: "20px" }}>🛠️</span>
-              <div>
-                <strong style={{ color: "#F8FAFC", fontSize: "14px", display: "block" }}>Artisan Account Active in Client Mode</strong>
-                <span style={{ color: "var(--text-secondary)", fontSize: "12px" }}>
-                  As a verified professional with complete documents on file, you can book any service for your property and manage customer bookings here.
-                </span>
-              </div>
+        {/* Escrow & Payment Safety Mandate Banner */}
+        <div style={{ background: "#0F172A", border: "1px solid #334155", borderLeft: "4px solid #F59E0B", borderRadius: "12px", padding: "12px 18px", marginBottom: "20px", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "12px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+            <div style={{ background: "rgba(245, 158, 11, 0.15)", color: "#F59E0B", padding: "8px", borderRadius: "8px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <ShieldCheck size={18} color="#F59E0B" />
             </div>
-            <Link href="/pro" style={{ fontSize: "12px", color: "#C084FC", fontWeight: 700, textDecoration: "none", background: "#0F172A", padding: "6px 14px", borderRadius: "8px", border: "1px solid #8B5CF6", whiteSpace: "nowrap" }}>
-              Return to Artisan Portal ➔
-            </Link>
-          </div>
-        )}
-
-        {/* Prominent On-Platform Security Warning Banner */}
-        <div style={{ background: "rgba(245,158,11,0.12)", border: "1.5px solid #F59E0B", borderRadius: "14px", padding: "14px 20px", marginBottom: "20px", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "12px" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-            <span style={{ fontSize: "20px" }}>🛡️</span>
             <div>
-              <strong style={{ color: "var(--text-primary)", fontSize: "14px", display: "block" }}>Safety & Escrow Mandate: Keep All Payments On-Platform!</strong>
-              <span style={{ color: "var(--text-secondary)", fontSize: "12px" }}>
-                Never pay cash off-platform to artisans. Off-platform cash payments void Escrow Security, 14-Day Warranty, and Dispute Conciliation under Nigerian Law.
+              <strong style={{ color: "#F8FAFC", fontSize: "13.5px", display: "block" }}>Safety & Escrow Mandate: Keep All Payments On-Platform</strong>
+              <span style={{ color: "#94A3B8", fontSize: "12px" }}>
+                All bookings are backed by Escrow Security & 14-Day Warranty. Never pay cash off-platform to artisans.
               </span>
             </div>
           </div>
-          <Link href="/terms#off-platform-policy" style={{ fontSize: "12px", color: "#F59E0B", fontWeight: 700, textDecoration: "none", background: "#0F172A", padding: "6px 12px", borderRadius: "8px", border: "1px solid #F59E0B", whiteSpace: "nowrap" }}>
+          <Link href="/terms#off-platform-policy" style={{ fontSize: "12px", color: "#F59E0B", fontWeight: 700, textDecoration: "none", background: "#1E293B", padding: "6px 14px", borderRadius: "6px", border: "1px solid rgba(245, 158, 11, 0.4)", whiteSpace: "nowrap" }}>
             Read Policy ➔
           </Link>
         </div>
@@ -698,6 +693,59 @@ export default function DashboardPage() {
                   <p>Add or update your service addresses</p>
                 </div>
               </div>
+
+              {/* Pro Mode Switcher Card (Positioned Cleanly at Bottom of Dashboard) */}
+              {(user.role === "PROFESSIONAL" || Boolean(user.isProfessional)) && (
+                <div
+                  style={{
+                    background: "#0F172A",
+                    border: "1px solid #334155",
+                    borderLeft: "4px solid #8B5CF6",
+                    borderRadius: "14px",
+                    padding: "20px 24px",
+                    marginTop: "24px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    flexWrap: "wrap",
+                    gap: "16px",
+                  }}
+                >
+                  <div style={{ display: "flex", alignItems: "center", gap: "14px", maxWidth: "680px" }}>
+                    <div style={{ background: "rgba(139, 92, 246, 0.15)", color: "#8B5CF6", padding: "12px", borderRadius: "10px", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                      <Wrench size={22} color="#A855F7" />
+                    </div>
+                    <div>
+                      <strong style={{ color: "#F8FAFC", fontSize: "15px", display: "block", marginBottom: "4px" }}>
+                        Artisan Account Active in Client Mode
+                      </strong>
+                      <p style={{ color: "#94A3B8", fontSize: "13px", margin: 0, lineHeight: 1.5 }}>
+                        You are currently browsing in Client Mode. As a verified professional with complete documents on file, you can book any service for your property or switch back to your Artisan Workspace to manage jobs and payouts.
+                      </p>
+                    </div>
+                  </div>
+                  <Link
+                    href="/pro"
+                    style={{
+                      background: "linear-gradient(135deg, #7C3AED 0%, #6D28D9 100%)",
+                      color: "#FFFFFF",
+                      padding: "10px 20px",
+                      borderRadius: "10px",
+                      fontSize: "13px",
+                      fontWeight: 700,
+                      textDecoration: "none",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "8px",
+                      boxShadow: "0 2px 10px rgba(124, 58, 237, 0.35)",
+                      border: "1px solid rgba(255, 255, 255, 0.2)",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    Return to Artisan Portal ➔
+                  </Link>
+                </div>
+              )}
             </div>
           )}
 
