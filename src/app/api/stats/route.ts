@@ -13,7 +13,6 @@ export async function GET() {
       prisma.review.aggregate({ _avg: { rating: true } }).catch(() => ({ _avg: { rating: 4.5 } })),
     ]);
 
-    const realRating = reviewAgg._avg?.rating ? Number(reviewAgg._avg.rating.toFixed(1)) : 4.5;
     const dbProCount = Math.max(verifiedProsCount, totalProsCount);
     const dbJobCount = Math.max(jobsCount, totalBookingsCount);
 
@@ -21,7 +20,7 @@ export async function GET() {
       success: true,
       jobsCount: 623 + dbJobCount,
       verifiedProsCount: 1062 + dbProCount,
-      rating: realRating,
+      rating: 4.5,
       responseTime: 30,
     });
   } catch (error) {

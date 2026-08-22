@@ -136,7 +136,7 @@ export default function LoginPage() {
               <span className={styles.leftStatLabel}>Jobs Completed</span>
             </div>
             <div className={styles.leftStat}>
-              <span className={styles.leftStatNum}>4.9★</span>
+              <span className={styles.leftStatNum}>4.5★</span>
               <span className={styles.leftStatLabel}>Average Rating</span>
             </div>
           </div>

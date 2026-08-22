@@ -165,7 +165,7 @@ export function Hero() {
             <div className={styles.trustDivider} />
             <div className={styles.trustBadge}>
               <Star size={18} className={styles.trustIcon} />
-              <span>4.9★ Average Rating</span>
+              <span>4.5★ Average Rating</span>
             </div>
             <div className={styles.trustDivider} />
             <div className={styles.trustBadge}>
