@@ -463,14 +463,19 @@ export default function ProfessionalVerificationPage() {
                       👁️ Inspect NIMC Government ID Document <ExternalLink size={12} />
                     </button>
                   </div>
-                  {inspectPro.selfieUrl && (
+                  {inspectPro.selfieUrl ? (
                     <div style={{ textAlign: "center", cursor: "pointer" }} onClick={() => setPreviewMediaUrl(inspectPro.selfieUrl)}>
                       <img
                         src={inspectPro.selfieUrl}
                         alt="Facial Verification Selfie"
                         style={{ width: 56, height: 56, borderRadius: "50%", objectFit: "cover", border: "2px solid #10B981", background: "#1E293B" }}
                       />
-                      <span style={{ fontSize: "10px", color: "#10B981", display: "block", marginTop: 2, fontWeight: 600 }}>Click to Enlarge Selfie 🔍</span>
+                      <span style={{ fontSize: "10px", color: "#10B981", display: "block", marginTop: 2, fontWeight: 700 }}>📷 Live Selfie (Audit) 🔍</span>
+                    </div>
+                  ) : (
+                    <div style={{ padding: "6px 10px", background: "rgba(239,68,68,0.12)", border: "1px solid rgba(239,68,68,0.3)", borderRadius: "8px", textAlign: "center" }}>
+                      <span style={{ fontSize: "11px", color: "#F87171", fontWeight: 700, display: "block" }}>⚠️ No Selfie Submitted</span>
+                      <span style={{ fontSize: "10px", color: "#94A3B8" }}>Pending camera capture</span>
                     </div>
                   )}
                 </div>
@@ -672,17 +677,56 @@ export default function ProfessionalVerificationPage() {
                   3️⃣ 2 Guarantor Verification Records
                 </strong>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-                  <div style={{ background: "#1E293B", padding: 10, borderRadius: 6 }}>
-                    <strong style={{ fontSize: "12px", color: "#F8FAFC", display: "block" }}>Guarantor 1: {inspectPro.guarantor1?.name || "Chief James Okon"}</strong>
-                    <span style={{ fontSize: "11px", color: "#94A3B8", display: "block" }}>Phone: {inspectPro.guarantor1?.phone || "+234 803 111 2222"}</span>
-                    <span style={{ fontSize: "11px", color: "#94A3B8", display: "block" }}>Role: {inspectPro.guarantor1?.relationship || "Community Chairman"}</span>
-                    <span style={{ fontSize: "11px", color: "#38BDF8", display: "block", marginTop: 2 }}>NIN: {inspectPro.guarantor1?.nin || "N/A"}</span>
+                  <div style={{ background: "#1E293B", padding: 12, borderRadius: 8, border: "1px solid #334155" }}>
+                    {inspectPro.guarantor1?.name ? (
+                      <>
+                        <strong style={{ fontSize: "13px", color: "#F8FAFC", display: "block" }}>
+                          Guarantor 1: {inspectPro.guarantor1.name}
+                        </strong>
+                        <span style={{ fontSize: "11px", color: "#94A3B8", display: "block", marginTop: 2 }}>
+                          Phone: <strong style={{ color: "#CBD5E1" }}>{inspectPro.guarantor1.phone || "Not provided"}</strong>
+                        </span>
+                        <span style={{ fontSize: "11px", color: "#94A3B8", display: "block" }}>
+                          Role: <strong style={{ color: "#CBD5E1" }}>{inspectPro.guarantor1.relationship || "Not specified"}</strong>
+                        </span>
+                        <span style={{ fontSize: "11px", color: "#38BDF8", display: "block", marginTop: 4 }}>
+                          NIN: <strong>{inspectPro.guarantor1.nin || "N/A"}</strong>
+                        </span>
+                      </>
+                    ) : (
+                      <div style={{ padding: "6px 0" }}>
+                        <strong style={{ fontSize: "12px", color: "#94A3B8", display: "block" }}>Guarantor #1</strong>
+                        <span style={{ fontSize: "11px", color: "#EF4444", fontStyle: "italic", display: "block", marginTop: 2 }}>
+                          ⚠️ No Guarantor 1 submitted by applicant
+                        </span>
+                      </div>
+                    )}
                   </div>
-                  <div style={{ background: "#1E293B", padding: 10, borderRadius: 6 }}>
-                    <strong style={{ fontSize: "12px", color: "#F8FAFC", display: "block" }}>Guarantor 2: {inspectPro.guarantor2?.name || "Engr. Aliyu Hassan"}</strong>
-                    <span style={{ fontSize: "11px", color: "#94A3B8", display: "block" }}>Phone: {inspectPro.guarantor2?.phone || "+234 802 333 4444"}</span>
-                    <span style={{ fontSize: "11px", color: "#94A3B8", display: "block" }}>Role: {inspectPro.guarantor2?.relationship || "Master Craftsman"}</span>
-                    <span style={{ fontSize: "11px", color: "#38BDF8", display: "block", marginTop: 2 }}>NIN: {inspectPro.guarantor2?.nin || "N/A"}</span>
+
+                  <div style={{ background: "#1E293B", padding: 12, borderRadius: 8, border: "1px solid #334155" }}>
+                    {inspectPro.guarantor2?.name ? (
+                      <>
+                        <strong style={{ fontSize: "13px", color: "#F8FAFC", display: "block" }}>
+                          Guarantor 2: {inspectPro.guarantor2.name}
+                        </strong>
+                        <span style={{ fontSize: "11px", color: "#94A3B8", display: "block", marginTop: 2 }}>
+                          Phone: <strong style={{ color: "#CBD5E1" }}>{inspectPro.guarantor2.phone || "Not provided"}</strong>
+                        </span>
+                        <span style={{ fontSize: "11px", color: "#94A3B8", display: "block" }}>
+                          Role: <strong style={{ color: "#CBD5E1" }}>{inspectPro.guarantor2.relationship || "Not specified"}</strong>
+                        </span>
+                        <span style={{ fontSize: "11px", color: "#38BDF8", display: "block", marginTop: 4 }}>
+                          NIN: <strong>{inspectPro.guarantor2.nin || "N/A"}</strong>
+                        </span>
+                      </>
+                    ) : (
+                      <div style={{ padding: "6px 0" }}>
+                        <strong style={{ fontSize: "12px", color: "#94A3B8", display: "block" }}>Guarantor #2</strong>
+                        <span style={{ fontSize: "11px", color: "#EF4444", fontStyle: "italic", display: "block", marginTop: 2 }}>
+                          ⚠️ No Guarantor 2 submitted by applicant
+                        </span>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>

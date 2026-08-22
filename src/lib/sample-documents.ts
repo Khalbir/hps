@@ -209,11 +209,15 @@ export function getValidMediaUrl(
     url.includes("handyhub.ng/docs") ||
     url.startsWith("/uploads/placeholder")
   ) {
+    if (fallbackType === "selfie") return ""; // Real camera photo required; do not inject fake silhouette
     if (fallbackType === "id") return generateDynamicIdCard(meta?.name, meta?.nin, meta?.state);
-    if (fallbackType === "selfie") return generateDynamicSelfie(meta?.name);
     if (fallbackType === "cert") return generateDynamicTradeCert(meta?.name, meta?.field);
     if (fallbackType === "address") return generateDynamicAddressProof(meta?.name, meta?.state, meta?.address);
     return generateDynamicPortfolio(meta?.field);
+  }
+  // Strip any legacy fake SVG biometric strings
+  if (url.includes("●%20LIVE%20BIOMETRIC") || url.includes("LIVE BIOMETRIC")) {
+    return "";
   }
   return url;
 }

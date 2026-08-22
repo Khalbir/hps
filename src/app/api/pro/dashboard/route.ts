@@ -58,19 +58,11 @@ export async function GET(request: Request) {
                 lga: "AMAC",
                 idType: "NIN",
                 idNumber: "73829104821",
-                idDocumentUrl: "/sample-docs/nin-sample.png",
-                selfieUrl: "/sample-docs/selfie-sample.png",
-                tradeCertUrl: "/sample-docs/cert-sample.png",
-                guarantor1: {
-                  name: "Engr. Aliyu Mohammed",
-                  phone: "+2348031234567",
-                  relationship: "Senior Colleague / Registered Professional"
-                },
-                guarantor2: {
-                  name: "Barr. Fatima Bello",
-                  phone: "+2348029876543",
-                  relationship: "Community Leader / CDA Chairman"
-                }
+                idDocumentUrl: "",
+                selfieUrl: "",
+                tradeCertUrl: "",
+                guarantor1: null,
+                guarantor2: null,
               })
             }
           });

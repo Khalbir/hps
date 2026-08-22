@@ -188,7 +188,9 @@ export async function GET(request: Request) {
       };
 
       const rawIdUrl = docs.idDocumentUrl || docs.idUrl || p.idUrl;
-      const rawSelfieUrl = docs.selfieUrl;
+      const cleanSelfie = docs.selfieUrl && !docs.selfieUrl.includes("●%20LIVE%20BIOMETRIC") && !docs.selfieUrl.includes("LIVE BIOMETRIC")
+        ? docs.selfieUrl
+        : (p.selfieUrl && !p.selfieUrl.includes("LIVE BIOMETRIC") ? p.selfieUrl : "");
       const rawTradeCertUrl = docs.tradeCertUrl || p.tradeCertUrl;
       const rawPortfolioUrls: string[] = Array.isArray(docs.portfolioUrls) && docs.portfolioUrls.length > 0 ? docs.portfolioUrls : [];
 
@@ -219,11 +221,11 @@ export async function GET(request: Request) {
         idType: docs.idType || p.idType || "NIN",
         idNumber: proNin,
         idUrl: getValidMediaUrl(rawIdUrl, "id", proMeta),
-        selfieUrl: getValidMediaUrl(rawSelfieUrl, "selfie", proMeta),
+        selfieUrl: cleanSelfie || "",
         tradeCertUrl: getValidMediaUrl(rawTradeCertUrl, "cert", proMeta),
         portfolioUrls: formattedPortfolio,
-        guarantor1: docs.guarantor1 || { name: "Chief James Okon", phone: "+234 803 111 2222", relationship: "Landlord / Community Leader", nin: "NIN-1029384756" },
-        guarantor2: docs.guarantor2 || { name: "Engr. Aliyu Hassan", phone: "+234 802 333 4444", relationship: "Master Craftsman / Employer", nin: "NIN-9876543210" },
+        guarantor1: (docs.guarantor1 && docs.guarantor1.name && docs.guarantor1.name.trim() !== "") ? docs.guarantor1 : null,
+        guarantor2: (docs.guarantor2 && docs.guarantor2.name && docs.guarantor2.name.trim() !== "") ? docs.guarantor2 : null,
         quizScore: docs.quizScore !== undefined ? docs.quizScore : 85,
         addressVerified: Boolean(p.addressVerified || u.permanentAddressStatus === "VERIFIED"),
         notes: p.verificationNotes || docs.notes || "",

@@ -402,6 +402,7 @@ export default function ProVerificationPage() {
       try {
         const url = await uploadToSupabase(file, "selfies");
         setSelfieUrl(url);
+        saveDraftState(1, { selfieUrl: url });
       } catch (err: any) {
         alert(err.message || "Failed to upload facial photo");
       } finally {
@@ -503,20 +504,20 @@ export default function ProVerificationPage() {
           idNumber,
           serviceCategory: category,
           quizScore: finalScore,
-          idDocumentUrl: getValidMediaUrl(idDocumentUrl, "id"),
-          selfieUrl: getValidMediaUrl(selfieUrl, "selfie"),
-          tradeCertUrl: getValidMediaUrl(tradeCertUrl, "cert"),
-          portfolioUrls: portfolioUrls.length > 0 ? portfolioUrls : [getValidMediaUrl(null, "portfolio")],
+          idDocumentUrl: idDocumentUrl || "",
+          selfieUrl: selfieUrl || "",
+          tradeCertUrl: tradeCertUrl || "",
+          portfolioUrls: portfolioUrls.length > 0 ? portfolioUrls : [],
           operatingState,
-          homeAddress: homeAddress || "Plot 104, Aminu Kano Crescent, Wuse 2",
-          lga: lga || "AMAC",
-          addressProofUrl: getValidMediaUrl(addressProofUrl, "address"),
+          homeAddress: homeAddress || "",
+          lga: lga || "",
+          addressProofUrl: addressProofUrl || "",
           guarantor1: {
             name: g1.name.trim(),
             phone: g1.phone.trim(),
             relationship: g1.relationship === "Other / Custom Role" && g1.customRelationship?.trim()
               ? g1.customRelationship.trim()
-              : g1.relationship || "Landlord / Property Owner",
+              : g1.relationship || "",
             nin: g1.nin.trim(),
           },
           guarantor2: {
@@ -524,7 +525,7 @@ export default function ProVerificationPage() {
             phone: g2.phone.trim(),
             relationship: g2.relationship === "Other / Custom Role" && g2.customRelationship?.trim()
               ? g2.customRelationship.trim()
-              : g2.relationship || "Former Employer / Master Craftsman",
+              : g2.relationship || "",
             nin: g2.nin.trim(),
           },
         }),
@@ -822,25 +823,25 @@ export default function ProVerificationPage() {
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "16px" }}>
                 <div style={{ background: "var(--bg-secondary)", padding: "12px 16px", borderRadius: "10px", border: "1px solid var(--border-primary)" }}>
                   <strong style={{ fontSize: "13px", color: "var(--text-primary)", display: "block" }}>
-                    Guarantor 1: {g1.name || "Engr. Aliyu Mohammed"}
+                    Guarantor 1: {g1.name || "Not provided"}
                   </strong>
                   <span style={{ fontSize: "12px", color: "var(--text-secondary)", display: "block", marginTop: 2 }}>
-                    Role: {g1.relationship || "Senior Colleague / Registered Professional"}
+                    Role: {g1.relationship || "Not specified"}
                   </span>
                   <span style={{ fontSize: "12px", color: "var(--text-tertiary)", display: "block", marginTop: 2, fontFamily: "monospace" }}>
-                    Phone: {g1.phone ? `${g1.phone.slice(0, 4)}••••${g1.phone.slice(-3)}` : "Verified Phone"}
+                    Phone: {g1.phone ? `${g1.phone.slice(0, 4)}••••${g1.phone.slice(-3)}` : "Not provided"}
                   </span>
                 </div>
 
                 <div style={{ background: "var(--bg-secondary)", padding: "12px 16px", borderRadius: "10px", border: "1px solid var(--border-primary)" }}>
                   <strong style={{ fontSize: "13px", color: "var(--text-primary)", display: "block" }}>
-                    Guarantor 2: {g2.name || "Barr. Fatima Bello"}
+                    Guarantor 2: {g2.name || "Not provided"}
                   </strong>
                   <span style={{ fontSize: "12px", color: "var(--text-secondary)", display: "block", marginTop: 2 }}>
-                    Role: {g2.relationship || "Community Leader / CDA Chairman"}
+                    Role: {g2.relationship || "Not specified"}
                   </span>
                   <span style={{ fontSize: "12px", color: "var(--text-tertiary)", display: "block", marginTop: 2, fontFamily: "monospace" }}>
-                    Phone: {g2.phone ? `${g2.phone.slice(0, 4)}••••${g2.phone.slice(-3)}` : "Verified Phone"}
+                    Phone: {g2.phone ? `${g2.phone.slice(0, 4)}••••${g2.phone.slice(-3)}` : "Not provided"}
                   </span>
                 </div>
               </div>
