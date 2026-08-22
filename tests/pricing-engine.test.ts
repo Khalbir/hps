@@ -219,14 +219,44 @@ async function runPricingEngineTestSuite() {
     });
     assert(qtyGold.totalPriceNgn === 30000, "Quantity (3 ACs @ ₦8k) Gold equals ₦30,000");
 
-    // 4C: SUBSCRIPTION Model (e.g. Monthly Gardening 35,000 NGN)
+    // 4C: SUBSCRIPTION Model (Monthly Residential Cleaning & Gardening)
+    // Silver: 2 days/week (8 cleanings/mo) @ ₦45,000 base
+    const cleanSubSilver = calculateJobPrice({
+      serviceId: "residential-cleaning-monthly",
+      pricingModel: "SUBSCRIPTION",
+      basePrice: 45000,
+      plan: "SILVER",
+    });
+    assert(cleanSubSilver.totalPriceNgn === 45000, "Residential Cleaning Monthly Subscription Silver (2 days/wk · 8 cleanings) equals ₦45,000/mo");
+    assert(SERVICE_PLANS.SILVER.cleaningsPerWeek === 2 && SERVICE_PLANS.SILVER.cleaningsPerMonth === 8, "Silver Plan provides 2 cleanings/week (8 visits/month)");
+
+    // Gold: 3 days/week (12 cleanings/mo) @ 1.25x = ₦56,250
+    const cleanSubGold = calculateJobPrice({
+      serviceId: "residential-cleaning-monthly",
+      pricingModel: "SUBSCRIPTION",
+      basePrice: 45000,
+      plan: "GOLD",
+    });
+    assert(cleanSubGold.totalPriceNgn === 56250, "Residential Cleaning Monthly Subscription Gold (3 days/wk · 12 cleanings) equals ₦56,250/mo (45,000 × 1.25)");
+    assert(SERVICE_PLANS.GOLD.cleaningsPerWeek === 3 && SERVICE_PLANS.GOLD.cleaningsPerMonth === 12, "Gold Plan provides 3 cleanings/week (12 visits/month)");
+
+    // Platinum: 6 days/week (24 cleanings/mo) @ 1.50x = ₦67,500
+    const cleanSubPlat = calculateJobPrice({
+      serviceId: "residential-cleaning-monthly",
+      pricingModel: "SUBSCRIPTION",
+      basePrice: 45000,
+      plan: "PLATINUM",
+    });
+    assert(cleanSubPlat.totalPriceNgn === 67500, "Residential Cleaning Monthly Subscription Platinum (6 days/wk · 24 cleanings) equals ₦67,500/mo (45,000 × 1.50)");
+    assert(SERVICE_PLANS.PLATINUM.cleaningsPerWeek === 6 && SERVICE_PLANS.PLATINUM.cleaningsPerMonth === 24, "Platinum Plan provides 6 cleanings/week (24 visits/month)");
+
     const subSilver = calculateJobPrice({
       serviceId: "gardening-monthly",
       pricingModel: "SUBSCRIPTION",
       basePrice: 35000,
       plan: "SILVER",
     });
-    assert(subSilver.totalPriceNgn === 35000, "Monthly Subscription Silver equals ₦35,000/mo");
+    assert(subSilver.totalPriceNgn === 35000, "Monthly Gardening Subscription Silver equals ₦35,000/mo");
 
     // 4D: CUSTOM_QUOTE Model (e.g. Full Renovation 0 NGN upfront)
     const customQuote = calculateJobPrice({

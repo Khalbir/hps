@@ -6,6 +6,8 @@ export interface ServicePlanMetadata {
   id: ServicePlanTier;
   name: string;
   badge: string;
+  cleaningsPerWeek: number;
+  cleaningsPerMonth: number;
   multiplier: number;
   description: string;
   features: string[];
@@ -14,37 +16,46 @@ export interface ServicePlanMetadata {
 export const SERVICE_PLANS: Record<ServicePlanTier, ServicePlanMetadata> = {
   SILVER: {
     id: "SILVER",
-    name: "Silver Essential",
-    badge: "🥈 Silver Plan",
+    name: "Silver Plan (2 Days / Week)",
+    badge: "🥈 Silver (2 Days/Wk)",
+    cleaningsPerWeek: 2,
+    cleaningsPerMonth: 8,
     multiplier: 1.0,
-    description: "Standard verified technician dispatch, essential multi-point servicing, and standard tools.",
+    description: "2 days per week (8 cleanings / month) · Essential home maintenance, routine dusting, vacuuming & floor sanitization.",
     features: [
-      "Standard Verified Professional",
+      "2 Routine Cleanings Per Week (8 Visits/Month)",
+      "Standard Verified Professional Housekeeper",
       "Essential Multi-Point Service Checklist",
       "Standard Workmanship Guarantee",
     ],
   },
   GOLD: {
     id: "GOLD",
-    name: "Gold Premium",
-    badge: "🥇 Gold Plan (+25%)",
+    name: "Gold Plan (3 Days / Week)",
+    badge: "🥇 Gold (3 Days/Wk · +25%)",
+    cleaningsPerWeek: 3,
+    cleaningsPerMonth: 12,
     multiplier: 1.25,
-    description: "Senior specialist dispatch, premium eco-grade cleaning/chemicals, and extended 14-day warranty.",
+    description: "3 days per week (12 cleanings / month) · Senior specialist, deep kitchen & bathroom degrease, priority scheduling.",
     features: [
-      "Senior Specialist (Top 5% Rated)",
-      "Premium Grade Formulations & Sanitizers",
+      "3 Routine Cleanings Per Week (12 Visits/Month)",
+      "Senior Specialist (Top 5% Rated Housekeeper)",
+      "Deep Kitchen & Bathroom Degreasing & Sanitization",
       "Extended 14-Day Warranty & Priority Support",
     ],
   },
   PLATINUM: {
     id: "PLATINUM",
-    name: "Platinum Executive",
-    badge: "💎 Platinum Plan (+50%)",
+    name: "Platinum Plan (6 Days / Week)",
+    badge: "💎 Platinum (6 Days/Wk · +50%)",
+    cleaningsPerWeek: 6,
+    cleaningsPerMonth: 24,
     multiplier: 1.5,
-    description: "Master artisan lead + assistant, surgical detailing & deep steam extraction, 30-day warranty & priority queue.",
+    description: "6 days per week (24 cleanings / month) · Full-time VIP executive housekeeping, daily detailing, laundry & concierge dispatch.",
     features: [
-      "Master Artisan Lead + Dedicated Assistant",
-      "Industrial Deep Steam Extraction & Microbe Shield",
+      "6 Routine Cleanings Per Week (24 Visits/Month · Mon–Sat)",
+      "Dedicated Executive Housekeeper Lead + Assistant",
+      "Daily Detailed Turnover, Laundry Ironing & Microbe Shield",
       "30-Day Comprehensive Warranty & VIP Concierge Dispatch",
     ],
   },

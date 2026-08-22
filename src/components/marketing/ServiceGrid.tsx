@@ -28,13 +28,23 @@ import styles from "./ServiceGrid.module.css";
 const services = [
   {
     icon: Sparkles,
-    name: "Residential Cleaning",
+    name: "Residential Cleaning (One-Time)",
     category: "cleaning",
     slug: "residential-cleaning",
-    description: "Professional deep cleaning for your home",
+    description: "Deep detailed cleaning for apartments & houses",
     price: "₦15,000",
     color: "#0EA5E9",
     bgColor: "rgba(14, 165, 233, 0.08)",
+  },
+  {
+    icon: Sparkles,
+    name: "Residential Cleaning (Monthly Plan)",
+    category: "cleaning",
+    slug: "residential-cleaning-monthly",
+    description: "Recurring housekeeping: Silver (2d/wk), Gold (3d/wk), Plat (6d/wk)",
+    price: "₦45,000/mo",
+    color: "#0284C7",
+    bgColor: "rgba(2, 132, 199, 0.10)",
   },
   {
     icon: Bug,
@@ -236,6 +246,9 @@ export function ServiceGrid() {
 
     if (pModel === "CUSTOM_QUOTE") {
       return "FREE Quote";
+    }
+    if (pModel === "SUBSCRIPTION") {
+      return `₦${effective.price.toLocaleString()}/mo`;
     }
     if (pModel === "QUANTITY_BASED") {
       return `₦${effective.price.toLocaleString()} ${effective.unitLabel || "per unit"}`;

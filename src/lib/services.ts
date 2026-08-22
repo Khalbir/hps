@@ -87,9 +87,10 @@ export const SERVICE_CATEGORIES: ServiceCategory[] = [
     id: "cleaning",
     name: "Cleaning",
     color: "#00A8B5",
-    keywords: ["clean", "cleaning", "maid", "housekeeper", "dust", "deep clean", "office clean", "janitor", "wash", "sweeping", "mopping"],
+    keywords: ["clean", "cleaning", "maid", "housekeeper", "dust", "deep clean", "office clean", "janitor", "wash", "sweeping", "mopping", "monthly cleaning", "routine cleaning", "subscription"],
     services: [
-      { id: "residential-cleaning", name: "Residential Cleaning", price: 15000, desc: "Standard cleaning for apartments and houses", pricingModel: "PROPERTY_BASED" },
+      { id: "residential-cleaning", name: "Residential Cleaning (One-Time)", price: 15000, desc: "Standard deep cleaning for apartments and houses", pricingModel: "PROPERTY_BASED" },
+      { id: "residential-cleaning-monthly", name: "Residential Cleaning (Monthly Subscription)", price: 45000, desc: "Routine recurring housekeeping: Silver (2 days/wk), Gold (3 days/wk), Platinum (6 days/wk)", pricingModel: "SUBSCRIPTION", unitLabel: "per month" },
       { id: "commercial-cleaning", name: "Commercial Cleaning", price: 35000, desc: "Office and business space cleaning", pricingModel: "QUANTITY_BASED", unitLabel: "per office space" },
       { id: "deep-cleaning", name: "Deep Cleaning", price: 25000, desc: "Thorough deep cleaning of every surface", pricingModel: "PROPERTY_BASED" },
       { id: "post-construction", name: "Post Construction Cleaning", price: 0, desc: "Cleanup after renovation (Free site inspection & quote)", pricingModel: "CUSTOM_QUOTE" },

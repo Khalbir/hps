@@ -480,11 +480,14 @@ export default function SettingsAndBackupsPage() {
 
                 <div>
                   <label style={{ fontSize: "12px", color: "#94A3B8", fontWeight: 600, display: "block", marginBottom: 4 }}>
-                    Service Plan Multipliers (Silver / Gold / Platinum)
+                    Service & Monthly Subscription Plan Multipliers (Silver / Gold / Platinum)
                   </label>
+                  <span style={{ fontSize: "11px", color: "#64748B", display: "block", marginBottom: 8 }}>
+                    Governs monthly recurring cleaning frequency tiers: Silver (2 days/wk), Gold (3 days/wk), Platinum (6 days/wk).
+                  </span>
                   <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "8px" }}>
                     <div>
-                      <span style={{ fontSize: "10px", color: "#94A3B8", fontWeight: 700 }}>🥈 Silver</span>
+                      <span style={{ fontSize: "10px", color: "#94A3B8", fontWeight: 700, display: "block" }}>🥈 Silver (2d/wk)</span>
                       <input
                         type="number"
                         step="0.05"
@@ -494,7 +497,7 @@ export default function SettingsAndBackupsPage() {
                       />
                     </div>
                     <div>
-                      <span style={{ fontSize: "10px", color: "#F59E0B", fontWeight: 700 }}>🥇 Gold</span>
+                      <span style={{ fontSize: "10px", color: "#F59E0B", fontWeight: 700, display: "block" }}>🥇 Gold (3d/wk)</span>
                       <input
                         type="number"
                         step="0.05"
@@ -504,7 +507,7 @@ export default function SettingsAndBackupsPage() {
                       />
                     </div>
                     <div>
-                      <span style={{ fontSize: "10px", color: "#38BDF8", fontWeight: 700 }}>💎 Platinum</span>
+                      <span style={{ fontSize: "10px", color: "#38BDF8", fontWeight: 700, display: "block" }}>💎 Platinum (6d/wk)</span>
                       <input
                         type="number"
                         step="0.05"
