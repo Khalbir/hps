@@ -480,6 +480,44 @@ export default function SettingsAndBackupsPage() {
 
                 <div>
                   <label style={{ fontSize: "12px", color: "#94A3B8", fontWeight: 600, display: "block", marginBottom: 4 }}>
+                    Service Plan Multipliers (Silver / Gold / Platinum)
+                  </label>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "8px" }}>
+                    <div>
+                      <span style={{ fontSize: "10px", color: "#94A3B8", fontWeight: 700 }}>🥈 Silver</span>
+                      <input
+                        type="number"
+                        step="0.05"
+                        value={rulesConfig.planMultipliers?.SILVER ?? 1.0}
+                        onChange={(e) => setRulesConfig({ ...rulesConfig, planMultipliers: { ...(rulesConfig.planMultipliers || DEFAULT_PRICING_RULES.planMultipliers), SILVER: Number(e.target.value) } })}
+                        style={{ width: "100%", padding: "6px", borderRadius: "6px", border: "1px solid #334155", background: "#1E293B", color: "#F8FAFC", fontSize: "12px", fontWeight: 600 }}
+                      />
+                    </div>
+                    <div>
+                      <span style={{ fontSize: "10px", color: "#F59E0B", fontWeight: 700 }}>🥇 Gold</span>
+                      <input
+                        type="number"
+                        step="0.05"
+                        value={rulesConfig.planMultipliers?.GOLD ?? 1.25}
+                        onChange={(e) => setRulesConfig({ ...rulesConfig, planMultipliers: { ...(rulesConfig.planMultipliers || DEFAULT_PRICING_RULES.planMultipliers), GOLD: Number(e.target.value) } })}
+                        style={{ width: "100%", padding: "6px", borderRadius: "6px", border: "1px solid #334155", background: "#1E293B", color: "#F8FAFC", fontSize: "12px", fontWeight: 600 }}
+                      />
+                    </div>
+                    <div>
+                      <span style={{ fontSize: "10px", color: "#38BDF8", fontWeight: 700 }}>💎 Platinum</span>
+                      <input
+                        type="number"
+                        step="0.05"
+                        value={rulesConfig.planMultipliers?.PLATINUM ?? 1.5}
+                        onChange={(e) => setRulesConfig({ ...rulesConfig, planMultipliers: { ...(rulesConfig.planMultipliers || DEFAULT_PRICING_RULES.planMultipliers), PLATINUM: Number(e.target.value) } })}
+                        style={{ width: "100%", padding: "6px", borderRadius: "6px", border: "1px solid #334155", background: "#1E293B", color: "#F8FAFC", fontSize: "12px", fontWeight: 600 }}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <label style={{ fontSize: "12px", color: "#94A3B8", fontWeight: 600, display: "block", marginBottom: 4 }}>
                     Condition Multipliers (Light / Moderate / Heavy)
                   </label>
                   <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "8px" }}>
@@ -488,8 +526,8 @@ export default function SettingsAndBackupsPage() {
                       <input
                         type="number"
                         step="0.05"
-                        value={rulesConfig.dirtLevelMultipliers.LIGHT}
-                        onChange={(e) => setRulesConfig({ ...rulesConfig, dirtLevelMultipliers: { ...rulesConfig.dirtLevelMultipliers, LIGHT: Number(e.target.value) } })}
+                        value={rulesConfig.dirtLevelMultipliers?.LIGHT ?? 1.0}
+                        onChange={(e) => setRulesConfig({ ...rulesConfig, dirtLevelMultipliers: { ...(rulesConfig.dirtLevelMultipliers || DEFAULT_PRICING_RULES.dirtLevelMultipliers), LIGHT: Number(e.target.value) } })}
                         style={{ width: "100%", padding: "6px", borderRadius: "6px", border: "1px solid #334155", background: "#1E293B", color: "#F8FAFC", fontSize: "12px" }}
                       />
                     </div>
@@ -498,8 +536,8 @@ export default function SettingsAndBackupsPage() {
                       <input
                         type="number"
                         step="0.05"
-                        value={rulesConfig.dirtLevelMultipliers.MODERATE}
-                        onChange={(e) => setRulesConfig({ ...rulesConfig, dirtLevelMultipliers: { ...rulesConfig.dirtLevelMultipliers, MODERATE: Number(e.target.value) } })}
+                        value={rulesConfig.dirtLevelMultipliers?.MODERATE ?? 1.15}
+                        onChange={(e) => setRulesConfig({ ...rulesConfig, dirtLevelMultipliers: { ...(rulesConfig.dirtLevelMultipliers || DEFAULT_PRICING_RULES.dirtLevelMultipliers), MODERATE: Number(e.target.value) } })}
                         style={{ width: "100%", padding: "6px", borderRadius: "6px", border: "1px solid #334155", background: "#1E293B", color: "#F8FAFC", fontSize: "12px" }}
                       />
                     </div>
@@ -508,8 +546,8 @@ export default function SettingsAndBackupsPage() {
                       <input
                         type="number"
                         step="0.05"
-                        value={rulesConfig.dirtLevelMultipliers.HEAVY}
-                        onChange={(e) => setRulesConfig({ ...rulesConfig, dirtLevelMultipliers: { ...rulesConfig.dirtLevelMultipliers, HEAVY: Number(e.target.value) } })}
+                        value={rulesConfig.dirtLevelMultipliers?.HEAVY ?? 1.35}
+                        onChange={(e) => setRulesConfig({ ...rulesConfig, dirtLevelMultipliers: { ...(rulesConfig.dirtLevelMultipliers || DEFAULT_PRICING_RULES.dirtLevelMultipliers), HEAVY: Number(e.target.value) } })}
                         style={{ width: "100%", padding: "6px", borderRadius: "6px", border: "1px solid #334155", background: "#1E293B", color: "#F8FAFC", fontSize: "12px" }}
                       />
                     </div>

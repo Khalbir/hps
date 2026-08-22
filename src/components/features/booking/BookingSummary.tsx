@@ -2,8 +2,15 @@
 
 import { useEffect, useState } from "react";
 import type { BookingData } from "@/app/book/page";
-import { ShieldCheck, MapPin, Tag } from "lucide-react";
-import { calculateJobPrice, DEFAULT_PRICING_RULES, PricingRulesConfig, PricingModel } from "@/lib/pricingEngine";
+import { ShieldCheck, Tag } from "lucide-react";
+import {
+  calculateJobPrice,
+  DEFAULT_PRICING_RULES,
+  PricingRulesConfig,
+  PricingModel,
+  ServicePlanTier,
+  SERVICE_PLANS,
+} from "@/lib/pricingEngine";
 import { SERVICE_CATEGORIES } from "@/lib/services";
 import { TrustBadge } from "@/components/common/TrustBadge";
 import styles from "./Steps.module.css";
@@ -58,11 +65,14 @@ export function BookingSummary({ booking, currentStep }: Props) {
 
   const effectiveServiceId = booking.serviceId || catalogService?.id || "";
 
+  const planTier: ServicePlanTier = (booking.planTier as ServicePlanTier) || "SILVER";
+
   const calc = calculateJobPrice(
     {
       serviceId: effectiveServiceId,
       pricingModel: effectivePricingModel,
       basePrice: effectiveBasePrice,
+      plan: planTier,
       bedrooms: booking.bedrooms || 2,
       bathrooms: booking.bathrooms || 1,
       isFurnished: booking.isFurnished || false,
@@ -99,7 +109,8 @@ export function BookingSummary({ booking, currentStep }: Props) {
             <div className={styles.summarySection}>
               <span className={styles.summaryLabel}>Property / Options</span>
               <span className={styles.summaryValue}>
-                {booking.bedrooms > 0 ? `${booking.bedrooms} Bed` : ""}
+                {SERVICE_PLANS[planTier]?.name || planTier}
+                {booking.bedrooms > 0 ? ` · ${booking.bedrooms} Bed` : ""}
                 {booking.bathrooms > 0 ? ` · ${booking.bathrooms} Bath` : ""}
                 {booking.isFurnished ? ` · Furnished` : ""}
                 {booking.quantity && booking.quantity > 1 ? ` · Qty: ${booking.quantity}` : ""}

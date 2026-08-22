@@ -7,7 +7,7 @@ import type { BookingData } from "@/app/book/page";
 import { BookingRiskGateModal } from "@/components/features/booking/BookingRiskGateModal";
 import { TrustBadge } from "@/components/common/TrustBadge";
 import { evaluateBookingRiskGate, isServiceHighRisk } from "@/lib/verification/verification-service";
-import { calculateJobPrice, DEFAULT_PRICING_RULES, PricingModel } from "@/lib/pricingEngine";
+import { calculateJobPrice, DEFAULT_PRICING_RULES, PricingModel, ServicePlanTier } from "@/lib/pricingEngine";
 import { SERVICE_CATEGORIES } from "@/lib/services";
 import { optimizeDocumentFile } from "@/lib/image-compression";
 import styles from "./Steps.module.css";
@@ -191,6 +191,7 @@ export function StepPayment({ booking, updateBooking, onNext, onBack }: StepProp
       serviceId: effectiveServiceId,
       pricingModel: effectivePricingModel,
       basePrice: effectiveBasePrice,
+      plan: (booking.planTier as ServicePlanTier) || "SILVER",
       bedrooms: booking.bedrooms || 2,
       bathrooms: booking.bathrooms || 1,
       isFurnished: booking.isFurnished || false,
@@ -277,6 +278,7 @@ export function StepPayment({ booking, updateBooking, onNext, onBack }: StepProp
             serviceId: booking.serviceId,
             serviceName: booking.serviceName,
             serviceCategory: booking.serviceCategory,
+            planTier: booking.planTier || "SILVER",
             propertyType: booking.propertyType,
             bedrooms: booking.bedrooms,
             bathrooms: booking.bathrooms,

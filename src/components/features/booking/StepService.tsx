@@ -8,7 +8,7 @@ import {
 import { useState, useEffect } from "react";
 import type { BookingData } from "@/app/book/page";
 import { SERVICE_CATEGORIES, ServiceCategory, ServiceItem } from "@/lib/services";
-import { calculateJobPrice, DEFAULT_PRICING_RULES, PricingModel, getEffectiveServiceItem } from "@/lib/pricingEngine";
+import { calculateJobPrice, DEFAULT_PRICING_RULES, PricingModel, getEffectiveServiceItem, ServicePlanTier } from "@/lib/pricingEngine";
 import styles from "./Steps.module.css";
 
 interface StepProps {
@@ -67,6 +67,7 @@ export function StepService({ booking, updateBooking, onNext }: StepProps) {
         serviceId: svc.id,
         pricingModel: pModel,
         basePrice: svc.price,
+        plan: (booking.planTier as ServicePlanTier) || "SILVER",
         bedrooms: booking.bedrooms || 2,
         bathrooms: booking.bathrooms || 1,
         isFurnished: booking.isFurnished || false,
@@ -114,6 +115,7 @@ export function StepService({ booking, updateBooking, onNext }: StepProps) {
           serviceId: svc.id,
           pricingModel: pModel,
           basePrice: svc.price,
+          plan: (booking.planTier as ServicePlanTier) || "SILVER",
           bedrooms: booking.bedrooms || 2,
           bathrooms: booking.bathrooms || 1,
           isFurnished: booking.isFurnished || false,
@@ -178,6 +180,7 @@ export function StepService({ booking, updateBooking, onNext }: StepProps) {
         serviceId: svc.id,
         pricingModel: pModel,
         basePrice: svc.price,
+        plan: (booking.planTier as ServicePlanTier) || "SILVER",
         bedrooms: booking.bedrooms || 2,
         bathrooms: booking.bathrooms || 1,
         isFurnished: booking.isFurnished || false,
@@ -378,6 +381,7 @@ export function StepService({ booking, updateBooking, onNext }: StepProps) {
                   serviceId: svc.id,
                   pricingModel: pModel,
                   basePrice: svc.price,
+                  plan: (booking.planTier as ServicePlanTier) || "SILVER",
                   bedrooms: booking.bedrooms || 2,
                   bathrooms: booking.bathrooms || 1,
                   isFurnished: booking.isFurnished || false,

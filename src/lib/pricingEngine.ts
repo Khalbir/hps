@@ -1,5 +1,55 @@
 export type PricingModel = "FIXED" | "PROPERTY_BASED" | "QUANTITY_BASED" | "CUSTOM_QUOTE" | "SUBSCRIPTION";
 
+export type ServicePlanTier = "SILVER" | "GOLD" | "PLATINUM";
+
+export interface ServicePlanMetadata {
+  id: ServicePlanTier;
+  name: string;
+  badge: string;
+  multiplier: number;
+  description: string;
+  features: string[];
+}
+
+export const SERVICE_PLANS: Record<ServicePlanTier, ServicePlanMetadata> = {
+  SILVER: {
+    id: "SILVER",
+    name: "Silver Essential",
+    badge: "🥈 Silver Plan",
+    multiplier: 1.0,
+    description: "Standard verified technician dispatch, essential multi-point servicing, and standard tools.",
+    features: [
+      "Standard Verified Professional",
+      "Essential Multi-Point Service Checklist",
+      "Standard Workmanship Guarantee",
+    ],
+  },
+  GOLD: {
+    id: "GOLD",
+    name: "Gold Premium",
+    badge: "🥇 Gold Plan (+25%)",
+    multiplier: 1.25,
+    description: "Senior specialist dispatch, premium eco-grade cleaning/chemicals, and extended 14-day warranty.",
+    features: [
+      "Senior Specialist (Top 5% Rated)",
+      "Premium Grade Formulations & Sanitizers",
+      "Extended 14-Day Warranty & Priority Support",
+    ],
+  },
+  PLATINUM: {
+    id: "PLATINUM",
+    name: "Platinum Executive",
+    badge: "💎 Platinum Plan (+50%)",
+    multiplier: 1.5,
+    description: "Master artisan lead + assistant, surgical detailing & deep steam extraction, 30-day warranty & priority queue.",
+    features: [
+      "Master Artisan Lead + Dedicated Assistant",
+      "Industrial Deep Steam Extraction & Microbe Shield",
+      "30-Day Comprehensive Warranty & VIP Concierge Dispatch",
+    ],
+  },
+};
+
 /**
  * Simplified System Prompt for AI Job Estimation and Pricing Classification
  */
@@ -10,19 +60,19 @@ When evaluating home service booking requests, user prompts, or service catalog 
 1. FIXED (Fixed Price Model)
    - Scope: Standardized, flat-rate repair or single-task services.
    - Example: Pipe leak repair, drain unblocking, generator servicing, AC fault diagnosis.
-   - Pricing Formula: Total = Base Fixed Price + Regional Surcharge + Express Surcharge.
+   - Pricing Formula: Total = (Base Fixed Price × Plan Multiplier) + Regional Surcharge + Express Surcharge.
 
 2. PROPERTY_BASED (Property-Based Model)
    - Scope: Services where job scale and duration depend on property dimensions and surface area.
-   - Key Inputs: Number of bedrooms, number of bathrooms, furnished status, condition level (Light, Moderate, Heavy).
-   - Example: Residential cleaning, deep cleaning, interior wall painting, one-time lawn care.
-   - Pricing Formula: Total = (Base Rate + Bedroom Surcharges + Bathroom Surcharges + Furnished Surcharge) × Condition Multiplier + Regional/Express Surcharges.
+   - Key Inputs: Number of bedrooms, number of bathrooms, furnished status, condition level (Light, Moderate, Heavy), and Plan Tier (Silver, Gold, Platinum).
+   - Example: Residential cleaning, deep cleaning, interior wall painting, one-time lawn care, fumigation.
+   - Pricing Formula: Total = ((Base Rate + Bedroom Surcharges + Bathroom Surcharges + Furnished Surcharge) × Plan Multiplier × Condition Multiplier) + Regional/Express Surcharges.
 
 3. QUANTITY_BASED (Quantity-Based Model)
    - Scope: Services charged per item, per unit, or per fixture.
-   - Key Inputs: Quantity of units/items.
+   - Key Inputs: Quantity of units/items and Plan Tier.
    - Example: AC unit servicing/installation, CCTV camera installation, socket/switch replacement, light fixture mounting, laundry bags.
-   - Pricing Formula: Total = (Base Price per Unit × Quantity) + Regional/Express Surcharges.
+   - Pricing Formula: Total = ((Base Price per Unit × Quantity) × Plan Multiplier) + Regional/Express Surcharges.
 
 4. CUSTOM_QUOTE (Custom Quote Model)
    - Scope: Complex, large-scale, or variable multi-trade jobs that require manual inspection.
@@ -33,7 +83,7 @@ When evaluating home service booking requests, user prompts, or service catalog 
 5. SUBSCRIPTION (Monthly / Periodic Recurring Subscription Model)
    - Scope: Routine recurring estate & groundskeeping maintenance, weekly lawn care, ongoing garden & plant maintenance.
    - Example: Gardening Monthly Subscription, Routine Facility Groundskeeping.
-   - Pricing Formula: Total = Monthly Plan Base Rate + Regional/Schedule Surcharges.
+   - Pricing Formula: Total = (Monthly Plan Base Rate × Plan Multiplier) + Regional/Schedule Surcharges.
 `.trim();
 
 export interface RegionalZone {
@@ -53,6 +103,11 @@ export interface PricingRulesConfig {
   bedroomAddonNgn: number;
   bathroomAddonNgn: number;
   furnishedSurchargeNgn: number;
+  planMultipliers: {
+    SILVER: number; // e.g. 1.0 (Baseline)
+    GOLD: number; // e.g. 1.25 (+25%)
+    PLATINUM: number; // e.g. 1.50 (+50%)
+  };
   dirtLevelMultipliers: {
     LIGHT: number; // e.g. 1.0
     MODERATE: number; // e.g. 1.15
@@ -66,6 +121,11 @@ export const DEFAULT_PRICING_RULES: PricingRulesConfig = {
   bedroomAddonNgn: 3000,
   bathroomAddonNgn: 2000,
   furnishedSurchargeNgn: 5000,
+  planMultipliers: {
+    SILVER: 1.0,
+    GOLD: 1.25,
+    PLATINUM: 1.5,
+  },
   dirtLevelMultipliers: {
     LIGHT: 1.0,
     MODERATE: 1.15,
@@ -102,6 +162,7 @@ export interface PriceCalculationInput {
   serviceId: string;
   pricingModel: PricingModel;
   basePrice: number;
+  plan?: ServicePlanTier;
   bedrooms?: number;
   bathrooms?: number;
   isFurnished?: boolean;
@@ -118,6 +179,12 @@ export interface PriceBreakdownItem {
 
 export interface PriceCalculationResult {
   baseServicePrice: number;
+  rawRoomsSubtotalNgn: number;
+  planTier: ServicePlanTier;
+  planMultiplier: number;
+  planAdditionNgn: number;
+  conditionMultiplier: number;
+  conditionAdditionNgn: number;
   optionsSubtotalNgn: number;
   regionalModifierPercent: number;
   regionalSurchargeNgn: number;
@@ -129,6 +196,17 @@ export interface PriceCalculationResult {
   isCustomQuote: boolean;
 }
 
+/**
+ * Core Modular Pricing Engine for HandyHub Pro Solutions
+ * 
+ * Computes exact itemized pricing with the strict order of operations:
+ * 1. Base Room Subtotal = Base Rate + Extra Bedroom Addons + Extra Bathroom Addons + Furnished Surcharge
+ * 2. Plan Multiplier Applied = Base Room Subtotal × Plan Multiplier (Silver: 1.0x, Gold: 1.25x, Platinum: 1.50x)
+ * 3. Condition Multiplier Applied = Plan Subtotal × Dirt Level Multiplier (Light: 1.0x, Moderate: 1.15x, Heavy: 1.35x)
+ * 4. Regional Surcharge = Condition Subtotal × (Zone Percent / 100)
+ * 5. Express Dispatch Surcharge = (Condition Subtotal + Regional Surcharge) × 0.50
+ * 6. Total Payable = Condition Subtotal + Regional Surcharge + Express Surcharge
+ */
 export function calculateJobPrice(
   input: PriceCalculationInput,
   rulesConfig: PricingRulesConfig = DEFAULT_PRICING_RULES
@@ -138,6 +216,7 @@ export function calculateJobPrice(
   const activeBasePrice = override?.basePrice !== undefined ? override.basePrice : input.basePrice;
 
   const {
+    plan = "SILVER",
     bedrooms = 2,
     bathrooms = 1,
     isFurnished = false,
@@ -147,9 +226,18 @@ export function calculateJobPrice(
     isExpressSchedule = false,
   } = input;
 
+  const safePlan: ServicePlanTier = (plan?.toUpperCase() === "GOLD" ? "GOLD" : plan?.toUpperCase() === "PLATINUM" ? "PLATINUM" : "SILVER");
+  const planMultiplier = rulesConfig.planMultipliers?.[safePlan] ?? DEFAULT_PRICING_RULES.planMultipliers[safePlan] ?? 1.0;
+
   if (activePricingModel === "CUSTOM_QUOTE") {
     return {
       baseServicePrice: 0,
+      rawRoomsSubtotalNgn: 0,
+      planTier: safePlan,
+      planMultiplier: 1.0,
+      planAdditionNgn: 0,
+      conditionMultiplier: 1.0,
+      conditionAdditionNgn: 0,
       optionsSubtotalNgn: 0,
       regionalModifierPercent: 0,
       regionalSurchargeNgn: 0,
@@ -166,57 +254,115 @@ export function calculateJobPrice(
   }
 
   const breakdown: PriceBreakdownItem[] = [];
-  let currentSubtotal = 0;
+  let rawRoomsSubtotalNgn = 0;
+  let planAdditionNgn = 0;
+  let conditionAdditionNgn = 0;
+  let conditionMultiplier = 1.0;
 
   if (activePricingModel === "FIXED") {
-    currentSubtotal = activeBasePrice;
+    rawRoomsSubtotalNgn = activeBasePrice;
     breakdown.push({ label: "Base Service Rate", amountNgn: activeBasePrice });
+
+    // Apply plan multiplier to fixed rate if specified
+    if (planMultiplier > 1.0) {
+      planAdditionNgn = Math.round(rawRoomsSubtotalNgn * (planMultiplier - 1.0));
+      const planPercent = Math.round((planMultiplier - 1.0) * 100);
+      breakdown.push({
+        label: `${SERVICE_PLANS[safePlan]?.name || safePlan} Plan Multiplier (+${planPercent}%)`,
+        amountNgn: planAdditionNgn,
+      });
+    }
   } else if (activePricingModel === "SUBSCRIPTION") {
-    currentSubtotal = activeBasePrice;
-    breakdown.push({ label: "Monthly Routine Maintenance Plan", amountNgn: activeBasePrice });
+    rawRoomsSubtotalNgn = activeBasePrice;
+    breakdown.push({ label: "Monthly Routine Maintenance Base Plan", amountNgn: activeBasePrice });
+
+    if (planMultiplier > 1.0) {
+      planAdditionNgn = Math.round(rawRoomsSubtotalNgn * (planMultiplier - 1.0));
+      const planPercent = Math.round((planMultiplier - 1.0) * 100);
+      breakdown.push({
+        label: `${SERVICE_PLANS[safePlan]?.name || safePlan} Plan Multiplier (+${planPercent}%)`,
+        amountNgn: planAdditionNgn,
+      });
+    }
   } else if (activePricingModel === "QUANTITY_BASED") {
     const qty = Math.max(1, quantity);
-    currentSubtotal = activeBasePrice * qty;
-    breakdown.push({ label: `Base Unit Rate (₦${activeBasePrice.toLocaleString()} × ${qty})`, amountNgn: currentSubtotal });
+    rawRoomsSubtotalNgn = activeBasePrice * qty;
+    breakdown.push({
+      label: `Base Unit Rate (₦${activeBasePrice.toLocaleString()} × ${qty})`,
+      amountNgn: rawRoomsSubtotalNgn,
+    });
+
+    if (planMultiplier > 1.0) {
+      planAdditionNgn = Math.round(rawRoomsSubtotalNgn * (planMultiplier - 1.0));
+      const planPercent = Math.round((planMultiplier - 1.0) * 100);
+      breakdown.push({
+        label: `${SERVICE_PLANS[safePlan]?.name || safePlan} Plan Multiplier (+${planPercent}%)`,
+        amountNgn: planAdditionNgn,
+      });
+    }
   } else if (activePricingModel === "PROPERTY_BASED") {
-    // Deep Cleaning / Property-based logic
-    currentSubtotal = activeBasePrice;
+    // 1. Base Property Rate
+    rawRoomsSubtotalNgn = activeBasePrice;
     breakdown.push({ label: "Base Property Service Rate", amountNgn: activeBasePrice });
 
-    // Bedroom Add-on
-    const extraBedrooms = Math.max(0, bedrooms - 1);
+    // 2. Additional Bedroom Add-ons (Calculated BEFORE multipliers)
+    const extraBedrooms = Math.max(0, (bedrooms || 1) - 1);
     if (extraBedrooms > 0) {
-      const bedroomFee = extraBedrooms * rulesConfig.bedroomAddonNgn;
-      currentSubtotal += bedroomFee;
-      breakdown.push({ label: `Additional Bedrooms (${extraBedrooms} × ₦${rulesConfig.bedroomAddonNgn.toLocaleString()})`, amountNgn: bedroomFee });
+      const bedroomFee = extraBedrooms * (rulesConfig.bedroomAddonNgn ?? DEFAULT_PRICING_RULES.bedroomAddonNgn);
+      rawRoomsSubtotalNgn += bedroomFee;
+      breakdown.push({
+        label: `Additional Bedrooms (${extraBedrooms} × ₦${(rulesConfig.bedroomAddonNgn ?? DEFAULT_PRICING_RULES.bedroomAddonNgn).toLocaleString()})`,
+        amountNgn: bedroomFee,
+      });
     }
 
-    // Bathroom Add-on
-    const extraBathrooms = Math.max(0, bathrooms - 1);
+    // 3. Additional Bathroom Add-ons (Calculated BEFORE multipliers)
+    const extraBathrooms = Math.max(0, (bathrooms || 1) - 1);
     if (extraBathrooms > 0) {
-      const bathroomFee = extraBathrooms * rulesConfig.bathroomAddonNgn;
-      currentSubtotal += bathroomFee;
-      breakdown.push({ label: `Additional Bathrooms (${extraBathrooms} × ₦${rulesConfig.bathroomAddonNgn.toLocaleString()})`, amountNgn: bathroomFee });
+      const bathroomFee = extraBathrooms * (rulesConfig.bathroomAddonNgn ?? DEFAULT_PRICING_RULES.bathroomAddonNgn);
+      rawRoomsSubtotalNgn += bathroomFee;
+      breakdown.push({
+        label: `Additional Bathrooms (${extraBathrooms} × ₦${(rulesConfig.bathroomAddonNgn ?? DEFAULT_PRICING_RULES.bathroomAddonNgn).toLocaleString()})`,
+        amountNgn: bathroomFee,
+      });
     }
 
-    // Furnished Surcharge
+    // 4. Furnished Surcharge (Calculated BEFORE multipliers)
     if (isFurnished) {
-      currentSubtotal += rulesConfig.furnishedSurchargeNgn;
-      breakdown.push({ label: "Furnished Property Fitting & Detail Cleaning Surcharge", amountNgn: rulesConfig.furnishedSurchargeNgn });
+      const furnishedFee = rulesConfig.furnishedSurchargeNgn ?? DEFAULT_PRICING_RULES.furnishedSurchargeNgn;
+      rawRoomsSubtotalNgn += furnishedFee;
+      breakdown.push({
+        label: "Furnished Property Fitting & Detail Cleaning Surcharge",
+        amountNgn: furnishedFee,
+      });
     }
 
-    // Dirt / Condition Level Multiplier
-    const multiplier = rulesConfig.dirtLevelMultipliers[dirtLevel] || 1.0;
-    if (multiplier > 1.0) {
-      const dirtAddition = Math.round(currentSubtotal * (multiplier - 1.0));
-      currentSubtotal += dirtAddition;
+    // 5. Plan Multiplier Applied on Aggregate Room Subtotal
+    if (planMultiplier > 1.0) {
+      planAdditionNgn = Math.round(rawRoomsSubtotalNgn * (planMultiplier - 1.0));
+      const planPercent = Math.round((planMultiplier - 1.0) * 100);
+      breakdown.push({
+        label: `${SERVICE_PLANS[safePlan]?.name || safePlan} Plan Multiplier (+${planPercent}%)`,
+        amountNgn: planAdditionNgn,
+      });
+    }
+
+    const subtotalAfterPlan = rawRoomsSubtotalNgn + planAdditionNgn;
+
+    // 6. Dirt / Condition Level Multiplier Applied
+    conditionMultiplier = rulesConfig.dirtLevelMultipliers?.[dirtLevel] ?? DEFAULT_PRICING_RULES.dirtLevelMultipliers[dirtLevel] ?? 1.0;
+    if (conditionMultiplier > 1.0) {
+      conditionAdditionNgn = Math.round(subtotalAfterPlan * (conditionMultiplier - 1.0));
       const dirtLabel = dirtLevel === "HEAVY" ? "Heavy / Post-Construction Condition (+35%)" : "Moderate Condition (+15%)";
-      breakdown.push({ label: dirtLabel, amountNgn: dirtAddition });
+      breakdown.push({ label: dirtLabel, amountNgn: conditionAdditionNgn });
     }
   }
 
+  // Combined options subtotal prior to regional/express
+  const currentSubtotal = rawRoomsSubtotalNgn + planAdditionNgn + conditionAdditionNgn;
+
   // Regional Zone Modifier Surcharge
-  const zone = rulesConfig.regionalZones.find((z) => z.id === regionalZoneId) || rulesConfig.regionalZones[1]; // fallback suburbs
+  const zone = rulesConfig.regionalZones?.find((z) => z.id === regionalZoneId) || rulesConfig.regionalZones?.[1] || DEFAULT_PRICING_RULES.regionalZones[1];
   const regionalModifierPercent = zone?.modifierPercent || 0;
   let regionalSurchargeNgn = 0;
 
@@ -233,11 +379,17 @@ export function calculateJobPrice(
   }
 
   const totalPriceNgn = Math.round(currentSubtotal + regionalSurchargeNgn + expressSurchargeNgn);
-  const escrowPlatformCommissionNgn = Math.round(totalPriceNgn * 0.20); // 20%
-  const artisanNetPayoutNgn = totalPriceNgn - escrowPlatformCommissionNgn; // 80%
+  const escrowPlatformCommissionNgn = Math.round(totalPriceNgn * 0.20); // 20% Escrow Platform Commission
+  const artisanNetPayoutNgn = totalPriceNgn - escrowPlatformCommissionNgn; // 80% Artisan Net Payout
 
   return {
     baseServicePrice: activeBasePrice,
+    rawRoomsSubtotalNgn,
+    planTier: safePlan,
+    planMultiplier,
+    planAdditionNgn,
+    conditionMultiplier,
+    conditionAdditionNgn,
     optionsSubtotalNgn: currentSubtotal,
     regionalModifierPercent,
     regionalSurchargeNgn,

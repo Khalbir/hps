@@ -1,8 +1,16 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import type { BookingData } from "@/app/book/page";
-import { Home, Building2, Briefcase, Store } from "lucide-react";
-import { calculateJobPrice, DEFAULT_PRICING_RULES, PricingModel } from "@/lib/pricingEngine";
+import { Home, Building2, Briefcase, Store, ShieldCheck, Sparkles, Award } from "lucide-react";
+import {
+  calculateJobPrice,
+  DEFAULT_PRICING_RULES,
+  PricingModel,
+  PricingRulesConfig,
+  SERVICE_PLANS,
+  ServicePlanTier,
+} from "@/lib/pricingEngine";
 import { SERVICE_CATEGORIES } from "@/lib/services";
 import styles from "./Steps.module.css";
 
@@ -21,13 +29,31 @@ interface StepProps {
 }
 
 export function StepDetails({ booking, updateBooking, onNext, onBack }: StepProps) {
+  const [pricingRules, setPricingRules] = useState<PricingRulesConfig>(DEFAULT_PRICING_RULES);
+
+  useEffect(() => {
+    async function loadPricingRules() {
+      try {
+        const res = await fetch("/api/admin/pricing-rules", {
+          cache: "no-store",
+          headers: { "Cache-Control": "no-cache, no-store, must-revalidate" },
+        });
+        const data = await res.json();
+        if (res.ok && data.rules) {
+          setPricingRules(data.rules);
+        }
+      } catch (err) {}
+    }
+    loadPricingRules();
+  }, []);
+
   const isCleaning = booking.serviceCategory === "cleaning";
   const isFumigation = booking.serviceCategory === "fumigation" || (booking.serviceId && booking.serviceId.includes("fumigation"));
   const isUpholstery = booking.serviceCategory === "upholstery" || (booking.serviceId && (booking.serviceId.includes("sofa") || booking.serviceId.includes("mattress") || booking.serviceId.includes("rug") || booking.serviceId.includes("upholstery")));
   const isSubscription = booking.pricingModel === "SUBSCRIPTION";
   const isPropertyBased = !isSubscription && (isCleaning || isFumigation || booking.pricingModel === "PROPERTY_BASED");
 
-  const getComputedPrice = (bedrooms: number, bathrooms: number, qty?: number) => {
+  const getComputedPrice = (bedrooms: number, bathrooms: number, qty?: number, plan?: ServicePlanTier) => {
     const catalogService = SERVICE_CATEGORIES.flatMap((c) => c.services).find(
       (s) =>
         (booking.serviceId && s.id.toLowerCase() === booking.serviceId.toLowerCase()) ||
@@ -54,41 +80,52 @@ export function StepDetails({ booking, updateBooking, onNext, onBack }: StepProp
     const effectiveServiceId =
       booking.serviceId || catalogService?.id || booking.serviceCategory || "general-handyman";
 
-    const calc = calculateJobPrice({
-      serviceId: effectiveServiceId,
-      pricingModel: pModel,
-      basePrice: effectiveBasePrice,
-      bedrooms,
-      bathrooms,
-      isFurnished: booking.isFurnished || false,
-      dirtLevel: booking.dirtLevel || "MODERATE",
-      quantity: qty !== undefined ? qty : (booking.quantity || 1),
-      regionalZoneId: booking.regionalZoneId || "abuja-suburbs",
-      isExpressSchedule: booking.isEmergency || false,
-    });
+    const calc = calculateJobPrice(
+      {
+        serviceId: effectiveServiceId,
+        pricingModel: pModel,
+        basePrice: effectiveBasePrice,
+        plan: plan || (booking.planTier as ServicePlanTier) || "SILVER",
+        bedrooms,
+        bathrooms,
+        isFurnished: booking.isFurnished || false,
+        dirtLevel: booking.dirtLevel || "MODERATE",
+        quantity: qty !== undefined ? qty : (booking.quantity || 1),
+        regionalZoneId: booking.regionalZoneId || "abuja-suburbs",
+        isExpressSchedule: booking.isEmergency || false,
+      },
+      pricingRules
+    );
     return calc.totalPriceNgn;
   };
 
   const handlePropertyType = (type: string) => {
-    const total = getComputedPrice(booking.bedrooms || 2, booking.bathrooms || 1, booking.quantity || 1);
+    const total = getComputedPrice(booking.bedrooms || 2, booking.bathrooms || 1, booking.quantity || 1, booking.planTier as ServicePlanTier);
     updateBooking({ propertyType: type, totalPrice: total });
   };
 
   const handleBedrooms = (n: number) => {
-    const total = getComputedPrice(n, booking.bathrooms || 1, booking.quantity || 1);
+    const total = getComputedPrice(n, booking.bathrooms || 1, booking.quantity || 1, booking.planTier as ServicePlanTier);
     updateBooking({ bedrooms: n, totalPrice: total });
   };
 
   const handleBathrooms = (n: number) => {
-    const total = getComputedPrice(booking.bedrooms || 2, n, booking.quantity || 1);
+    const total = getComputedPrice(booking.bedrooms || 2, n, booking.quantity || 1, booking.planTier as ServicePlanTier);
     updateBooking({ bathrooms: n, totalPrice: total });
   };
 
   const handleQuantity = (q: number) => {
     const safeQ = Math.max(1, q);
-    const total = getComputedPrice(booking.bedrooms || 2, booking.bathrooms || 1, safeQ);
+    const total = getComputedPrice(booking.bedrooms || 2, booking.bathrooms || 1, safeQ, booking.planTier as ServicePlanTier);
     updateBooking({ quantity: safeQ, totalPrice: total });
   };
+
+  const handlePlanSelect = (tier: ServicePlanTier) => {
+    const total = getComputedPrice(booking.bedrooms || 2, booking.bathrooms || 1, booking.quantity || 1, tier);
+    updateBooking({ planTier: tier, totalPrice: total });
+  };
+
+  const activePlanTier: ServicePlanTier = (booking.planTier as ServicePlanTier) || "SILVER";
 
   return (
     <div className={styles.stepContainer}>
@@ -110,6 +147,64 @@ export function StepDetails({ booking, updateBooking, onNext, onBack }: StepProp
               <span className={styles.optionDesc}>{pt.desc}</span>
             </button>
           ))}
+        </div>
+      </div>
+
+      {/* Service Plan Tier Selection (Silver, Gold, Platinum) */}
+      <div className={styles.fieldGroup}>
+        <label className={styles.fieldLabel} style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+          <Sparkles size={16} color="#0EA5E9" /> Service Plan Package
+        </label>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "12px" }}>
+          {(["SILVER", "GOLD", "PLATINUM"] as ServicePlanTier[]).map((tierKey) => {
+            const planMeta = SERVICE_PLANS[tierKey];
+            const isSelected = activePlanTier === tierKey;
+            const multVal = pricingRules.planMultipliers?.[tierKey] ?? planMeta.multiplier;
+            const multBadge = multVal > 1.0 ? `+${Math.round((multVal - 1.0) * 100)}%` : "Standard";
+
+            return (
+              <button
+                key={tierKey}
+                type="button"
+                onClick={() => handlePlanSelect(tierKey)}
+                style={{
+                  background: isSelected ? "rgba(14,165,233,0.12)" : "#1E293B",
+                  border: isSelected ? "2px solid #0EA5E9" : "1px solid #334155",
+                  borderRadius: "14px",
+                  padding: "14px 16px",
+                  textAlign: "left",
+                  cursor: "pointer",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "8px",
+                  transition: "all 0.2s ease",
+                  boxShadow: isSelected ? "0 0 16px rgba(14,165,233,0.2)" : "none",
+                }}
+              >
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                  <span style={{ fontWeight: 800, fontSize: "14px", color: isSelected ? "#38BDF8" : "#F8FAFC" }}>
+                    {planMeta.name}
+                  </span>
+                  <span
+                    style={{
+                      fontSize: "10px",
+                      fontWeight: 800,
+                      padding: "2px 8px",
+                      borderRadius: "6px",
+                      background: isSelected ? "#0EA5E9" : "#0F172A",
+                      color: isSelected ? "#FFFFFF" : "#94A3B8",
+                      border: "1px solid #334155",
+                    }}
+                  >
+                    {multBadge}
+                  </span>
+                </div>
+                <p style={{ margin: 0, fontSize: "11px", color: "#94A3B8", lineHeight: 1.4 }}>
+                  {planMeta.description}
+                </p>
+              </button>
+            );
+          })}
         </div>
       </div>
 

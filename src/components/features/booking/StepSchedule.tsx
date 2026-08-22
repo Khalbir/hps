@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { addDays, format, isToday, isTomorrow } from "date-fns";
 import { AlertTriangle, Zap, Lock } from "lucide-react";
 import type { BookingData } from "@/app/book/page";
-import { calculateJobPrice, PricingModel } from "@/lib/pricingEngine";
+import { calculateJobPrice, PricingModel, ServicePlanTier } from "@/lib/pricingEngine";
 import { SERVICE_CATEGORIES } from "@/lib/services";
 import styles from "./Steps.module.css";
 
@@ -94,6 +94,7 @@ export function StepSchedule({ booking, updateBooking, onNext, onBack }: StepPro
       serviceId: effectiveServiceId,
       pricingModel: effectivePricingModel,
       basePrice: effectiveBasePrice,
+      plan: (booking.planTier as ServicePlanTier) || "SILVER",
       bedrooms: booking.bedrooms || 2,
       bathrooms: booking.bathrooms || 1,
       isFurnished: booking.isFurnished || false,
@@ -151,6 +152,7 @@ export function StepSchedule({ booking, updateBooking, onNext, onBack }: StepPro
       serviceId: effectiveServiceId,
       pricingModel: effectivePricingModel,
       basePrice: effectiveBasePrice,
+      plan: (booking.planTier as ServicePlanTier) || "SILVER",
       bedrooms: booking.bedrooms || 2,
       bathrooms: booking.bathrooms || 1,
       isFurnished: booking.isFurnished || false,

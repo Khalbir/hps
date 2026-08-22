@@ -22,6 +22,7 @@ export interface BookingData {
   serviceName: string;
   servicePrice: number;
   pricingModel?: string;
+  planTier?: "SILVER" | "GOLD" | "PLATINUM";
   propertyType: string;
   bedrooms: number;
   bathrooms: number;
@@ -52,6 +53,7 @@ const initialBookingData: BookingData = {
   serviceName: "",
   servicePrice: 0,
   pricingModel: "FIXED",
+  planTier: "SILVER",
   propertyType: "HOME",
   bedrooms: 2,
   bathrooms: 1,
