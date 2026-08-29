@@ -24,6 +24,57 @@ export interface Technician {
   available: boolean;
 }
 
+const CATEGORY_TRADE_SYNONYMS: Record<string, string[]> = {
+  outdoor: ["outdoor", "gardening", "gardener", "landscaping", "lawn", "grass", "tree", "groundskeeping", "horticulture", "compound"],
+  gardening: ["outdoor", "gardening", "gardener", "landscaping", "lawn", "grass", "tree", "groundskeeping", "horticulture", "compound"],
+  cleaning: ["cleaning", "cleaner", "housekeeping", "maid", "janitor", "janitorial", "dusting", "sweeping", "mopping", "deep cleaning"],
+  fumigation: ["fumigation", "fumigator", "pest", "pest control", "pest-control", "exterminator", "bedbug", "termite", "disinfection"],
+  upholstery: ["upholstery", "carpet", "rug", "sofa", "couch", "mattress", "curtain", "steam cleaning"],
+  plumbing: ["plumbing", "plumber", "pipe", "drain", "drainage", "leak", "faucet", "water pump", "sewage", "sanitary", "borehole"],
+  electrical: ["electrical", "electrician", "wiring", "power", "lighting", "fuse", "inverter", "generator", "appliance", "circuit"],
+  hvac: ["hvac", "ac", "air conditioner", "air conditioning", "cooling", "refrigeration", "fridge"],
+  painting: ["painting", "painter", "screeding", "wall", "coating", "plastering"],
+  carpentry: ["carpentry", "carpenter", "woodwork", "wood", "furniture", "cabinet", "joinery", "roofing"],
+  security: ["security", "cctv", "camera", "alarm", "access control", "surveillance", "intercom", "electric fence"],
+  solar: ["solar", "solar installation", "inverter", "battery", "photovoltaic", "renewable"],
+  "home-improvement": ["home improvement", "renovation", "tiling", "tile", "masonry", "mason", "bricklayer", "interior decor", "pop", "drywall", "building"],
+  laundry: ["laundry", "dry clean", "dry cleaning", "washing", "ironing", "wash & fold"],
+  moving: ["moving", "relocation", "mover", "hauling", "logistics", "packing", "transport"],
+  general: ["handyman", "general handyman", "odd jobs", "repairs", "maintenance"],
+};
+
+function matchesSkillset(artisanCategories: string[], bookingCategory: string, bookingServiceId?: string): boolean {
+  if (!bookingCategory) return true;
+  const targetCategoryKey = bookingCategory.toLowerCase().trim();
+  const serviceKey = (bookingServiceId || "").toLowerCase().trim();
+
+  // Get all synonym tokens for this category
+  const targetTokens = new Set<string>([
+    targetCategoryKey,
+    ...(CATEGORY_TRADE_SYNONYMS[targetCategoryKey] || []),
+  ]);
+  if (serviceKey) {
+    targetTokens.add(serviceKey);
+    const words = serviceKey.split("-");
+    words.forEach((w) => {
+      if (w.length > 2) targetTokens.add(w);
+    });
+  }
+
+  // Check if any of the artisan's registered categories/fields matches the trade tokens
+  return artisanCategories.some((cat) => {
+    const cleanCat = cat.toLowerCase().trim();
+    if (!cleanCat) return false;
+
+    for (const token of targetTokens) {
+      if (cleanCat.includes(token) || token.includes(cleanCat)) {
+        return true;
+      }
+    }
+    return false;
+  });
+}
+
 export function StepTechnician({ booking, updateBooking, onNext, onBack }: StepProps) {
   const [autoAssign, setAutoAssign] = useState(booking.autoAssign ?? true);
   const [realTechnicians, setRealTechnicians] = useState<Technician[]>([]);
@@ -46,12 +97,13 @@ export function StepTechnician({ booking, updateBooking, onNext, onBack }: StepP
               // Extract all verified trade categories for this artisan
               const tradeCats: string[] = [];
               if (p.field) tradeCats.push(p.field.toLowerCase());
+              if (p.primaryField) tradeCats.push(p.primaryField.toLowerCase());
+              if (p.secondaryField) tradeCats.push(p.secondaryField.toLowerCase());
+              if (p.secondaryCategory) tradeCats.push(p.secondaryCategory.toLowerCase());
               if (Array.isArray(p.tradeVerifications)) {
                 p.tradeVerifications.forEach((tv: any) => {
-                  if (tv.status === "VERIFIED" && tv.tradeCategory) {
-                    tradeCats.push(tv.tradeCategory.toLowerCase());
-                    if (tv.tradeName) tradeCats.push(tv.tradeName.toLowerCase());
-                  }
+                  if (tv.tradeCategory) tradeCats.push(tv.tradeCategory.toLowerCase());
+                  if (tv.tradeName) tradeCats.push(tv.tradeName.toLowerCase());
                 });
               }
 
@@ -61,11 +113,11 @@ export function StepTechnician({ booking, updateBooking, onNext, onBack }: StepP
                 initials: initials.toUpperCase(),
                 rating: Number(p.rating || 4.9),
                 jobs: Number(p.totalJobs || 0),
-                specialty: p.field || "Certified Service Partner",
-                categories: Array.from(new Set(tradeCats.length > 0 ? tradeCats : ["general"])),
+                specialty: p.field || p.primaryField || "Certified Service Partner",
+                categories: Array.from(new Set(tradeCats.filter(Boolean))),
                 responseTime: 15,
                 available: true,
-                isTradeCertified: false, // populated during filter
+                isTradeCertified: false,
               };
             });
 
@@ -77,19 +129,15 @@ export function StepTechnician({ booking, updateBooking, onNext, onBack }: StepP
             return b.jobs - a.jobs;
           });
 
-          // Filter by required field (booking.serviceCategory)
-          let filtered = verified;
-          if (booking.serviceCategory) {
-            const selectedCat = booking.serviceCategory.toLowerCase().trim();
-            const matchingSpecialists = verified.filter((tech: any) => {
-              const specialties = tech.categories.join(" ");
-              return specialties.includes(selectedCat) || selectedCat.includes(specialties) || specialties.includes("general");
-            });
+          // STRICT FILTER: Only show specialists that match the selected trade skillsets
+          const selectedCat = (booking.serviceCategory || "").toLowerCase().trim();
+          const selectedSvc = (booking.serviceId || "").toLowerCase().trim();
+          const matchingSpecialists = verified.filter((tech: any) =>
+            matchesSkillset(tech.categories, selectedCat, selectedSvc)
+          );
 
-            filtered = matchingSpecialists.length > 0 ? matchingSpecialists : verified;
-          }
-
-          setRealTechnicians(filtered);
+          // Only display actual matching technicians. Do not fall back to unrelated trades.
+          setRealTechnicians(matchingSpecialists);
         }
       } catch (err) {
         console.warn("Failed to fetch real database artisans:", err);
@@ -99,7 +147,7 @@ export function StepTechnician({ booking, updateBooking, onNext, onBack }: StepP
     }
 
     fetchRealArtisans();
-  }, [booking.serviceCategory]);
+  }, [booking.serviceCategory, booking.serviceId]);
 
   const selectTechnician = (tech: Technician) => {
     setAutoAssign(false);
@@ -155,20 +203,20 @@ export function StepTechnician({ booking, updateBooking, onNext, onBack }: StepP
         <div
           className="card"
           style={{
-            padding: "24px",
+            padding: "26px 20px",
             textAlign: "center",
-            background: "var(--bg-tertiary)",
-            borderRadius: "var(--radius-lg)",
-            border: "1px solid var(--border-primary)",
+            background: "rgba(15, 23, 42, 0.6)",
+            borderRadius: "14px",
+            border: "1px solid #334155",
             marginBottom: "24px",
           }}
         >
-          <UserCheck size={32} color="#0EA5E9" style={{ opacity: 0.6, marginBottom: 8 }} />
-          <strong style={{ display: "block", color: "var(--text-primary)", fontSize: "14px", marginBottom: 4 }}>
-            Location Dispatch Active
+          <UserCheck size={36} color="#0EA5E9" style={{ opacity: 0.8, marginBottom: 8 }} />
+          <strong style={{ display: "block", color: "#F8FAFC", fontSize: "14px", marginBottom: 4 }}>
+            Automated Smart Dispatch Active
           </strong>
-          <span style={{ fontSize: "13px", color: "var(--text-secondary)", lineHeight: 1.5, display: "block", maxWidth: "480px", margin: "0 auto" }}>
-            Select &quot;Auto-assign best available&quot; above and our location intelligence will dispatch the nearest verified partner in your area upon booking confirmation.
+          <span style={{ fontSize: "13px", color: "#94A3B8", lineHeight: 1.5, display: "block", maxWidth: "500px", margin: "0 auto" }}>
+            No individual technicians for this specific trade are currently available for manual selection. Keep <strong>&ldquo;Auto-assign best available&rdquo;</strong> selected above and our dispatch system will match the highest-rated verified specialist in your area upon booking.
           </span>
         </div>
       ) : (
