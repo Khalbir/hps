@@ -273,16 +273,6 @@ export function calculateJobPrice(
   if (activePricingModel === "FIXED") {
     rawRoomsSubtotalNgn = activeBasePrice;
     breakdown.push({ label: "Base Service Rate", amountNgn: activeBasePrice });
-
-    // Apply plan multiplier to fixed rate if specified
-    if (planMultiplier > 1.0) {
-      planAdditionNgn = Math.round(rawRoomsSubtotalNgn * (planMultiplier - 1.0));
-      const planPercent = Math.round((planMultiplier - 1.0) * 100);
-      breakdown.push({
-        label: `${SERVICE_PLANS[safePlan]?.name || safePlan} Plan Multiplier (+${planPercent}%)`,
-        amountNgn: planAdditionNgn,
-      });
-    }
   } else if (activePricingModel === "SUBSCRIPTION") {
     rawRoomsSubtotalNgn = activeBasePrice;
     breakdown.push({ label: "Monthly Routine Maintenance Base Plan", amountNgn: activeBasePrice });

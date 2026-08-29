@@ -114,6 +114,7 @@ export const SERVICE_CATEGORIES: ServiceCategory[] = [
     keywords: ["clean", "cleaning", "maid", "housekeeper", "dust", "deep clean", "office clean", "janitor", "wash", "sweeping", "mopping"],
     services: [
       { id: "residential-cleaning", name: "Residential Cleaning (One-Time)", price: 15000, desc: "Standard deep cleaning for apartments and houses", pricingModel: "PROPERTY_BASED" },
+      { id: "residential-cleaning-monthly", name: "Residential Cleaning (Monthly Subscription)", price: 45000, desc: "Routine recurring housekeeping: Silver (2 days/wk), Gold (3 days/wk), Platinum (6 days/wk)", pricingModel: "SUBSCRIPTION", unitLabel: "per month" },
       { id: "deep-cleaning", name: "Deep Cleaning", price: 25000, desc: "Thorough deep cleaning of every surface", pricingModel: "PROPERTY_BASED" },
       { id: "commercial-cleaning", name: "Commercial Cleaning", price: 35000, desc: "Office and business space cleaning", pricingModel: "QUANTITY_BASED", unitLabel: "per office space" },
       { id: "post-construction", name: "Post Construction Cleaning", price: 0, desc: "Cleanup after renovation (Free site inspection & quote)", pricingModel: "CUSTOM_QUOTE" },
@@ -235,9 +236,9 @@ export const SERVICE_CATEGORIES: ServiceCategory[] = [
       {
         id: "gardening",
         name: "Gardening (One-Time Flat Rate)",
-        price: 12000,
+        price: 15000,
         desc: "One-time lawn mowing, weed clearance, hedge trimming & compound cleaning",
-        pricingModel: "PROPERTY_BASED",
+        pricingModel: "FIXED",
       },
       {
         id: "gardening-monthly",
@@ -246,6 +247,13 @@ export const SERVICE_CATEGORIES: ServiceCategory[] = [
         desc: "Routine weekly garden maintenance, lawn care, tree pruning, soil nourishment & groundskeeping",
         pricingModel: "SUBSCRIPTION",
         unitLabel: "per month",
+      },
+      {
+        id: "landscaping-tree-felling",
+        name: "Landscaping & Tree Trimming",
+        price: 0,
+        desc: "Landscape architecture, flowerbed design & major tree pruning (Free site inspection & quote)",
+        pricingModel: "CUSTOM_QUOTE",
       },
     ],
   },

@@ -64,16 +64,17 @@ export function StepService({ booking, updateBooking, onNext }: StepProps) {
     const pModel = (svc.pricingModel as PricingModel) || "FIXED";
     const svcQty = customQty !== undefined ? customQty : getServiceQuantity(svc.id);
     const planToUse = overridePlanTier || selectedPlanTier || (booking.planTier as ServicePlanTier) || "SILVER";
+    const isProp = pModel === "PROPERTY_BASED";
     const calc = calculateJobPrice(
       {
         serviceId: svc.id,
         pricingModel: pModel,
         basePrice: svc.price,
         plan: planToUse,
-        bedrooms: booking.bedrooms || 2,
-        bathrooms: booking.bathrooms || 1,
-        isFurnished: booking.isFurnished || false,
-        dirtLevel: booking.dirtLevel || "MODERATE",
+        bedrooms: isProp ? (booking.bedrooms || 2) : 1,
+        bathrooms: isProp ? (booking.bathrooms || 1) : 1,
+        isFurnished: isProp ? Boolean(booking.isFurnished) : false,
+        dirtLevel: isProp ? (booking.dirtLevel || "MODERATE") : "LIGHT",
         quantity: svcQty,
         regionalZoneId: booking.regionalZoneId || "abuja-suburbs",
         isExpressSchedule: booking.isEmergency || false,
@@ -118,16 +119,17 @@ export function StepService({ booking, updateBooking, onNext }: StepProps) {
       const svc = getEffectiveServiceItem(rawSvc, pricingRules);
       const pModel = (svc.pricingModel as PricingModel) || "FIXED";
       const svcQty = getServiceQuantity(svc.id);
+      const isProp = pModel === "PROPERTY_BASED";
       const calc = calculateJobPrice(
         {
           serviceId: svc.id,
           pricingModel: pModel,
           basePrice: svc.price,
           plan: selectedPlanTier || (booking.planTier as ServicePlanTier) || "SILVER",
-          bedrooms: booking.bedrooms || 2,
-          bathrooms: booking.bathrooms || 1,
-          isFurnished: booking.isFurnished || false,
-          dirtLevel: booking.dirtLevel || "MODERATE",
+          bedrooms: isProp ? (booking.bedrooms || 2) : 1,
+          bathrooms: isProp ? (booking.bathrooms || 1) : 1,
+          isFurnished: isProp ? Boolean(booking.isFurnished) : false,
+          dirtLevel: isProp ? (booking.dirtLevel || "MODERATE") : "LIGHT",
           quantity: svcQty,
           regionalZoneId: booking.regionalZoneId || "abuja-suburbs",
           isExpressSchedule: booking.isEmergency || false,
@@ -186,16 +188,17 @@ export function StepService({ booking, updateBooking, onNext }: StepProps) {
     const pModel = (svc.pricingModel as PricingModel) || "FIXED";
     const svcQty = getServiceQuantity(svc.id);
     const planToUse = pModel === "SUBSCRIPTION" ? selectedPlanTier : (booking.planTier as ServicePlanTier) || "SILVER";
+    const isProp = pModel === "PROPERTY_BASED";
     const calc = calculateJobPrice(
       {
         serviceId: svc.id,
         pricingModel: pModel,
         basePrice: svc.price,
         plan: planToUse,
-        bedrooms: booking.bedrooms || 2,
-        bathrooms: booking.bathrooms || 1,
-        isFurnished: booking.isFurnished || false,
-        dirtLevel: booking.dirtLevel || "MODERATE",
+        bedrooms: isProp ? (booking.bedrooms || 2) : 1,
+        bathrooms: isProp ? (booking.bathrooms || 1) : 1,
+        isFurnished: isProp ? Boolean(booking.isFurnished) : false,
+        dirtLevel: isProp ? (booking.dirtLevel || "MODERATE") : "LIGHT",
         quantity: svcQty,
         regionalZoneId: booking.regionalZoneId || "abuja-suburbs",
         isExpressSchedule: booking.isEmergency || false,
@@ -393,29 +396,22 @@ export function StepService({ booking, updateBooking, onNext }: StepProps) {
           )}
 
           <div className={styles.serviceList}>
-            {activeCategory?.services
-              .filter((rawSvc: any) => {
-                // When viewing the "subscriptions" category, only show SUBSCRIPTION services
-                // When viewing any other category, hide SUBSCRIPTION services (they have their own category)
-                const svcModel = getEffectiveServiceItem(rawSvc, pricingRules).pricingModel || "FIXED";
-                if (selectedCategory === "subscriptions") return svcModel === "SUBSCRIPTION";
-                return svcModel !== "SUBSCRIPTION";
-              })
-              .map((rawSvc: any) => {
+            {activeCategory?.services.map((rawSvc: any) => {
               const svc = getEffectiveServiceItem(rawSvc, pricingRules);
               const pModel = (svc.pricingModel as PricingModel) || "FIXED";
               const svcQty = getServiceQuantity(svc.id);
               const planForCalc = pModel === "SUBSCRIPTION" ? selectedPlanTier : (booking.planTier as ServicePlanTier) || "SILVER";
+              const isProp = pModel === "PROPERTY_BASED";
               const calc = calculateJobPrice(
                 {
                   serviceId: svc.id,
                   pricingModel: pModel,
                   basePrice: svc.price,
                   plan: planForCalc,
-                  bedrooms: booking.bedrooms || 2,
-                  bathrooms: booking.bathrooms || 1,
-                  isFurnished: booking.isFurnished || false,
-                  dirtLevel: booking.dirtLevel || "MODERATE",
+                  bedrooms: isProp ? (booking.bedrooms || 2) : 1,
+                  bathrooms: isProp ? (booking.bathrooms || 1) : 1,
+                  isFurnished: isProp ? Boolean(booking.isFurnished) : false,
+                  dirtLevel: isProp ? (booking.dirtLevel || "MODERATE") : "LIGHT",
                   quantity: svcQty,
                   regionalZoneId: booking.regionalZoneId || "abuja-suburbs",
                   isExpressSchedule: booking.isEmergency || false,

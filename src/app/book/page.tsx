@@ -174,6 +174,7 @@ function BookingContent() {
         const price = matched?.price || 0;
 
         setBooking((prev) => {
+          const isProp = pModel === "PROPERTY_BASED";
           const updated: BookingData = {
             ...prev,
             serviceCategory: resolved.categoryId || "",
@@ -182,6 +183,9 @@ function BookingContent() {
             servicePrice: matched ? price : prev.servicePrice,
             pricingModel: matched ? pModel : prev.pricingModel,
             totalPrice: matched ? price : (prev.totalPrice || price),
+            bedrooms: isProp ? (prev.bedrooms || 2) : 1,
+            bathrooms: isProp ? (prev.bathrooms || 1) : 1,
+            isFurnished: isProp ? Boolean(prev.isFurnished) : false,
             initialQuery: queryParam || undefined,
           };
           saveToStorage(STORAGE_KEYS.PENDING_BOOKING, updated);

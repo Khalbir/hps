@@ -67,16 +67,17 @@ export function BookingSummary({ booking, currentStep }: Props) {
 
   const planTier: ServicePlanTier = (booking.planTier as ServicePlanTier) || "SILVER";
 
+  const isProp = effectivePricingModel === "PROPERTY_BASED";
   const calc = calculateJobPrice(
     {
       serviceId: effectiveServiceId,
       pricingModel: effectivePricingModel,
       basePrice: effectiveBasePrice,
       plan: planTier,
-      bedrooms: booking.bedrooms || 2,
-      bathrooms: booking.bathrooms || 1,
-      isFurnished: booking.isFurnished || false,
-      dirtLevel: booking.dirtLevel || "MODERATE",
+      bedrooms: isProp ? (booking.bedrooms || 2) : 1,
+      bathrooms: isProp ? (booking.bathrooms || 1) : 1,
+      isFurnished: isProp ? Boolean(booking.isFurnished) : false,
+      dirtLevel: isProp ? (booking.dirtLevel || "MODERATE") : "LIGHT",
       quantity: booking.quantity || 1,
       regionalZoneId: booking.regionalZoneId || "abuja-suburbs",
       isExpressSchedule: booking.isEmergency || false,
@@ -107,13 +108,15 @@ export function BookingSummary({ booking, currentStep }: Props) {
 
           {currentStep >= 2 && (
             <div className={styles.summarySection}>
-              <span className={styles.summaryLabel}>Property / Options</span>
+              <span className={styles.summaryLabel}>Options</span>
               <span className={styles.summaryValue}>
-                {SERVICE_PLANS[planTier]?.name || planTier}
-                {booking.bedrooms > 0 ? ` · ${booking.bedrooms} Bed` : ""}
-                {booking.bathrooms > 0 ? ` · ${booking.bathrooms} Bath` : ""}
-                {booking.isFurnished ? ` · Furnished` : ""}
-                {booking.quantity && booking.quantity > 1 ? ` · Qty: ${booking.quantity}` : ""}
+                {effectivePricingModel === "SUBSCRIPTION"
+                  ? `${SERVICE_PLANS[planTier]?.name || planTier}`
+                  : isProp
+                  ? `${booking.bedrooms || 1} Bed · ${booking.bathrooms || 1} Bath${booking.isFurnished ? " · Furnished" : ""}`
+                  : booking.quantity && booking.quantity > 1
+                  ? `Quantity: ${booking.quantity}`
+                  : "Standard Service"}
               </span>
             </div>
           )}
