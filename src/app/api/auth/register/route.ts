@@ -22,6 +22,8 @@ export async function POST(request: Request) {
       idNumber,
       operatingState,
       homeAddress,
+      referralCode,
+      partnerCode,
     } = await request.json();
 
     if (!firstName || !lastName || !email || !password) {
@@ -266,6 +268,36 @@ export async function POST(request: Request) {
       lastName: user.lastName,
       role: user.role,
     });
+
+    // Record Partner Attribution if registered via partner referral link
+    const effectivePartnerCode = referralCode || partnerCode;
+    if (effectivePartnerCode) {
+      try {
+        const { partnerStore } = await import("@/lib/partners/store");
+        const partner = await partnerStore.getPartner(effectivePartnerCode);
+        if (partner) {
+          await partnerStore.saveAttribution({
+            id: `attr_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
+            partnerId: partner.partnerId,
+            referralCode: partner.referralCode,
+            referredUserId: user.id,
+            referredUserRole: userRole === "PROFESSIONAL" ? "PROFESSIONAL" : "CUSTOMER",
+            referredName: `${user.firstName} ${user.lastName}`,
+            referredEmail: cleanEmail,
+            referredPhone: cleanPhone || undefined,
+            attributionType: userRole === "PROFESSIONAL" ? "ARTISAN_RECRUIT" : partner.category === "ESTATE_MANAGER" ? "ESTATE_RESIDENT" : "ORGANIC_REFERRAL",
+            totalJobs: 0,
+            totalRevenueNgn: 0,
+            totalCommissionEarnedNgn: 0,
+            isPermanent: true,
+            fraudScore: 0,
+            createdAt: new Date().toISOString(),
+          });
+        }
+      } catch (pErr) {
+        console.warn("[Register Partner Attribution Warn]:", pErr);
+      }
+    }
 
     // Send 6-Digit Email Confirmation Code & Verification Link
     sendConfirmationEmail({

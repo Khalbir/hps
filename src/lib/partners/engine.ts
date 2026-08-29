@@ -147,3 +147,195 @@ export function evaluatePartnerFraudRisk(params: {
     reasons,
   };
 }
+
+/**
+ * Automates real-time Partner Attribution & Commission settlement on booking creation
+ */
+export async function processPartnerBookingAttribution(params: {
+  bookingId: string;
+  reference: string;
+  amount: number;
+  customerEmail: string;
+  customerName: string;
+  customerPhone?: string;
+  partnerReferralCode?: string;
+  serviceName: string;
+  serviceCategory: string;
+  address?: string;
+  ipAddress?: string;
+}): Promise<{
+  attributed: boolean;
+  partnerId?: string;
+  commissionNgn: number;
+  fraudBlocked?: boolean;
+}> {
+  try {
+    const { partnerStore } = await import("./store");
+    const {
+      amount,
+      customerEmail,
+      customerName,
+      customerPhone,
+      partnerReferralCode,
+      serviceName,
+      serviceCategory,
+      address,
+      ipAddress,
+    } = params;
+
+    let targetPartner = null;
+
+    // 1. If explicit partner referral code provided
+    if (partnerReferralCode) {
+      targetPartner = await partnerStore.getPartner(partnerReferralCode);
+    }
+
+    // 2. Fallback: check if customer has an existing permanent attribution
+    if (!targetPartner && (customerEmail || customerPhone)) {
+      const existingAttribution = await partnerStore.findAttributionByEmailOrPhone(customerEmail || customerPhone || "");
+      if (existingAttribution) {
+        targetPartner = await partnerStore.getPartner(existingAttribution.partnerId);
+      }
+    }
+
+    if (!targetPartner) {
+      return { attributed: false, commissionNgn: 0 };
+    }
+
+    // 3. Fraud Evaluation
+    const fraud = evaluatePartnerFraudRisk({
+      partnerEmail: targetPartner.email,
+      partnerPhone: targetPartner.phone,
+      referredEmail: customerEmail,
+      referredPhone: customerPhone,
+      ipAddress,
+    });
+
+    if (fraud.isBlocked) {
+      console.warn(`[Partner Fraud Blocked]: Referral for ${targetPartner.partnerId} blocked. Score: ${fraud.fraudScore}`);
+      return { attributed: false, partnerId: targetPartner.partnerId, commissionNgn: 0, fraudBlocked: true };
+    }
+
+    // 4. Calculate Commission
+    const config = await partnerStore.getConfig();
+    const { commissionNgn } = calculateJobCommission(
+      amount,
+      targetPartner.category,
+      targetPartner.tierLevel,
+      config
+    );
+
+    // 5. Credit Partner Wallet
+    targetPartner.walletBalance += commissionNgn;
+    targetPartner.totalEarnings += commissionNgn;
+    targetPartner.updatedAt = new Date().toISOString();
+    await partnerStore.savePartner(targetPartner);
+
+    // 6. Record / Update Permanent Attribution
+    const existingAttributions = await partnerStore.getAttributionsByPartner(targetPartner.partnerId);
+    let attr = existingAttributions.find(
+      (a) => a.referredEmail && a.referredEmail.toLowerCase().trim() === customerEmail.toLowerCase().trim()
+    );
+
+    if (attr) {
+      attr.totalJobs += 1;
+      attr.totalRevenueNgn += amount;
+      attr.totalCommissionEarnedNgn += commissionNgn;
+      await partnerStore.saveAttribution(attr);
+    } else {
+      let attrType: any = "ORGANIC_REFERRAL";
+      if (targetPartner.category === "ESTATE_MANAGER") attrType = "ESTATE_RESIDENT";
+      else if (targetPartner.category === "REALTOR") attrType = "REALTOR_CLIENT";
+      else if (targetPartner.category === "INFLUENCER" || targetPartner.category === "CONTENT_CREATOR") attrType = "INFLUENCER_AUDIENCE";
+
+      await partnerStore.saveAttribution({
+        id: `attr_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
+        partnerId: targetPartner.partnerId,
+        referralCode: targetPartner.referralCode,
+        referredUserRole: "CUSTOMER",
+        referredName: customerName,
+        referredEmail: customerEmail,
+        referredPhone: customerPhone,
+        attributionType: attrType,
+        totalJobs: 1,
+        totalRevenueNgn: amount,
+        totalCommissionEarnedNgn: commissionNgn,
+        isPermanent: true,
+        fraudScore: fraud.fraudScore,
+        createdAt: new Date().toISOString(),
+      });
+    }
+
+    // 7. Estate Management Specific Records
+    if (targetPartner.category === "ESTATE_MANAGER") {
+      const estates = await partnerStore.getEstatesByPartner(targetPartner.partnerId);
+      const mainEstate = estates[0] || {
+        id: `est_${Date.now()}`,
+        partnerId: targetPartner.partnerId,
+        name: targetPartner.companyName || `${targetPartner.name} Estate`,
+        city: targetPartner.city || "Abuja",
+        state: targetPartner.operatingState || "FCT",
+        address: targetPartner.address || "Estate Facility Office",
+        totalUnits: 100,
+        gatePassRequired: true,
+        preferredCategories: ["plumbing", "electrical", "cleaning", "fumigation"],
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+
+      // Save service request in estate dashboard
+      await partnerStore.saveServiceRequest({
+        id: `req_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
+        estateId: mainEstate.id,
+        estateName: mainEstate.name,
+        unitNumber: address || "Resident Property Unit",
+        residentName: customerName,
+        residentPhone: customerPhone || "Not Provided",
+        serviceCategory: serviceCategory || "Home Service",
+        serviceName: serviceName || "General Maintenance",
+        status: "PENDING",
+        amount,
+        commissionEarned: commissionNgn,
+        scheduledDate: new Date().toISOString(),
+        createdAt: new Date().toISOString(),
+      });
+
+      // Update resident record in estate
+      const residents = await partnerStore.getResidentsByPartner(targetPartner.partnerId);
+      let resItem = residents.find(
+        (r) => (customerPhone && r.phone === customerPhone) || (r.email && r.email.toLowerCase() === customerEmail.toLowerCase())
+      );
+      if (resItem) {
+        resItem.totalBookings += 1;
+        resItem.totalSpendNgn += amount;
+        resItem.lastBookingDate = new Date().toISOString();
+        await partnerStore.saveResident(resItem);
+      } else {
+        await partnerStore.saveResident({
+          id: `res_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
+          estateId: mainEstate.id,
+          partnerId: targetPartner.partnerId,
+          residentName: customerName,
+          unitNumber: address || "Unit Apt",
+          phone: customerPhone || "08000000000",
+          email: customerEmail,
+          status: "ACTIVE",
+          totalBookings: 1,
+          totalSpendNgn: amount,
+          lastBookingDate: new Date().toISOString(),
+          joinedAt: new Date().toISOString(),
+        });
+      }
+    }
+
+    return {
+      attributed: true,
+      partnerId: targetPartner.partnerId,
+      commissionNgn,
+      fraudBlocked: false,
+    };
+  } catch (err) {
+    console.error("[Partner Booking Attribution Error]:", err);
+    return { attributed: false, commissionNgn: 0 };
+  }
+}

@@ -45,6 +45,7 @@ export interface BookingData {
   discountAmount: number;
   totalPrice: number;
   initialQuery?: string;
+  partnerReferralCode?: string;
 }
 
 const initialBookingData: BookingData = {
@@ -110,6 +111,25 @@ function BookingContent() {
     const queryParam = searchParams.get("query");
     const statusParam = searchParams.get("status");
     const refParam = searchParams.get("reference") || searchParams.get("trxref");
+    const partnerParam = searchParams.get("partner") || searchParams.get("partnerCode") || searchParams.get("ref") || searchParams.get("referral");
+
+    if (partnerParam) {
+      if (typeof window !== "undefined") {
+        localStorage.setItem("handyhub_partner_ref", partnerParam);
+      }
+      setBooking((prev) => ({
+        ...prev,
+        partnerReferralCode: partnerParam,
+      }));
+    } else if (typeof window !== "undefined") {
+      const storedPartner = localStorage.getItem("handyhub_partner_ref");
+      if (storedPartner) {
+        setBooking((prev) => ({
+          ...prev,
+          partnerReferralCode: storedPartner,
+        }));
+      }
+    }
 
     // Handle Paystack / Gateway Payment Success Callback
     if (statusParam === "success" || refParam) {

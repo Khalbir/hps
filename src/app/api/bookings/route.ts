@@ -4,6 +4,7 @@ import { checkRateLimit, sanitizeInput } from "@/lib/security";
 import { notifyBookingStatusChange, broadcastNewJobToArtisans } from "@/lib/notifications";
 import { getBookingOtp } from "@/lib/bookingOtp";
 import { stateStore } from "@/lib/states/store";
+import { processPartnerBookingAttribution } from "@/lib/partners/engine";
 
 export const dynamic = "force-dynamic";
 
@@ -356,6 +357,21 @@ export async function POST(request: Request) {
     } catch (notifErr) {
       console.warn("[Booking Creation Notification Warning]:", notifErr);
     }
+
+    // Trigger Partner Network Attribution & Commission Calculation
+    processPartnerBookingAttribution({
+      bookingId: booking.id,
+      reference: booking.reference,
+      amount: calculatedPrice,
+      customerEmail: customerUser.email,
+      customerName: `${customerUser.firstName || ""} ${customerUser.lastName || ""}`.trim() || "Valued Customer",
+      customerPhone: customerUser.phone || undefined,
+      partnerReferralCode: body.partnerReferralCode || body.referralCode || body.partnerCode,
+      serviceName: fullBooking?.service?.name || service.name,
+      serviceCategory: serviceCategory || "Home Services",
+      address: sanitizedAddress,
+      ipAddress: ip,
+    }).catch((pErr) => console.warn("[Partner Booking Attribution Warn]:", pErr));
 
     return NextResponse.json({
       success: true,

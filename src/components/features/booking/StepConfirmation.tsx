@@ -73,6 +73,8 @@ export function StepConfirmation({ booking }: Props) {
             totalPrice: effectivePrice,
             technicianId: booking.technicianId,
             autoAssign: booking.autoAssign ?? true,
+            customerEmail: currentUser?.email,
+            partnerReferralCode: booking.partnerReferralCode || (typeof window !== "undefined" ? localStorage.getItem("handyhub_partner_ref") : undefined),
           }),
         });
       } catch (err) {

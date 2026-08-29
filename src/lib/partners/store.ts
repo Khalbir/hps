@@ -316,6 +316,10 @@ export const partnerStore = {
     return null;
   },
 
+  getPartner: async (identifier: string): Promise<PartnerProfile | null> => {
+    return partnerStore.findPartner(identifier);
+  },
+
   // Save / Register a partner
   savePartner: async (partner: PartnerProfile): Promise<PartnerProfile> => {
     initializeSeedData();
@@ -358,10 +362,32 @@ export const partnerStore = {
     return Array.from(inMemoryRequests.values()).filter((r) => partnerEstates.includes(r.estateId));
   },
 
+  saveServiceRequest: async (request: EstateServiceRequest): Promise<EstateServiceRequest> => {
+    initializeSeedData();
+    inMemoryRequests.set(request.id, request);
+    return request;
+  },
+
   // Attributions
   getAttributionsByPartner: async (partnerId: string): Promise<PartnerAttribution[]> => {
     initializeSeedData();
     return Array.from(inMemoryAttributions.values()).filter((a) => a.partnerId === partnerId);
+  },
+
+  findAttributionByEmailOrPhone: async (emailOrPhone: string): Promise<PartnerAttribution | null> => {
+    initializeSeedData();
+    const clean = (emailOrPhone || "").toLowerCase().trim();
+    const cleanPhone = clean.replace(/\D/g, "");
+
+    for (const a of inMemoryAttributions.values()) {
+      if (
+        (a.referredEmail && a.referredEmail.toLowerCase().trim() === clean) ||
+        (cleanPhone && a.referredPhone && a.referredPhone.replace(/\D/g, "") === cleanPhone)
+      ) {
+        return a;
+      }
+    }
+    return null;
   },
 
   saveAttribution: async (attribution: PartnerAttribution): Promise<PartnerAttribution> => {
