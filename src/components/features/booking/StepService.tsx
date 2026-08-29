@@ -8,7 +8,7 @@ import {
 import { useState, useEffect } from "react";
 import type { BookingData } from "@/app/book/page";
 import { SERVICE_CATEGORIES, ServiceCategory, ServiceItem } from "@/lib/services";
-import { calculateJobPrice, DEFAULT_PRICING_RULES, PricingModel, getEffectiveServiceItem, ServicePlanTier } from "@/lib/pricingEngine";
+import { calculateJobPrice, DEFAULT_PRICING_RULES, PricingModel, getEffectiveServiceItem, ServicePlanTier, SERVICE_PLANS } from "@/lib/pricingEngine";
 import styles from "./Steps.module.css";
 
 interface StepProps {
@@ -20,6 +20,7 @@ interface StepProps {
 export function StepService({ booking, updateBooking, onNext }: StepProps) {
   const [selectedCategory, setSelectedCategory] = useState(booking.serviceCategory || "");
   const [searchQuery, setSearchQuery] = useState(booking.initialQuery || "");
+  const [selectedPlanTier, setSelectedPlanTier] = useState<ServicePlanTier>((booking.planTier as ServicePlanTier) || "SILVER");
   const [pricingRules, setPricingRules] = useState(DEFAULT_PRICING_RULES);
 
   useEffect(() => {
@@ -58,16 +59,17 @@ export function StepService({ booking, updateBooking, onNext }: StepProps) {
     return 1;
   };
 
-  const activateServiceCard = (rawSvc: any, customQty?: number) => {
+  const activateServiceCard = (rawSvc: any, customQty?: number, overridePlanTier?: ServicePlanTier) => {
     const svc = getEffectiveServiceItem(rawSvc, pricingRules);
     const pModel = (svc.pricingModel as PricingModel) || "FIXED";
     const svcQty = customQty !== undefined ? customQty : getServiceQuantity(svc.id);
+    const planToUse = overridePlanTier || selectedPlanTier || (booking.planTier as ServicePlanTier) || "SILVER";
     const calc = calculateJobPrice(
       {
         serviceId: svc.id,
         pricingModel: pModel,
         basePrice: svc.price,
-        plan: (booking.planTier as ServicePlanTier) || "SILVER",
+        plan: planToUse,
         bedrooms: booking.bedrooms || 2,
         bathrooms: booking.bathrooms || 1,
         isFurnished: booking.isFurnished || false,
@@ -85,9 +87,15 @@ export function StepService({ booking, updateBooking, onNext }: StepProps) {
       serviceName: svc.name,
       servicePrice: svc.price,
       pricingModel: pModel,
+      planTier: planToUse,
       quantity: svcQty,
       totalPrice: calc.totalPriceNgn,
     });
+  };
+
+  const handlePlanTierChange = (tier: ServicePlanTier, rawSvc: any) => {
+    setSelectedPlanTier(tier);
+    activateServiceCard(rawSvc, undefined, tier);
   };
 
   const handleServiceQuantityChange = (serviceId: string, qty: number) => {
@@ -115,7 +123,7 @@ export function StepService({ booking, updateBooking, onNext }: StepProps) {
           serviceId: svc.id,
           pricingModel: pModel,
           basePrice: svc.price,
-          plan: (booking.planTier as ServicePlanTier) || "SILVER",
+          plan: selectedPlanTier || (booking.planTier as ServicePlanTier) || "SILVER",
           bedrooms: booking.bedrooms || 2,
           bathrooms: booking.bathrooms || 1,
           isFurnished: booking.isFurnished || false,
@@ -126,10 +134,11 @@ export function StepService({ booking, updateBooking, onNext }: StepProps) {
         },
         pricingRules
       );
-      if (booking.totalPrice !== calc.totalPriceNgn || booking.servicePrice !== svc.price || booking.quantity !== svcQty) {
+      if (booking.totalPrice !== calc.totalPriceNgn || booking.servicePrice !== svc.price || booking.quantity !== svcQty || booking.planTier !== selectedPlanTier) {
         updateBooking({
           servicePrice: svc.price,
           pricingModel: pModel,
+          planTier: selectedPlanTier,
           quantity: svcQty,
           totalPrice: calc.totalPriceNgn,
         });
@@ -145,6 +154,7 @@ export function StepService({ booking, updateBooking, onNext }: StepProps) {
     booking.isFurnished,
     booking.dirtLevel,
     serviceQuantities,
+    selectedPlanTier,
   ]);
 
   const filteredCategories = searchQuery
@@ -175,12 +185,13 @@ export function StepService({ booking, updateBooking, onNext }: StepProps) {
     const svc = getEffectiveServiceItem(rawSvc, pricingRules);
     const pModel = (svc.pricingModel as PricingModel) || "FIXED";
     const svcQty = getServiceQuantity(svc.id);
+    const planToUse = pModel === "SUBSCRIPTION" ? selectedPlanTier : (booking.planTier as ServicePlanTier) || "SILVER";
     const calc = calculateJobPrice(
       {
         serviceId: svc.id,
         pricingModel: pModel,
         basePrice: svc.price,
-        plan: (booking.planTier as ServicePlanTier) || "SILVER",
+        plan: planToUse,
         bedrooms: booking.bedrooms || 2,
         bathrooms: booking.bathrooms || 1,
         isFurnished: booking.isFurnished || false,
@@ -198,6 +209,7 @@ export function StepService({ booking, updateBooking, onNext }: StepProps) {
       serviceName: svc.name,
       servicePrice: svc.price,
       pricingModel: pModel,
+      planTier: planToUse,
       quantity: svcQty,
       totalPrice: calc.totalPriceNgn,
     });
@@ -256,10 +268,10 @@ export function StepService({ booking, updateBooking, onNext }: StepProps) {
                 </p>
               </div>
 
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: "12px" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))", gap: "12px" }}>
                 {/* Bedrooms Counter */}
-                <div style={{ background: "#0F172A", padding: "12px 14px", borderRadius: "12px", border: "1px solid #334155" }}>
-                  <span style={{ fontSize: "12px", color: "#94A3B8", fontWeight: 600 }}>Bedrooms</span>
+                <div style={{ background: "#0F172A", padding: "12px 14px", borderRadius: "12px", border: "1px solid #334155", minWidth: 0, boxSizing: "border-box" }}>
+                  <span style={{ fontSize: "12px", color: "#94A3B8", fontWeight: 600, display: "block" }}>Bedrooms</span>
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: "8px" }}>
                     <button
                       type="button"
@@ -281,8 +293,8 @@ export function StepService({ booking, updateBooking, onNext }: StepProps) {
                 </div>
 
                 {/* Bathrooms Counter */}
-                <div style={{ background: "#0F172A", padding: "12px 16px", borderRadius: "12px", border: "1px solid #334155" }}>
-                  <span style={{ fontSize: "12px", color: "#94A3B8", fontWeight: 600 }}>Bathrooms</span>
+                <div style={{ background: "#0F172A", padding: "12px 14px", borderRadius: "12px", border: "1px solid #334155", minWidth: 0, boxSizing: "border-box" }}>
+                  <span style={{ fontSize: "12px", color: "#94A3B8", fontWeight: 600, display: "block" }}>Bathrooms</span>
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: "8px" }}>
                     <button
                       type="button"
@@ -304,22 +316,26 @@ export function StepService({ booking, updateBooking, onNext }: StepProps) {
                 </div>
 
                 {/* Furnished Toggle */}
-                <div style={{ background: "#0F172A", padding: "12px 16px", borderRadius: "12px", border: "1px solid #334155" }}>
-                  <span style={{ fontSize: "12px", color: "#94A3B8", fontWeight: 600 }}>Furnished Status</span>
-                  <div style={{ display: "flex", gap: "6px", marginTop: "8px" }}>
+                <div style={{ background: "#0F172A", padding: "12px 14px", borderRadius: "12px", border: "1px solid #334155", minWidth: 0, boxSizing: "border-box" }}>
+                  <span style={{ fontSize: "12px", color: "#94A3B8", fontWeight: 600, display: "block" }}>Furnished Status</span>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "6px", marginTop: "8px" }}>
                     <button
                       type="button"
                       onClick={() => handleFurnishedToggle(false)}
                       style={{
-                        flex: 1,
-                        padding: "6px 8px",
+                        padding: "6px 4px",
                         borderRadius: "6px",
-                        fontSize: "12px",
+                        fontSize: "11px",
                         fontWeight: 700,
                         border: !booking.isFurnished ? "1px solid #0EA5E9" : "1px solid #334155",
                         background: !booking.isFurnished ? "rgba(14,165,233,0.15)" : "#1E293B",
                         color: !booking.isFurnished ? "#38BDF8" : "#94A3B8",
                         cursor: "pointer",
+                        textAlign: "center",
+                        whiteSpace: "nowrap",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        boxSizing: "border-box",
                       }}
                     >
                       Unfurnished
@@ -328,15 +344,19 @@ export function StepService({ booking, updateBooking, onNext }: StepProps) {
                       type="button"
                       onClick={() => handleFurnishedToggle(true)}
                       style={{
-                        flex: 1,
-                        padding: "6px 8px",
+                        padding: "6px 4px",
                         borderRadius: "6px",
-                        fontSize: "12px",
+                        fontSize: "11px",
                         fontWeight: 700,
                         border: booking.isFurnished ? "1px solid #0EA5E9" : "1px solid #334155",
                         background: booking.isFurnished ? "rgba(14,165,233,0.15)" : "#1E293B",
                         color: booking.isFurnished ? "#38BDF8" : "#94A3B8",
                         cursor: "pointer",
+                        textAlign: "center",
+                        whiteSpace: "nowrap",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        boxSizing: "border-box",
                       }}
                     >
                       Furnished (+₦5k)
@@ -345,8 +365,8 @@ export function StepService({ booking, updateBooking, onNext }: StepProps) {
                 </div>
 
                 {/* Dirt Level Selector */}
-                <div style={{ background: "#0F172A", padding: "12px 16px", borderRadius: "12px", border: "1px solid #334155" }}>
-                  <span style={{ fontSize: "12px", color: "#94A3B8", fontWeight: 600 }}>Condition / Dirt Level</span>
+                <div style={{ background: "#0F172A", padding: "12px 14px", borderRadius: "12px", border: "1px solid #334155", minWidth: 0, boxSizing: "border-box" }}>
+                  <span style={{ fontSize: "12px", color: "#94A3B8", fontWeight: 600, display: "block" }}>Condition / Grime</span>
                   <select
                     value={booking.dirtLevel || "MODERATE"}
                     onChange={(e: any) => handleDirtLevelChange(e.target.value)}
@@ -356,15 +376,16 @@ export function StepService({ booking, updateBooking, onNext }: StepProps) {
                       background: "#1E293B",
                       border: "1px solid #334155",
                       color: "#F8FAFC",
-                      padding: "6px 10px",
+                      padding: "6px 8px",
                       borderRadius: "6px",
-                      fontSize: "12px",
+                      fontSize: "11px",
                       fontWeight: 600,
+                      boxSizing: "border-box",
                     }}
                   >
-                    <option value="LIGHT">Light Maintenance (1.0x)</option>
-                    <option value="MODERATE">Moderate Grime (1.15x)</option>
-                    <option value="HEAVY">Heavy / Post-Construction (1.35x)</option>
+                    <option value="LIGHT">Light (1.0x)</option>
+                    <option value="MODERATE">Moderate (1.15x)</option>
+                    <option value="HEAVY">Heavy / Post (1.35x)</option>
                   </select>
                 </div>
               </div>
@@ -372,16 +393,25 @@ export function StepService({ booking, updateBooking, onNext }: StepProps) {
           )}
 
           <div className={styles.serviceList}>
-            {activeCategory?.services.map((rawSvc: any) => {
+            {activeCategory?.services
+              .filter((rawSvc: any) => {
+                // When viewing the "subscriptions" category, only show SUBSCRIPTION services
+                // When viewing any other category, hide SUBSCRIPTION services (they have their own category)
+                const svcModel = getEffectiveServiceItem(rawSvc, pricingRules).pricingModel || "FIXED";
+                if (selectedCategory === "subscriptions") return svcModel === "SUBSCRIPTION";
+                return svcModel !== "SUBSCRIPTION";
+              })
+              .map((rawSvc: any) => {
               const svc = getEffectiveServiceItem(rawSvc, pricingRules);
               const pModel = (svc.pricingModel as PricingModel) || "FIXED";
               const svcQty = getServiceQuantity(svc.id);
+              const planForCalc = pModel === "SUBSCRIPTION" ? selectedPlanTier : (booking.planTier as ServicePlanTier) || "SILVER";
               const calc = calculateJobPrice(
                 {
                   serviceId: svc.id,
                   pricingModel: pModel,
                   basePrice: svc.price,
-                  plan: (booking.planTier as ServicePlanTier) || "SILVER",
+                  plan: planForCalc,
                   bedrooms: booking.bedrooms || 2,
                   bathrooms: booking.bathrooms || 1,
                   isFurnished: booking.isFurnished || false,
@@ -504,6 +534,123 @@ export function StepService({ booking, updateBooking, onNext }: StepProps) {
                     )}
                   </div>
 
+                  {/* Plan Tier Selector for Subscription Services */}
+                  {pModel === "SUBSCRIPTION" && (
+                    <div
+                      onClick={(e) => e.stopPropagation()}
+                      style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: "10px",
+                        paddingTop: "12px",
+                        borderTop: "1px solid rgba(51,65,85,0.6)",
+                        width: "100%",
+                        boxSizing: "border-box",
+                      }}
+                    >
+                      <span style={{ fontSize: "12px", color: "#94A3B8", fontWeight: 600 }}>Choose Your Plan</span>
+                      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: "10px" }}>
+                        {(["SILVER", "GOLD", "PLATINUM"] as ServicePlanTier[]).map((tier) => {
+                          const plan = SERVICE_PLANS[tier];
+                          const tierCalc = calculateJobPrice(
+                            {
+                              serviceId: svc.id,
+                              pricingModel: pModel,
+                              basePrice: svc.price,
+                              plan: tier,
+                              bedrooms: booking.bedrooms || 2,
+                              bathrooms: booking.bathrooms || 1,
+                              isFurnished: booking.isFurnished || false,
+                              dirtLevel: booking.dirtLevel || "MODERATE",
+                              quantity: svcQty,
+                              regionalZoneId: booking.regionalZoneId || "abuja-suburbs",
+                              isExpressSchedule: booking.isEmergency || false,
+                            },
+                            pricingRules
+                          );
+                          const isActiveTier = (isSelected && selectedPlanTier === tier);
+                          const tierColors: Record<ServicePlanTier, { border: string; bg: string; text: string; badge: string }> = {
+                            SILVER: { border: "#94A3B8", bg: "rgba(148,163,184,0.1)", text: "#CBD5E1", badge: "🥈" },
+                            GOLD: { border: "#F59E0B", bg: "rgba(245,158,11,0.1)", text: "#FCD34D", badge: "🥇" },
+                            PLATINUM: { border: "#8B5CF6", bg: "rgba(139,92,246,0.1)", text: "#C4B5FD", badge: "💎" },
+                          };
+                          const tc = tierColors[tier];
+                          return (
+                            <button
+                              key={tier}
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handlePlanTierChange(tier, rawSvc);
+                              }}
+                              style={{
+                                background: isActiveTier ? tc.bg : "#0F172A",
+                                border: isActiveTier ? `2px solid ${tc.border}` : "1px solid #334155",
+                                borderRadius: "12px",
+                                padding: "14px 12px",
+                                cursor: "pointer",
+                                display: "flex",
+                                flexDirection: "column",
+                                gap: "8px",
+                                textAlign: "left",
+                                transition: "all 0.2s ease",
+                                boxShadow: isActiveTier ? `0 0 16px ${tc.border}33` : "none",
+                                position: "relative",
+                                overflow: "hidden",
+                              }}
+                            >
+                              {isActiveTier && (
+                                <div style={{
+                                  position: "absolute",
+                                  top: "6px",
+                                  right: "6px",
+                                  width: "18px",
+                                  height: "18px",
+                                  borderRadius: "50%",
+                                  background: tc.border,
+                                  display: "flex",
+                                  alignItems: "center",
+                                  justifyContent: "center",
+                                  fontSize: "10px",
+                                  color: "#fff",
+                                  fontWeight: 800,
+                                }}>✓</div>
+                              )}
+                              <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                                <span style={{ fontSize: "16px" }}>{tc.badge}</span>
+                                <span style={{ fontSize: "13px", fontWeight: 700, color: isActiveTier ? tc.text : "#E2E8F0" }}>
+                                  {tier === "SILVER" ? "Silver" : tier === "GOLD" ? "Gold" : "Platinum"}
+                                </span>
+                              </div>
+                              <span style={{ fontSize: "11px", color: "#94A3B8", lineHeight: 1.3 }}>
+                                {plan.cleaningsPerWeek} days/wk · {plan.cleaningsPerMonth} visits/mo
+                              </span>
+                              <div style={{ fontSize: "11px", color: "#64748B", lineHeight: 1.4, display: "flex", flexDirection: "column", gap: "2px" }}>
+                                {plan.features.slice(0, 2).map((f, fi) => (
+                                  <span key={fi} style={{ display: "flex", alignItems: "flex-start", gap: "4px" }}>
+                                    <span style={{ color: tc.border, flexShrink: 0 }}>✦</span>
+                                    <span style={{ fontSize: "10px" }}>{f}</span>
+                                  </span>
+                                ))}
+                              </div>
+                              <div style={{ marginTop: "4px", borderTop: "1px solid rgba(51,65,85,0.5)", paddingTop: "8px" }}>
+                                <strong style={{ fontSize: "1rem", color: isActiveTier ? "#10B981" : "#94A3B8", fontWeight: 800 }}>
+                                  ₦{tierCalc.totalPriceNgn.toLocaleString()}
+                                </strong>
+                                <span style={{ fontSize: "11px", color: "#64748B" }}>/mo</span>
+                                {tier !== "SILVER" && (
+                                  <span style={{ fontSize: "10px", color: tc.border, display: "block", marginTop: "2px", fontWeight: 600 }}>
+                                    +{Math.round((plan.multiplier - 1) * 100)}% from base
+                                  </span>
+                                )}
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
                   {/* Clean Bottom Action Row: Calculated Amount + Fully Contained Button */}
                   <div
                     style={{
@@ -513,7 +660,7 @@ export function StepService({ booking, updateBooking, onNext }: StepProps) {
                       flexWrap: "wrap",
                       gap: "10px",
                       paddingTop: "12px",
-                      borderTop: "1px solid rgba(51,65,85,0.6)",
+                      borderTop: pModel === "SUBSCRIPTION" ? "none" : "1px solid rgba(51,65,85,0.6)",
                       width: "100%",
                       boxSizing: "border-box",
                     }}
@@ -523,7 +670,7 @@ export function StepService({ booking, updateBooking, onNext }: StepProps) {
                         {svc.pricingModel === "CUSTOM_QUOTE"
                           ? "Assessment Deposit"
                           : svc.pricingModel === "SUBSCRIPTION"
-                          ? "Monthly Subscription Plan"
+                          ? `${SERVICE_PLANS[selectedPlanTier]?.name || "Monthly"} Plan`
                           : "Calculated Amount"}
                       </span>
                       <strong style={{ fontSize: "1.15rem", color: svc.pricingModel === "CUSTOM_QUOTE" ? "#C084FC" : "#10B981", fontWeight: 800 }}>

@@ -228,6 +228,8 @@ export async function GET(request: Request) {
         guarantor2: (docs.guarantor2 && docs.guarantor2.name && docs.guarantor2.name.trim() !== "") ? docs.guarantor2 : null,
         quizScore: docs.quizScore !== undefined ? docs.quizScore : 85,
         addressVerified: Boolean(p.addressVerified || u.permanentAddressStatus === "VERIFIED"),
+        isAvailable: Boolean(p.isAvailable !== false),
+        onlineStatus: Boolean(p.isAvailable !== false) ? "ONLINE" : "OFFLINE",
         notes: p.verificationNotes || docs.notes || "",
         submittedAt: docs.submittedAt || p.createdAt || new Date().toISOString(),
         tradeVerifications: (p.tradeVerifications && p.tradeVerifications.length > 0)
@@ -273,7 +275,14 @@ export async function GET(request: Request) {
 
     // Filter by status if specified
     const filtered = status && status !== "ALL"
-      ? formattedPros.filter((p) => p.verificationStatus === status || p.status === status)
+      ? formattedPros.filter((p) => {
+          const s = (p.verificationStatus || p.status || "").toUpperCase();
+          if (status === "ONLINE") return Boolean(p.isAvailable);
+          if (status === "PENDING") return s !== "VERIFIED" && s !== "APPROVED" && s !== "REJECTED";
+          if (status === "VERIFIED") return s === "VERIFIED" || s === "APPROVED";
+          if (status === "REJECTED") return s === "REJECTED";
+          return s === status;
+        })
       : formattedPros;
 
     return NextResponse.json({ success: true, professionals: filtered });

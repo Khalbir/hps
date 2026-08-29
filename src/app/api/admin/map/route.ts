@@ -43,14 +43,13 @@ export async function GET(request: Request) {
       };
     });
 
-    // 2. Fetch real online/available VERIFIED professionals from DB
+    // 2. Fetch real online/available professionals from DB
     const realPros = await prisma.professional.findMany({
       where: {
         isAvailable: true,
-        verificationStatus: "VERIFIED",
       },
       include: {
-        user: { select: { firstName: true, lastName: true, phone: true } },
+        user: { select: { firstName: true, lastName: true, phone: true, isVerified: true, email: true } },
       },
     });
 
@@ -62,18 +61,23 @@ export async function GET(request: Request) {
       let city = "Abuja";
       try {
         if (p.skills) {
-          const parsed = JSON.parse(p.skills);
+          const parsed = typeof p.skills === "string" ? JSON.parse(p.skills) : p.skills;
           if (Array.isArray(parsed) && parsed.length > 0) skills = parsed.join(", ");
         }
         if (p.documents) {
-          const docs = JSON.parse(p.documents);
+          const docs = typeof p.documents === "string" ? JSON.parse(p.documents) : p.documents;
           if (docs.city) city = docs.city;
+          else if (docs.operatingState) city = docs.operatingState;
+          if (docs.serviceCategory) skills = docs.serviceCategory;
         }
       } catch {}
 
+      const isVerified = p.verificationStatus === "VERIFIED" || p.verificationStatus === "APPROVED" || Boolean(p.user?.isVerified);
+
       return {
         id: p.id,
-        name: p.user ? `${p.user.firstName} ${p.user.lastName.charAt(0)}.` : "Artisan Partner",
+        name: p.user ? `${p.user.firstName} ${p.user.lastName ? p.user.lastName.charAt(0) + "." : ""}`.trim() : "Artisan Partner",
+        phone: p.user?.phone || "N/A",
         trade: skills,
         rating: p.rating || 4.5,
         locationName: `${city} GPS`,
@@ -81,6 +85,8 @@ export async function GET(request: Request) {
         lng,
         type: "ARTISAN",
         status: "ONLINE",
+        verificationStatus: isVerified ? "VERIFIED" : p.verificationStatus || "PENDING",
+        isVerified,
         battery: "100%",
       };
     });

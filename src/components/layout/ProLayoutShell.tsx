@@ -32,6 +32,8 @@ export function ProLayoutShell({ children }: { children: ReactNode }) {
   const [customerName, setCustomerName] = useState("");
   const pathname = usePathname();
 
+  const [userCredentials, setUserCredentials] = useState<{ userId: string; email: string }>({ userId: "", email: "" });
+
   useEffect(() => {
     let activeUserId = "";
     let activeEmail = "";
@@ -43,6 +45,8 @@ export function ProLayoutShell({ children }: { children: ReactNode }) {
         if (parsed?.user?.id || parsed?.id) activeUserId = parsed.user?.id || parsed.id;
         if (parsed?.user?.email || parsed?.email) activeEmail = parsed.user?.email || parsed.email;
 
+        setUserCredentials({ userId: activeUserId, email: activeEmail });
+
         const role = parsed?.user?.role || parsed?.role;
         if (role === "CUSTOMER") {
           setIsCustomerAccount(true);
@@ -52,6 +56,7 @@ export function ProLayoutShell({ children }: { children: ReactNode }) {
     }
 
     if (activeUserId || activeEmail) {
+      // Fetch dashboard metrics
       fetch(`/api/pro/dashboard?userId=${activeUserId}&email=${encodeURIComponent(activeEmail)}`)
         .then((res) => res.json())
         .then((data) => {
@@ -64,8 +69,37 @@ export function ProLayoutShell({ children }: { children: ReactNode }) {
           }
         })
         .catch(() => {});
+
+      // Fetch persisted availability status
+      fetch(`/api/pro/availability?userId=${activeUserId}&email=${encodeURIComponent(activeEmail)}`)
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.success && typeof data.isAvailable === "boolean") {
+            setAvailable(data.isAvailable);
+          }
+        })
+        .catch(() => {});
     }
   }, []);
+
+  const handleToggleAvailability = async () => {
+    const nextVal = !available;
+    setAvailable(nextVal);
+
+    try {
+      await fetch("/api/pro/availability", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId: userCredentials.userId,
+          email: userCredentials.email,
+          isAvailable: nextVal,
+        }),
+      });
+    } catch (err) {
+      console.warn("Failed to persist availability status:", err);
+    }
+  };
 
   return (
     <div className={styles.layout}>
@@ -87,13 +121,13 @@ export function ProLayoutShell({ children }: { children: ReactNode }) {
         {/* Pro Card summary in sidebar */}
         <div style={{ padding: "var(--space-3) var(--space-4)", background: "var(--bg-tertiary)", borderRadius: "var(--radius-lg)", margin: "0 var(--space-4) var(--space-4)", border: "1px solid var(--border-primary)" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "var(--space-2)" }}>
-            <div style={{ width: 10, height: 10, borderRadius: "50%", background: available ? "#10B981" : "#64748B" }} />
+            <div style={{ width: 10, height: 10, borderRadius: "50%", background: available ? "#10B981" : "#64748B", boxShadow: available ? "0 0 8px #10B981" : "none" }} />
             <strong style={{ fontSize: "var(--fs-xs)", color: "var(--text-primary)" }}>
               {available ? "Online & Ready for Jobs" : "Offline"}
             </strong>
           </div>
           <button
-            onClick={() => setAvailable(!available)}
+            onClick={handleToggleAvailability}
             style={{ background: "none", border: "none", color: "var(--color-primary-400)", fontSize: "11px", cursor: "pointer", padding: 0, marginTop: 4, display: "flex", alignItems: "center", gap: 4 }}
           >
             {available ? <ToggleRight size={18} color="#10B981" /> : <ToggleLeft size={18} />} Switch Availability

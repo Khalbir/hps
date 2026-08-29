@@ -39,7 +39,7 @@ const services = [
   {
     icon: Sparkles,
     name: "Residential Cleaning (Monthly Plan)",
-    category: "cleaning",
+    category: "subscriptions",
     slug: "residential-cleaning-monthly",
     description: "Recurring housekeeping: Silver (2d/wk), Gold (3d/wk), Plat (6d/wk)",
     price: "₦45,000/mo",

@@ -108,14 +108,17 @@ export default function ProfessionalVerificationPage() {
   }, []);
 
   const filteredPros = pros.filter((p) => {
-    const rawStatus = (p.verificationStatus || p.status || "PENDING").toUpperCase();
-    const isPending = (rawStatus === "PENDING" || rawStatus === "SUBMITTED") && rawStatus !== "REJECTED";
+    const rawStatus = (p.verificationStatus || p.status || "").toUpperCase();
     const isVerified = rawStatus === "VERIFIED" || rawStatus === "APPROVED";
     const isRejected = rawStatus === "REJECTED";
+    const isPending = !isVerified && !isRejected;
+    const isOnline = Boolean(p.isAvailable);
 
     const matchStatus =
       filterStatus === "ALL"
         ? true
+        : filterStatus === "ONLINE"
+        ? isOnline
         : filterStatus === "PENDING"
         ? isPending
         : filterStatus === "VERIFIED"
@@ -131,9 +134,10 @@ export default function ProfessionalVerificationPage() {
     return matchStatus && matchSearch;
   });
 
+  const onlineCount = pros.filter((p) => Boolean(p.isAvailable)).length;
   const pendingCount = pros.filter((p) => {
-    const s = (p.verificationStatus || p.status || "PENDING").toUpperCase();
-    return (s === "PENDING" || s === "SUBMITTED") && s !== "REJECTED";
+    const s = (p.verificationStatus || p.status || "").toUpperCase();
+    return s !== "VERIFIED" && s !== "APPROVED" && s !== "REJECTED";
   }).length;
   const verifiedCount = pros.filter((p) => {
     const s = (p.verificationStatus || p.status || "").toUpperCase();
@@ -163,6 +167,30 @@ export default function ProfessionalVerificationPage() {
       }
     } catch {
       setToast("Failed to connect to server to purge artisan.");
+    }
+  };
+
+  const handleToggleProAvailability = async (pro: any) => {
+    const newAvail = !pro.isAvailable;
+    try {
+      const res = await fetch("/api/pro/availability", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId: pro.userId,
+          proId: pro.id,
+          isAvailable: newAvail,
+        }),
+      });
+      if (res.ok) {
+        setPros((prev) =>
+          prev.map((p) => (p.id === pro.id || p.userId === pro.userId ? { ...p, isAvailable: newAvail } : p))
+        );
+        setToast(`Artisan ${pro.name} switched to ${newAvail ? "ONLINE" : "OFFLINE"}.`);
+        setTimeout(() => setToast(""), 4000);
+      }
+    } catch {
+      setToast("Failed to update artisan online status.");
     }
   };
 
@@ -219,9 +247,9 @@ export default function ProfessionalVerificationPage() {
     <AdminLayoutShell>
       <header className={styles.adminTopBar} style={{ marginBottom: "var(--space-6)" }}>
         <div>
-          <h1 className="h3">Artisan Identity & Address Verification Center</h1>
+          <h1 className="h3">Artisan Identity, Availability & Verification Center</h1>
           <p style={{ color: "var(--text-secondary)", fontSize: "var(--fs-sm)" }}>
-            Review real artisan registrations from database. Mandatory verification required before accepting bookings.
+            Review real artisan registrations, monitor real-time online field availability, and conduct 5-pillar verification audits.
           </p>
         </div>
         <button
@@ -234,18 +262,25 @@ export default function ProfessionalVerificationPage() {
       </header>
 
       {/* Stats Deck */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 16, marginBottom: 24 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 16, marginBottom: 24 }}>
         <div className="card" style={{ padding: 16, background: "#1E293B", border: "1px solid #334155" }}>
           <span style={{ fontSize: 12, color: "#94A3B8" }}>Total Artisans</span>
           <h3 style={{ margin: "4px 0 0 0", fontSize: 22, fontWeight: "bold", color: "#F8FAFC" }}>{pros.length}</h3>
+        </div>
+        <div className="card" style={{ padding: 16, background: "#1E293B", border: "1px solid #334155" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#10B981", boxShadow: "0 0 8px #10B981" }} />
+            <span style={{ fontSize: 12, color: "#10B981", fontWeight: 700 }}>Online Artisans</span>
+          </div>
+          <h3 style={{ margin: "4px 0 0 0", fontSize: 22, fontWeight: "bold", color: "#10B981" }}>{onlineCount}</h3>
         </div>
         <div className="card" style={{ padding: 16, background: "#1E293B", border: "1px solid #334155" }}>
           <span style={{ fontSize: 12, color: "#F59E0B" }}>Pending Verification</span>
           <h3 style={{ margin: "4px 0 0 0", fontSize: 22, fontWeight: "bold", color: "#F59E0B" }}>{pendingCount}</h3>
         </div>
         <div className="card" style={{ padding: 16, background: "#1E293B", border: "1px solid #334155" }}>
-          <span style={{ fontSize: 12, color: "#10B981" }}>Verified Badge Holders</span>
-          <h3 style={{ margin: "4px 0 0 0", fontSize: 22, fontWeight: "bold", color: "#10B981" }}>{verifiedCount}</h3>
+          <span style={{ fontSize: 12, color: "#38BDF8" }}>Verified Badge Holders</span>
+          <h3 style={{ margin: "4px 0 0 0", fontSize: 22, fontWeight: "bold", color: "#38BDF8" }}>{verifiedCount}</h3>
         </div>
         <div className="card" style={{ padding: 16, background: "#1E293B", border: "1px solid #334155" }}>
           <span style={{ fontSize: 12, color: "#EF4444" }}>Rejected Dossiers</span>
@@ -280,23 +315,30 @@ export default function ProfessionalVerificationPage() {
           />
         </div>
 
-        <div style={{ display: "flex", gap: "8px" }}>
-          {["ALL", "PENDING", "VERIFIED", "REJECTED"].map((st) => (
+        <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+          {[
+            { id: "ALL", label: `ALL (${pros.length})`, color: "#0EA5E9" },
+            { id: "ONLINE", label: `ONLINE (${onlineCount})`, color: "#10B981" },
+            { id: "PENDING", label: `PENDING (${pendingCount})`, color: "#F59E0B" },
+            { id: "VERIFIED", label: `VERIFIED (${verifiedCount})`, color: "#38BDF8" },
+            { id: "REJECTED", label: `REJECTED (${rejectedCount})`, color: "#EF4444" },
+          ].map((tab) => (
             <button
-              key={st}
-              onClick={() => setFilterStatus(st)}
+              key={tab.id}
+              onClick={() => setFilterStatus(tab.id)}
               style={{
-                background: filterStatus === st ? "#0EA5E9" : "#1E293B",
-                color: filterStatus === st ? "#FFFFFF" : "#94A3B8",
+                background: filterStatus === tab.id ? tab.color : "#1E293B",
+                color: filterStatus === tab.id ? "#FFFFFF" : "#94A3B8",
                 border: "1px solid #334155",
                 borderRadius: "20px",
                 padding: "6px 14px",
                 fontSize: "12px",
                 fontWeight: 600,
                 cursor: "pointer",
+                transition: "all 0.15s",
               }}
             >
-              {st} {st === "ALL" ? `(${pros.length})` : st === "PENDING" ? `(${pendingCount})` : st === "VERIFIED" ? `(${verifiedCount})` : `(${rejectedCount})`}
+              {tab.label}
             </button>
           ))}
         </div>
@@ -320,11 +362,12 @@ export default function ProfessionalVerificationPage() {
             <thead>
               <tr style={{ background: "#0F172A", borderBottom: "1px solid #334155", color: "#94A3B8" }}>
                 <th style={{ padding: "12px 16px" }}>Artisan Name</th>
+                <th style={{ padding: "12px 16px" }}>Online Status</th>
                 <th style={{ padding: "12px 16px" }}>Field / Skill</th>
                 <th style={{ padding: "12px 16px" }}>Operating State & City</th>
                 <th style={{ padding: "12px 16px" }}>Govt ID Type</th>
                 <th style={{ padding: "12px 16px" }}>Address Check</th>
-                <th style={{ padding: "12px 16px" }}>Status</th>
+                <th style={{ padding: "12px 16px" }}>Verification Status</th>
                 <th style={{ padding: "12px 16px" }}>Audit Action</th>
               </tr>
             </thead>
@@ -334,6 +377,28 @@ export default function ProfessionalVerificationPage() {
                   <td style={{ padding: "12px 16px" }}>
                     <strong style={{ color: "#F8FAFC", display: "block" }}>{p.name}</strong>
                     <span style={{ fontSize: "12px", color: "#94A3B8" }}>{p.phone}</span>
+                  </td>
+                  <td style={{ padding: "12px 16px" }}>
+                    <button
+                      onClick={() => handleToggleProAvailability(p)}
+                      style={{
+                        background: p.isAvailable ? "rgba(16,185,129,0.15)" : "rgba(100,116,139,0.15)",
+                        border: `1px solid ${p.isAvailable ? "rgba(16,185,129,0.3)" : "rgba(100,116,139,0.3)"}`,
+                        color: p.isAvailable ? "#10B981" : "#94A3B8",
+                        borderRadius: "20px",
+                        padding: "3px 10px",
+                        fontSize: "11px",
+                        fontWeight: 700,
+                        cursor: "pointer",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: 6,
+                      }}
+                      title="Click to toggle artisan availability"
+                    >
+                      <div style={{ width: 6, height: 6, borderRadius: "50%", background: p.isAvailable ? "#10B981" : "#64748B", boxShadow: p.isAvailable ? "0 0 6px #10B981" : "none" }} />
+                      {p.isAvailable ? "ONLINE" : "OFFLINE"}
+                    </button>
                   </td>
                   <td style={{ padding: "12px 16px", color: "#CBD5E1" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>

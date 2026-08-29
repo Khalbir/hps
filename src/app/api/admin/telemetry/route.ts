@@ -41,25 +41,106 @@ export async function GET(request: Request) {
       },
     });
 
-    // 3. Verified Artisans & Pending Verifications
-    const [verifiedArtisansCount, pendingVerificationsCount, totalPros, prosList] = await Promise.all([
-      prisma.professional.count({ where: { verificationStatus: "VERIFIED" } }),
-      prisma.professional.count({ where: { verificationStatus: { in: ["PENDING", "SUBMITTED", "PENDING_REVIEW"] } } }),
-      prisma.professional.count(),
-      prisma.professional.findMany({ select: { documents: true } }),
+    // 3. Verified Artisans, Pending Verifications, and Online Artisans
+    const [allDbPros, proUsersList] = await Promise.all([
+      prisma.professional.findMany({
+        include: {
+          user: {
+            select: { id: true, firstName: true, lastName: true, email: true, phone: true, isVerified: true, role: true, ninStatus: true },
+          },
+        },
+      }).catch(() => []),
+      prisma.user.findMany({
+        where: { role: "PROFESSIONAL" },
+        select: { id: true, firstName: true, lastName: true, email: true, phone: true, isVerified: true, ninStatus: true },
+      }).catch(() => []),
     ]);
 
-    // Calculate real city artisan counts
+    // Build unified map to deduplicate and accurately track all artisans
+    const unifiedProMap = new Map<string, any>();
+    allDbPros.forEach((p) => {
+      const key = p.userId || p.id;
+      unifiedProMap.set(key, p);
+    });
+    proUsersList.forEach((u) => {
+      if (!unifiedProMap.has(u.id)) {
+        unifiedProMap.set(u.id, {
+          id: `pro_${u.id}`,
+          userId: u.id,
+          verificationStatus: u.isVerified ? "VERIFIED" : "PENDING",
+          isAvailable: true,
+          rating: 4.5,
+          user: u,
+          skills: JSON.stringify(["Skilled Services"]),
+          documents: "{}",
+        });
+      }
+    });
+
+    const allArtisansList = Array.from(unifiedProMap.values());
+    const totalArtisansCount = allArtisansList.length;
+
+    let verifiedArtisansCount = 0;
+    let pendingVerificationsCount = 0;
+    let rejectedArtisansCount = 0;
+    let onlineArtisansCount = 0;
+    const onlineArtisansList: any[] = [];
     const cityArtisans: Record<string, number> = {};
-    prosList.forEach((p) => {
-      let city = "abuja";
+
+    allArtisansList.forEach((p) => {
+      const rawStatus = (p.verificationStatus || "").toUpperCase();
+      const rawUserStatus = (p.user?.ninStatus || "").toUpperCase();
+      const isVerified = rawStatus === "VERIFIED" || rawStatus === "APPROVED" || rawUserStatus === "VERIFIED" || Boolean(p.user?.isVerified);
+      const isRejected = rawStatus === "REJECTED" || rawUserStatus === "REJECTED";
+      const isAvailable = p.isAvailable !== false; // Default true if not explicitly false
+
+      if (isVerified) {
+        verifiedArtisansCount += 1;
+      } else if (isRejected) {
+        rejectedArtisansCount += 1;
+      } else {
+        pendingVerificationsCount += 1;
+      }
+
+      if (isAvailable) {
+        onlineArtisansCount += 1;
+      }
+
+      // City calculation
+      let city = "Abuja";
+      let skills = "General Services";
       try {
         if (p.documents) {
-          const parsed = JSON.parse(p.documents);
-          if (parsed.city) city = parsed.city.toLowerCase().trim();
+          const parsed = typeof p.documents === "string" ? JSON.parse(p.documents) : p.documents;
+          if (parsed.city) city = parsed.city;
+          else if (parsed.operatingState) city = parsed.operatingState;
+          if (parsed.serviceCategory) skills = parsed.serviceCategory;
+        }
+        if (skills === "General Services" && p.skills) {
+          const parsedSkills = typeof p.skills === "string" ? JSON.parse(p.skills) : p.skills;
+          if (Array.isArray(parsedSkills) && parsedSkills.length > 0) skills = parsedSkills.join(", ");
         }
       } catch {}
-      cityArtisans[city] = (cityArtisans[city] || 0) + 1;
+
+      const normalizedCityKey = city.toLowerCase().trim();
+      cityArtisans[normalizedCityKey] = (cityArtisans[normalizedCityKey] || 0) + 1;
+
+      if (isAvailable) {
+        const u = p.user || {};
+        onlineArtisansList.push({
+          id: p.id,
+          userId: p.userId || u.id,
+          name: `${u.firstName || ""} ${u.lastName || ""}`.trim() || "Artisan Partner",
+          phone: u.phone || "N/A",
+          email: u.email || "",
+          trade: skills,
+          city,
+          rating: p.rating || 4.5,
+          verificationStatus: isVerified ? "VERIFIED" : isRejected ? "REJECTED" : "PENDING",
+          isVerified,
+          isAvailable: true,
+        });
+      }
     });
 
     // 4. Open Disputes Count
@@ -171,11 +252,14 @@ export async function GET(request: Request) {
       success: true,
       timestamp: new Date().toISOString(),
       cityArtisans,
+      onlineArtisansList,
       stats: {
         totalRevenueNgn,
         activeBookingsCount,
         verifiedArtisansCount,
         pendingVerificationsCount,
+        onlineArtisansCount,
+        totalArtisansCount,
         openDisputesCount,
         completedJobsCount,
         avgResponseTimeMin,

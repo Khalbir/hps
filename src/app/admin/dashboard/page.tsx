@@ -209,6 +209,8 @@ export default function AdminDashboardPage() {
     activeBookingsCount: 0,
     verifiedArtisansCount: 4,
     pendingVerificationsCount: 0,
+    onlineArtisansCount: 0,
+    totalArtisansCount: 4,
     openDisputesCount: 0,
     completedJobsCount: 2,
     avgResponseTimeMin: 18,
@@ -219,16 +221,18 @@ export default function AdminDashboardPage() {
 
   const kpiStats = [
     { id: "rev", label: "Total Platform Volume", value: `₦${(stats.totalRevenueNgn || 60000).toLocaleString()}`, change: "Real Database Sum", icon: DollarSign, color: "#10B981", bg: "rgba(16,185,129,0.15)" },
+    { id: "online_pros", label: "Online Artisans", value: String(stats.onlineArtisansCount ?? 0), change: `${stats.totalArtisansCount || stats.verifiedArtisansCount || 0} Registered Artisans`, icon: Zap, color: "#10B981", bg: "rgba(16,185,129,0.15)" },
+    { id: "pros", label: "Verified Artisans", value: String(stats.verifiedArtisansCount ?? 4), change: `${stats.pendingVerificationsCount || 0} Pending Verification`, icon: ShieldCheck, color: "#8B5CF6", bg: "rgba(139,92,246,0.15)" },
     { id: "users", label: "Registered Accounts", value: String(stats.totalUsersCount || 14), change: `${stats.registeredClientsCount || 9} Registered Clients`, icon: Users, color: "#0EA5E9", bg: "rgba(14,165,233,0.15)" },
-    { id: "pros", label: "Verified Artisans", value: String(stats.verifiedArtisansCount || 4), change: `${stats.pendingVerificationsCount || 0} Pending Audit`, icon: Shield, color: "#8B5CF6", bg: "rgba(139,92,246,0.15)" },
-    { id: "completed", label: "Completed Jobs", value: String(stats.completedJobsCount || 2), change: `${stats.totalBookingsAll || 2} Total Placed`, icon: CheckCircle2, color: "#10B981", bg: "rgba(16,185,129,0.15)" },
     { id: "active", label: "In-Flight Bookings", value: String(stats.activeBookingsCount || 0), change: "Active Operations", icon: ClipboardList, color: "#3B82F6", bg: "rgba(59,130,246,0.15)" },
+    { id: "completed", label: "Completed Jobs", value: String(stats.completedJobsCount || 2), change: `${stats.totalBookingsAll || 2} Total Placed`, icon: CheckCircle2, color: "#10B981", bg: "rgba(16,185,129,0.15)" },
     { id: "disputes", label: "Open Disputes", value: String(stats.openDisputesCount || 0), change: stats.openDisputesCount > 0 ? "Requires Action" : "All Clear (0 Disputes)", icon: AlertCircle, color: stats.openDisputesCount > 0 ? "#EF4444" : "#10B981", bg: stats.openDisputesCount > 0 ? "rgba(239,68,68,0.15)" : "rgba(16,185,129,0.15)" },
   ];
 
   const bookingStatusBreakdown = telemetry?.bookingStatusBreakdown || [];
   const revenueMonthly = telemetry?.revenueMonthly || [];
   const recentBookings = telemetry?.recentBookings || [];
+  const onlineArtisansList = telemetry?.onlineArtisansList || [];
   const liveActivityFeed = telemetry?.liveActivityFeed || [];
   const maxRev = Math.max(1000, ...revenueMonthly.map((r: any) => r.amount || 0));
 
@@ -696,6 +700,121 @@ export default function AdminDashboardPage() {
               })}
             </div>
           </div>
+        </div>
+
+        {/* ========================================================================= */}
+        {/* LIVE ONLINE FIELD ARTISANS RADAR SECTION */}
+        {/* ========================================================================= */}
+        <div
+          className="card"
+          style={{
+            background: "#1E293B",
+            border: "1px solid #334155",
+            padding: "20px",
+            marginBottom: "var(--space-6)",
+            position: "relative",
+          }}
+        >
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px", flexWrap: "wrap", gap: "12px" }}>
+            <div>
+              <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                <div style={{ width: 10, height: 10, borderRadius: "50%", background: "#10B981", boxShadow: "0 0 10px #10B981" }} />
+                <h3 className="h4" style={{ margin: 0, color: "#F8FAFC", fontWeight: 700 }}>Live Online Field Artisans Radar</h3>
+                <span
+                  className="badge"
+                  style={{
+                    background: "rgba(16,185,129,0.15)",
+                    color: "#10B981",
+                    border: "1px solid rgba(16,185,129,0.3)",
+                    fontSize: "11px",
+                    fontWeight: 700,
+                  }}
+                >
+                  {stats.onlineArtisansCount || 0} ACTIVE ON NETWORK
+                </span>
+              </div>
+              <p style={{ margin: "4px 0 0 0", fontSize: "12.5px", color: "#94A3B8" }}>
+                Artisans currently connected and ready for on-demand dispatch across regional hubs.
+              </p>
+            </div>
+
+            <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+              <Link
+                href="/admin/dashboard/map"
+                className="btn btn-secondary btn-xs"
+                style={{ color: "#38BDF8", borderColor: "rgba(14,165,233,0.4)", display: "inline-flex", alignItems: "center", gap: 4 }}
+              >
+                <MapPin size={13} /> View On Dispatch Map &rarr;
+              </Link>
+              <Link
+                href="/admin/dashboard/professionals"
+                className="btn btn-secondary btn-xs"
+                style={{ color: "#F59E0B", borderColor: "rgba(245,158,11,0.4)", display: "inline-flex", alignItems: "center", gap: 4 }}
+              >
+                <ShieldCheck size={13} /> Verification Center ({stats.pendingVerificationsCount || 0} Pending) &rarr;
+              </Link>
+            </div>
+          </div>
+
+          {onlineArtisansList.length === 0 ? (
+            <div style={{ padding: "28px", textAlign: "center", background: "#0F172A", borderRadius: 8, border: "1px solid #334155" }}>
+              <Inbox size={28} color="#94A3B8" style={{ margin: "0 auto 8px", opacity: 0.6 }} />
+              <strong style={{ display: "block", color: "#F8FAFC", fontSize: "13.5px" }}>No Artisans Currently Online</strong>
+              <p style={{ margin: "4px 0 0 0", fontSize: "12px", color: "#94A3B8" }}>
+                When registered artisans toggle their status to Online in the Pro App, their live availability will stream here instantly.
+              </p>
+            </div>
+          ) : (
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 12 }}>
+              {onlineArtisansList.slice(0, 6).map((pro: any) => (
+                <div
+                  key={pro.id}
+                  style={{
+                    background: "#0F172A",
+                    border: "1px solid #334155",
+                    borderRadius: 8,
+                    padding: "12px 14px",
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    gap: 10,
+                  }}
+                >
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 2 }}>
+                      <div style={{ width: 7, height: 7, borderRadius: "50%", background: "#10B981", flexShrink: 0 }} />
+                      <strong style={{ fontSize: "13px", color: "#F8FAFC", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                        {pro.name}
+                      </strong>
+                    </div>
+                    <span style={{ fontSize: "11.5px", color: "#38BDF8", display: "block", fontWeight: 600 }}>{pro.trade}</span>
+                    <span style={{ fontSize: "11px", color: "#94A3B8" }}>{pro.city} • ★ {pro.rating || 4.5}</span>
+                  </div>
+
+                  <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4, flexShrink: 0 }}>
+                    <span
+                      className="badge"
+                      style={{
+                        background: pro.isVerified ? "rgba(16,185,129,0.15)" : "rgba(245,158,11,0.15)",
+                        color: pro.isVerified ? "#10B981" : "#F59E0B",
+                        fontSize: "10px",
+                        fontWeight: 700,
+                        padding: "1px 6px",
+                      }}
+                    >
+                      {pro.isVerified ? "VERIFIED" : "PENDING AUDIT"}
+                    </span>
+                    <Link
+                      href={`/admin/dashboard/professionals`}
+                      style={{ fontSize: "10.5px", color: "#0EA5E9", textDecoration: "none", fontWeight: 600 }}
+                    >
+                      Audit &rarr;
+                    </Link>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* 2-Column Section: Live Bookings Table & Live Audit Stream */}
