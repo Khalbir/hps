@@ -48,7 +48,7 @@ export async function POST(request: Request) {
     const referralCode = generatePartnerReferralCode(companyName || name, category as PartnerCategory);
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://handyhubpro.ng";
     const deepLink = `${baseUrl}/book?partner=${referralCode}`;
-    const qrCodeUrl = generatePartnerQrCode(deepLink, (companyName || name).toUpperCase());
+    const qrCodeUrl = generatePartnerQrCode(deepLink, (companyName || name).toUpperCase(), partnerId, referralCode);
 
     const newPartner: PartnerProfile = {
       id: `ptr_${Date.now()}_${Math.floor(Math.random() * 1000)}`,

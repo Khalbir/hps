@@ -28,6 +28,7 @@ import styles from "./partners.module.css";
 import { PARTNER_CATEGORIES_METADATA, PARTNER_TIERS } from "@/lib/partners/config";
 import { PartnerCategory } from "@/lib/partners/types";
 import { useActiveStates } from "@/hooks/useActiveStates";
+import { downloadBrandedQrBadge } from "@/lib/qr-code";
 
 export default function PartnersLandingPage() {
   const router = useRouter();
@@ -598,15 +599,24 @@ export default function PartnersLandingPage() {
                     <span>{copiedLink ? "Link Copied!" : "Copy Booking Link"}</span>
                   </button>
 
-                  <a
-                    href={registeredPartner.qrCodeUrl}
-                    download={`HandyHub_Partner_QR_${registeredPartner.partnerId}.svg`}
+                  <button
+                    onClick={async () => {
+                      const deepLink = `https://handyhubpro.ng/book?partner=${registeredPartner.referralCode}`;
+                      await downloadBrandedQrBadge({
+                        deepLink,
+                        partnerId: registeredPartner.partnerId,
+                        referralCode: registeredPartner.referralCode,
+                        title: registeredPartner.companyName || registeredPartner.name || "HANDYHUB PARTNER",
+                        subtitle: "SCAN TO BOOK VERIFIED ARTISANS",
+                        filename: `HandyHub_Partner_QR_${registeredPartner.partnerId}.png`,
+                      });
+                    }}
                     className={styles.btnSecondary}
-                    style={{ flex: 1, justifyContent: "center" }}
+                    style={{ flex: 1, justifyContent: "center", cursor: "pointer" }}
                   >
                     <Download size={16} />
                     <span>Download QR Code</span>
-                  </a>
+                  </button>
                 </div>
 
                 <button

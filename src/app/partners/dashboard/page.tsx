@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import { PartnerProfile, PartnerAttribution, PartnerPayoutTransaction } from "@/lib/partners/types";
 import { PARTNER_CATEGORIES_METADATA, PARTNER_TIERS } from "@/lib/partners/config";
+import { downloadBrandedQrBadge } from "@/lib/qr-code";
 
 export default function PartnerDashboardPage() {
   return (
@@ -345,9 +346,19 @@ function PartnerDashboardContent() {
             </p>
 
             <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-              <a
-                href={partner?.qrCodeUrl}
-                download={`HandyHub_Partner_QR_${partner?.partnerId}.svg`}
+              <button
+                onClick={async () => {
+                  if (!partner) return;
+                  const deepLink = `https://handyhubpro.ng/book?partner=${partner.referralCode}`;
+                  await downloadBrandedQrBadge({
+                    deepLink,
+                    partnerId: partner.partnerId,
+                    referralCode: partner.referralCode,
+                    title: partner.companyName || partner.name || "PARTNER MARKETING PASS",
+                    subtitle: "SCAN TO BOOK VERIFIED ARTISANS",
+                    filename: `HandyHub_Partner_QR_${partner.partnerId}.png`,
+                  });
+                }}
                 style={{
                   display: "inline-flex",
                   alignItems: "center",
@@ -356,14 +367,15 @@ function PartnerDashboardContent() {
                   borderRadius: 8,
                   background: "rgba(255,255,255,0.08)",
                   color: "#FFFFFF",
-                  textDecoration: "none",
+                  border: "none",
                   fontWeight: 700,
                   fontSize: "0.9rem",
+                  cursor: "pointer",
                 }}
               >
                 <Download size={15} />
-                <span>Download SVG Vector QR</span>
-              </a>
+                <span>Download High-Res QR Badge</span>
+              </button>
 
               <button
                 onClick={handleCopyLink}

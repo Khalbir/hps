@@ -21,13 +21,16 @@ import {
   dispatchMilestoneNotification,
 } from "./ai-agent";
 
+import { generateScannableQrSvg } from "@/lib/qr-code";
+
 /**
- * Generates an SVG Data URI for client-side QR display
+ * Generates an ISO-compliant SVG Data URI for client-side QR display
  */
-export function generateSvgQrCode(dataText: string): string {
-  // Generates a clean, modern SVG QR placeholder data URI for offline/on-site scanning
-  const encodedText = encodeURIComponent(dataText);
-  return `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160" width="160" height="160"><rect width="160" height="160" fill="%23FFFFFF" rx="12"/><rect x="15" y="15" width="40" height="40" fill="%2300A8B5" rx="4"/><rect x="23" y="23" width="24" height="24" fill="%23FFFFFF" rx="2"/><rect x="29" y="29" width="12" height="12" fill="%2300A8B5"/><rect x="105" y="15" width="40" height="40" fill="%2300A8B5" rx="4"/><rect x="113" y="23" width="24" height="24" fill="%23FFFFFF" rx="2"/><rect x="119" y="29" width="12" height="12" fill="%2300A8B5"/><rect x="15" y="105" width="40" height="40" fill="%2300A8B5" rx="4"/><rect x="23" y="113" width="24" height="24" fill="%23FFFFFF" rx="2"/><rect x="29" y="119" width="12" height="12" fill="%2300A8B5"/><rect x="65" y="25" width="10" height="10" fill="%230F172A"/><rect x="85" y="25" width="10" height="10" fill="%23FF7A1A"/><rect x="65" y="45" width="10" height="10" fill="%23FF7A1A"/><rect x="85" y="45" width="10" height="10" fill="%230F172A"/><rect x="65" y="65" width="30" height="30" fill="%2300A8B5" rx="4"/><rect x="25" y="65" width="10" height="20" fill="%230F172A"/><rect x="45" y="75" width="10" height="10" fill="%230F172A"/><rect x="105" y="65" width="15" height="10" fill="%230F172A"/><rect x="125" y="75" width="15" height="15" fill="%23FF7A1A"/><rect x="65" y="105" width="10" height="20" fill="%230F172A"/><rect x="85" y="115" width="20" height="10" fill="%2300A8B5"/><rect x="115" y="105" width="25" height="15" fill="%230F172A"/><rect x="75" y="135" width="30" height="10" fill="%23FF7A1A"/><rect x="115" y="130" width="15" height="15" fill="%2300A8B5"/></svg>`;
+export function generateSvgQrCode(dataText: string, label: string = "HANDYHUB REFERRAL"): string {
+  return generateScannableQrSvg(dataText, {
+    label,
+    subLabel: "SCAN TO CLAIM ₦2,000 VOUCHER",
+  });
 }
 
 /**

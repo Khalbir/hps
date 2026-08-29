@@ -32,6 +32,7 @@ import {
 } from "lucide-react";
 import styles from "./estate.module.css";
 import { PartnerProfile, PartnerEstate, EstateResident, EstateServiceRequest, PartnerPayoutTransaction } from "@/lib/partners/types";
+import { downloadBrandedQrBadge } from "@/lib/qr-code";
 
 export default function EstatePortalPage() {
   return (
@@ -1116,15 +1117,25 @@ function EstatePortalContent() {
             />
 
             <div style={{ display: "flex", gap: 12 }}>
-              <a
-                href={partner?.qrCodeUrl}
-                download={`HandyHub_Estate_Pass_${partner?.partnerId}.svg`}
+              <button
+                onClick={async () => {
+                  if (!partner) return;
+                  const deepLink = `https://handyhubpro.ng/book?partner=${partner.referralCode}`;
+                  await downloadBrandedQrBadge({
+                    deepLink,
+                    partnerId: partner.partnerId,
+                    referralCode: partner.referralCode,
+                    title: partner.companyName || partner.name || "ESTATE MANAGEMENT PASS",
+                    subtitle: "SCAN TO BOOK VERIFIED ARTISANS",
+                    filename: `HandyHub_Estate_Pass_${partner.partnerId}.png`,
+                  });
+                }}
                 className={styles.btnTurquoise}
-                style={{ flex: 1, justifyContent: "center", textDecoration: "none" }}
+                style={{ flex: 1, justifyContent: "center", cursor: "pointer", border: "none" }}
               >
                 <Download size={16} />
-                <span>Download Vector SVG</span>
-              </a>
+                <span>Download Estate QR Pass</span>
+              </button>
               <button onClick={() => setIsQrOpen(false)} style={{ padding: "12px 20px", background: "rgba(255,255,255,0.08)", border: "none", borderRadius: 10, color: "#CBD5E1", fontWeight: 700, cursor: "pointer" }}>
                 Close
               </button>

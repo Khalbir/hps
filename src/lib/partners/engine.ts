@@ -28,14 +28,23 @@ export function generatePartnerReferralCode(name: string, category: PartnerCateg
   return `${prefix}-${cleanName}-${randomNum}`;
 }
 
-/**
- * Generates an SVG vector Data URI for high-res Partner QR codes
- */
-export function generatePartnerQrCode(deepLink: string, label: string = "HANDYHUB PARTNER"): string {
-  const cleanLabel = (label || "HANDYHUB PARTNER").toUpperCase().slice(0, 24);
-  const encodedUrl = encodeURIComponent(deepLink);
+import { generateScannableQrSvg } from "@/lib/qr-code";
 
-  return `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 280" width="240" height="280"><defs><linearGradient id="qrGrad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="%2300A8B5"/><stop offset="100%" stop-color="%230EA5E9"/></linearGradient></defs><rect width="240" height="280" rx="16" fill="%230F172A" stroke="%2300A8B5" stroke-width="2"/><rect x="15" y="15" width="210" height="200" rx="12" fill="%23FFFFFF"/><rect x="30" y="30" width="45" height="45" rx="6" fill="%2300A8B5"/><rect x="38" y="38" width="29" height="29" rx="3" fill="%23FFFFFF"/><rect x="45" y="45" width="15" height="15" fill="%2300A8B5"/><rect x="165" y="30" width="45" height="45" rx="6" fill="%2300A8B5"/><rect x="173" y="38" width="29" height="29" rx="3" fill="%23FFFFFF"/><rect x="180" y="45" width="15" height="15" fill="%2300A8B5"/><rect x="30" y="155" width="45" height="45" rx="6" fill="%2300A8B5"/><rect x="38" y="163" width="29" height="29" rx="3" fill="%23FFFFFF"/><rect x="45" y="170" width="15" height="15" fill="%2300A8B5"/><rect x="90" y="35" width="15" height="15" fill="%230F172A"/><rect x="115" y="35" width="15" height="15" fill="%23EA580C"/><rect x="135" y="35" width="15" height="15" fill="%230F172A"/><rect x="90" y="60" width="30" height="15" fill="%2300A8B5"/><rect x="130" y="60" width="20" height="15" fill="%230F172A"/><rect x="90" y="85" width="60" height="60" rx="6" fill="%2300A8B5"/><circle cx="120" cy="115" r="14" fill="%23FFFFFF"/><path d="M 115 115 L 125 115" stroke="%23EA580C" stroke-width="3" stroke-linecap="round"/><rect x="35" y="90" width="15" height="25" fill="%230F172A"/><rect x="60" y="90" width="20" height="15" fill="%23EA580C"/><rect x="35" y="125" width="45" height="15" fill="%230F172A"/><rect x="165" y="90" width="20" height="30" fill="%230F172A"/><rect x="195" y="90" width="15" height="15" fill="%23EA580C"/><rect x="165" y="130" width="45" height="15" fill="%2300A8B5"/><rect x="90" y="155" width="20" height="25" fill="%230F172A"/><rect x="120" y="155" width="40" height="15" fill="%23EA580C"/><rect x="170" y="155" width="40" height="25" fill="%230F172A"/><rect x="90" y="185" width="70" height="15" fill="%2300A8B5"/><rect x="15" y="225" width="210" height="42" rx="8" fill="%231E293B"/><text x="120" y="243" font-family="Arial, sans-serif" font-size="11" font-weight="bold" fill="%2338BDF8" text-anchor="middle" letter-spacing="1">SCAN TO BOOK VERIFIED ARTISANS</text><text x="120" y="258" font-family="Arial, sans-serif" font-size="10" font-weight="bold" fill="%23F59E0B" text-anchor="middle">${cleanLabel}</text></svg>`;
+/**
+ * Generates an ISO-compliant SVG vector Data URI for high-res Partner QR codes
+ */
+export function generatePartnerQrCode(
+  deepLink: string,
+  label: string = "HANDYHUB PARTNER",
+  partnerId?: string,
+  referralCode?: string
+): string {
+  return generateScannableQrSvg(deepLink, {
+    label,
+    partnerId,
+    referralCode,
+    subLabel: "SCAN TO BOOK VERIFIED ARTISANS",
+  });
 }
 
 /**
