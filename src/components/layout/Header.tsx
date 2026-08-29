@@ -151,6 +151,9 @@ export function Header() {
             <Link href="/track" className={styles.navLink} style={{ color: "#10B981", fontWeight: 700 }}>
               Track Booking
             </Link>
+            <Link href="/partners" className={styles.navLink} style={{ color: "#38BDF8", fontWeight: 700 }}>
+              Partner Network
+            </Link>
             <Link
               href="/auth/register?role=PROFESSIONAL"
               className={styles.becomeProLink}
@@ -394,6 +397,21 @@ export function Header() {
                   >
                     <Wrench size={16} color="#FF6B00" />
                     <span>Become a Verified Pro (Artisan Sign Up)</span>
+                  </Link>
+
+                  <Link
+                    href="/partners"
+                    className={styles.mobileLink}
+                    onClick={() => setMobileOpen(false)}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 8,
+                      color: "#38BDF8",
+                      fontWeight: 700,
+                    }}
+                  >
+                    <span>🤝 HandyHub Partner Network</span>
                   </Link>
 
                   {isLoggedIn ? (

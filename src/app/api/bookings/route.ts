@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { checkRateLimit, sanitizeInput } from "@/lib/security";
 import { notifyBookingStatusChange, broadcastNewJobToArtisans } from "@/lib/notifications";
 import { getBookingOtp } from "@/lib/bookingOtp";
+import { stateStore } from "@/lib/states/store";
 
 export const dynamic = "force-dynamic";
 
@@ -105,6 +106,39 @@ export async function POST(request: Request) {
         { error: "Date, time, and address are required to confirm booking" },
         { status: 400 }
       );
+    }
+
+    // State Operating Guard: Ensure target state is active
+    const requestedState = body.state || body.operatingState;
+    if (requestedState) {
+      const isAct = await stateStore.isStateActive(requestedState);
+      if (!isAct) {
+        return NextResponse.json(
+          {
+            error: `HandyHub dispatch operations in ${requestedState} are currently paused or in waitlist mode. New bookings cannot be accepted in this region right now.`,
+            stateInactive: true,
+            stateName: requestedState,
+          },
+          { status: 400 }
+        );
+      }
+    } else if (address) {
+      const allStates = await stateStore.getAllStates();
+      const inactiveStates = allStates.filter((s) => !s.isActive);
+      for (const inState of inactiveStates) {
+        const rootName = inState.name.replace(" State", "").trim();
+        const pattern = new RegExp(`\\b${rootName}\\b`, "i");
+        if (pattern.test(address) && !address.toLowerCase().includes("fct") && !address.toLowerCase().includes("abuja")) {
+          return NextResponse.json(
+            {
+              error: `HandyHub dispatch operations in ${inState.name} are currently paused or in expansion mode. Join the waitlist to be notified when bookings open!`,
+              stateInactive: true,
+              stateName: inState.name,
+            },
+            { status: 400 }
+          );
+        }
+      }
     }
 
     const sanitizedAddress = sanitizeInput(address);

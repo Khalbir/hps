@@ -7,9 +7,11 @@ import {
   Store, ShieldCheck, CreditCard, ArrowRight, CheckCircle2,
   AlertCircle, Building2, MapPin, Phone, Mail, Lock
 } from "lucide-react";
+import { useActiveStates } from "@/hooks/useActiveStates";
 
 export default function MerchantRegisterPage() {
   const router = useRouter();
+  const { activeStates } = useActiveStates();
   const [form, setForm] = useState({
     businessName: "",
     contactFirstName: "",
@@ -168,13 +170,45 @@ export default function MerchantRegisterPage() {
             </div>
           </div>
 
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px", marginBottom: "14px" }}>
+            <div>
+              <label style={{ fontSize: "12px", color: "#64748B", fontWeight: 700, textTransform: "uppercase", display: "block", marginBottom: "4px" }}>
+                Operating State <span style={{ color: "#EF4444" }}>*</span>
+              </label>
+              <select
+                value={form.state}
+                onChange={(e) => setForm({ ...form, state: e.target.value })}
+                required
+                style={{ width: "100%", background: "#0F172A", border: "1px solid #334155", borderRadius: "8px", padding: "10px", color: "#F8FAFC", fontSize: "13.5px", cursor: "pointer" }}
+              >
+                {activeStates.map((st) => (
+                  <option key={st.code} value={st.name}>{st.name}</option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label style={{ fontSize: "12px", color: "#64748B", fontWeight: 700, textTransform: "uppercase", display: "block", marginBottom: "4px" }}>
+                City / Commercial District <span style={{ color: "#EF4444" }}>*</span>
+              </label>
+              <input
+                type="text"
+                placeholder="e.g. Wuse 2, Ikeja, Bodija"
+                value={form.city}
+                onChange={(e) => setForm({ ...form, city: e.target.value })}
+                required
+                style={{ width: "100%", background: "#0F172A", border: "1px solid #334155", borderRadius: "8px", padding: "10px", color: "#F8FAFC", fontSize: "13.5px" }}
+              />
+            </div>
+          </div>
+
           <div style={{ marginBottom: "14px" }}>
             <label style={{ fontSize: "12px", color: "#64748B", fontWeight: 700, textTransform: "uppercase", display: "block", marginBottom: "4px" }}>
-              Physical Store / Warehouse Address in Abuja <span style={{ color: "#EF4444" }}>*</span>
+              Physical Store / Warehouse Street Address <span style={{ color: "#EF4444" }}>*</span>
             </label>
             <input
               type="text"
-              placeholder="Shop / Plot Number, Commercial District, Abuja"
+              placeholder="Shop / Plot Number, Street Name, Commercial Plaza"
               value={form.businessAddress}
               onChange={(e) => setForm({ ...form, businessAddress: e.target.value })}
               required

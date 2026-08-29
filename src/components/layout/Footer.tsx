@@ -34,6 +34,8 @@ const serviceLinks = [
 
 const companyLinks = [
   { name: "About Us", href: "/about" },
+  { name: "🤝 Partner Network (Estates & Realtors)", href: "/partners" },
+  { name: "🏢 Estate Management Portal", href: "/partners/estate" },
   { name: "🛠️ Join as an Artisan / Pro", href: "/auth/register?role=PROFESSIONAL" },
   { name: "Track Active Booking", href: "/track" },
   { name: "Contact Dispatch", href: "/contact" },

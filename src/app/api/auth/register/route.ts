@@ -4,6 +4,7 @@ import { hash } from "bcryptjs";
 import { sendConfirmationEmail } from "@/lib/email";
 import { storeCredential } from "@/lib/credentials-store";
 import { generateDigitalIdFromSeed } from "@/lib/digitalId";
+import { stateStore } from "@/lib/states/store";
 
 export async function POST(request: Request) {
   try {
@@ -35,6 +36,21 @@ export async function POST(request: Request) {
         { error: "Primary service field selection is required for professional registration." },
         { status: 400 }
       );
+    }
+
+    // Validate Operating State if provided
+    if (operatingState && operatingState.trim()) {
+      const isStateActive = await stateStore.isStateActive(operatingState);
+      if (!isStateActive) {
+        return NextResponse.json(
+          {
+            error: `HandyHub Pro operations in ${operatingState} are currently paused or in waitlist mode. Join the priority waitlist to be notified first!`,
+            stateInactive: true,
+            stateName: operatingState,
+          },
+          { status: 400 }
+        );
+      }
     }
 
     const hashedPassword = await hash(password, 12);

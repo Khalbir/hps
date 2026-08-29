@@ -6,7 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard, Users, ClipboardList, CreditCard, Star,
   Settings, Shield, ShieldCheck, BarChart3, Tag, Bell, LogOut, Menu, X,
-  MapPin, Lock, Search, AlertCircle, Download, HelpCircle, Wrench, ShoppingBag, Gift, Layers
+  MapPin, Lock, Search, AlertCircle, Download, HelpCircle, Wrench, ShoppingBag, Gift, Layers, Building2
 } from "lucide-react";
 import styles from "@/app/admin/admin.module.css";
 import { GlobalSearchModal } from "@/components/admin/GlobalSearchModal";
@@ -34,6 +34,8 @@ const adminNav: NavItem[] = [
   { href: "/admin/dashboard/reviews", label: "Customer Reviews", icon: Star, permissionKey: "reviews" },
   { href: "/admin/dashboard/promo-codes", label: "Promo Codes", icon: Tag, permissionKey: "promoCodes" },
   { href: "/admin/dashboard/referrals", label: "Referral & AI Center", icon: Gift, permissionKey: "referrals" },
+  { href: "/admin/dashboard/partners", label: "Partner Network & Estates", icon: Building2, permissionKey: "referrals" },
+  { href: "/admin/dashboard/states", label: "State Operating Controls", icon: MapPin, permissionKey: "states" },
   { href: "/admin/dashboard/analytics", label: "Analytics & Reports", icon: BarChart3, permissionKey: "analytics" },
   { href: "/admin/dashboard/staff-tasks", label: "Staff & AI Duties", icon: Layers, permissionKey: "dashboard" },
   { href: "/admin/dashboard/notifications", label: "Notifications", icon: Bell, permissionKey: "notifications" },

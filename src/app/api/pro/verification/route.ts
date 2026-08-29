@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { hash } from "bcryptjs";
 import { generateDigitalIdFromSeed } from "@/lib/digitalId";
+import { stateStore } from "@/lib/states/store";
 
 export const dynamic = "force-dynamic";
 
@@ -160,6 +161,18 @@ export async function POST(request: Request) {
       }
       if (!operatingState || !operatingState.trim()) {
         missingFields.push("Operating State");
+      } else {
+        const isStateActive = await stateStore.isStateActive(operatingState);
+        if (!isStateActive) {
+          return NextResponse.json(
+            {
+              error: `Verification submissions in ${operatingState} are temporarily paused as this region is currently inactive. Please contact support or join the regional waitlist.`,
+              stateInactive: true,
+              stateName: operatingState,
+            },
+            { status: 400 }
+          );
+        }
       }
 
       const g1Phone = (guarantor1?.phone || "").replace(/\D/g, "");

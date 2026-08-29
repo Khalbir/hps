@@ -12,6 +12,7 @@ import {
 import { getQuizForCategory, QuizQuestion } from "@/lib/quiz";
 import { getValidMediaUrl } from "@/lib/sample-documents";
 import { optimizeDocumentFile } from "@/lib/image-compression";
+import { useActiveStates } from "@/hooks/useActiveStates";
 import styles from "../pro.module.css";
 
 const steps = [
@@ -95,6 +96,7 @@ export default function ProVerificationPage() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   // Address Verification States
+  const { activeStates } = useActiveStates();
   const [operatingState, setOperatingState] = useState("FCT Abuja");
   const [homeAddress, setHomeAddress] = useState("");
   const [lga, setLga] = useState("");
@@ -1178,13 +1180,8 @@ export default function ProVerificationPage() {
                       value={operatingState}
                       onChange={(e) => setOperatingState(e.target.value)}
                     >
-                      {[
-                        "FCT Abuja", "Abia", "Adamawa", "Akwa Ibom", "Anambra", "Bauchi", "Bayelsa", "Benue", "Borno",
-                        "Cross River", "Delta", "Ebonyi", "Edo", "Ekiti", "Enugu", "Gombe", "Imo", "Jigawa",
-                        "Kaduna", "Kano", "Katsina", "Kebbi", "Kogi", "Kwara", "Lagos", "Nasarawa", "Niger",
-                        "Ogun", "Ondo", "Osun", "Oyo", "Plateau", "Rivers", "Sokoto", "Taraba", "Yobe", "Zamfara"
-                      ].map((st) => (
-                        <option key={st} value={st}>{st}</option>
+                      {activeStates.map((st) => (
+                        <option key={st.code} value={st.name}>{st.name}</option>
                       ))}
                     </select>
                   </div>

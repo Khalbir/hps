@@ -9,6 +9,8 @@ import {
   FileText, MapPin, Home, Check
 } from "lucide-react";
 import { BrandLogo } from "@/components/common/BrandLogo";
+import { useActiveStates } from "@/hooks/useActiveStates";
+import { InactiveStateModal } from "@/components/common/InactiveStateModal";
 import styles from "../auth.module.css";
 
 const PRO_SERVICE_OPTIONS = [
@@ -32,6 +34,10 @@ const PRO_SERVICE_OPTIONS = [
 
 export default function RegisterPage() {
   const router = useRouter();
+  const { activeStates, isStateActive } = useActiveStates();
+  const [waitlistStateName, setWaitlistStateName] = useState("");
+  const [showWaitlistModal, setShowWaitlistModal] = useState(false);
+
   const [form, setForm] = useState({
     firstName: "",
     lastName: "",
@@ -48,7 +54,7 @@ export default function RegisterPage() {
     homeAddress: "",
   });
 
-  // Auto-detect ?role=PROFESSIONAL or ?role=artisan or ?role=pro from URL
+  // Auto-detect ?role=PROFESSIONAL or ?state=... from URL
   useEffect(() => {
     if (typeof window !== "undefined") {
       const params = new URLSearchParams(window.location.search);
@@ -56,8 +62,18 @@ export default function RegisterPage() {
       if (requestedRole === "PROFESSIONAL" || requestedRole === "PRO" || requestedRole === "ARTISAN") {
         setForm((prev) => ({ ...prev, role: "PROFESSIONAL" }));
       }
+
+      const requestedState = params.get("state");
+      if (requestedState) {
+        if (!isStateActive(requestedState)) {
+          setWaitlistStateName(requestedState);
+          setShowWaitlistModal(true);
+        } else {
+          setForm((prev) => ({ ...prev, operatingState: requestedState }));
+        }
+      }
     }
-  }, []);
+  }, [activeStates]);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [offPlatformAgreed, setOffPlatformAgreed] = useState(false);
@@ -148,6 +164,10 @@ export default function RegisterPage() {
       const data = await res.json();
 
       if (!res.ok) {
+        if (data.stateInactive) {
+          setWaitlistStateName(data.stateName || form.operatingState);
+          setShowWaitlistModal(true);
+        }
         setError(data.error || "Registration failed. Please check your inputs.");
         setLoading(false);
         return;
@@ -416,7 +436,7 @@ export default function RegisterPage() {
                 </div>
 
                 <div className={styles.nameRow}>
-                  <div className={styles.inputGroup}>
+                    <div className={styles.inputGroup}>
                     <label className={styles.label}>
                       Operating State in Nigeria <span style={{ color: "#EF4444" }}>*</span>
                     </label>
@@ -429,13 +449,8 @@ export default function RegisterPage() {
                         required
                         style={{ cursor: "pointer" }}
                       >
-                        {[
-                          "FCT Abuja", "Abia", "Adamawa", "Akwa Ibom", "Anambra", "Bauchi", "Bayelsa", "Benue", "Borno",
-                          "Cross River", "Delta", "Ebonyi", "Edo", "Ekiti", "Enugu", "Gombe", "Imo", "Jigawa",
-                          "Kaduna", "Kano", "Katsina", "Kebbi", "Kogi", "Kwara", "Lagos", "Nasarawa", "Niger",
-                          "Ogun", "Ondo", "Osun", "Oyo", "Plateau", "Rivers", "Sokoto", "Taraba", "Yobe", "Zamfara"
-                        ].map((st) => (
-                          <option key={st} value={st}>{st}</option>
+                        {activeStates.map((st) => (
+                          <option key={st.code} value={st.name}>{st.name}</option>
                         ))}
                       </select>
                     </div>
@@ -607,6 +622,15 @@ export default function RegisterPage() {
           </p>
         </motion.div>
       </div>
+
+      <InactiveStateModal
+        isOpen={showWaitlistModal}
+        onClose={() => setShowWaitlistModal(false)}
+        stateName={waitlistStateName || "your selected state"}
+        defaultEmail={form.email}
+        defaultPhone={form.phone}
+        userType={form.role === "PROFESSIONAL" ? "ARTISAN" : "CUSTOMER"}
+      />
     </div>
   );
 }

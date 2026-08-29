@@ -39,6 +39,7 @@ export interface RolePermissions {
   settings: boolean;
   backup: boolean;
   manageRoles: boolean;
+  states: boolean;
 }
 
 export const ROLE_PERMISSIONS: Record<string, RolePermissions> = {
@@ -64,6 +65,7 @@ export const ROLE_PERMISSIONS: Record<string, RolePermissions> = {
     settings: true,
     backup: true,
     manageRoles: true,
+    states: true,
   },
 
   // 2. CHIEF ADMINISTRATIVE OFFICER (CAO) / EXECUTIVE OPS MANAGER: Second in command
@@ -88,6 +90,7 @@ export const ROLE_PERMISSIONS: Record<string, RolePermissions> = {
     settings: false, // Core system settings restricted to Super Admin
     backup: false, // Database backup & purge restricted to Super Admin
     manageRoles: false, // Staff hiring/promotion restricted to Super Admin
+    states: false, // Restricted to Super Admin
   },
 
   // Legacy fallback mapped to Super Admin level operations
@@ -112,6 +115,7 @@ export const ROLE_PERMISSIONS: Record<string, RolePermissions> = {
     settings: true,
     backup: true,
     manageRoles: false,
+    states: true,
   },
 
   // 3. OPERATIONS MANAGER: Field booking dispatch & technician coordination
@@ -136,6 +140,7 @@ export const ROLE_PERMISSIONS: Record<string, RolePermissions> = {
     settings: false,
     backup: false,
     manageRoles: false,
+    states: false,
   },
 
   // 4. MARKETPLACE MANAGER: Commercial vendor onboarding, catalog moderation & logistics
@@ -160,6 +165,7 @@ export const ROLE_PERMISSIONS: Record<string, RolePermissions> = {
     settings: false,
     backup: false,
     manageRoles: false,
+    states: false,
   },
 
   // 5. VERIFICATION OFFICER: 5-pillar artisan dossiers & customer address proof audits
@@ -184,6 +190,7 @@ export const ROLE_PERMISSIONS: Record<string, RolePermissions> = {
     settings: false,
     backup: false,
     manageRoles: false,
+    states: false,
   },
 
   // 6. CUSTOMER SUPPORT: Inquiries, booking tracking & dispute mediation
@@ -208,6 +215,7 @@ export const ROLE_PERMISSIONS: Record<string, RolePermissions> = {
     settings: false,
     backup: false,
     manageRoles: false,
+    states: false,
   },
 
   // 7. FINANCE ADMIN: Escrow vault, payment gateway audits & payout transfers
@@ -232,6 +240,7 @@ export const ROLE_PERMISSIONS: Record<string, RolePermissions> = {
     settings: false,
     backup: false,
     manageRoles: false,
+    states: false,
   },
 };
 

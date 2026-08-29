@@ -49,18 +49,43 @@ export interface DispatchOffer {
 const geocodeCache = new Map<string, LatLng>();
 const autocompleteCache = new Map<string, AutocompleteSuggestion[]>();
 
-// Popular Abuja Locations Pre-cached for Instant Zero-Cost Lookup
-const ABUJA_PRECACHED_LOCATIONS: Record<string, LatLng> = {
-  "maitama, abuja": { lat: 9.0882, lng: 7.4984 },
-  "wuse 2, abuja": { lat: 9.0765, lng: 7.4723 },
-  "jabi, abuja": { lat: 9.0701, lng: 7.4258 },
-  "garki, abuja": { lat: 9.0345, lng: 7.4891 },
-  "asokoro, abuja": { lat: 9.0498, lng: 7.5256 },
-  "utako, abuja": { lat: 9.0667, lng: 7.4500 },
-  "gwarinpa, abuja": { lat: 9.1123, lng: 7.3981 },
-  "apo, abuja": { lat: 8.9876, lng: 7.5123 },
-  "kubwa, abuja": { lat: 9.1543, lng: 7.3321 },
-  "lugbe, abuja": { lat: 8.9743, lng: 7.3789 },
+import { stateStore } from "@/lib/states/store";
+
+// Popular Nigerian Locations Pre-cached for Instant Zero-Cost Lookup across Operating Hubs
+const NIGERIA_PRECACHED_LOCATIONS: Record<string, { lat: number; lng: number; state: string }> = {
+  // FCT Abuja
+  "maitama, abuja": { lat: 9.0882, lng: 7.4984, state: "FCT" },
+  "wuse 2, abuja": { lat: 9.0765, lng: 7.4723, state: "FCT" },
+  "jabi, abuja": { lat: 9.0701, lng: 7.4258, state: "FCT" },
+  "garki, abuja": { lat: 9.0345, lng: 7.4891, state: "FCT" },
+  "asokoro, abuja": { lat: 9.0498, lng: 7.5256, state: "FCT" },
+  "utako, abuja": { lat: 9.0667, lng: 7.4500, state: "FCT" },
+  "gwarinpa, abuja": { lat: 9.1123, lng: 7.3981, state: "FCT" },
+  "apo, abuja": { lat: 8.9876, lng: 7.5123, state: "FCT" },
+  "kubwa, abuja": { lat: 9.1543, lng: 7.3321, state: "FCT" },
+  "lugbe, abuja": { lat: 8.9743, lng: 7.3789, state: "FCT" },
+
+  // Lagos
+  "lekki phase 1, lagos": { lat: 6.4474, lng: 3.4723, state: "LAGOS" },
+  "victoria island, lagos": { lat: 6.4281, lng: 3.4219, state: "LAGOS" },
+  "ikoyi, lagos": { lat: 6.4549, lng: 3.4346, state: "LAGOS" },
+  "ikeja gra, lagos": { lat: 6.5960, lng: 3.3551, state: "LAGOS" },
+  "magodo phase 2, lagos": { lat: 6.6214, lng: 3.3855, state: "LAGOS" },
+  "surulere, lagos": { lat: 6.5000, lng: 3.3500, state: "LAGOS" },
+
+  // Rivers
+  "gra phase 2, port harcourt": { lat: 4.8156, lng: 7.0123, state: "RIVERS" },
+  "obio-akpor, port harcourt": { lat: 4.8450, lng: 6.9980, state: "RIVERS" },
+  "peter odili, port harcourt": { lat: 4.7980, lng: 7.0340, state: "RIVERS" },
+
+  // Oyo
+  "bodija, ibadan": { lat: 7.4350, lng: 3.9120, state: "OYO" },
+  "agodi gra, ibadan": { lat: 7.4120, lng: 3.9050, state: "OYO" },
+  "dugbe, ibadan": { lat: 7.3850, lng: 3.8820, state: "OYO" },
+
+  // Kano
+  "nassarawa gra, kano": { lat: 12.0022, lng: 8.5450, state: "KANO" },
+  "kano municipal, kano": { lat: 11.9964, lng: 8.5167, state: "KANO" },
 };
 
 /**
@@ -83,7 +108,7 @@ export function calculateHaversineDistanceKm(pointA: LatLng, pointB: LatLng): nu
 }
 
 /**
- * Address Autocomplete with Caching
+ * Address Autocomplete with Caching & Dynamic Active State Filtering
  */
 export async function getCachedAutocompleteSuggestions(query: string): Promise<AutocompleteSuggestion[]> {
   const cleanQuery = query.toLowerCase().trim();
@@ -94,30 +119,36 @@ export async function getCachedAutocompleteSuggestions(query: string): Promise<A
     return autocompleteCache.get(cleanQuery)!;
   }
 
-  // 2. Filter pre-cached Abuja locations
+  // 2. Fetch Active States from State Store
+  const activeStates = await stateStore.getActiveStates();
+  const activeStateCodes = new Set(activeStates.map((s) => s.code.toUpperCase()));
+
+  // 3. Filter pre-cached locations belonging ONLY to currently active operating states
   const matches: AutocompleteSuggestion[] = [];
-  Object.entries(ABUJA_PRECACHED_LOCATIONS).forEach(([key, coords]) => {
-    if (key.includes(cleanQuery) || cleanQuery.includes(key.split(",")[0])) {
-      const parts = key.split(",");
-      matches.push({
-        placeId: `cached_${key.replace(/\s+/g, "_")}`,
-        description: key.toUpperCase(),
-        mainText: parts[0].toUpperCase(),
-        secondaryText: parts[1]?.toUpperCase() || "ABUJA, NIGERIA",
-        location: coords,
-      });
+  Object.entries(NIGERIA_PRECACHED_LOCATIONS).forEach(([key, loc]) => {
+    if (activeStateCodes.has(loc.state.toUpperCase())) {
+      if (key.includes(cleanQuery) || cleanQuery.includes(key.split(",")[0])) {
+        const parts = key.split(",");
+        matches.push({
+          placeId: `cached_${key.replace(/\s+/g, "_")}`,
+          description: key.toUpperCase(),
+          mainText: parts[0].toUpperCase(),
+          secondaryText: parts[1]?.toUpperCase() || `${loc.state}, NIGERIA`,
+          location: { lat: loc.lat, lng: loc.lng },
+        });
+      }
     }
   });
 
-  // 3. Fallback generic suggestions if no exact pre-cache match
+  // 4. Fallback generic suggestions if no exact pre-cache match
   if (matches.length === 0) {
-    const defaultCoords: LatLng = { lat: 9.0765, lng: 7.4723 }; // Central Wuse 2
+    const primaryActiveState = activeStates[0] || { name: "FCT Abuja", code: "FCT", coordinates: { lat: 9.0765, lng: 7.4723 } };
     matches.push({
       placeId: `gen_${cleanQuery.replace(/\s+/g, "_")}`,
-      description: `${query.toUpperCase()}, ABUJA, NIGERIA`,
+      description: `${query.toUpperCase()}, ${primaryActiveState.name.toUpperCase()}, NIGERIA`,
       mainText: query.toUpperCase(),
-      secondaryText: "ABUJA, FCT, NIGERIA",
-      location: defaultCoords,
+      secondaryText: `${primaryActiveState.name.toUpperCase()}, NIGERIA`,
+      location: primaryActiveState.coordinates,
     });
   }
 
@@ -131,9 +162,9 @@ export async function getCachedAutocompleteSuggestions(query: string): Promise<A
  */
 export function geocodeAddressCached(address: string): LatLng {
   const cleanAddress = address.toLowerCase().trim();
-  for (const [key, coords] of Object.entries(ABUJA_PRECACHED_LOCATIONS)) {
+  for (const [key, loc] of Object.entries(NIGERIA_PRECACHED_LOCATIONS)) {
     if (cleanAddress.includes(key.split(",")[0])) {
-      return coords;
+      return { lat: loc.lat, lng: loc.lng };
     }
   }
   if (geocodeCache.has(cleanAddress)) {
