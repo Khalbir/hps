@@ -552,13 +552,48 @@ export async function DELETE(request: Request) {
     const { searchParams } = new URL(request.url);
     const targetId = searchParams.get("id") || searchParams.get("userId") || searchParams.get("professionalId");
     const email = searchParams.get("email");
+    const purgeAllRejected = searchParams.get("purgeAllRejected") === "true";
+
+    if (purgeAllRejected) {
+      // Find all rejected professionals
+      const rejectedPros = await prisma.professional.findMany({
+        where: {
+          OR: [
+            { verificationStatus: "REJECTED" },
+            { verificationNotes: { contains: "REJECTED", mode: "insensitive" } },
+          ],
+        },
+        select: { id: true, userId: true },
+      });
+
+      const proIds = rejectedPros.map((p) => p.id);
+      const userIds = rejectedPros.map((p) => p.userId).filter(Boolean) as string[];
+
+      if (proIds.length > 0) {
+        await prisma.tradeVerification.deleteMany({ where: { professionalId: { in: proIds } } }).catch(() => {});
+        await prisma.professionalService.deleteMany({ where: { professionalId: { in: proIds } } }).catch(() => {});
+        await prisma.professional.deleteMany({ where: { id: { in: proIds } } }).catch(() => {});
+      }
+
+      if (userIds.length > 0) {
+        await prisma.session.deleteMany({ where: { userId: { in: userIds } } }).catch(() => {});
+        await prisma.notification.deleteMany({ where: { userId: { in: userIds } } }).catch(() => {});
+        await prisma.user.deleteMany({ where: { id: { in: userIds } } }).catch(() => {});
+      }
+
+      return NextResponse.json({
+        success: true,
+        message: `Purged ${proIds.length} rejected artisan application(s) from database.`,
+        purgedCount: proIds.length,
+      });
+    }
 
     const rawIds = [targetId].filter(Boolean) as string[];
     const candidateIds = Array.from(
       new Set(rawIds.flatMap((val) => [val, val.replace(/^pro_/, ""), `pro_${val}`]))
     );
 
-    // Find and delete matching Professional record
+    // Find matching Professional record
     const pro = await prisma.professional.findFirst({
       where: {
         OR: [
@@ -569,39 +604,25 @@ export async function DELETE(request: Request) {
       },
     });
 
-    if (pro) {
-      await prisma.professional.delete({ where: { id: pro.id } }).catch(() => {});
+    const proId = pro?.id;
+    const userId = pro?.userId || (candidateIds.length > 0 ? candidateIds[0] : null);
+
+    if (proId) {
+      await prisma.tradeVerification.deleteMany({ where: { professionalId: proId } }).catch(() => {});
+      await prisma.professionalService.deleteMany({ where: { professionalId: proId } }).catch(() => {});
+      await prisma.review.deleteMany({ where: { professionalId: proId } }).catch(() => {});
+      await prisma.professional.delete({ where: { id: proId } }).catch(() => {});
     }
 
-    // If matching user found, delete or reset role
-    const user = await prisma.user.findFirst({
-      where: {
-        OR: [
-          { id: { in: candidateIds } },
-          email ? { email: email.trim().toLowerCase() } : undefined,
-        ].filter(Boolean) as any,
-      },
-    });
-
-    if (user) {
-      if (
-        user.email.toLowerCase().includes("artisan@") ||
-        user.email.toLowerCase().includes("test") ||
-        user.email.toLowerCase().includes("demo") ||
-        user.firstName === "Artisan"
-      ) {
-        await prisma.user.delete({ where: { id: user.id } }).catch(() => {});
-      } else {
-        await prisma.user.update({
-          where: { id: user.id },
-          data: { role: "CUSTOMER", ninStatus: "NOT_SUBMITTED" },
-        }).catch(() => {});
-      }
+    if (userId) {
+      await prisma.session.deleteMany({ where: { userId } }).catch(() => {});
+      await prisma.notification.deleteMany({ where: { userId } }).catch(() => {});
+      await prisma.user.delete({ where: { id: userId } }).catch(() => {});
     }
 
     return NextResponse.json({
       success: true,
-      message: "Artisan record purged from database successfully.",
+      message: "Artisan and linked user account purged from database successfully.",
     });
   } catch (error: any) {
     console.error("[Verification DELETE Error]:", error);

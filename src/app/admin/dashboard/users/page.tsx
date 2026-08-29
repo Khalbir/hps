@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { AdminLayoutShell } from "@/components/layout/AdminLayoutShell";
 import {
   Users, Shield, Search, UserCheck, Key, Edit, CheckCircle2,
-  RefreshCw, Plus, UserPlus, Lock, Check, X, AlertTriangle, Filter, MapPin
+  RefreshCw, Plus, UserPlus, Lock, Check, X, AlertTriangle, Filter, MapPin, Trash2
 } from "lucide-react";
 import styles from "../../admin.module.css";
 import { ROLE_LABELS, getRoleBadgeInfo } from "@/lib/rbac";
@@ -209,6 +209,30 @@ export default function UsersRoleManagementPage() {
     } finally {
       setEditingUser(null);
       setEditPassword("");
+      setTimeout(() => setToast(""), 6000);
+    }
+  };
+
+  const handlePurgeUser = async (user: any) => {
+    if (!user) return;
+    if (!confirm(`Are you sure you want to permanently purge ${user.name} (${user.email}) from database storage? This will delete all user metadata and reclaim disk space.`)) return;
+
+    try {
+      const res = await fetch("/api/admin/users/purge-rejected", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ targetUserId: user.id }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setUsers((prev) => prev.filter((u) => u.id !== user.id));
+        setToast(`User record ${user.name} purged from database storage successfully.`);
+      } else {
+        setToast(`Error: ${data.error || "Failed to purge user"}`);
+      }
+    } catch {
+      setToast("Failed to connect to server to purge user.");
+    } finally {
       setTimeout(() => setToast(""), 6000);
     }
   };
@@ -445,6 +469,15 @@ export default function UsersRoleManagementPage() {
                           title="Change or reassign user role"
                         >
                           <Edit size={11} /> Role
+                        </button>
+
+                        <button
+                          className="btn btn-secondary btn-xs"
+                          style={{ color: "#EF4444", borderColor: "rgba(239,68,68,0.4)", background: "rgba(239,68,68,0.1)", padding: "3px 6px", fontSize: "11px", display: "inline-flex", alignItems: "center" }}
+                          onClick={() => handlePurgeUser(u)}
+                          title="Purge user record from database to reclaim space"
+                        >
+                          <Trash2 size={11} />
                         </button>
                       </div>
                     </td>

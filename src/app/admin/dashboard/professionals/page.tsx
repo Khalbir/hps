@@ -280,9 +280,48 @@ export default function ProfessionalVerificationPage() {
     return s === "REJECTED";
   }).length;
 
+  const [showPurgeModal, setShowPurgeModal] = useState(false);
+  const [purgingBulk, setPurgingBulk] = useState(false);
+  const [purgePreviewData, setPurgePreviewData] = useState<any>(null);
+
+  const handleOpenPurgeModal = async () => {
+    try {
+      const res = await fetch("/api/admin/users/purge-rejected");
+      const data = await res.json();
+      if (res.ok) {
+        setPurgePreviewData(data);
+      }
+    } catch {}
+    setShowPurgeModal(true);
+  };
+
+  const handleExecuteBulkPurge = async () => {
+    setPurgingBulk(true);
+    try {
+      const res = await fetch("/api/admin/users/purge-rejected", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ scope: "ALL_REJECTED" }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setToast(`Purge complete! ${data.message || `Purged ${data.purgedCount} rejected records and reclaimed ~${data.reclaimedSpaceKb} KB space.`}`);
+        setShowPurgeModal(false);
+        fetchPros();
+      } else {
+        setToast(`Error: ${data.error || "Failed to execute bulk purge"}`);
+      }
+    } catch {
+      setToast("Failed to connect to server for bulk purge.");
+    } finally {
+      setPurgingBulk(false);
+      setTimeout(() => setToast(""), 6000);
+    }
+  };
+
   const handlePurgeArtisan = async (pro: any) => {
     if (!pro) return;
-    if (!confirm(`Are you sure you want to permanently purge ${pro.name} from the database?`)) return;
+    if (!confirm(`Are you sure you want to permanently purge ${pro.name} from the database to reclaim space? This will delete their trade certifications, documents, and user profile.`)) return;
 
     try {
       const res = await fetch(`/api/admin/verification?id=${encodeURIComponent(pro.id)}&userId=${encodeURIComponent(pro.userId || "")}&email=${encodeURIComponent(pro.email || "")}`, {
@@ -423,15 +462,40 @@ export default function ProfessionalVerificationPage() {
           ))}
         </div>
 
-        <div style={{ position: "relative", minWidth: 280 }}>
-          <Search size={14} style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: "#94A3B8" }} />
-          <input
-            type="text"
-            placeholder="Search by name, email, or skill..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            style={{ width: "100%", padding: "8px 12px 8px 32px", borderRadius: "8px", background: "#0F172A", border: "1px solid #334155", color: "#F8FAFC", fontSize: "13px" }}
-          />
+        <div style={{ display: "flex", gap: "10px", alignItems: "center", flexWrap: "wrap" }}>
+          {rejectedCount > 0 && (
+            <button
+              onClick={handleOpenPurgeModal}
+              className="btn btn-xs"
+              style={{
+                background: "rgba(239, 68, 68, 0.15)",
+                border: "1px solid rgba(239, 68, 68, 0.5)",
+                color: "#FCA5A5",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 6,
+                fontWeight: 700,
+                cursor: "pointer",
+                padding: "8px 14px",
+                borderRadius: "8px",
+              }}
+              title="Permanently purge rejected applications to reclaim disk space"
+            >
+              <Trash2 size={13} color="#EF4444" />
+              <span>Purge Rejected ({rejectedCount})</span>
+            </button>
+          )}
+
+          <div style={{ position: "relative", minWidth: 260 }}>
+            <Search size={14} style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: "#94A3B8" }} />
+            <input
+              type="text"
+              placeholder="Search by name, email, or skill..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              style={{ width: "100%", padding: "8px 12px 8px 32px", borderRadius: "8px", background: "#0F172A", border: "1px solid #334155", color: "#F8FAFC", fontSize: "13px" }}
+            />
+          </div>
         </div>
       </div>
 
@@ -1065,6 +1129,105 @@ export default function ProfessionalVerificationPage() {
             >
               ✕
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* BULK PURGE REJECTED RECORDS MODAL */}
+      {showPurgeModal && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0,0,0,0.85)",
+            backdropFilter: "blur(6px)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 10000,
+            padding: "20px",
+          }}
+          onClick={() => setShowPurgeModal(false)}
+        >
+          <div
+            style={{
+              background: "#1E293B",
+              borderRadius: "16px",
+              padding: "28px",
+              maxWidth: "520px",
+              width: "100%",
+              border: "1px solid rgba(239, 68, 68, 0.4)",
+              boxShadow: "0 20px 50px rgba(0,0,0,0.5)",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
+              <div style={{ background: "rgba(239, 68, 68, 0.2)", padding: 12, borderRadius: "12px", color: "#EF4444" }}>
+                <Trash2 size={24} />
+              </div>
+              <div>
+                <h3 style={{ fontSize: "1.2rem", fontWeight: 800, color: "#FFFFFF", margin: 0 }}>
+                  Purge Rejected Records &amp; Free Space
+                </h3>
+                <span style={{ fontSize: "0.82rem", color: "#94A3B8" }}>
+                  Permanently erase disqualified applicant records &amp; documents
+                </span>
+              </div>
+            </div>
+
+            <div style={{ background: "#0F172A", borderRadius: "10px", padding: "16px", marginBottom: 20, border: "1px solid rgba(255,255,255,0.06)" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
+                <div>
+                  <span style={{ fontSize: "0.75rem", color: "#94A3B8", textTransform: "uppercase" }}>Rejected Artisans</span>
+                  <div style={{ fontSize: "1.4rem", fontWeight: 800, color: "#EF4444" }}>
+                    {purgePreviewData?.rejectedArtisansCount ?? rejectedCount}
+                  </div>
+                </div>
+                <div>
+                  <span style={{ fontSize: "0.75rem", color: "#94A3B8", textTransform: "uppercase" }}>Estimated Space Reclaimed</span>
+                  <div style={{ fontSize: "1.4rem", fontWeight: 800, color: "#38BDF8" }}>
+                    ~{purgePreviewData?.estimatedSpaceReclaimableKb ?? Math.round(rejectedCount * 14.5)} KB
+                  </div>
+                </div>
+              </div>
+
+              <p style={{ margin: 0, fontSize: "0.82rem", color: "#CBD5E1", lineHeight: 1.5 }}>
+                This operation will permanently delete:
+                <br />• Rejected identity documents, certificates &amp; photos
+                <br />• Trade verification competency audits
+                <br />• Inactive test credentials and orphaned sessions
+              </p>
+            </div>
+
+            <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
+              <button
+                type="button"
+                onClick={() => setShowPurgeModal(false)}
+                className="btn btn-secondary btn-sm"
+                disabled={purgingBulk}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleExecuteBulkPurge}
+                disabled={purgingBulk || (purgePreviewData?.totalRejectedCount === 0 && rejectedCount === 0)}
+                className="btn btn-primary btn-sm"
+                style={{
+                  background: "linear-gradient(135deg, #EF4444 0%, #DC2626 100%)",
+                  color: "#FFFFFF",
+                  border: "none",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 6,
+                  fontWeight: 700,
+                  cursor: "pointer",
+                }}
+              >
+                <Trash2 size={14} />
+                <span>{purgingBulk ? "Purging Storage..." : "Confirm Permanent Purge"}</span>
+              </button>
+            </div>
           </div>
         </div>
       )}
