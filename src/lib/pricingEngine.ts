@@ -350,11 +350,18 @@ export function calculateJobPrice(
 
     const subtotalAfterPlan = rawRoomsSubtotalNgn + planAdditionNgn;
 
-    // 6. Dirt / Condition Level Multiplier Applied
+    // 6. Dirt / Condition / Infestation Level Multiplier Applied
     conditionMultiplier = rulesConfig.dirtLevelMultipliers?.[dirtLevel] ?? DEFAULT_PRICING_RULES.dirtLevelMultipliers[dirtLevel] ?? 1.0;
     if (conditionMultiplier > 1.0) {
       conditionAdditionNgn = Math.round(subtotalAfterPlan * (conditionMultiplier - 1.0));
-      const dirtLabel = dirtLevel === "HEAVY" ? "Heavy / Post-Construction Condition (+35%)" : "Moderate Condition (+15%)";
+      const isFumigationService = input.serviceId?.includes("fumigation") || input.serviceId?.includes("pest") || input.serviceId?.includes("bedbug") || input.serviceId?.includes("termite");
+      const dirtLabel = isFumigationService
+        ? dirtLevel === "HEAVY"
+          ? "Severe / Heavy Infestation Level (+35%)"
+          : "Moderate Infestation Level (+15%)"
+        : dirtLevel === "HEAVY"
+        ? "Heavy / Post-Construction Condition (+35%)"
+        : "Moderate Condition (+15%)";
       breakdown.push({ label: dirtLabel, amountNgn: conditionAdditionNgn });
     }
   }

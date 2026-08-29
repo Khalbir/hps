@@ -259,22 +259,26 @@ export function StepService({ booking, updateBooking, onNext }: StepProps) {
           </button>
           <h2 className={styles.stepTitle}>{activeCategory?.name} Options</h2>
 
-          {/* Property-Based Controls for Cleaning & Painting */}
-          {(selectedCategory === "cleaning" || selectedCategory === "painting") && (
+          {/* Property-Based Controls for Cleaning, Painting & Fumigation */}
+          {(selectedCategory === "cleaning" || selectedCategory === "painting" || selectedCategory === "fumigation") && (
             <div className={styles.configCard} style={{ background: "#1E293B", border: "1px solid #334155", padding: "20px", borderRadius: "16px", marginBottom: "24px" }}>
               <div className={styles.configHeader} style={{ marginBottom: "16px" }}>
                 <h4 className={styles.configTitle} style={{ margin: 0, color: "#F8FAFC", fontSize: "16px", display: "flex", alignItems: "center", gap: "8px" }}>
-                  <Building2 size={18} color="#0EA5E9" /> Property Size & Condition Configuration
+                  <Building2 size={18} color="#0EA5E9" /> {selectedCategory === "fumigation" ? "Property Size & Infestation Level Configuration" : "Property Size & Condition Configuration"}
                 </h4>
                 <p className={styles.configSubtitle} style={{ margin: "4px 0 0", color: "#94A3B8", fontSize: "13px" }}>
-                  Customize rooms, furnished fitting, and grime level for instant upfront pricing.
+                  {selectedCategory === "fumigation"
+                    ? "Customize bedrooms, bathrooms, and pest infestation severity for instant upfront fumigation pricing."
+                    : "Customize rooms, furnished fitting, and grime level for instant upfront pricing."}
                 </p>
               </div>
 
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))", gap: "12px" }}>
                 {/* Bedrooms Counter */}
                 <div style={{ background: "#0F172A", padding: "12px 14px", borderRadius: "12px", border: "1px solid #334155", minWidth: 0, boxSizing: "border-box" }}>
-                  <span style={{ fontSize: "12px", color: "#94A3B8", fontWeight: 600, display: "block" }}>Bedrooms</span>
+                  <span style={{ fontSize: "12px", color: "#94A3B8", fontWeight: 600, display: "block" }}>
+                    {selectedCategory === "fumigation" ? "Bedrooms / Main Rooms" : "Bedrooms"}
+                  </span>
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: "8px" }}>
                     <button
                       type="button"
@@ -297,7 +301,9 @@ export function StepService({ booking, updateBooking, onNext }: StepProps) {
 
                 {/* Bathrooms Counter */}
                 <div style={{ background: "#0F172A", padding: "12px 14px", borderRadius: "12px", border: "1px solid #334155", minWidth: 0, boxSizing: "border-box" }}>
-                  <span style={{ fontSize: "12px", color: "#94A3B8", fontWeight: 600, display: "block" }}>Bathrooms</span>
+                  <span style={{ fontSize: "12px", color: "#94A3B8", fontWeight: 600, display: "block" }}>
+                    {selectedCategory === "fumigation" ? "Bathrooms / Wet Areas" : "Bathrooms"}
+                  </span>
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: "8px" }}>
                     <button
                       type="button"
@@ -320,7 +326,9 @@ export function StepService({ booking, updateBooking, onNext }: StepProps) {
 
                 {/* Furnished Toggle */}
                 <div style={{ background: "#0F172A", padding: "12px 14px", borderRadius: "12px", border: "1px solid #334155", minWidth: 0, boxSizing: "border-box" }}>
-                  <span style={{ fontSize: "12px", color: "#94A3B8", fontWeight: 600, display: "block" }}>Furnished Status</span>
+                  <span style={{ fontSize: "12px", color: "#94A3B8", fontWeight: 600, display: "block" }}>
+                    {selectedCategory === "fumigation" ? "Premises Status" : "Furnished Status"}
+                  </span>
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "6px", marginTop: "8px" }}>
                     <button
                       type="button"
@@ -341,7 +349,7 @@ export function StepService({ booking, updateBooking, onNext }: StepProps) {
                         boxSizing: "border-box",
                       }}
                     >
-                      Unfurnished
+                      {selectedCategory === "fumigation" ? "Vacant/Empty" : "Unfurnished"}
                     </button>
                     <button
                       type="button"
@@ -367,9 +375,11 @@ export function StepService({ booking, updateBooking, onNext }: StepProps) {
                   </div>
                 </div>
 
-                {/* Dirt Level Selector */}
+                {/* Dirt / Infestation Level Selector */}
                 <div style={{ background: "#0F172A", padding: "12px 14px", borderRadius: "12px", border: "1px solid #334155", minWidth: 0, boxSizing: "border-box" }}>
-                  <span style={{ fontSize: "12px", color: "#94A3B8", fontWeight: 600, display: "block" }}>Condition / Grime</span>
+                  <span style={{ fontSize: "12px", color: "#94A3B8", fontWeight: 600, display: "block" }}>
+                    {selectedCategory === "fumigation" ? "Infestation Severity" : "Condition / Grime"}
+                  </span>
                   <select
                     value={booking.dirtLevel || "MODERATE"}
                     onChange={(e: any) => handleDirtLevelChange(e.target.value)}
@@ -386,9 +396,9 @@ export function StepService({ booking, updateBooking, onNext }: StepProps) {
                       boxSizing: "border-box",
                     }}
                   >
-                    <option value="LIGHT">Light (1.0x)</option>
-                    <option value="MODERATE">Moderate (1.15x)</option>
-                    <option value="HEAVY">Heavy / Post (1.35x)</option>
+                    <option value="LIGHT">{selectedCategory === "fumigation" ? "Light Infestation (1.0x)" : "Light (1.0x)"}</option>
+                    <option value="MODERATE">{selectedCategory === "fumigation" ? "Moderate Infestation (1.15x)" : "Moderate (1.15x)"}</option>
+                    <option value="HEAVY">{selectedCategory === "fumigation" ? "Severe / Heavy Infestation (1.35x)" : "Heavy / Post (1.35x)"}</option>
                   </select>
                 </div>
               </div>
