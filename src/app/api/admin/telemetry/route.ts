@@ -1,7 +1,61 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { stateStore } from "@/lib/states/store";
 
 export const dynamic = "force-dynamic";
+
+function resolveNigerianLocation(rawString: string): { cityName: string; stateName: string; stateCode: string } {
+  const text = (rawString || "").toLowerCase();
+
+  if (text.includes("lagos") || text.includes("ikeja") || text.includes("lekki") || text.includes("ikoyi") || text.includes("surulere") || text.includes("yaba") || text.includes("gbagada") || text.includes("victoria island") || text.includes("maryland") || text.includes("ajah") || text.includes("chevron") || text.includes("alimosho")) {
+    return { cityName: "Lagos", stateName: "Lagos State", stateCode: "LAGOS" };
+  }
+  if (text.includes("rivers") || text.includes("port harcourt") || text.includes("ph") || text.includes("obio") || text.includes("eleme") || text.includes("trans amadi") || text.includes("diobu")) {
+    return { cityName: "Port Harcourt", stateName: "Rivers State", stateCode: "RIVERS" };
+  }
+  if (text.includes("oyo") || text.includes("ibadan") || text.includes("bodija") || text.includes("dugbe") || text.includes("ring road") || text.includes("agodi") || text.includes("oluyole")) {
+    return { cityName: "Ibadan", stateName: "Oyo State", stateCode: "OYO" };
+  }
+  if (text.includes("kano") || text.includes("fagge") || text.includes("dalla") || text.includes("nassarawa")) {
+    return { cityName: "Kano", stateName: "Kano State", stateCode: "KANO" };
+  }
+  if (text.includes("edo") || text.includes("benin") || text.includes("oredo") || text.includes("ikpoba")) {
+    return { cityName: "Benin City", stateName: "Edo State", stateCode: "EDO" };
+  }
+  if (text.includes("enugu") || text.includes("independence layout") || text.includes("new haven") || text.includes("trans ekulu") || text.includes("ogui") || text.includes("nsukka")) {
+    return { cityName: "Enugu", stateName: "Enugu State", stateCode: "ENUGU" };
+  }
+  if (text.includes("ogun") || text.includes("abeokuta") || text.includes("ota") || text.includes("mowe") || text.includes("ibafo") || text.includes("sagamu") || text.includes("ijebu")) {
+    return { cityName: "Abeokuta", stateName: "Ogun State", stateCode: "OGUN" };
+  }
+  if (text.includes("kaduna") || text.includes("zaria") || text.includes("barnawa") || text.includes("malali") || text.includes("sabongari")) {
+    return { cityName: "Kaduna", stateName: "Kaduna State", stateCode: "KADUNA" };
+  }
+  if (text.includes("delta") || text.includes("asaba") || text.includes("warri") || text.includes("ughelli") || text.includes("effurun")) {
+    return { cityName: "Asaba", stateName: "Delta State", stateCode: "DELTA" };
+  }
+  if (text.includes("anambra") || text.includes("awka") || text.includes("onitsha") || text.includes("nnewi")) {
+    return { cityName: "Awka", stateName: "Anambra State", stateCode: "ANAMBRA" };
+  }
+  if (text.includes("plateau") || text.includes("jos") || text.includes("bukuru")) {
+    return { cityName: "Jos", stateName: "Plateau State", stateCode: "PLATEAU" };
+  }
+  if (text.includes("kwara") || text.includes("ilorin") || text.includes("offa")) {
+    return { cityName: "Ilorin", stateName: "Kwara State", stateCode: "KWARA" };
+  }
+  if (text.includes("akwa ibom") || text.includes("uyo") || text.includes("eket")) {
+    return { cityName: "Uyo", stateName: "Akwa Ibom State", stateCode: "AKWA_IBOM" };
+  }
+  if (text.includes("imo") || text.includes("owerri") || text.includes("orlu")) {
+    return { cityName: "Owerri", stateName: "Imo State", stateCode: "IMO" };
+  }
+  if (text.includes("cross river") || text.includes("calabar")) {
+    return { cityName: "Calabar", stateName: "Cross River State", stateCode: "CROSS_RIVER" };
+  }
+
+  // Default to Abuja / FCT
+  return { cityName: "Abuja (FCT)", stateName: "FCT", stateCode: "FCT" };
+}
 
 export async function GET(request: Request) {
   try {
@@ -46,13 +100,13 @@ export async function GET(request: Request) {
       prisma.professional.findMany({
         include: {
           user: {
-            select: { id: true, firstName: true, lastName: true, email: true, phone: true, isVerified: true, role: true, ninStatus: true },
+            select: { id: true, firstName: true, lastName: true, email: true, phone: true, isVerified: true, role: true, ninStatus: true, permanentAddress: true },
           },
         },
       }).catch(() => []),
       prisma.user.findMany({
         where: { role: "PROFESSIONAL" },
-        select: { id: true, firstName: true, lastName: true, email: true, phone: true, isVerified: true, ninStatus: true },
+        select: { id: true, firstName: true, lastName: true, email: true, phone: true, isVerified: true, ninStatus: true, permanentAddress: true },
       }).catch(() => []),
     ]);
 
@@ -106,24 +160,37 @@ export async function GET(request: Request) {
         onlineArtisansCount += 1;
       }
 
-      // City calculation
-      let city = "Abuja";
+      // Extract combined location string from documents, bio, and permanent address
+      let rawLoc = "";
       let skills = "General Services";
       try {
         if (p.documents) {
           const parsed = typeof p.documents === "string" ? JSON.parse(p.documents) : p.documents;
-          if (parsed.city) city = parsed.city;
-          else if (parsed.operatingState) city = parsed.operatingState;
+          rawLoc = `${parsed.operatingState || ""} ${parsed.city || ""} ${parsed.homeAddress || ""} ${parsed.lga || ""}`;
           if (parsed.serviceCategory) skills = parsed.serviceCategory;
         }
+        if (p.bio) rawLoc += ` ${p.bio}`;
+        if (p.user?.permanentAddress) rawLoc += ` ${p.user.permanentAddress}`;
         if (skills === "General Services" && p.skills) {
           const parsedSkills = typeof p.skills === "string" ? JSON.parse(p.skills) : p.skills;
           if (Array.isArray(parsedSkills) && parsedSkills.length > 0) skills = parsedSkills.join(", ");
         }
       } catch {}
 
-      const normalizedCityKey = city.toLowerCase().trim();
-      cityArtisans[normalizedCityKey] = (cityArtisans[normalizedCityKey] || 0) + 1;
+      const loc = resolveNigerianLocation(rawLoc);
+      const city = loc.cityName;
+
+      // Register all normalized variants so lookups never fail
+      cityArtisans[loc.cityName.toLowerCase()] = (cityArtisans[loc.cityName.toLowerCase()] || 0) + 1;
+      cityArtisans[loc.cityName.split(" ")[0].toLowerCase()] = (cityArtisans[loc.cityName.split(" ")[0].toLowerCase()] || 0) + 1;
+      cityArtisans[loc.stateName.toLowerCase()] = (cityArtisans[loc.stateName.toLowerCase()] || 0) + 1;
+      cityArtisans[loc.stateCode.toLowerCase()] = (cityArtisans[loc.stateCode.toLowerCase()] || 0) + 1;
+      if (loc.stateCode === "FCT") {
+        cityArtisans["abuja"] = (cityArtisans["abuja"] || 0) + 1;
+        cityArtisans["fct"] = (cityArtisans["fct"] || 0) + 1;
+        cityArtisans["abuja (fct)"] = (cityArtisans["abuja (fct)"] || 0) + 1;
+        cityArtisans["fct abuja"] = (cityArtisans["fct abuja"] || 0) + 1;
+      }
 
       if (isAvailable) {
         const u = p.user || {};
@@ -141,6 +208,39 @@ export async function GET(request: Request) {
           isAvailable: true,
         });
       }
+    });
+
+    // 4. City Controls Array with live DB counts & active status
+    const DEFAULT_CITIES = [
+      { name: "Abuja (FCT)", state: "FCT", stateCode: "FCT" },
+      { name: "Lagos", state: "Lagos State", stateCode: "LAGOS" },
+      { name: "Port Harcourt", state: "Rivers State", stateCode: "RIVERS" },
+      { name: "Ibadan", state: "Oyo State", stateCode: "OYO" },
+      { name: "Kano", state: "Kano State", stateCode: "KANO" },
+      { name: "Benin City", state: "Edo State", stateCode: "EDO" },
+      { name: "Enugu", state: "Enugu State", stateCode: "ENUGU" },
+      { name: "Abeokuta", state: "Ogun State", stateCode: "OGUN" },
+      { name: "Kaduna", state: "Kaduna State", stateCode: "KADUNA" },
+    ];
+
+    const allStates = await stateStore.getAllStates().catch(() => []);
+    const activeCodeSet = new Set(allStates.filter((s) => s.isActive).map((s) => s.code.toUpperCase()));
+
+    const citiesList = DEFAULT_CITIES.map((c) => {
+      const count =
+        cityArtisans[c.name.toLowerCase()] ||
+        cityArtisans[c.name.split(" ")[0].toLowerCase()] ||
+        cityArtisans[c.state.toLowerCase()] ||
+        cityArtisans[c.stateCode.toLowerCase()] ||
+        0;
+
+      return {
+        name: c.name,
+        state: c.state,
+        stateCode: c.stateCode,
+        active: activeCodeSet.has(c.stateCode.toUpperCase()) || c.stateCode === "FCT" || c.stateCode === "LAGOS" || c.stateCode === "RIVERS",
+        artisans: count,
+      };
     });
 
     // 4. Open Disputes Count
@@ -252,6 +352,7 @@ export async function GET(request: Request) {
       success: true,
       timestamp: new Date().toISOString(),
       cityArtisans,
+      citiesList,
       onlineArtisansList,
       stats: {
         totalRevenueNgn,

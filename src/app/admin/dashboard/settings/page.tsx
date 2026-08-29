@@ -134,17 +134,25 @@ export default function SettingsAndBackupsPage() {
     try {
       const res = await fetch("/api/admin/telemetry");
       const data = await res.json();
-      if (res.ok && data.cityArtisans) {
-        setCities((prev) =>
-          prev.map((c) => {
-            const cityNameKey = c.name.split(" ")[0].toLowerCase();
-            const realCount = data.cityArtisans[cityNameKey] || data.cityArtisans[c.name.toLowerCase()] || 0;
-            return {
-              ...c,
-              artisans: realCount,
-            };
-          })
-        );
+      if (res.ok) {
+        if (data.citiesList && Array.isArray(data.citiesList) && data.citiesList.length > 0) {
+          setCities(data.citiesList);
+        } else if (data.cityArtisans) {
+          setCities((prev) =>
+            prev.map((c) => {
+              const cityNameKey = c.name.split(" ")[0].toLowerCase();
+              const realCount =
+                data.cityArtisans[c.name.toLowerCase()] ||
+                data.cityArtisans[cityNameKey] ||
+                data.cityArtisans[c.state.toLowerCase()] ||
+                0;
+              return {
+                ...c,
+                artisans: realCount,
+              };
+            })
+          );
+        }
       }
     } catch (err) {
       console.warn("Failed to fetch real city metrics:", err);
@@ -159,12 +167,39 @@ export default function SettingsAndBackupsPage() {
     fetchCommissionRules();
   }, []);
 
-  const toggleCity = (cityName: string) => {
+  const toggleCity = async (cityName: string) => {
+    const target = cities.find((c) => c.name === cityName);
+    if (!target) return;
+    const newStatus = !target.active;
+
+    // Optimistically update UI
     setCities((prev) =>
-      prev.map((c) => (c.name === cityName ? { ...c, active: !c.active } : c))
+      prev.map((c) => (c.name === cityName ? { ...c, active: newStatus } : c))
     );
-    setToast("Multi-City Expansion coverage updated!");
-    setTimeout(() => setToast(""), 3000);
+
+    try {
+      const stateCode = (target as any).stateCode || (target.state.includes("FCT") ? "FCT" : target.name.split(" ")[0].toUpperCase());
+      const res = await fetch("/api/admin/states", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "TOGGLE_STATUS",
+          stateCode,
+          isActive: newStatus,
+          reason: `Operational coverage toggled from executive settings by admin`,
+          actorRole: "SUPER_ADMIN",
+        }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setToast(`${cityName} is now ${newStatus ? "ACTIVE" : "INACTIVE"}! 🟢`);
+      } else {
+        setToast(data.message || `${cityName} coverage status updated!`);
+      }
+    } catch (err) {
+      setToast("Coverage status updated locally.");
+    }
+    setTimeout(() => setToast(""), 3500);
   };
 
   const [purgeLoading, setPurgeLoading] = useState(false);
