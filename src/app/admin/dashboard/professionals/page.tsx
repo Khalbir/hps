@@ -343,34 +343,74 @@ export default function ProfessionalVerificationPage() {
       )}
 
       {/* Metric Counters */}
-      <div className={styles.metricGrid} style={{ marginBottom: "var(--space-6)" }}>
-        <div className="card" onClick={() => setFilterStatus("ALL")} style={{ cursor: "pointer", border: filterStatus === "ALL" ? "2px solid #38BDF8" : "1px solid var(--border-primary)" }}>
-          <span style={{ fontSize: "var(--fs-xs)", color: "var(--text-secondary)", textTransform: "uppercase" }}>Total Artisans</span>
-          <h3 className="h3" style={{ margin: "4px 0", color: "#F8FAFC" }}>{pros.length}</h3>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "16px", marginBottom: "var(--space-6)" }}>
+        <div
+          onClick={() => setFilterStatus("ALL")}
+          style={{
+            background: "#1E293B",
+            borderRadius: "12px",
+            padding: "18px",
+            cursor: "pointer",
+            border: filterStatus === "ALL" ? "2px solid #38BDF8" : "1px solid rgba(255,255,255,0.08)",
+            boxShadow: "0 4px 14px rgba(0,0,0,0.2)",
+          }}
+        >
+          <span style={{ fontSize: "11px", color: "#94A3B8", textTransform: "uppercase", fontWeight: 700 }}>Total Artisans</span>
+          <h3 className="h3" style={{ margin: "6px 0", color: "#F8FAFC" }}>{pros.length}</h3>
           <span style={{ fontSize: "11px", color: "#38BDF8" }}>Active registered registry</span>
         </div>
 
-        <div className="card" onClick={() => setFilterStatus("ONLINE")} style={{ cursor: "pointer", border: filterStatus === "ONLINE" ? "2px solid #10B981" : "1px solid var(--border-primary)" }}>
-          <span style={{ fontSize: "var(--fs-xs)", color: "var(--text-secondary)", textTransform: "uppercase" }}>Online &amp; Available</span>
-          <h3 className="h3" style={{ margin: "4px 0", color: "#10B981" }}>{onlineCount}</h3>
+        <div
+          onClick={() => setFilterStatus("ONLINE")}
+          style={{
+            background: "#1E293B",
+            borderRadius: "12px",
+            padding: "18px",
+            cursor: "pointer",
+            border: filterStatus === "ONLINE" ? "2px solid #10B981" : "1px solid rgba(255,255,255,0.08)",
+            boxShadow: "0 4px 14px rgba(0,0,0,0.2)",
+          }}
+        >
+          <span style={{ fontSize: "11px", color: "#94A3B8", textTransform: "uppercase", fontWeight: 700 }}>Online &amp; Available</span>
+          <h3 className="h3" style={{ margin: "6px 0", color: "#10B981" }}>{onlineCount}</h3>
           <span style={{ fontSize: "11px", color: "#10B981" }}>Ready for live dispatch</span>
         </div>
 
-        <div className="card" onClick={() => setFilterStatus("PENDING")} style={{ cursor: "pointer", border: filterStatus === "PENDING" ? "2px solid #F59E0B" : "1px solid var(--border-primary)" }}>
-          <span style={{ fontSize: "var(--fs-xs)", color: "var(--text-secondary)", textTransform: "uppercase" }}>Pending Review</span>
-          <h3 className="h3" style={{ margin: "4px 0", color: "#F59E0B" }}>{pendingCount}</h3>
+        <div
+          onClick={() => setFilterStatus("PENDING")}
+          style={{
+            background: "#1E293B",
+            borderRadius: "12px",
+            padding: "18px",
+            cursor: "pointer",
+            border: filterStatus === "PENDING" ? "2px solid #F59E0B" : "1px solid rgba(255,255,255,0.08)",
+            boxShadow: "0 4px 14px rgba(0,0,0,0.2)",
+          }}
+        >
+          <span style={{ fontSize: "11px", color: "#94A3B8", textTransform: "uppercase", fontWeight: 700 }}>Pending Review</span>
+          <h3 className="h3" style={{ margin: "6px 0", color: "#F59E0B" }}>{pendingCount}</h3>
           <span style={{ fontSize: "11px", color: "#F59E0B" }}>Awaiting audit decision</span>
         </div>
 
-        <div className="card" onClick={() => setFilterStatus("VERIFIED")} style={{ cursor: "pointer", border: filterStatus === "VERIFIED" ? "2px solid #10B981" : "1px solid var(--border-primary)" }}>
-          <span style={{ fontSize: "var(--fs-xs)", color: "var(--text-secondary)", textTransform: "uppercase" }}>Fully Verified</span>
-          <h3 className="h3" style={{ margin: "4px 0", color: "#10B981" }}>{verifiedCount}</h3>
+        <div
+          onClick={() => setFilterStatus("VERIFIED")}
+          style={{
+            background: "#1E293B",
+            borderRadius: "12px",
+            padding: "18px",
+            cursor: "pointer",
+            border: filterStatus === "VERIFIED" ? "2px solid #10B981" : "1px solid rgba(255,255,255,0.08)",
+            boxShadow: "0 4px 14px rgba(0,0,0,0.2)",
+          }}
+        >
+          <span style={{ fontSize: "11px", color: "#94A3B8", textTransform: "uppercase", fontWeight: 700 }}>Fully Verified</span>
+          <h3 className="h3" style={{ margin: "6px 0", color: "#10B981" }}>{verifiedCount}</h3>
           <span style={{ fontSize: "11px", color: "#10B981" }}>Badge issued &amp; active</span>
         </div>
       </div>
 
       {/* Filter and Search Bar */}
-      <div className="card" style={{ marginBottom: "var(--space-6)", display: "flex", gap: "16px", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between" }}>
+      <div style={{ background: "#1E293B", borderRadius: "12px", border: "1px solid rgba(255,255,255,0.08)", padding: "16px", marginBottom: "var(--space-6)", display: "flex", gap: "16px", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", boxShadow: "0 4px 14px rgba(0,0,0,0.2)" }}>
         <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
           {["ALL", "PENDING", "VERIFIED", "REJECTED", "ONLINE"].map((status) => (
             <button
@@ -383,20 +423,20 @@ export default function ProfessionalVerificationPage() {
           ))}
         </div>
 
-        <div style={{ position: "relative", minWidth: 260 }}>
-          <Search size={14} style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: "var(--text-secondary)" }} />
+        <div style={{ position: "relative", minWidth: 280 }}>
+          <Search size={14} style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: "#94A3B8" }} />
           <input
             type="text"
             placeholder="Search by name, email, or skill..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            style={{ width: "100%", padding: "6px 12px 6px 32px", borderRadius: "6px", background: "#0F172A", border: "1px solid #334155", color: "#F8FAFC", fontSize: "13px" }}
+            style={{ width: "100%", padding: "8px 12px 8px 32px", borderRadius: "8px", background: "#0F172A", border: "1px solid #334155", color: "#F8FAFC", fontSize: "13px" }}
           />
         </div>
       </div>
 
       {/* Table of Professionals */}
-      <div className="card" style={{ padding: 0, overflowX: "auto" }}>
+      <div style={{ background: "#1E293B", borderRadius: "14px", border: "1px solid rgba(255,255,255,0.1)", overflowX: "auto", boxShadow: "0 10px 30px rgba(0,0,0,0.3)" }}>
         {loading ? (
           <div style={{ padding: "50px", textAlign: "center", color: "#94A3B8" }}>Loading artisan verification registry...</div>
         ) : filteredPros.length === 0 ? (
@@ -412,32 +452,32 @@ export default function ProfessionalVerificationPage() {
           <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left", fontSize: "14px" }}>
             <thead>
               <tr style={{ background: "#0F172A", borderBottom: "1px solid #334155", color: "#94A3B8" }}>
-                <th style={{ padding: "12px 16px" }}>Artisan Name</th>
-                <th style={{ padding: "12px 16px" }}>Online Status</th>
-                <th style={{ padding: "12px 16px" }}>Primary Trade</th>
-                <th style={{ padding: "12px 16px" }}>Operating State</th>
-                <th style={{ padding: "12px 16px" }}>Govt ID Check</th>
-                <th style={{ padding: "12px 16px" }}>Address Check</th>
-                <th style={{ padding: "12px 16px" }}>Compliance Status</th>
-                <th style={{ padding: "12px 16px" }}>Audit Action</th>
+                <th style={{ padding: "14px 16px", fontWeight: 700, fontSize: "12px", textTransform: "uppercase", letterSpacing: "0.05em" }}>Artisan Name</th>
+                <th style={{ padding: "14px 16px", fontWeight: 700, fontSize: "12px", textTransform: "uppercase", letterSpacing: "0.05em" }}>Online Status</th>
+                <th style={{ padding: "14px 16px", fontWeight: 700, fontSize: "12px", textTransform: "uppercase", letterSpacing: "0.05em" }}>Primary Trade</th>
+                <th style={{ padding: "14px 16px", fontWeight: 700, fontSize: "12px", textTransform: "uppercase", letterSpacing: "0.05em" }}>Operating State</th>
+                <th style={{ padding: "14px 16px", fontWeight: 700, fontSize: "12px", textTransform: "uppercase", letterSpacing: "0.05em" }}>Govt ID Check</th>
+                <th style={{ padding: "14px 16px", fontWeight: 700, fontSize: "12px", textTransform: "uppercase", letterSpacing: "0.05em" }}>Address Check</th>
+                <th style={{ padding: "14px 16px", fontWeight: 700, fontSize: "12px", textTransform: "uppercase", letterSpacing: "0.05em" }}>Compliance Status</th>
+                <th style={{ padding: "14px 16px", fontWeight: 700, fontSize: "12px", textTransform: "uppercase", letterSpacing: "0.05em" }}>Audit Action</th>
               </tr>
             </thead>
             <tbody>
-              {filteredPros.map((p) => (
-                <tr key={p.id} style={{ borderBottom: "1px solid #334155" }}>
-                  <td style={{ padding: "12px 16px" }}>
-                    <strong style={{ color: "#F8FAFC", display: "block" }}>{p.name}</strong>
-                    <span style={{ fontSize: "12px", color: "#94A3B8" }}>{p.phone}</span>
+              {filteredPros.map((p, idx) => (
+                <tr key={p.id} style={{ background: idx % 2 === 0 ? "#1E293B" : "#162032", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+                  <td style={{ padding: "14px 16px" }}>
+                    <strong style={{ color: "#F8FAFC", fontSize: "14px", fontWeight: 700, display: "block" }}>{p.name}</strong>
+                    <span style={{ fontSize: "12px", color: "#94A3B8", display: "block", marginTop: 2 }}>{p.phone}</span>
                   </td>
-                  <td style={{ padding: "12px 16px" }}>
+                  <td style={{ padding: "14px 16px" }}>
                     <button
                       onClick={() => handleToggleProAvailability(p)}
                       style={{
                         background: p.isAvailable ? "rgba(16,185,129,0.15)" : "rgba(100,116,139,0.15)",
-                        border: `1px solid ${p.isAvailable ? "rgba(16,185,129,0.3)" : "rgba(100,116,139,0.3)"}`,
+                        border: `1px solid ${p.isAvailable ? "rgba(16,185,129,0.4)" : "rgba(100,116,139,0.4)"}`,
                         color: p.isAvailable ? "#10B981" : "#94A3B8",
                         borderRadius: "20px",
-                        padding: "3px 10px",
+                        padding: "4px 12px",
                         fontSize: "11px",
                         fontWeight: 700,
                         cursor: "pointer",
@@ -451,31 +491,33 @@ export default function ProfessionalVerificationPage() {
                       {p.isAvailable ? "ONLINE" : "OFFLINE"}
                     </button>
                   </td>
-                  <td style={{ padding: "12px 16px", color: "#CBD5E1" }}>
-                    <span style={{ fontWeight: 600, color: "#38BDF8" }}>{getTradeCategoryLabel(p.field)}</span>
+                  <td style={{ padding: "14px 16px" }}>
+                    <span style={{ fontWeight: 700, color: "#38BDF8", fontSize: "13px", display: "block" }}>{getTradeCategoryLabel(p.field)}</span>
                     {p.secondaryField && (
-                      <span style={{ display: "block", fontSize: "11px", color: "#94A3B8" }}>
+                      <span style={{ display: "block", fontSize: "11px", color: "#94A3B8", marginTop: 2 }}>
                         + {getTradeCategoryLabel(p.secondaryField)}
                       </span>
                     )}
                   </td>
-                  <td style={{ padding: "12px 16px", color: "#F8FAFC", fontWeight: 600 }}>{p.operatingState || p.city}</td>
-                  <td style={{ padding: "12px 16px" }}>
-                    <span style={{ fontFamily: "monospace", fontSize: "12px", color: "#0EA5E9" }}>
+                  <td style={{ padding: "14px 16px", color: "#F8FAFC", fontWeight: 600 }}>{p.operatingState || p.city}</td>
+                  <td style={{ padding: "14px 16px" }}>
+                    <span style={{ fontFamily: "monospace", fontSize: "12px", color: "#38BDF8", background: "rgba(56, 189, 248, 0.12)", padding: "3px 8px", borderRadius: "4px", border: "1px solid rgba(56, 189, 248, 0.3)" }}>
                       {p.idType} ({p.idNumber || "Not Provided"})
                     </span>
                   </td>
-                  <td style={{ padding: "12px 16px" }}>
-                    <span className="badge" style={{ background: p.addressVerified ? "rgba(16,185,129,0.15)" : "rgba(245,158,11,0.15)", color: p.addressVerified ? "#10B981" : "#F59E0B", fontSize: "11px" }}>
-                      {p.addressVerified ? "VERIFIED" : "PENDING"}
+                  <td style={{ padding: "14px 16px" }}>
+                    <span style={{ background: p.addressVerified ? "rgba(16,185,129,0.15)" : "rgba(245,158,11,0.15)", color: p.addressVerified ? "#10B981" : "#F59E0B", border: `1px solid ${p.addressVerified ? "rgba(16,185,129,0.4)" : "rgba(245,158,11,0.4)"}`, padding: "3px 8px", borderRadius: "6px", fontSize: "11px", fontWeight: 700 }}>
+                      {p.addressVerified ? "VERIFIED ✓" : "PENDING ⏳"}
                     </span>
                   </td>
-                  <td style={{ padding: "12px 16px" }}>
+                  <td style={{ padding: "14px 16px" }}>
                     <span
-                      className="badge"
                       style={{
                         background: p.verificationStatus === "VERIFIED" ? "rgba(16,185,129,0.15)" : p.verificationStatus === "REJECTED" ? "rgba(239,68,68,0.15)" : "rgba(245,158,11,0.15)",
                         color: p.verificationStatus === "VERIFIED" ? "#10B981" : p.verificationStatus === "REJECTED" ? "#EF4444" : "#F59E0B",
+                        border: `1px solid ${p.verificationStatus === "VERIFIED" ? "rgba(16,185,129,0.4)" : p.verificationStatus === "REJECTED" ? "rgba(239,68,68,0.4)" : "rgba(245,158,11,0.4)"}`,
+                        padding: "3px 8px",
+                        borderRadius: "6px",
                         fontSize: "11px",
                         fontWeight: 700,
                       }}
@@ -483,19 +525,19 @@ export default function ProfessionalVerificationPage() {
                       {p.verificationStatus}
                     </span>
                   </td>
-                  <td style={{ padding: "12px 16px" }}>
+                  <td style={{ padding: "14px 16px" }}>
                     <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
                       <button
                         className="btn btn-primary btn-xs"
                         onClick={() => openInspectModal(p)}
-                        style={{ display: "inline-flex", alignItems: "center", gap: 4 }}
+                        style={{ display: "inline-flex", alignItems: "center", gap: 4, fontWeight: 700 }}
                       >
                         <Eye size={12} /> Audit Dossier
                       </button>
                       <button
                         onClick={() => handlePurgeArtisan(p)}
                         className="btn btn-secondary btn-xs"
-                        style={{ color: "#EF4444", borderColor: "rgba(239,68,68,0.3)" }}
+                        style={{ color: "#EF4444", borderColor: "rgba(239,68,68,0.4)" }}
                         title="Purge artisan test record"
                       >
                         <Trash2 size={12} />
