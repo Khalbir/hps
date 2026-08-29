@@ -554,105 +554,197 @@ export function StepService({ booking, updateBooking, onNext }: StepProps) {
                         boxSizing: "border-box",
                       }}
                     >
-                      <span style={{ fontSize: "12px", color: "#94A3B8", fontWeight: 600 }}>Choose Your Plan</span>
-                      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: "10px" }}>
-                        {(["SILVER", "GOLD", "PLATINUM"] as ServicePlanTier[]).map((tier) => {
-                          const plan = SERVICE_PLANS[tier];
-                          const tierCalc = calculateJobPrice(
+                      <span style={{ fontSize: "12px", color: "#94A3B8", fontWeight: 600 }}>
+                        {svc.id.includes("gardening") || selectedCategory === "outdoor" ? "Choose Routine Gardening Frequency" : "Choose Your Plan"}
+                      </span>
+                      <div style={{ display: "grid", gridTemplateColumns: svc.id.includes("gardening") || selectedCategory === "outdoor" ? "repeat(auto-fit, minmax(200px, 1fr))" : "repeat(auto-fit, minmax(160px, 1fr))", gap: "10px" }}>
+                        {svc.id.includes("gardening") || selectedCategory === "outdoor" ? (
+                          [
                             {
-                              serviceId: svc.id,
-                              pricingModel: pModel,
-                              basePrice: svc.price,
-                              plan: tier,
-                              bedrooms: booking.bedrooms || 2,
-                              bathrooms: booking.bathrooms || 1,
-                              isFurnished: booking.isFurnished || false,
-                              dirtLevel: booking.dirtLevel || "MODERATE",
-                              quantity: svcQty,
-                              regionalZoneId: booking.regionalZoneId || "abuja-suburbs",
-                              isExpressSchedule: booking.isEmergency || false,
+                              tier: "SILVER" as ServicePlanTier,
+                              name: "Once a Month Plan",
+                              badge: "🌿 1 Visit / Month",
+                              visitsLabel: "1 comprehensive visit per month",
+                              price: 18000,
+                              features: ["Lawn mowing & edge trimming", "Hedge trimming & weed clearance", "Compound & debris cleanup"],
+                              color: "#10B981",
                             },
-                            pricingRules
-                          );
-                          const isActiveTier = (isSelected && selectedPlanTier === tier);
-                          const tierColors: Record<ServicePlanTier, { border: string; bg: string; text: string; badge: string }> = {
-                            SILVER: { border: "#94A3B8", bg: "rgba(148,163,184,0.1)", text: "#CBD5E1", badge: "🥈" },
-                            GOLD: { border: "#F59E0B", bg: "rgba(245,158,11,0.1)", text: "#FCD34D", badge: "🥇" },
-                            PLATINUM: { border: "#8B5CF6", bg: "rgba(139,92,246,0.1)", text: "#C4B5FD", badge: "💎" },
-                          };
-                          const tc = tierColors[tier];
-                          return (
-                            <button
-                              key={tier}
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handlePlanTierChange(tier, rawSvc);
-                              }}
-                              style={{
-                                background: isActiveTier ? tc.bg : "#0F172A",
-                                border: isActiveTier ? `2px solid ${tc.border}` : "1px solid #334155",
-                                borderRadius: "12px",
-                                padding: "14px 12px",
-                                cursor: "pointer",
-                                display: "flex",
-                                flexDirection: "column",
-                                gap: "8px",
-                                textAlign: "left",
-                                transition: "all 0.2s ease",
-                                boxShadow: isActiveTier ? `0 0 16px ${tc.border}33` : "none",
-                                position: "relative",
-                                overflow: "hidden",
-                              }}
-                            >
-                              {isActiveTier && (
-                                <div style={{
-                                  position: "absolute",
-                                  top: "6px",
-                                  right: "6px",
-                                  width: "18px",
-                                  height: "18px",
-                                  borderRadius: "50%",
-                                  background: tc.border,
+                            {
+                              tier: "GOLD" as ServicePlanTier,
+                              name: "Twice a Month Plan",
+                              badge: "🌿 2 Visits / Month (Bi-Weekly)",
+                              visitsLabel: "2 visits per month (every 2 weeks)",
+                              price: 32000,
+                              features: ["Fortnightly lawn grooming & shaping", "Continuous weed eradication & soil care", "Tree pruning & compound groundskeeping"],
+                              color: "#0EA5E9",
+                            },
+                          ].map((gPlan) => {
+                            const isActiveTier = isSelected && (selectedPlanTier === gPlan.tier || (!selectedPlanTier && gPlan.tier === "SILVER"));
+                            return (
+                              <button
+                                key={gPlan.name}
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handlePlanTierChange(gPlan.tier, rawSvc);
+                                }}
+                                style={{
+                                  background: isActiveTier ? "rgba(16,185,129,0.12)" : "#0F172A",
+                                  border: isActiveTier ? `2px solid ${gPlan.color}` : "1px solid #334155",
+                                  borderRadius: "12px",
+                                  padding: "14px 12px",
+                                  cursor: "pointer",
                                   display: "flex",
-                                  alignItems: "center",
-                                  justifyContent: "center",
-                                  fontSize: "10px",
-                                  color: "#fff",
-                                  fontWeight: 800,
-                                }}>✓</div>
-                              )}
-                              <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                                <span style={{ fontSize: "16px" }}>{tc.badge}</span>
-                                <span style={{ fontSize: "13px", fontWeight: 700, color: isActiveTier ? tc.text : "#E2E8F0" }}>
-                                  {tier === "SILVER" ? "Silver" : tier === "GOLD" ? "Gold" : "Platinum"}
-                                </span>
-                              </div>
-                              <span style={{ fontSize: "11px", color: "#94A3B8", lineHeight: 1.3 }}>
-                                {plan.cleaningsPerWeek} days/wk · {plan.cleaningsPerMonth} visits/mo
-                              </span>
-                              <div style={{ fontSize: "11px", color: "#64748B", lineHeight: 1.4, display: "flex", flexDirection: "column", gap: "2px" }}>
-                                {plan.features.slice(0, 2).map((f, fi) => (
-                                  <span key={fi} style={{ display: "flex", alignItems: "flex-start", gap: "4px" }}>
-                                    <span style={{ color: tc.border, flexShrink: 0 }}>✦</span>
-                                    <span style={{ fontSize: "10px" }}>{f}</span>
-                                  </span>
-                                ))}
-                              </div>
-                              <div style={{ marginTop: "4px", borderTop: "1px solid rgba(51,65,85,0.5)", paddingTop: "8px" }}>
-                                <strong style={{ fontSize: "1rem", color: isActiveTier ? "#10B981" : "#94A3B8", fontWeight: 800 }}>
-                                  ₦{tierCalc.totalPriceNgn.toLocaleString()}
-                                </strong>
-                                <span style={{ fontSize: "11px", color: "#64748B" }}>/mo</span>
-                                {tier !== "SILVER" && (
-                                  <span style={{ fontSize: "10px", color: tc.border, display: "block", marginTop: "2px", fontWeight: 600 }}>
-                                    +{Math.round((plan.multiplier - 1) * 100)}% from base
-                                  </span>
+                                  flexDirection: "column",
+                                  gap: "8px",
+                                  textAlign: "left",
+                                  transition: "all 0.2s ease",
+                                  boxShadow: isActiveTier ? `0 0 16px ${gPlan.color}33` : "none",
+                                  position: "relative",
+                                  overflow: "hidden",
+                                }}
+                              >
+                                {isActiveTier && (
+                                  <div style={{
+                                    position: "absolute",
+                                    top: "6px",
+                                    right: "6px",
+                                    width: "18px",
+                                    height: "18px",
+                                    borderRadius: "50%",
+                                    background: gPlan.color,
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    fontSize: "10px",
+                                    color: "#fff",
+                                    fontWeight: 800,
+                                  }}>✓</div>
                                 )}
-                              </div>
-                            </button>
-                          );
-                        })}
+                                <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                                  <span style={{ fontSize: "14px", fontWeight: 700, color: isActiveTier ? gPlan.color : "#E2E8F0" }}>
+                                    {gPlan.name}
+                                  </span>
+                                </div>
+                                <span style={{ fontSize: "11px", color: "#94A3B8", lineHeight: 1.3 }}>
+                                  {gPlan.visitsLabel}
+                                </span>
+                                <div style={{ fontSize: "11px", color: "#64748B", lineHeight: 1.4, display: "flex", flexDirection: "column", gap: "2px" }}>
+                                  {gPlan.features.map((f, fi) => (
+                                    <span key={fi} style={{ display: "flex", alignItems: "flex-start", gap: "4px" }}>
+                                      <span style={{ color: gPlan.color, flexShrink: 0 }}>✦</span>
+                                      <span style={{ fontSize: "10px" }}>{f}</span>
+                                    </span>
+                                  ))}
+                                </div>
+                                <div style={{ marginTop: "4px", borderTop: "1px solid rgba(51,65,85,0.5)", paddingTop: "8px" }}>
+                                  <strong style={{ fontSize: "1.1rem", color: isActiveTier ? "#10B981" : "#94A3B8", fontWeight: 800 }}>
+                                    ₦{gPlan.price.toLocaleString()}
+                                  </strong>
+                                  <span style={{ fontSize: "11px", color: "#64748B" }}>/mo</span>
+                                </div>
+                              </button>
+                            );
+                          })
+                        ) : (
+                          (["SILVER", "GOLD", "PLATINUM"] as ServicePlanTier[]).map((tier) => {
+                            const plan = SERVICE_PLANS[tier];
+                            const tierCalc = calculateJobPrice(
+                              {
+                                serviceId: svc.id,
+                                pricingModel: pModel,
+                                basePrice: svc.price,
+                                plan: tier,
+                                bedrooms: booking.bedrooms || 2,
+                                bathrooms: booking.bathrooms || 1,
+                                isFurnished: booking.isFurnished || false,
+                                dirtLevel: booking.dirtLevel || "MODERATE",
+                                quantity: svcQty,
+                                regionalZoneId: booking.regionalZoneId || "abuja-suburbs",
+                                isExpressSchedule: booking.isEmergency || false,
+                              },
+                              pricingRules
+                            );
+                            const isActiveTier = (isSelected && selectedPlanTier === tier);
+                            const tierColors: Record<ServicePlanTier, { border: string; bg: string; text: string; badge: string }> = {
+                              SILVER: { border: "#94A3B8", bg: "rgba(148,163,184,0.1)", text: "#CBD5E1", badge: "🥈" },
+                              GOLD: { border: "#F59E0B", bg: "rgba(245,158,11,0.1)", text: "#FCD34D", badge: "🥇" },
+                              PLATINUM: { border: "#8B5CF6", bg: "rgba(139,92,246,0.1)", text: "#C4B5FD", badge: "💎" },
+                            };
+                            const tc = tierColors[tier];
+                            return (
+                              <button
+                                key={tier}
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handlePlanTierChange(tier, rawSvc);
+                                }}
+                                style={{
+                                  background: isActiveTier ? tc.bg : "#0F172A",
+                                  border: isActiveTier ? `2px solid ${tc.border}` : "1px solid #334155",
+                                  borderRadius: "12px",
+                                  padding: "14px 12px",
+                                  cursor: "pointer",
+                                  display: "flex",
+                                  flexDirection: "column",
+                                  gap: "8px",
+                                  textAlign: "left",
+                                  transition: "all 0.2s ease",
+                                  boxShadow: isActiveTier ? `0 0 16px ${tc.border}33` : "none",
+                                  position: "relative",
+                                  overflow: "hidden",
+                                }}
+                              >
+                                {isActiveTier && (
+                                  <div style={{
+                                    position: "absolute",
+                                    top: "6px",
+                                    right: "6px",
+                                    width: "18px",
+                                    height: "18px",
+                                    borderRadius: "50%",
+                                    background: tc.border,
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    fontSize: "10px",
+                                    color: "#fff",
+                                    fontWeight: 800,
+                                  }}>✓</div>
+                                )}
+                                <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                                  <span style={{ fontSize: "16px" }}>{tc.badge}</span>
+                                  <span style={{ fontSize: "13px", fontWeight: 700, color: isActiveTier ? tc.text : "#E2E8F0" }}>
+                                    {tier === "SILVER" ? "Silver" : tier === "GOLD" ? "Gold" : "Platinum"}
+                                  </span>
+                                </div>
+                                <span style={{ fontSize: "11px", color: "#94A3B8", lineHeight: 1.3 }}>
+                                  {plan.cleaningsPerWeek} days/wk · {plan.cleaningsPerMonth} visits/mo
+                                </span>
+                                <div style={{ fontSize: "11px", color: "#64748B", lineHeight: 1.4, display: "flex", flexDirection: "column", gap: "2px" }}>
+                                  {plan.features.slice(0, 2).map((f, fi) => (
+                                    <span key={fi} style={{ display: "flex", alignItems: "flex-start", gap: "4px" }}>
+                                      <span style={{ color: tc.border, flexShrink: 0 }}>✦</span>
+                                      <span style={{ fontSize: "10px" }}>{f}</span>
+                                    </span>
+                                  ))}
+                                </div>
+                                <div style={{ marginTop: "4px", borderTop: "1px solid rgba(51,65,85,0.5)", paddingTop: "8px" }}>
+                                  <strong style={{ fontSize: "1rem", color: isActiveTier ? "#10B981" : "#94A3B8", fontWeight: 800 }}>
+                                    ₦{tierCalc.totalPriceNgn.toLocaleString()}
+                                  </strong>
+                                  <span style={{ fontSize: "11px", color: "#64748B" }}>/mo</span>
+                                  {tier !== "SILVER" && (
+                                    <span style={{ fontSize: "10px", color: tc.border, display: "block", marginTop: "2px", fontWeight: 600 }}>
+                                      +{Math.round((plan.multiplier - 1) * 100)}% from base
+                                    </span>
+                                  )}
+                                </div>
+                              </button>
+                            );
+                          })
+                        )}
                       </div>
                     </div>
                   )}
@@ -676,7 +768,9 @@ export function StepService({ booking, updateBooking, onNext }: StepProps) {
                         {svc.pricingModel === "CUSTOM_QUOTE"
                           ? "Assessment Deposit"
                           : svc.pricingModel === "SUBSCRIPTION"
-                          ? `${SERVICE_PLANS[selectedPlanTier]?.name || "Monthly"} Plan`
+                          ? svc.id.includes("gardening")
+                            ? selectedPlanTier === "GOLD" ? "Twice a Month Plan" : "Once a Month Plan"
+                            : `${SERVICE_PLANS[selectedPlanTier]?.name || "Monthly"} Plan`
                           : "Calculated Amount"}
                       </span>
                       <strong style={{ fontSize: "1.15rem", color: svc.pricingModel === "CUSTOM_QUOTE" ? "#C084FC" : "#10B981", fontWeight: 800 }}>

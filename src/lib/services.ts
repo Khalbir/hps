@@ -210,20 +210,12 @@ export const SERVICE_CATEGORIES: ServiceCategory[] = [
     keywords: ["garden", "gardening", "lawn", "grass", "landscaping", "plants", "trees", "outdoor", "compound", "groundskeeping"],
     services: [
       {
-        id: "gardening-once-a-month",
-        name: "Gardening (Once a Month Plan)",
+        id: "gardening",
+        name: "Gardening & Lawn Maintenance",
         price: 18000,
-        desc: "Monthly garden care: Lawn mowing, weed clearance, hedge trimming, pruning & compound cleanup (1 visit per month)",
+        desc: "Routine compound groundskeeping: lawn mowing, weed clearance, hedge trimming, pruning & soil nourishment",
         pricingModel: "SUBSCRIPTION",
-        unitLabel: "per month (1 visit)",
-      },
-      {
-        id: "gardening-twice-a-month",
-        name: "Gardening (Twice a Month Plan)",
-        price: 32000,
-        desc: "Bi-weekly garden care: Fortnightly lawn mowing, hedge trimming, soil care, weed eradication & groundskeeping (2 visits per month)",
-        pricingModel: "SUBSCRIPTION",
-        unitLabel: "per month (2 visits)",
+        unitLabel: "per month",
       },
       {
         id: "landscaping-tree-felling",

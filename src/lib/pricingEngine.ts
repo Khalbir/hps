@@ -274,20 +274,27 @@ export function calculateJobPrice(
     rawRoomsSubtotalNgn = activeBasePrice;
     breakdown.push({ label: "Base Service Rate", amountNgn: activeBasePrice });
   } else if (activePricingModel === "SUBSCRIPTION") {
-    rawRoomsSubtotalNgn = activeBasePrice;
     const isGardening = input.serviceId?.includes("gardening");
-    breakdown.push({
-      label: isGardening ? "Monthly Gardening Maintenance Plan" : "Monthly Routine Maintenance Base Plan",
-      amountNgn: activeBasePrice,
-    });
-
-    if (!isGardening && planMultiplier > 1.0) {
-      planAdditionNgn = Math.round(rawRoomsSubtotalNgn * (planMultiplier - 1.0));
-      const planPercent = Math.round((planMultiplier - 1.0) * 100);
+    if (isGardening) {
+      const isTwiceMonthly = input.plan === "GOLD" || input.plan === "PLATINUM";
+      const gPrice = isTwiceMonthly ? 32000 : 18000;
+      rawRoomsSubtotalNgn = gPrice;
       breakdown.push({
-        label: `${SERVICE_PLANS[safePlan]?.name || safePlan} Plan Multiplier (+${planPercent}%)`,
-        amountNgn: planAdditionNgn,
+        label: isTwiceMonthly ? "Gardening (Twice a Month Plan · 2 Visits/Mo)" : "Gardening (Once a Month Plan · 1 Visit/Mo)",
+        amountNgn: gPrice,
       });
+    } else {
+      rawRoomsSubtotalNgn = activeBasePrice;
+      breakdown.push({ label: "Monthly Routine Maintenance Base Plan", amountNgn: activeBasePrice });
+
+      if (planMultiplier > 1.0) {
+        planAdditionNgn = Math.round(rawRoomsSubtotalNgn * (planMultiplier - 1.0));
+        const planPercent = Math.round((planMultiplier - 1.0) * 100);
+        breakdown.push({
+          label: `${SERVICE_PLANS[safePlan]?.name || safePlan} Plan Multiplier (+${planPercent}%)`,
+          amountNgn: planAdditionNgn,
+        });
+      }
     }
   } else if (activePricingModel === "QUANTITY_BASED") {
     const qty = Math.max(1, quantity);
