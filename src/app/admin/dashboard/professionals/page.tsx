@@ -519,14 +519,20 @@ export default function ProfessionalVerificationPage() {
                 </strong>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8 }}>
                   <div>
-                    <div style={{ fontSize: "14px", fontWeight: 700, color: "#F8FAFC" }}>{inspectPro.idType}: {inspectPro.idNumber}</div>
-                    <button
-                      type="button"
-                      onClick={() => setPreviewMediaUrl(inspectPro.idUrl)}
-                      style={{ background: "none", border: "none", padding: 0, fontSize: "12px", color: "#38BDF8", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: "4px", marginTop: "4px", fontWeight: 600 }}
-                    >
-                      👁️ Inspect NIMC Government ID Document <ExternalLink size={12} />
-                    </button>
+                    <div style={{ fontSize: "14px", fontWeight: 700, color: "#F8FAFC" }}>{inspectPro.idType}: {inspectPro.idNumber || "Not Provided"}</div>
+                    {inspectPro.idUrl ? (
+                      <button
+                        type="button"
+                        onClick={() => setPreviewMediaUrl(inspectPro.idUrl)}
+                        style={{ background: "none", border: "none", padding: 0, fontSize: "12px", color: "#38BDF8", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: "4px", marginTop: "4px", fontWeight: 600 }}
+                      >
+                        👁️ Inspect NIMC Government ID Document <ExternalLink size={12} />
+                      </button>
+                    ) : (
+                      <span style={{ color: "#EF4444", fontSize: "11.5px", fontWeight: 700, display: "inline-block", marginTop: "4px" }}>
+                        ⚠️ No Government ID Document Uploaded
+                      </span>
+                    )}
                   </div>
                   {inspectPro.selfieUrl ? (
                     <div style={{ textAlign: "center", cursor: "pointer" }} onClick={() => setPreviewMediaUrl(inspectPro.selfieUrl)}>
@@ -554,18 +560,24 @@ export default function ProfessionalVerificationPage() {
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 10 }}>
                   <div>
                     <div style={{ fontSize: "14px", fontWeight: 700, color: "#F8FAFC" }}>
-                      Operating State: <span style={{ color: "#F59E0B" }}>{inspectPro.operatingState || inspectPro.city}</span>
+                      Operating State: <span style={{ color: "#F59E0B" }}>{inspectPro.operatingState || inspectPro.city || "Not Provided"}</span>
                     </div>
                     <div style={{ fontSize: "13px", color: "#CBD5E1", marginTop: "2px" }}>
-                      Address: {inspectPro.homeAddress || "Plot 104, Aminu Kano Crescent, Wuse 2, Abuja"} ({inspectPro.lga || "AMAC"})
+                      Address: {inspectPro.homeAddress || "Not Provided"} ({inspectPro.lga || "AMAC"})
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => setPreviewMediaUrl(inspectPro.addressProofUrl)}
-                      style={{ background: "none", border: "none", padding: 0, fontSize: "12px", color: "#38BDF8", fontWeight: "bold", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: "4px", marginTop: "6px" }}
-                    >
-                      👁️ Inspect Proof of Address Document (Utility Bill / Tenancy Receipt) <ExternalLink size={12} />
-                    </button>
+                    {inspectPro.addressProofUrl ? (
+                      <button
+                        type="button"
+                        onClick={() => setPreviewMediaUrl(inspectPro.addressProofUrl)}
+                        style={{ background: "none", border: "none", padding: 0, fontSize: "12px", color: "#38BDF8", fontWeight: "bold", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: "4px", marginTop: "6px" }}
+                      >
+                        👁️ Inspect Proof of Address Document (Utility Bill / Tenancy Receipt) <ExternalLink size={12} />
+                      </button>
+                    ) : (
+                      <span style={{ color: "#EF4444", fontSize: "11.5px", fontWeight: 700, display: "inline-block", marginTop: "6px" }}>
+                        ⚠️ No Proof of Address Document Uploaded
+                      </span>
+                    )}
                   </div>
                   <span className="badge" style={{ background: inspectPro.addressVerified ? "rgba(16,185,129,0.15)" : "rgba(245,158,11,0.15)", color: inspectPro.addressVerified ? "#10B981" : "#F59E0B", fontSize: "11px", fontWeight: 700 }}>
                     {inspectPro.addressVerified ? "ADDRESS VERIFIED ✓" : "ADDRESS UNVERIFIED ⚠️"}
@@ -606,8 +618,8 @@ export default function ProfessionalVerificationPage() {
                               {tv.status || "PENDING"}
                             </span>
                           </div>
-                          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 8 }}>
-                            {tv.certUrl && (
+                          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 8, alignItems: "center" }}>
+                            {tv.certUrl ? (
                               <button
                                 type="button"
                                 onClick={() => setPreviewMediaUrl(tv.certUrl)}
@@ -615,6 +627,10 @@ export default function ProfessionalVerificationPage() {
                               >
                                 👁️ Trade Cert
                               </button>
+                            ) : (
+                              <span style={{ fontSize: "11px", color: "#EF4444", fontWeight: 700, background: "rgba(239,68,68,0.12)", border: "1px solid rgba(239,68,68,0.3)", padding: "3px 8px", borderRadius: 4 }}>
+                                ⚠️ No Trade Cert Uploaded
+                              </span>
                             )}
                             {tv.toolsProofUrl && (
                               <button
@@ -625,11 +641,15 @@ export default function ProfessionalVerificationPage() {
                                 🔧 Tools Proof
                               </button>
                             )}
-                            {tv.portfolioUrls && tv.portfolioUrls.length > 0 && tv.portfolioUrls.map((url: string, pidx: number) => (
-                              <div key={pidx} onClick={() => setPreviewMediaUrl(url)} style={{ cursor: "pointer" }}>
-                                <img src={url} alt={`Work ${pidx+1}`} style={{ width: 44, height: 44, borderRadius: 6, objectFit: "cover", border: "1px solid #0EA5E9" }} />
-                              </div>
-                            ))}
+                            {tv.portfolioUrls && tv.portfolioUrls.length > 0 ? (
+                              tv.portfolioUrls.map((url: string, pidx: number) => (
+                                <div key={pidx} onClick={() => setPreviewMediaUrl(url)} style={{ cursor: "pointer" }}>
+                                  <img src={url} alt={`Work ${pidx+1}`} style={{ width: 44, height: 44, borderRadius: 6, objectFit: "cover", border: "1px solid #0EA5E9" }} />
+                                </div>
+                              ))
+                            ) : (
+                              <span style={{ fontSize: "11px", color: "#94A3B8" }}>No work portfolio uploaded</span>
+                            )}
                           </div>
                           {/* Per-Trade Approve/Reject buttons */}
                           {!isTvVerified && !isTvRejected && (
@@ -711,15 +731,21 @@ export default function ProfessionalVerificationPage() {
                   </strong>
                   <div style={{ fontSize: "13px", color: "#CBD5E1", marginBottom: 6 }}>
                     Certification:{" "}
-                    <button
-                      type="button"
-                      onClick={() => setPreviewMediaUrl(inspectPro.tradeCertUrl)}
-                      style={{ background: "none", border: "none", padding: 0, color: "#38BDF8", fontWeight: "bold", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 4 }}
-                    >
-                      Inspect Trade Cert PDF / Image 👁️ <ExternalLink size={12} />
-                    </button>
+                    {inspectPro.tradeCertUrl ? (
+                      <button
+                        type="button"
+                        onClick={() => setPreviewMediaUrl(inspectPro.tradeCertUrl)}
+                        style={{ background: "none", border: "none", padding: 0, color: "#38BDF8", fontWeight: "bold", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 4 }}
+                      >
+                        Inspect Trade Cert PDF / Image 👁️ <ExternalLink size={12} />
+                      </button>
+                    ) : (
+                      <span style={{ color: "#EF4444", fontWeight: 700, fontSize: "12px" }}>
+                        ⚠️ No Trade Certificate Uploaded (Missing Document)
+                      </span>
+                    )}
                   </div>
-                  {inspectPro.portfolioUrls && inspectPro.portfolioUrls.length > 0 && (
+                  {inspectPro.portfolioUrls && inspectPro.portfolioUrls.length > 0 ? (
                     <div style={{ display: "flex", gap: 8, marginTop: 6, overflowX: "auto" }}>
                       {inspectPro.portfolioUrls.map((url: string, idx: number) => (
                         <div key={idx} onClick={() => setPreviewMediaUrl(url)} style={{ cursor: "pointer" }}>
@@ -731,6 +757,10 @@ export default function ProfessionalVerificationPage() {
                         </div>
                       ))}
                     </div>
+                  ) : (
+                    <span style={{ fontSize: "11px", color: "#94A3B8", display: "block", marginTop: 4 }}>
+                      No work portfolio photos uploaded
+                    </span>
                   )}
                 </div>
               )}
@@ -1048,8 +1078,8 @@ export default function ProfessionalVerificationPage() {
                 alt="Document Full Resolution Inspection Preview"
                 style={{ maxWidth: "100%", maxHeight: "75vh", objectFit: "contain", borderRadius: 8 }}
                 onError={(e: any) => {
-                  console.warn("[Media Preview Error]: Image failed to load, switching to fallback card");
-                  e.currentTarget.src = "data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='700' height='450' viewBox='0 0 700 450'%3E%3Crect width='700' height='450' rx='16' fill='%230F172A' stroke='%230EA5E9' stroke-width='4'/%3E%3Crect x='20' y='20' width='660' height='410' rx='12' fill='%231E293B'/%3E%3Ctext x='350' y='180' font-family='sans-serif' font-size='22' font-weight='bold' fill='%23F8FAFC' text-anchor='middle'%3EOFFICIAL VERIFICATION AUDIT DOSSIER%3C/text%3E%3Ctext x='350' y='220' font-family='sans-serif' font-size='15' fill='%2338BDF8' text-anchor='middle'%3EHigh-Resolution Biometric &amp; Trade Document%3C/text%3E%3Crect x='100' y='270' width='500' height='50' rx='8' fill='%230F172A' stroke='%2310B981'/%3E%3Ctext x='350' y='302' font-family='monospace' font-size='14' fill='%2310B981' text-anchor='middle'%3E✓ DOCUMENT AUTHENTICATED BY COMPLIANCE AUDITOR%3C/text%3E%3C/svg%3E";
+                  console.warn("[Media Preview Error]: Image failed to load or unavailable");
+                  e.currentTarget.src = "data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='700' height='450' viewBox='0 0 700 450'%3E%3Crect width='700' height='450' rx='16' fill='%230F172A' stroke='%23EF4444' stroke-width='3'/%3E%3Crect x='20' y='20' width='660' height='410' rx='12' fill='%231E293B'/%3E%3Ctext x='350' y='175' font-family='sans-serif' font-size='22' font-weight='bold' fill='%23EF4444' text-anchor='middle'%3E⚠️ DOCUMENT FILE NOT FOUND / CORRUPTED%3C/text%3E%3Ctext x='350' y='215' font-family='sans-serif' font-size='14' fill='%2394A3B8' text-anchor='middle'%3EThe submitted media URL could not be retrieved from storage%3C/text%3E%3Crect x='100' y='265' width='500' height='50' rx='8' fill='%230F172A' stroke='%23EF4444'/%3E%3Ctext x='350' y='297' font-family='monospace' font-size='13' fill='%23F87171' text-anchor='middle'%3EACTION REQUIRED: REQUEST ARTISAN RE-UPLOAD%3C/text%3E%3C/svg%3E";
                 }}
               />
             )}

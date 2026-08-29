@@ -23,6 +23,12 @@ export async function GET(request: Request) {
       );
     }
 
+    if (user.tokenExpires && new Date(user.tokenExpires).getTime() < Date.now()) {
+      return NextResponse.redirect(
+        new URL(`/auth/verify-email?email=${encodeURIComponent(user.email)}&error=Confirmation code expired. Please request a new code.`, request.url)
+      );
+    }
+
     // Update user to verified
     const updatedUser = await prisma.user.update({
       where: { id: user.id },

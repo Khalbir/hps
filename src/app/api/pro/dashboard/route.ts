@@ -96,19 +96,12 @@ export async function GET(request: Request) {
     const rating = pro?.rating || 4.5;
     const completedJobs = pro?.totalJobs || 0;
 
-    let hasSubmittedDocs = false;
-    try {
-      if (pro?.documents && pro.documents.length > 5) {
-        hasSubmittedDocs = true;
-      }
-    } catch {}
-
     let calculatedStatus = "UNVERIFIED";
     if (pro?.verificationStatus === "VERIFIED" || (user && (user.role === "SUPER_ADMIN" || user.role === "ADMIN"))) {
       calculatedStatus = "VERIFIED";
     } else if (pro?.verificationStatus === "REJECTED") {
       calculatedStatus = "REJECTED";
-    } else if (pro?.verificationStatus === "PENDING" || hasSubmittedDocs) {
+    } else if (pro?.verificationStatus === "PENDING") {
       calculatedStatus = "PENDING_REVIEW";
     } else {
       calculatedStatus = "UNVERIFIED";
@@ -268,7 +261,7 @@ export async function GET(request: Request) {
       lga: docs.lga || "AMAC",
       homeAddress: docs.homeAddress || user?.permanentAddress || "",
       verificationStatus: calculatedStatus, // VERIFIED | PENDING_REVIEW | REJECTED | UNVERIFIED
-      hasSubmittedDocs,
+      hasSubmittedDocs: Boolean(pro?.verificationStatus === "PENDING" || pro?.verificationStatus === "VERIFIED"),
       verificationNotes: pro?.verificationNotes || "",
       tradeVerifications: (pro as any)?.tradeVerifications || [],
       walletBalance,

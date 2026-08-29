@@ -153,32 +153,9 @@ export default function RegisterPage() {
         return;
       }
 
-      // Always enforce persistent sign-in by default for seamless multi-window & restart support
-      localStorage.setItem("handyhub_stay_signed_in", "true");
-
-      // If email verification is required, navigate to verify-email page
-      if (data.redirect || data.requiresVerification || data.unverified) {
-        router.push(data.redirect || `/auth/verify-email?email=${encodeURIComponent(form.email)}&role=${encodeURIComponent(form.role)}`);
-        return;
-      }
-
-      const userPayload = data.user || { email: form.email, firstName: form.firstName, lastName: form.lastName, phone: form.phone, role: form.role };
-      localStorage.setItem("handyhub_user", JSON.stringify(userPayload));
-
-      const sessionPayload = { authenticated: true, user: userPayload, timestamp: Date.now() };
-      sessionStorage.setItem("handyhub_active_session", JSON.stringify(sessionPayload));
-
-      if (form.role === "PROFESSIONAL") {
-        localStorage.setItem("handyhub_pro_session", JSON.stringify(sessionPayload));
-        document.cookie = "handyhub_pro_session=authenticated; path=/; max-age=2592000; SameSite=Lax";
-        document.cookie = `handyhub_user_data=${encodeURIComponent(JSON.stringify(userPayload))}; path=/; max-age=2592000; SameSite=Lax`;
-        router.push("/pro");
-      } else {
-        localStorage.setItem("handyhub_user_session", JSON.stringify(sessionPayload));
-        document.cookie = "handyhub_user_session=authenticated; path=/; max-age=2592000; SameSite=Lax";
-        document.cookie = `handyhub_user_data=${encodeURIComponent(JSON.stringify(userPayload))}; path=/; max-age=2592000; SameSite=Lax`;
-        router.push("/dashboard");
-      }
+      // Navigate directly to verify-email page to enter 6-digit confirmation code
+      const targetRedirect = data.redirect || `/auth/verify-email?email=${encodeURIComponent(form.email)}&role=${encodeURIComponent(form.role)}`;
+      router.push(targetRedirect);
     } catch {
       setError("Something went wrong. Please try again.");
       setLoading(false);

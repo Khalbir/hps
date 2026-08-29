@@ -471,7 +471,66 @@ export default function ProVerificationPage() {
     return finalScore;
   };
 
+  // Step Validation Flags
+  const isStep1Valid = Boolean(
+    idType &&
+    (idType === "NIN" ? (idNumber || "").replace(/\D/g, "").length === 11 : (idNumber || "").trim().length >= 4) &&
+    operatingState.trim() &&
+    homeAddress.trim().length >= 5 &&
+    idDocumentUrl &&
+    idDocumentUrl !== "#" &&
+    selfieUrl &&
+    selfieUrl !== "#" &&
+    addressProofUrl &&
+    addressProofUrl !== "#" &&
+    !idUploading &&
+    !selfieUploading &&
+    !addressUploading
+  );
+
+  const isStep2Valid = Boolean(
+    tradeCertUrl &&
+    tradeCertUrl !== "#" &&
+    !certUploading &&
+    !portfolioUploading.some(Boolean) &&
+    portfolioUrls.filter((u) => Boolean(u) && u !== "#").length >= 1
+  );
+
+  const isStep3Valid = Boolean(
+    g1.name.trim().length >= 3 &&
+    (g1.relationship === "Other / Custom Role" ? Boolean(g1.customRelationship?.trim()) : Boolean(g1.relationship?.trim())) &&
+    (g1.phone || "").replace(/\D/g, "").length === 11 &&
+    (g1.nin || "").replace(/\D/g, "").length === 11 &&
+    g2.name.trim().length >= 3 &&
+    (g2.relationship === "Other / Custom Role" ? Boolean(g2.customRelationship?.trim()) : Boolean(g2.relationship?.trim())) &&
+    (g2.phone || "").replace(/\D/g, "").length === 11 &&
+    (g2.nin || "").replace(/\D/g, "").length === 11 &&
+    (g1.phone || "").replace(/\D/g, "") !== (g2.phone || "").replace(/\D/g, "") &&
+    (g1.nin || "").replace(/\D/g, "") !== (g2.nin || "").replace(/\D/g, "")
+  );
+
+  const isStep4Valid = Boolean(
+    Object.keys(selectedAnswers).length === quizQuestions.length &&
+    !submitting
+  );
+
+  const [submitError, setSubmitError] = useState("");
+
   const handleSubmitFinal = async () => {
+    setSubmitError("");
+    if (!isStep1Valid || !isStep2Valid || !isStep3Valid || !isStep4Valid) {
+      const missing = [];
+      if (!isStep1Valid) missing.push("Step 1 (Government ID document, Live Selfie, Valid 11-digit NIN, and Address Proof)");
+      if (!isStep2Valid) missing.push("Step 2 (Trade Competency Certificate and at least 1 Portfolio Work Photo)");
+      if (!isStep3Valid) missing.push("Step 3 (2 Distinct Verified Guarantors with Full Names, 11-digit Phones, and 11-digit NINs)");
+      if (!isStep4Valid) missing.push("Step 4 (All 5 Trade Quiz Questions)");
+
+      const msg = `Cannot submit verification for audit. The following mandatory requirements are incomplete: \n\n• ${missing.join("\n• ")}`;
+      setSubmitError(msg);
+      alert(msg);
+      return;
+    }
+
     const finalScore = calculateQuizScore();
     setSubmitting(true);
 
@@ -494,12 +553,13 @@ export default function ProVerificationPage() {
     }
 
     try {
-      await fetch("/api/pro/verification", {
+      const res = await fetch("/api/pro/verification", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           userId: activeUserId,
           email: activeEmail,
+          isDraft: false,
           idType,
           idNumber,
           serviceCategory: category,
@@ -531,6 +591,11 @@ export default function ProVerificationPage() {
         }),
       });
 
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Submission rejected: Mandatory verification documents missing.");
+      }
+
       if (typeof window !== "undefined") {
         try {
           const storedUser = localStorage.getItem("handyhub_user");
@@ -549,49 +614,13 @@ export default function ProVerificationPage() {
         } catch (e) {}
       }
       setCompleted(true);
-    } catch {
-      setCompleted(true);
+    } catch (err: any) {
+      setSubmitError(err.message || "Failed to submit verification dossier.");
+      alert(err.message || "Failed to submit verification dossier.");
     } finally {
       setSubmitting(false);
     }
   };
-
-  // Step Validation Flags
-  const isStep1Valid = Boolean(
-    idType &&
-    (idType === "NIN" ? idNumber.length === 11 : idNumber.trim().length >= 4) &&
-    operatingState.trim() &&
-    homeAddress.trim().length >= 5 &&
-    idDocumentUrl &&
-    selfieUrl &&
-    addressProofUrl &&
-    !idUploading &&
-    !selfieUploading &&
-    !addressUploading
-  );
-
-  const isStep2Valid = Boolean(
-    tradeCertUrl &&
-    !certUploading &&
-    !portfolioUploading.some(Boolean) &&
-    portfolioUrls.filter(Boolean).length >= 1
-  );
-
-  const isStep3Valid = Boolean(
-    g1.name.trim().length >= 3 &&
-    (g1.relationship === "Other / Custom Role" ? Boolean(g1.customRelationship?.trim()) : Boolean(g1.relationship?.trim())) &&
-    g1.phone.length === 11 &&
-    g1.nin.length === 11 &&
-    g2.name.trim().length >= 3 &&
-    (g2.relationship === "Other / Custom Role" ? Boolean(g2.customRelationship?.trim()) : Boolean(g2.relationship?.trim())) &&
-    g2.phone.length === 11 &&
-    g2.nin.length === 11
-  );
-
-  const isStep4Valid = Boolean(
-    Object.keys(selectedAnswers).length === quizQuestions.length &&
-    !submitting
-  );
 
   if (isVerified) {
     return (
@@ -1865,9 +1894,27 @@ export default function ProVerificationPage() {
                   ))}
                 </div>
 
-                {!isStep4Valid && (
+                {(!isStep1Valid || !isStep2Valid || !isStep3Valid) && (
+                  <div style={{ background: "rgba(239,68,68,0.12)", border: "1px solid rgba(239,68,68,0.35)", borderRadius: "8px", padding: "12px 16px", marginTop: "16px", fontSize: "12.5px", color: "#FCA5A5" }}>
+                    <div style={{ fontWeight: "bold", color: "#EF4444", marginBottom: "4px" }}>⚠️ Verification Incomplete: Missing Required Documents</div>
+                    You must fulfill all mandatory requirements in previous steps before submitting for audit:
+                    <ul style={{ margin: "6px 0 0 16px", padding: 0 }}>
+                      {!isStep1Valid && <li>Step 1: Government ID Document, Live Biometric Selfie, Valid 11-digit NIN, and Proof of Address.</li>}
+                      {!isStep2Valid && <li>Step 2: Trade Competency Certificate and at least 1 Work Portfolio sample.</li>}
+                      {!isStep3Valid && <li>Step 3: 2 Verified Guarantors with Full Names, 11-digit Phones, and 11-digit NINs.</li>}
+                    </ul>
+                  </div>
+                )}
+
+                {isStep1Valid && isStep2Valid && isStep3Valid && !isStep4Valid && (
                   <div style={{ background: "rgba(14,165,233,0.08)", border: "1px solid rgba(14,165,233,0.25)", borderRadius: "8px", padding: "10px 14px", marginTop: "16px", fontSize: "12px", color: "#38BDF8" }}>
-                    Answered {Object.keys(selectedAnswers).length} of {quizQuestions.length} questions. Please answer all questions to submit.
+                    Answered {Object.keys(selectedAnswers).length} of {quizQuestions.length} questions. Please answer all questions to complete the technical assessment.
+                  </div>
+                )}
+
+                {submitError && (
+                  <div style={{ background: "rgba(239,68,68,0.15)", border: "1px solid rgba(239,68,68,0.4)", borderRadius: "8px", padding: "10px 14px", marginTop: "16px", fontSize: "12px", color: "#F87171" }}>
+                    {submitError}
                   </div>
                 )}
 
@@ -1879,7 +1926,7 @@ export default function ProVerificationPage() {
                   <button
                     className={`btn btn-primary btn-lg ${submitting ? "btn-loading" : ""}`}
                     onClick={handleSubmitFinal}
-                    disabled={!isStep4Valid}
+                    disabled={!isStep1Valid || !isStep2Valid || !isStep3Valid || !isStep4Valid || submitting}
                   >
                     {submitting ? "Submitting Audit..." : "Submit Verification Audit"}
                   </button>

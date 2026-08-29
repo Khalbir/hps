@@ -31,8 +31,8 @@ export async function POST(request: Request) {
       );
     }
 
-    // Generate new token
-    const verificationToken = Math.random().toString(36).substring(2) + Date.now().toString(36);
+    // Generate new 6-digit numeric OTP code
+    const verificationToken = Math.floor(100000 + Math.random() * 900000).toString();
     const tokenExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
 
     await prisma.user.update({

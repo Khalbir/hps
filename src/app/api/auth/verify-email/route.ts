@@ -61,8 +61,19 @@ export async function POST(request: Request) {
 
     // 3. Verify OTP code match if token is present
     const storedToken = dbUser.verificationToken ? dbUser.verificationToken.trim() : null;
-    if (storedToken && storedToken !== targetCode && targetCode.length === 6) {
-      console.warn(`[Verify Email Code Mismatch] Expected: ${storedToken}, Received: ${targetCode}`);
+    if (!storedToken || storedToken.toLowerCase() !== targetCode.toLowerCase()) {
+      return NextResponse.json(
+        { error: "Invalid confirmation code. Please check the 6-digit code sent to your email or request a new one." },
+        { status: 400 }
+      );
+    }
+
+    // Check token expiration
+    if (dbUser.tokenExpires && new Date(dbUser.tokenExpires).getTime() < Date.now()) {
+      return NextResponse.json(
+        { error: "Confirmation code has expired. Please click 'Resend Confirmation Email' to receive a new code." },
+        { status: 400 }
+      );
     }
 
     // 4. Update user status to verified in database with resilient fallback

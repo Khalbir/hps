@@ -208,9 +208,9 @@ export async function POST(request: Request) {
             digitalId: generateDigitalIdFromSeed(user.id),
             bio: serviceCategory === "others"
               ? `Custom Skillset Request: ${customSkill || "Unspecified"}`
-              : `Verified ${serviceCategory} professional based in ${operatingState || "FCT Abuja"}`,
+              : `Skilled ${serviceCategory} professional based in ${operatingState || "FCT Abuja"}`,
             skills: JSON.stringify(skillList),
-            verificationStatus: "PENDING",
+            verificationStatus: "UNVERIFIED",
             idType: idType || "NIN",
             idNumber: idNumber || null,
             documents: JSON.stringify({

@@ -59,12 +59,12 @@ export async function GET(request: Request) {
             tradeCategory: primaryCat,
             tradeName: primaryCat.charAt(0).toUpperCase() + primaryCat.slice(1),
             isPrimary: true,
-            status: pro.verificationStatus === "VERIFIED" ? "VERIFIED" : "PENDING",
+            status: pro.verificationStatus === "VERIFIED" ? "VERIFIED" : pro.verificationStatus === "PENDING" ? "PENDING" : "NOT_SUBMITTED",
             yearsExperience: pro.yearsExperience || 2,
             certUrl: docs?.tradeCertUrl || null,
             portfolioUrls: JSON.stringify(docs?.portfolioUrls || []),
             toolsProofUrl: docs?.addressProofUrl || null,
-            quizScore: docs?.quizScore || 100,
+            quizScore: docs?.quizScore !== undefined ? docs.quizScore : null,
             verifiedAt: pro.verificationStatus === "VERIFIED" ? new Date() : null,
           },
         });
@@ -132,6 +132,66 @@ export async function POST(request: Request) {
       isDraft,
       currentStep,
     } = body;
+
+    // Strict Validation: When submitting for official audit (!isDraft), require ALL mandatory documents and information
+    if (!isDraft) {
+      const missingFields: string[] = [];
+      const cleanNin = (idNumber || "").replace(/\D/g, "");
+      if (!idNumber || (idType === "NIN" && cleanNin.length !== 11) || (idType !== "NIN" && (idNumber || "").trim().length < 4)) {
+        missingFields.push(idType === "NIN" ? "Valid 11-digit NIN" : "Valid Government ID Number");
+      }
+      if (!idDocumentUrl || !idDocumentUrl.trim() || idDocumentUrl === "#") {
+        missingFields.push("Government ID Document Upload");
+      }
+      if (!selfieUrl || !selfieUrl.trim() || selfieUrl === "#") {
+        missingFields.push("Live Facial Verification Selfie");
+      }
+      if (!tradeCertUrl || !tradeCertUrl.trim() || tradeCertUrl === "#") {
+        missingFields.push("Trade Competency Certificate Upload");
+      }
+      if (!addressProofUrl || !addressProofUrl.trim() || addressProofUrl === "#") {
+        missingFields.push("Proof of Address Document Upload");
+      }
+      if (!Array.isArray(portfolioUrls) || portfolioUrls.filter((u: string) => Boolean(u) && u !== "#").length === 0) {
+        missingFields.push("At least 1 Work Portfolio Photo");
+      }
+      if (!homeAddress || homeAddress.trim().length < 5) {
+        missingFields.push("Residential / Workshop Street Address");
+      }
+      if (!operatingState || !operatingState.trim()) {
+        missingFields.push("Operating State");
+      }
+
+      const g1Phone = (guarantor1?.phone || "").replace(/\D/g, "");
+      const g1Nin = (guarantor1?.nin || "").replace(/\D/g, "");
+      if (!guarantor1?.name?.trim() || guarantor1.name.trim().length < 3 || g1Phone.length !== 11 || g1Nin.length !== 11) {
+        missingFields.push("Guarantor 1 Details (Full Legal Name, 11-digit Phone, 11-digit NIN)");
+      }
+
+      const g2Phone = (guarantor2?.phone || "").replace(/\D/g, "");
+      const g2Nin = (guarantor2?.nin || "").replace(/\D/g, "");
+      if (!guarantor2?.name?.trim() || guarantor2.name.trim().length < 3 || g2Phone.length !== 11 || g2Nin.length !== 11) {
+        missingFields.push("Guarantor 2 Details (Full Legal Name, 11-digit Phone, 11-digit NIN)");
+      }
+
+      if (g1Phone && g2Phone && (g1Phone === g2Phone || g1Nin === g2Nin)) {
+        missingFields.push("Guarantor 1 and Guarantor 2 must be two distinct individuals with unique Phone Numbers and NINs");
+      }
+
+      if (quizScore === undefined || quizScore === null) {
+        missingFields.push("Category Trade Competency Assessment (Quiz)");
+      }
+
+      if (missingFields.length > 0) {
+        return NextResponse.json(
+          {
+            error: `Incomplete submission: Mandatory verification documents and required fields missing: ${missingFields.join(", ")}. Please upload and complete all items before submitting for compliance audit.`,
+            missingFields,
+          },
+          { status: 400 }
+        );
+      }
+    }
 
     const cleanEmail = email ? email.toLowerCase().trim() : "artisan@handyhubpro.ng";
 

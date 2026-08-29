@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { compare, hash } from "bcryptjs";
 import { authenticateStaffAccount, findStaffAccount } from "@/lib/staff-registry";
 import { storeCredential } from "@/lib/credentials-store";
+import { sendConfirmationEmail } from "@/lib/email";
 
 // Built-in high-availability seed test accounts
 const SEED_ACCOUNTS: Record<string, { pass: string | string[]; user: any }> = {
@@ -348,23 +349,50 @@ export async function POST(request: Request) {
           );
         }
 
-        if (!dbUser.isVerified) {
-          try {
-            dbUser = await prisma.user.update({
-              where: { id: dbUser.id },
-              data: { isVerified: true },
-              include: { professional: true },
-            });
-          } catch (verErr) {
-            console.warn("[Auto-verify User DB Warning]:", verErr);
+        const isAdminRole = ADMIN_ROLES.includes(dbUser.role);
+
+        if (!dbUser.isVerified && !isAdminRole) {
+          // Generate new 6-digit OTP code if missing or invalid
+          let code = dbUser.verificationToken;
+          if (!code || code.length !== 6) {
+            code = Math.floor(100000 + Math.random() * 900000).toString();
+            try {
+              await prisma.user.update({
+                where: { id: dbUser.id },
+                data: {
+                  verificationToken: code,
+                  tokenExpires: new Date(Date.now() + 24 * 60 * 60 * 1000),
+                },
+              });
+            } catch (verErr) {
+              console.warn("[Login Token Refresh Warning]:", verErr);
+            }
           }
+
+          // Trigger email confirmation dispatch
+          sendConfirmationEmail({
+            email: dbUser.email,
+            name: `${dbUser.firstName} ${dbUser.lastName}`.trim(),
+            role: dbUser.role,
+            token: code,
+          }).catch((err) => console.warn("[Login Send Confirmation Email Warning]:", err));
+
+          return NextResponse.json(
+            {
+              error: "Your email address has not been confirmed yet. We have dispatched a 6-digit confirmation code to your inbox.",
+              unverified: true,
+              email: dbUser.email,
+              role: dbUser.role,
+              redirect: `/auth/verify-email?email=${encodeURIComponent(dbUser.email)}&role=${encodeURIComponent(dbUser.role)}`,
+            },
+            { status: 403 }
+          );
         }
 
         const userWithoutPassword = sanitizeUser(dbUser);
         storeCredential(cleanEmail, cleanPassword, userWithoutPassword);
 
         const isPro = userWithoutPassword.isProfessional;
-        const isAdminRole = ADMIN_ROLES.includes(dbUser.role);
         const redirectUrl = dbUser.role === "PROFESSIONAL" ? "/pro" : isAdminRole ? "/admin/dashboard" : "/dashboard";
 
         const response = NextResponse.json({

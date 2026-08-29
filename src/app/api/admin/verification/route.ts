@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { getValidMediaUrl, SAMPLE_PORTFOLIO_IMAGE } from "@/lib/sample-documents";
+import { getValidMediaUrl } from "@/lib/sample-documents";
 import { formatDigitalId } from "@/lib/digitalId";
 import { evaluateReferralQualification } from "@/lib/referrals/engine";
 
@@ -116,7 +116,7 @@ export async function GET(request: Request) {
       if (!proMap.has(key)) {
         let pro = u.professional;
         const resolvedNin = (u.ninStatus || "").toUpperCase();
-        const initialStatus = resolvedNin === "VERIFIED" ? "VERIFIED" : resolvedNin === "REJECTED" ? "REJECTED" : "PENDING";
+        const initialStatus = resolvedNin === "VERIFIED" ? "VERIFIED" : resolvedNin === "REJECTED" ? "REJECTED" : "UNVERIFIED";
         if (!pro) {
           pro = {
             id: `pro_${u.id}`,
@@ -171,7 +171,9 @@ export async function GET(request: Request) {
         ? "REJECTED"
         : rawPStatus === "VERIFIED" || rawUStatus === "VERIFIED"
         ? "VERIFIED"
-        : rawPStatus || rawUStatus || "PENDING";
+        : rawPStatus === "PENDING"
+        ? "PENDING"
+        : "UNVERIFIED";
       const fullName = `${u.firstName || ""} ${u.lastName || ""}`.trim() || docs.fullName || p.accountName || "Artisan Partner";
 
       const proField = docs.serviceCategory || (skillArray.length > 0 ? skillArray.join(", ") : "Skilled Services");
@@ -187,18 +189,18 @@ export async function GET(request: Request) {
         field: proField,
       };
 
-      const rawIdUrl = docs.idDocumentUrl || docs.idUrl || p.idUrl;
+      const rawIdUrl = docs.idDocumentUrl || docs.idUrl || p.idUrl || "";
       const cleanSelfie = docs.selfieUrl && !docs.selfieUrl.includes("●%20LIVE%20BIOMETRIC") && !docs.selfieUrl.includes("LIVE BIOMETRIC")
         ? docs.selfieUrl
         : (p.selfieUrl && !p.selfieUrl.includes("LIVE BIOMETRIC") ? p.selfieUrl : "");
-      const rawTradeCertUrl = docs.tradeCertUrl || p.tradeCertUrl;
+      const rawTradeCertUrl = docs.tradeCertUrl || p.tradeCertUrl || "";
       const rawPortfolioUrls: string[] = Array.isArray(docs.portfolioUrls) && docs.portfolioUrls.length > 0 ? docs.portfolioUrls : [];
 
-      const formattedPortfolio = rawPortfolioUrls.length > 0
-        ? rawPortfolioUrls.map((url) => getValidMediaUrl(url, "portfolio", proMeta))
-        : [getValidMediaUrl(null, "portfolio", proMeta)];
+      const formattedPortfolio = rawPortfolioUrls
+        .map((url) => getValidMediaUrl(url, "portfolio", proMeta))
+        .filter(Boolean);
 
-      const rawAddressProofUrl = docs.addressProofUrl || p.addressProofUrl || u.permanentAddressProof;
+      const rawAddressProofUrl = docs.addressProofUrl || p.addressProofUrl || u.permanentAddressProof || "";
 
       return {
         id: p.id,
@@ -246,7 +248,7 @@ export async function GET(request: Request) {
                 status: tv.status || "PENDING",
                 yearsExperience: tv.yearsExperience || 2,
                 certUrl: getValidMediaUrl(tv.certUrl, "cert", proMeta),
-                portfolioUrls: pUrls.length > 0 ? pUrls.map((u) => getValidMediaUrl(u, "portfolio", proMeta)) : formattedPortfolio,
+                portfolioUrls: pUrls.length > 0 ? pUrls.map((u) => getValidMediaUrl(u, "portfolio", proMeta)).filter(Boolean) : formattedPortfolio,
                 toolsProofUrl: getValidMediaUrl(tv.toolsProofUrl, "address", proMeta),
                 quizScore: tv.quizScore !== undefined && tv.quizScore !== null ? tv.quizScore : 100,
                 notes: tv.notes || "",
