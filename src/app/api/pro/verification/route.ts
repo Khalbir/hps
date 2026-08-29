@@ -130,6 +130,7 @@ export async function POST(request: Request) {
       guarantor2,
       quizScore,
       serviceCategory,
+      secondaryCategory,
       isDraft,
       currentStep,
     } = body;
@@ -257,10 +258,13 @@ export async function POST(request: Request) {
       quizScore: quizScore !== undefined ? quizScore : null,
       submittedAt: new Date().toISOString(),
       serviceCategory: serviceCategory || "General Skilled Services",
+      secondaryCategory: secondaryCategory || "",
       city: operatingState || "FCT Abuja",
       isDraft: Boolean(isDraft),
       lastSavedStep: currentStep || 1,
     };
+
+    const combinedSkillList = [serviceCategory, secondaryCategory].filter(Boolean);
 
     let proRecord = null;
 
@@ -300,8 +304,8 @@ export async function POST(request: Request) {
             idUrl: idDocumentUrl || selfieUrl || "",
             addressProofUrl: addressProofUrl || "",
             documents: JSON.stringify(verificationPayload),
-            skills: JSON.stringify([serviceCategory || "Skilled Services"]),
-            bio: `${serviceCategory || "Skilled"} Artisan Partner based in ${operatingState || "FCT Abuja"}`,
+            skills: JSON.stringify(combinedSkillList.length > 0 ? combinedSkillList : ["Skilled Services"]),
+            bio: `${serviceCategory || "Skilled"}${secondaryCategory ? ` & ${secondaryCategory}` : ""} Artisan Partner based in ${operatingState || "FCT Abuja"}`,
           },
         });
       } else {
@@ -309,9 +313,9 @@ export async function POST(request: Request) {
         try {
           if (existingPro.skills) currentSkills = JSON.parse(existingPro.skills);
         } catch {}
-        if (serviceCategory && !currentSkills.includes(serviceCategory)) {
-          currentSkills.push(serviceCategory);
-        }
+        combinedSkillList.forEach((sk: string) => {
+          if (sk && !currentSkills.includes(sk)) currentSkills.push(sk);
+        });
 
         proRecord = await prisma.professional.update({
           where: { id: existingPro.id },
@@ -324,7 +328,7 @@ export async function POST(request: Request) {
             addressProofUrl: addressProofUrl || existingPro.addressProofUrl,
             documents: JSON.stringify(verificationPayload),
             skills: JSON.stringify(currentSkills.length > 0 ? currentSkills : [serviceCategory || "Skilled Services"]),
-            bio: serviceCategory ? `Verified ${serviceCategory} artisan based in ${operatingState || "FCT Abuja"}` : existingPro.bio,
+            bio: serviceCategory ? `Verified ${serviceCategory}${secondaryCategory ? ` & ${secondaryCategory}` : ""} artisan based in ${operatingState || "FCT Abuja"}` : existingPro.bio,
           },
         });
       }

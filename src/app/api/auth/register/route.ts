@@ -9,8 +9,19 @@ import { stateStore } from "@/lib/states/store";
 export async function POST(request: Request) {
   try {
     const {
-      firstName, lastName, email, phone, password, role,
-      serviceCategory, customSkill, idType, idNumber, operatingState, homeAddress
+      firstName,
+      lastName,
+      email,
+      phone,
+      password,
+      role,
+      serviceCategory,
+      secondaryCategory,
+      customSkill,
+      idType,
+      idNumber,
+      operatingState,
+      homeAddress,
     } = await request.json();
 
     if (!firstName || !lastName || !email || !password) {
@@ -213,9 +224,15 @@ export async function POST(request: Request) {
 
     // If professional, create professional profile record
     if (userRole === "PROFESSIONAL") {
-      const skillList = serviceCategory === "others"
-        ? [`Other: ${customSkill || "Unspecified Skillset"}`]
-        : [serviceCategory];
+      const skillList: string[] = [];
+      if (serviceCategory === "others") {
+        skillList.push(`Other: ${customSkill || "Unspecified Skillset"}`);
+      } else if (serviceCategory) {
+        skillList.push(serviceCategory);
+      }
+      if (secondaryCategory && secondaryCategory !== serviceCategory) {
+        skillList.push(secondaryCategory);
+      }
 
       try {
         await prisma.professional.create({
@@ -224,13 +241,14 @@ export async function POST(request: Request) {
             digitalId: generateDigitalIdFromSeed(user.id),
             bio: serviceCategory === "others"
               ? `Custom Skillset Request: ${customSkill || "Unspecified"}`
-              : `Skilled ${serviceCategory} professional based in ${operatingState || "FCT Abuja"}`,
+              : `Skilled ${serviceCategory}${secondaryCategory ? ` & ${secondaryCategory}` : ""} professional based in ${operatingState || "FCT Abuja"}`,
             skills: JSON.stringify(skillList),
             verificationStatus: "UNVERIFIED",
             idType: idType || "NIN",
             idNumber: idNumber || null,
             documents: JSON.stringify({
               serviceCategory,
+              secondaryCategory: secondaryCategory || "",
               idType: idType || "NIN",
               idNumber: idNumber || "",
               operatingState: operatingState || "FCT Abuja",

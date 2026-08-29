@@ -5,84 +5,216 @@ import { AdminLayoutShell } from "@/components/layout/AdminLayoutShell";
 import {
   Shield, CheckCircle2, XCircle, Search, Filter, Eye, FileText,
   MapPin, Phone, Mail, Award, Clock, AlertTriangle, ExternalLink, Inbox, Trash2,
-  Edit, Wrench, Sparkles, Check
+  Edit, Wrench, Sparkles, Check, Save, User, ShieldCheck, UserCheck, CheckCircle
 } from "lucide-react";
+import { MASTER_TRADE_CATEGORIES, normalizeTradeSlug, getTradeCategoryLabel } from "@/lib/trade-categories";
+import { useActiveStates } from "@/hooks/useActiveStates";
 import styles from "../../admin.module.css";
 
-export const STANDARD_TRADE_CATEGORIES = [
-  "Cleaning",
-  "Fumigation & Pest Control",
-  "Upholstery & Carpet Cleaning",
-  "Plumbing",
-  "Electrical",
-  "AC & HVAC",
-  "Painting",
-  "Carpentry",
-  "Security",
-  "Solar & Power",
-  "Home Improvement",
-  "Gardening",
-  "Laundry",
-  "Masonry & Tiling",
-  "Appliance Repair",
-  "General Maintenance",
+export const GUARANTOR_ROLE_OPTIONS = [
+  "Landlord / Property Owner",
+  "Community Leader / Village Head / CDA Chairman",
+  "Former Employer / Work Supervisor",
+  "Master Craftsman / Apprenticeship Mentor",
+  "Religious Leader / Clergy (Pastor / Imam)",
+  "Civil Servant / Public Officer",
+  "Family Head / Elder / Relative",
+  "Senior Colleague / Registered Professional",
+  "Other / Custom Role",
 ];
 
 export default function ProfessionalVerificationPage() {
+  const { activeStates } = useActiveStates();
   const [filterStatus, setFilterStatus] = useState("ALL");
   const [search, setSearch] = useState("");
   const [pros, setPros] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [inspectPro, setInspectPro] = useState<any>(null);
   const [previewMediaUrl, setPreviewMediaUrl] = useState<string | null>(null);
-  const [officerNotes, setOfficerNotes] = useState("");
   const [toast, setToast] = useState("");
 
-  // Skills & Field Editing State
-  const [editingSkillsPro, setEditingSkillsPro] = useState<any | null>(null);
-  const [selectedTradeCategory, setSelectedTradeCategory] = useState("Cleaning");
-  const [customSkillsInput, setCustomSkillsInput] = useState("");
-  const [savingSkills, setSavingSkills] = useState(false);
+  // Full Manual Audit Dossier Editing State
+  const [editName, setEditName] = useState("");
+  const [editEmail, setEditEmail] = useState("");
+  const [editPhone, setEditPhone] = useState("");
+  const [editIdType, setEditIdType] = useState("NIN");
+  const [editIdNumber, setEditIdNumber] = useState("");
+  const [editNinStatus, setEditNinStatus] = useState("PENDING");
+  const [editOperatingState, setEditOperatingState] = useState("FCT Abuja");
+  const [editLga, setEditLga] = useState("AMAC");
+  const [editHomeAddress, setEditHomeAddress] = useState("");
+  const [editAddressStatus, setEditAddressStatus] = useState("PENDING");
+  const [editGuarantor1, setEditGuarantor1] = useState<any>({ name: "", phone: "", relationship: "Landlord / Property Owner", nin: "" });
+  const [editGuarantor2, setEditGuarantor2] = useState<any>({ name: "", phone: "", relationship: "Master Craftsman / Apprenticeship Mentor", nin: "" });
+  const [editPrimaryTrade, setEditPrimaryTrade] = useState("cleaning");
+  const [editSecondaryTrade, setEditSecondaryTrade] = useState("");
+  const [editSkills, setEditSkills] = useState("");
+  const [editQuizScore, setEditQuizScore] = useState<number>(85);
+  const [editVerificationStatus, setEditVerificationStatus] = useState("PENDING");
+  const [editOfficerNotes, setEditOfficerNotes] = useState("");
+  const [savingDossier, setSavingDossier] = useState(false);
 
-  const handleSaveSkills = async () => {
-    const targetPro = editingSkillsPro || inspectPro;
-    if (!targetPro) return;
+  // Open Modal and populate all state variables from artisan record
+  const openInspectModal = (p: any) => {
+    setInspectPro(p);
+    setEditName(p.name || "");
+    setEditEmail(p.email || "");
+    setEditPhone(p.phone || "");
+    setEditIdType(p.idType || "NIN");
+    setEditIdNumber(p.idNumber || "");
+    setEditNinStatus((p.ninStatus || (p.verificationStatus === "VERIFIED" ? "VERIFIED" : "PENDING")).toUpperCase());
+    setEditOperatingState(p.operatingState || p.city || "FCT Abuja");
+    setEditLga(p.lga || "AMAC");
+    setEditHomeAddress(p.homeAddress || "");
+    setEditAddressStatus(p.addressVerified || p.verificationStatus === "VERIFIED" ? "VERIFIED" : "PENDING");
+    
+    setEditGuarantor1(p.guarantor1 ? {
+      name: p.guarantor1.name || "",
+      phone: p.guarantor1.phone || "",
+      relationship: p.guarantor1.relationship || "Landlord / Property Owner",
+      nin: p.guarantor1.nin || "",
+    } : { name: "", phone: "", relationship: "Landlord / Property Owner", nin: "" });
 
-    setSavingSkills(true);
+    setEditGuarantor2(p.guarantor2 ? {
+      name: p.guarantor2.name || "",
+      phone: p.guarantor2.phone || "",
+      relationship: p.guarantor2.relationship || "Master Craftsman / Apprenticeship Mentor",
+      nin: p.guarantor2.nin || "",
+    } : { name: "", phone: "", relationship: "Master Craftsman / Apprenticeship Mentor", nin: "" });
+
+    // Robust normalized trade selection - avoids defaulting to cleaning
+    const primarySlug = normalizeTradeSlug(p.primaryField || p.field || p.serviceCategory || "cleaning");
+    const secondarySlug = p.secondaryField || p.secondaryCategory ? normalizeTradeSlug(p.secondaryField || p.secondaryCategory) : "";
+
+    setEditPrimaryTrade(primarySlug);
+    setEditSecondaryTrade(secondarySlug);
+    setEditSkills(Array.isArray(p.skills) ? p.skills.join(", ") : p.field || "");
+    setEditQuizScore(p.quizScore !== undefined ? Number(p.quizScore) : 85);
+    setEditVerificationStatus(p.verificationStatus || "PENDING");
+    setEditOfficerNotes(p.notes || p.verificationNotes || "Approved by Admin Compliance Team");
+  };
+
+  const handleSaveFullDossier = async () => {
+    if (!inspectPro) return;
+    setSavingDossier(true);
+
     try {
-      const res = await fetch("/api/admin/professionals/skills", {
+      const res = await fetch("/api/admin/verification", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          proId: targetPro.id,
-          userId: targetPro.userId,
-          email: targetPro.email,
-          primaryField: selectedTradeCategory,
-          skills: customSkillsInput,
+          proId: inspectPro.id,
+          userId: inspectPro.userId,
+          name: editName,
+          email: editEmail,
+          phone: editPhone,
+          idType: editIdType,
+          idNumber: editIdNumber,
+          ninStatus: editNinStatus,
+          operatingState: editOperatingState,
+          lga: editLga,
+          homeAddress: editHomeAddress,
+          addressStatus: editAddressStatus,
+          guarantor1: editGuarantor1,
+          guarantor2: editGuarantor2,
+          primaryField: editPrimaryTrade,
+          secondaryField: editSecondaryTrade,
+          skills: editSkills,
+          quizScore: Number(editQuizScore),
+          verificationStatus: editVerificationStatus,
+          verificationNotes: editOfficerNotes,
         }),
       });
 
       const data = await res.json();
       if (res.ok) {
-        setToast(`Artisan trade skills updated to "${selectedTradeCategory}" successfully! 🎉`);
+        setToast(`Artisan dossier for ${editName} saved & updated successfully! 🎉`);
         setPros((prev) =>
           prev.map((p) =>
-            p.id === targetPro.id || p.userId === targetPro.userId
-              ? { ...p, field: selectedTradeCategory }
+            p.id === inspectPro.id || p.userId === inspectPro.userId
+              ? {
+                  ...p,
+                  name: editName,
+                  email: editEmail,
+                  phone: editPhone,
+                  field: getTradeCategoryLabel(editPrimaryTrade),
+                  primaryField: editPrimaryTrade,
+                  secondaryField: editSecondaryTrade,
+                  operatingState: editOperatingState,
+                  city: editOperatingState,
+                  homeAddress: editHomeAddress,
+                  lga: editLga,
+                  idType: editIdType,
+                  idNumber: editIdNumber,
+                  verificationStatus: editVerificationStatus,
+                  addressVerified: editAddressStatus === "VERIFIED",
+                  guarantor1: editGuarantor1,
+                  guarantor2: editGuarantor2,
+                  quizScore: editQuizScore,
+                  notes: editOfficerNotes,
+                }
               : p
           )
         );
-        if (inspectPro) {
-          setInspectPro((prev: any) => (prev ? { ...prev, field: selectedTradeCategory } : null));
-        }
-        setEditingSkillsPro(null);
+        setInspectPro((prev: any) =>
+          prev
+            ? {
+                ...prev,
+                name: editName,
+                field: getTradeCategoryLabel(editPrimaryTrade),
+                verificationStatus: editVerificationStatus,
+              }
+            : null
+        );
       } else {
-        setToast(`Error: ${data.error || "Failed to update skills"}`);
+        setToast(`Error: ${data.error || "Failed to update audit dossier"}`);
       }
     } catch {
-      setToast("Failed to connect to server to update skills.");
+      setToast("Failed to connect to server to save dossier.");
     } finally {
-      setSavingSkills(false);
+      setSavingDossier(false);
+      setTimeout(() => setToast(""), 6000);
+    }
+  };
+
+  const handleDecision = async (status: "VERIFIED" | "REJECTED") => {
+    if (!inspectPro) return;
+    setSavingDossier(true);
+
+    try {
+      const res = await fetch("/api/admin/verification", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          professionalId: inspectPro.id,
+          userId: inspectPro.userId,
+          email: inspectPro.email,
+          status,
+          verificationNotes: editOfficerNotes || (status === "VERIFIED" ? "Approved by Admin Compliance Team" : "Rejected by Admin Compliance Team"),
+          skills: editSkills || editPrimaryTrade,
+          field: editPrimaryTrade,
+        }),
+      });
+
+      const data = await res.json();
+      if (res.ok) {
+        setToast(`Artisan application ${status === "VERIFIED" ? "APPROVED & Verified" : "REJECTED"} successfully!`);
+        setPros((prev) =>
+          prev.map((p) =>
+            p.id === inspectPro.id || p.userId === inspectPro.userId
+              ? { ...p, verificationStatus: status, status }
+              : p
+          )
+        );
+        setInspectPro(null);
+        setTimeout(fetchPros, 500);
+      } else {
+        setToast(`Error: ${data.error || "Failed to update verification status"}`);
+      }
+    } catch {
+      setToast("Failed to connect to server.");
+    } finally {
+      setSavingDossier(false);
       setTimeout(() => setToast(""), 6000);
     }
   };
@@ -178,174 +310,93 @@ export default function ProfessionalVerificationPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           userId: pro.userId,
-          proId: pro.id,
           isAvailable: newAvail,
         }),
       });
       if (res.ok) {
         setPros((prev) =>
-          prev.map((p) => (p.id === pro.id || p.userId === pro.userId ? { ...p, isAvailable: newAvail } : p))
+          prev.map((p) => (p.id === pro.id ? { ...p, isAvailable: newAvail } : p))
         );
-        setToast(`Artisan ${pro.name} switched to ${newAvail ? "ONLINE" : "OFFLINE"}.`);
-        setTimeout(() => setToast(""), 4000);
+        setToast(`Artisan ${pro.name} set to ${newAvail ? "ONLINE" : "OFFLINE"}`);
       }
     } catch {
-      setToast("Failed to update artisan online status.");
+      setToast("Failed to toggle availability");
     }
-  };
-
-  const handleAuditDecision = async (newStatus: "VERIFIED" | "REJECTED") => {
-    if (!inspectPro) return;
-
-    try {
-      const res = await fetch("/api/admin/verification", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          professionalId: inspectPro.id,
-          userId: inspectPro.userId,
-          email: inspectPro.email,
-          phone: inspectPro.phone,
-          status: newStatus,
-          verificationNotes: officerNotes || inspectPro.notes,
-          addressVerified: newStatus === "VERIFIED",
-        }),
-      });
-
-      const data = await res.json();
-      if (!res.ok) {
-        setToast(`Error: ${data.error || "Failed to update artisan status on server"}`);
-        return;
-      }
-    } catch (err: any) {
-      setToast("Failed to connect to verification server.");
-      return;
-    }
-
-    setPros((prev) =>
-      prev.map((p) =>
-        p.id === inspectPro.id || p.userId === inspectPro.userId || (inspectPro.email && p.email === inspectPro.email)
-          ? {
-              ...p,
-              verificationStatus: newStatus,
-              status: newStatus,
-              addressVerified: newStatus === "VERIFIED",
-              notes: officerNotes || p.notes,
-            }
-          : p
-      )
-    );
-
-    setToast(`Artisan ${inspectPro.name} status permanently updated to ${newStatus}! 🎉`);
-    setInspectPro(null);
-    setOfficerNotes("");
-    setTimeout(() => setToast(""), 5000);
-    setTimeout(fetchPros, 1000);
   };
 
   return (
     <AdminLayoutShell>
-      <header className={styles.adminTopBar} style={{ marginBottom: "var(--space-6)" }}>
+      <header className={styles.adminTopBar}>
         <div>
-          <h1 className="h3">Artisan Identity, Availability & Verification Center</h1>
+          <h1 className="h3">Artisan 5-Pillar Verification & Compliance Registry</h1>
           <p style={{ color: "var(--text-secondary)", fontSize: "var(--fs-sm)" }}>
-            Review real artisan registrations, monitor real-time online field availability, and conduct 5-pillar verification audits.
+            Review NIMC government identity, live biometric selfies, address tenancy proofs, trade credentials, and guarantors with full Super Admin manual configuration control.
           </p>
         </div>
-        <button
-          onClick={fetchPros}
-          className="btn btn-secondary btn-sm"
-          style={{ display: "flex", alignItems: "center", gap: 6 }}
-        >
-          <Clock size={14} /> Sync Live Data
-        </button>
       </header>
 
-      {/* Stats Deck */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 16, marginBottom: 24 }}>
-        <div className="card" style={{ padding: 16, background: "#1E293B", border: "1px solid #334155" }}>
-          <span style={{ fontSize: 12, color: "#94A3B8" }}>Total Artisans</span>
-          <h3 style={{ margin: "4px 0 0 0", fontSize: 22, fontWeight: "bold", color: "#F8FAFC" }}>{pros.length}</h3>
-        </div>
-        <div className="card" style={{ padding: 16, background: "#1E293B", border: "1px solid #334155" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#10B981", boxShadow: "0 0 8px #10B981" }} />
-            <span style={{ fontSize: 12, color: "#10B981", fontWeight: 700 }}>Online Artisans</span>
-          </div>
-          <h3 style={{ margin: "4px 0 0 0", fontSize: 22, fontWeight: "bold", color: "#10B981" }}>{onlineCount}</h3>
-        </div>
-        <div className="card" style={{ padding: 16, background: "#1E293B", border: "1px solid #334155" }}>
-          <span style={{ fontSize: 12, color: "#F59E0B" }}>Pending Verification</span>
-          <h3 style={{ margin: "4px 0 0 0", fontSize: 22, fontWeight: "bold", color: "#F59E0B" }}>{pendingCount}</h3>
-        </div>
-        <div className="card" style={{ padding: 16, background: "#1E293B", border: "1px solid #334155" }}>
-          <span style={{ fontSize: 12, color: "#38BDF8" }}>Verified Badge Holders</span>
-          <h3 style={{ margin: "4px 0 0 0", fontSize: 22, fontWeight: "bold", color: "#38BDF8" }}>{verifiedCount}</h3>
-        </div>
-        <div className="card" style={{ padding: 16, background: "#1E293B", border: "1px solid #334155" }}>
-          <span style={{ fontSize: 12, color: "#EF4444" }}>Rejected Dossiers</span>
-          <h3 style={{ margin: "4px 0 0 0", fontSize: 22, fontWeight: "bold", color: "#EF4444" }}>{rejectedCount}</h3>
-        </div>
-      </div>
-
       {toast && (
-        <div style={{ background: "rgba(16,185,129,0.2)", border: "1px solid #10B981", color: "#10B981", padding: "12px 16px", borderRadius: "8px", marginBottom: "20px", fontSize: "14px" }}>
-          ✅ {toast}
+        <div style={{ background: "#065F46", color: "#ECFDF5", padding: "12px 16px", borderRadius: "8px", marginBottom: "16px", fontWeight: "bold", border: "1px solid #059669", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <span>{toast}</span>
+          <button onClick={() => setToast("")} style={{ background: "none", border: "none", color: "#ECFDF5", cursor: "pointer" }}>✕</button>
         </div>
       )}
 
-      {/* Filter Toolbar */}
-      <div style={{ display: "flex", gap: "12px", marginBottom: "20px", flexWrap: "wrap", alignItems: "center" }}>
-        <div style={{ position: "relative", flex: 1, minWidth: "260px" }}>
-          <Search size={18} style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", color: "#94A3B8" }} />
-          <input
-            type="text"
-            placeholder="Search artisan name, email, or skill field..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            style={{
-              width: "100%",
-              background: "#1E293B",
-              border: "1px solid #334155",
-              borderRadius: "8px",
-              padding: "10px 12px 10px 38px",
-              color: "#F8FAFC",
-              fontSize: "14px",
-            }}
-          />
+      {/* Metric Counters */}
+      <div className={styles.metricGrid} style={{ marginBottom: "var(--space-6)" }}>
+        <div className="card" onClick={() => setFilterStatus("ALL")} style={{ cursor: "pointer", border: filterStatus === "ALL" ? "2px solid #38BDF8" : "1px solid var(--border-primary)" }}>
+          <span style={{ fontSize: "var(--fs-xs)", color: "var(--text-secondary)", textTransform: "uppercase" }}>Total Artisans</span>
+          <h3 className="h3" style={{ margin: "4px 0", color: "#F8FAFC" }}>{pros.length}</h3>
+          <span style={{ fontSize: "11px", color: "#38BDF8" }}>Active registered registry</span>
         </div>
 
-        <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
-          {[
-            { id: "ALL", label: `ALL (${pros.length})`, color: "#0EA5E9" },
-            { id: "ONLINE", label: `ONLINE (${onlineCount})`, color: "#10B981" },
-            { id: "PENDING", label: `PENDING (${pendingCount})`, color: "#F59E0B" },
-            { id: "VERIFIED", label: `VERIFIED (${verifiedCount})`, color: "#38BDF8" },
-            { id: "REJECTED", label: `REJECTED (${rejectedCount})`, color: "#EF4444" },
-          ].map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setFilterStatus(tab.id)}
-              style={{
-                background: filterStatus === tab.id ? tab.color : "#1E293B",
-                color: filterStatus === tab.id ? "#FFFFFF" : "#94A3B8",
-                border: "1px solid #334155",
-                borderRadius: "20px",
-                padding: "6px 14px",
-                fontSize: "12px",
-                fontWeight: 600,
-                cursor: "pointer",
-                transition: "all 0.15s",
-              }}
-            >
-              {tab.label}
-            </button>
-          ))}
+        <div className="card" onClick={() => setFilterStatus("ONLINE")} style={{ cursor: "pointer", border: filterStatus === "ONLINE" ? "2px solid #10B981" : "1px solid var(--border-primary)" }}>
+          <span style={{ fontSize: "var(--fs-xs)", color: "var(--text-secondary)", textTransform: "uppercase" }}>Online &amp; Available</span>
+          <h3 className="h3" style={{ margin: "4px 0", color: "#10B981" }}>{onlineCount}</h3>
+          <span style={{ fontSize: "11px", color: "#10B981" }}>Ready for live dispatch</span>
+        </div>
+
+        <div className="card" onClick={() => setFilterStatus("PENDING")} style={{ cursor: "pointer", border: filterStatus === "PENDING" ? "2px solid #F59E0B" : "1px solid var(--border-primary)" }}>
+          <span style={{ fontSize: "var(--fs-xs)", color: "var(--text-secondary)", textTransform: "uppercase" }}>Pending Review</span>
+          <h3 className="h3" style={{ margin: "4px 0", color: "#F59E0B" }}>{pendingCount}</h3>
+          <span style={{ fontSize: "11px", color: "#F59E0B" }}>Awaiting audit decision</span>
+        </div>
+
+        <div className="card" onClick={() => setFilterStatus("VERIFIED")} style={{ cursor: "pointer", border: filterStatus === "VERIFIED" ? "2px solid #10B981" : "1px solid var(--border-primary)" }}>
+          <span style={{ fontSize: "var(--fs-xs)", color: "var(--text-secondary)", textTransform: "uppercase" }}>Fully Verified</span>
+          <h3 className="h3" style={{ margin: "4px 0", color: "#10B981" }}>{verifiedCount}</h3>
+          <span style={{ fontSize: "11px", color: "#10B981" }}>Badge issued &amp; active</span>
         </div>
       </div>
 
-      {/* Professionals List Table */}
-      <div className="card" style={{ background: "#1E293B", border: "1px solid #334155", padding: 0, overflow: "hidden" }}>
+      {/* Filter and Search Bar */}
+      <div className="card" style={{ marginBottom: "var(--space-6)", display: "flex", gap: "16px", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between" }}>
+        <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+          {["ALL", "PENDING", "VERIFIED", "REJECTED", "ONLINE"].map((status) => (
+            <button
+              key={status}
+              onClick={() => setFilterStatus(status)}
+              className={`btn btn-xs ${filterStatus === status ? "btn-primary" : "btn-secondary"}`}
+            >
+              {status}
+            </button>
+          ))}
+        </div>
+
+        <div style={{ position: "relative", minWidth: 260 }}>
+          <Search size={14} style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: "var(--text-secondary)" }} />
+          <input
+            type="text"
+            placeholder="Search by name, email, or skill..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            style={{ width: "100%", padding: "6px 12px 6px 32px", borderRadius: "6px", background: "#0F172A", border: "1px solid #334155", color: "#F8FAFC", fontSize: "13px" }}
+          />
+        </div>
+      </div>
+
+      {/* Table of Professionals */}
+      <div className="card" style={{ padding: 0, overflowX: "auto" }}>
         {loading ? (
           <div style={{ padding: "50px", textAlign: "center", color: "#94A3B8" }}>Loading artisan verification registry...</div>
         ) : filteredPros.length === 0 ? (
@@ -363,11 +414,11 @@ export default function ProfessionalVerificationPage() {
               <tr style={{ background: "#0F172A", borderBottom: "1px solid #334155", color: "#94A3B8" }}>
                 <th style={{ padding: "12px 16px" }}>Artisan Name</th>
                 <th style={{ padding: "12px 16px" }}>Online Status</th>
-                <th style={{ padding: "12px 16px" }}>Field / Skill</th>
-                <th style={{ padding: "12px 16px" }}>Operating State & City</th>
-                <th style={{ padding: "12px 16px" }}>Govt ID Type</th>
+                <th style={{ padding: "12px 16px" }}>Primary Trade</th>
+                <th style={{ padding: "12px 16px" }}>Operating State</th>
+                <th style={{ padding: "12px 16px" }}>Govt ID Check</th>
                 <th style={{ padding: "12px 16px" }}>Address Check</th>
-                <th style={{ padding: "12px 16px" }}>Verification Status</th>
+                <th style={{ padding: "12px 16px" }}>Compliance Status</th>
                 <th style={{ padding: "12px 16px" }}>Audit Action</th>
               </tr>
             </thead>
@@ -401,31 +452,22 @@ export default function ProfessionalVerificationPage() {
                     </button>
                   </td>
                   <td style={{ padding: "12px 16px", color: "#CBD5E1" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-                      <span style={{ fontWeight: 600, color: "#38BDF8" }}>{p.field}</span>
-                      <button
-                        onClick={() => {
-                          setEditingSkillsPro(p);
-                          setSelectedTradeCategory(p.field || "Cleaning");
-                          setCustomSkillsInput(p.field || "");
-                        }}
-                        className="btn btn-secondary btn-xs"
-                        style={{ padding: "2px 6px", fontSize: "10.5px", color: "#A855F7", borderColor: "rgba(168,85,247,0.4)", background: "rgba(168,85,247,0.1)", display: "inline-flex", alignItems: "center", gap: 3 }}
-                        title="Change / Correct Artisan Trade Skill & Field"
-                      >
-                        <Edit size={10} /> Edit Skill
-                      </button>
-                    </div>
+                    <span style={{ fontWeight: 600, color: "#38BDF8" }}>{getTradeCategoryLabel(p.field)}</span>
+                    {p.secondaryField && (
+                      <span style={{ display: "block", fontSize: "11px", color: "#94A3B8" }}>
+                        + {getTradeCategoryLabel(p.secondaryField)}
+                      </span>
+                    )}
                   </td>
                   <td style={{ padding: "12px 16px", color: "#F8FAFC", fontWeight: 600 }}>{p.operatingState || p.city}</td>
                   <td style={{ padding: "12px 16px" }}>
                     <span style={{ fontFamily: "monospace", fontSize: "12px", color: "#0EA5E9" }}>
-                      {p.idType} ({p.idNumber})
+                      {p.idType} ({p.idNumber || "Not Provided"})
                     </span>
                   </td>
                   <td style={{ padding: "12px 16px" }}>
                     <span className="badge" style={{ background: p.addressVerified ? "rgba(16,185,129,0.15)" : "rgba(245,158,11,0.15)", color: p.addressVerified ? "#10B981" : "#F59E0B", fontSize: "11px" }}>
-                      {p.addressVerified ? "VERIFIED" : "UNVERIFIED"}
+                      {p.addressVerified ? "VERIFIED" : "PENDING"}
                     </span>
                   </td>
                   <td style={{ padding: "12px 16px" }}>
@@ -445,23 +487,18 @@ export default function ProfessionalVerificationPage() {
                     <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
                       <button
                         className="btn btn-primary btn-xs"
-                        onClick={() => {
-                          setInspectPro(p);
-                          setSelectedTradeCategory(p.field || "Cleaning");
-                          setCustomSkillsInput(p.field || "");
-                          setOfficerNotes(p.notes || "");
-                        }}
+                        onClick={() => openInspectModal(p)}
                         style={{ display: "inline-flex", alignItems: "center", gap: 4 }}
                       >
-                        <Eye size={13} /> Audit Docs
+                        <Eye size={12} /> Audit Dossier
                       </button>
                       <button
-                        className="btn btn-secondary btn-xs"
-                        style={{ color: "#EF4444", borderColor: "#EF444440", padding: "4px 8px" }}
-                        title="Permanently Purge / Delete Artisan"
                         onClick={() => handlePurgeArtisan(p)}
+                        className="btn btn-secondary btn-xs"
+                        style={{ color: "#EF4444", borderColor: "rgba(239,68,68,0.3)" }}
+                        title="Purge artisan test record"
                       >
-                        <Trash2 size={13} />
+                        <Trash2 size={12} />
                       </button>
                     </div>
                   </td>
@@ -472,458 +509,473 @@ export default function ProfessionalVerificationPage() {
         )}
       </div>
 
-      {/* Document Inspector Modal */}
+      {/* SUPER ADMIN AUDIT DOSSIER CONFIGURATION MODAL */}
       {inspectPro && (
         <div
           style={{
             position: "fixed",
             inset: 0,
-            backgroundColor: "rgba(15,23,42,0.85)",
-            backdropFilter: "blur(8px)",
-            zIndex: 9999,
+            background: "rgba(0,0,0,0.85)",
+            backdropFilter: "blur(6px)",
             display: "flex",
-            justifyContent: "center",
             alignItems: "center",
+            justifyContent: "center",
+            zIndex: 9999,
             padding: "20px",
           }}
           onClick={() => setInspectPro(null)}
         >
           <div
-            className="card"
             style={{
-              width: "100%",
-              maxWidth: "680px",
               background: "#1E293B",
-              border: "1px solid #334155",
+              border: "1px solid #38BDF8",
               borderRadius: "16px",
               padding: "24px",
-              maxHeight: "90vh",
+              width: "100%",
+              maxWidth: "920px",
+              maxHeight: "92vh",
               overflowY: "auto",
             }}
             onClick={(e) => e.stopPropagation()}
           >
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid #334155", paddingBottom: "12px", marginBottom: "16px" }}>
+            {/* Modal Header */}
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid #334155", paddingBottom: "14px", marginBottom: "18px" }}>
               <div>
-                <h3 className="h4" style={{ margin: 0, color: "#F8FAFC" }}>Audit Verification & Address Dossier</h3>
-                <span style={{ fontSize: "12px", color: "#94A3B8" }}>{inspectPro.name} • {inspectPro.field} • Operating in {inspectPro.operatingState || inspectPro.city}</span>
+                <div style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "2px 8px", background: "rgba(56, 189, 248, 0.15)", borderRadius: "6px", color: "#38BDF8", fontSize: "11px", fontWeight: 700, marginBottom: 4 }}>
+                  <ShieldCheck size={13} /> Super Admin Audit &amp; Configuration Center
+                </div>
+                <h3 className="h4" style={{ margin: 0, color: "#F8FAFC" }}>Artisan Compliance Dossier &amp; Manual Controls</h3>
+                <span style={{ fontSize: "12px", color: "#94A3B8" }}>
+                  Applicant: <strong>{editName}</strong> &bull; {editEmail} &bull; ID: {inspectPro.digitalId || inspectPro.id}
+                </span>
               </div>
-              <button onClick={() => setInspectPro(null)} style={{ background: "transparent", border: "none", color: "#94A3B8", cursor: "pointer" }}>✕</button>
+              <button onClick={() => setInspectPro(null)} style={{ background: "transparent", border: "none", color: "#94A3B8", fontSize: "18px", cursor: "pointer" }}>✕</button>
             </div>
 
-            {/* Verification Audit Dossier */}
+            {/* Editable Dossier Container */}
             <div style={{ display: "flex", flexDirection: "column", gap: "16px", marginBottom: "20px" }}>
-              {/* Step 1: Identity & Selfie */}
-              <div style={{ background: "#0F172A", padding: "14px", borderRadius: "10px", border: "1px solid #334155" }}>
-                <strong style={{ fontSize: "12px", color: "#0EA5E9", textTransform: "uppercase", display: "block", marginBottom: 6 }}>
-                  1️⃣ Government Identity & Facial Verification Selfie
-                </strong>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8 }}>
-                  <div>
-                    <div style={{ fontSize: "14px", fontWeight: 700, color: "#F8FAFC" }}>{inspectPro.idType}: {inspectPro.idNumber || "Not Provided"}</div>
-                    {inspectPro.idUrl ? (
-                      <button
-                        type="button"
-                        onClick={() => setPreviewMediaUrl(inspectPro.idUrl)}
-                        style={{ background: "none", border: "none", padding: 0, fontSize: "12px", color: "#38BDF8", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: "4px", marginTop: "4px", fontWeight: 600 }}
-                      >
-                        👁️ Inspect NIMC Government ID Document <ExternalLink size={12} />
-                      </button>
-                    ) : (
-                      <span style={{ color: "#EF4444", fontSize: "11.5px", fontWeight: 700, display: "inline-block", marginTop: "4px" }}>
-                        ⚠️ No Government ID Document Uploaded
-                      </span>
-                    )}
-                  </div>
-                  {inspectPro.selfieUrl ? (
-                    <div style={{ textAlign: "center", cursor: "pointer" }} onClick={() => setPreviewMediaUrl(inspectPro.selfieUrl)}>
-                      <img
-                        src={inspectPro.selfieUrl}
-                        alt="Facial Verification Selfie"
-                        style={{ width: 56, height: 56, borderRadius: "50%", objectFit: "cover", border: "2px solid #10B981", background: "#1E293B" }}
-                      />
-                      <span style={{ fontSize: "10px", color: "#10B981", display: "block", marginTop: 2, fontWeight: 700 }}>📷 Live Selfie (Audit) 🔍</span>
-                    </div>
-                  ) : (
-                    <div style={{ padding: "6px 10px", background: "rgba(239,68,68,0.12)", border: "1px solid rgba(239,68,68,0.3)", borderRadius: "8px", textAlign: "center" }}>
-                      <span style={{ fontSize: "11px", color: "#F87171", fontWeight: 700, display: "block" }}>⚠️ No Selfie Submitted</span>
-                      <span style={{ fontSize: "10px", color: "#94A3B8" }}>Pending camera capture</span>
-                    </div>
-                  )}
-                </div>
-              </div>
 
-              {/* Step 2: Residential Address & Proof of Residence Document */}
-              <div style={{ background: "#0F172A", padding: "14px", borderRadius: "10px", border: "1px solid #334155" }}>
-                <strong style={{ fontSize: "12px", color: "#F59E0B", textTransform: "uppercase", display: "block", marginBottom: 6 }}>
-                  2️⃣ Residential & Workshop Address Audit (Operating State & Utility Proof)
-                </strong>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 10 }}>
-                  <div>
-                    <div style={{ fontSize: "14px", fontWeight: 700, color: "#F8FAFC" }}>
-                      Operating State: <span style={{ color: "#F59E0B" }}>{inspectPro.operatingState || inspectPro.city || "Not Provided"}</span>
-                    </div>
-                    <div style={{ fontSize: "13px", color: "#CBD5E1", marginTop: "2px" }}>
-                      Address: {inspectPro.homeAddress || "Not Provided"} ({inspectPro.lga || "AMAC"})
-                    </div>
-                    {inspectPro.addressProofUrl ? (
-                      <button
-                        type="button"
-                        onClick={() => setPreviewMediaUrl(inspectPro.addressProofUrl)}
-                        style={{ background: "none", border: "none", padding: 0, fontSize: "12px", color: "#38BDF8", fontWeight: "bold", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: "4px", marginTop: "6px" }}
-                      >
-                        👁️ Inspect Proof of Address Document (Utility Bill / Tenancy Receipt) <ExternalLink size={12} />
-                      </button>
-                    ) : (
-                      <span style={{ color: "#EF4444", fontSize: "11.5px", fontWeight: 700, display: "inline-block", marginTop: "6px" }}>
-                        ⚠️ No Proof of Address Document Uploaded
-                      </span>
-                    )}
-                  </div>
-                  <span className="badge" style={{ background: inspectPro.addressVerified ? "rgba(16,185,129,0.15)" : "rgba(245,158,11,0.15)", color: inspectPro.addressVerified ? "#10B981" : "#F59E0B", fontSize: "11px", fontWeight: 700 }}>
-                    {inspectPro.addressVerified ? "ADDRESS VERIFIED ✓" : "ADDRESS UNVERIFIED ⚠️"}
-                  </span>
-                </div>
-              </div>
-
-              {/* Step 2B: Multi-Trade Verification Records — Per-Trade Approval Panel */}
-              {inspectPro.tradeVerifications && inspectPro.tradeVerifications.length > 0 && (
-                <div style={{ background: "#0F172A", padding: "14px", borderRadius: "10px", border: "1px solid #334155" }}>
-                  <strong style={{ fontSize: "12px", color: "#10B981", textTransform: "uppercase", display: "block", marginBottom: 10 }}>
-                    🎓 Multi-Profession Trade Verifications ({inspectPro.tradeVerifications.length} Registered)
-                  </strong>
-                  <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                    {inspectPro.tradeVerifications.map((tv: any, idx: number) => {
-                      const isTvVerified = tv.status === "VERIFIED";
-                      const isTvRejected = tv.status === "REJECTED";
-                      const tvColor = isTvVerified ? "#10B981" : isTvRejected ? "#EF4444" : "#F59E0B";
-                      return (
-                        <div key={tv.id || idx} style={{ background: "#1E293B", padding: "12px", borderRadius: "8px", border: `1px solid ${tvColor}30` }}>
-                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
-                            <div>
-                              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                                <strong style={{ fontSize: "13px", color: "#F8FAFC" }}>
-                                  {tv.tradeName || tv.tradeCategory}
-                                </strong>
-                                {tv.isPrimary && (
-                                  <span style={{ fontSize: "10px", background: "rgba(14,165,233,0.2)", color: "#38BDF8", padding: "1px 6px", borderRadius: 4, fontWeight: 700 }}>
-                                    PRIMARY
-                                  </span>
-                                )}
-                              </div>
-                              <span style={{ fontSize: "11px", color: "#94A3B8" }}>
-                                Quiz: {tv.quizScore !== undefined ? `${tv.quizScore}%` : "N/A"} &nbsp;•&nbsp; Experience: {tv.yearsExperience || 2}yrs
-                              </span>
-                            </div>
-                            <span style={{ fontSize: "11px", fontWeight: 700, padding: "3px 8px", borderRadius: 4, background: `${tvColor}20`, color: tvColor }}>
-                              {tv.status || "PENDING"}
-                            </span>
-                          </div>
-                          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 8, alignItems: "center" }}>
-                            {tv.certUrl ? (
-                              <button
-                                type="button"
-                                onClick={() => setPreviewMediaUrl(tv.certUrl)}
-                                style={{ background: "none", border: "1px solid #334155", padding: "4px 8px", borderRadius: 4, color: "#38BDF8", fontWeight: 700, cursor: "pointer", fontSize: "11px", display: "inline-flex", alignItems: "center", gap: 4 }}
-                              >
-                                👁️ Trade Cert
-                              </button>
-                            ) : (
-                              <span style={{ fontSize: "11px", color: "#EF4444", fontWeight: 700, background: "rgba(239,68,68,0.12)", border: "1px solid rgba(239,68,68,0.3)", padding: "3px 8px", borderRadius: 4 }}>
-                                ⚠️ No Trade Cert Uploaded
-                              </span>
-                            )}
-                            {tv.toolsProofUrl && (
-                              <button
-                                type="button"
-                                onClick={() => setPreviewMediaUrl(tv.toolsProofUrl)}
-                                style={{ background: "none", border: "1px solid #334155", padding: "4px 8px", borderRadius: 4, color: "#F59E0B", fontWeight: 700, cursor: "pointer", fontSize: "11px", display: "inline-flex", alignItems: "center", gap: 4 }}
-                              >
-                                🔧 Tools Proof
-                              </button>
-                            )}
-                            {tv.portfolioUrls && tv.portfolioUrls.length > 0 ? (
-                              tv.portfolioUrls.map((url: string, pidx: number) => (
-                                <div key={pidx} onClick={() => setPreviewMediaUrl(url)} style={{ cursor: "pointer" }}>
-                                  <img src={url} alt={`Work ${pidx+1}`} style={{ width: 44, height: 44, borderRadius: 6, objectFit: "cover", border: "1px solid #0EA5E9" }} />
-                                </div>
-                              ))
-                            ) : (
-                              <span style={{ fontSize: "11px", color: "#94A3B8" }}>No work portfolio uploaded</span>
-                            )}
-                          </div>
-                          {/* Per-Trade Approve/Reject buttons */}
-                          {!isTvVerified && !isTvRejected && (
-                            <div style={{ display: "flex", gap: 6 }}>
-                              <button
-                                type="button"
-                                onClick={async () => {
-                                  try {
-                                    const res = await fetch("/api/admin/verification", {
-                                      method: "POST",
-                                      headers: { "Content-Type": "application/json" },
-                                      body: JSON.stringify({
-                                        professionalId: inspectPro.id,
-                                        userId: inspectPro.userId,
-                                        email: inspectPro.email,
-                                        tradeVerificationId: tv.id,
-                                        tradeCategory: tv.tradeCategory,
-                                        tradeStatus: "VERIFIED",
-                                        verificationNotes: officerNotes || "",
-                                      }),
-                                    });
-                                    if (res.ok) {
-                                      setToast(`✅ ${tv.tradeName} trade VERIFIED for ${inspectPro.name}`);
-                                      setInspectPro(null);
-                                      setTimeout(fetchPros, 400);
-                                    }
-                                  } catch {
-                                    setToast("Failed to verify trade");
-                                  }
-                                }}
-                                style={{ background: "rgba(16,185,129,0.2)", border: "1px solid #10B981", color: "#10B981", borderRadius: 6, padding: "4px 10px", fontSize: "11px", fontWeight: 700, cursor: "pointer" }}
-                              >
-                                ✓ Approve Trade
-                              </button>
-                              <button
-                                type="button"
-                                onClick={async () => {
-                                  try {
-                                    const res = await fetch("/api/admin/verification", {
-                                      method: "POST",
-                                      headers: { "Content-Type": "application/json" },
-                                      body: JSON.stringify({
-                                        professionalId: inspectPro.id,
-                                        userId: inspectPro.userId,
-                                        email: inspectPro.email,
-                                        tradeVerificationId: tv.id,
-                                        tradeCategory: tv.tradeCategory,
-                                        tradeStatus: "REJECTED",
-                                        rejectionReason: officerNotes || "Documents insufficient",
-                                      }),
-                                    });
-                                    if (res.ok) {
-                                      setToast(`❌ ${tv.tradeName} trade REJECTED for ${inspectPro.name}`);
-                                      setInspectPro(null);
-                                      setTimeout(fetchPros, 400);
-                                    }
-                                  } catch {
-                                    setToast("Failed to reject trade");
-                                  }
-                                }}
-                                style={{ background: "rgba(239,68,68,0.15)", border: "1px solid #EF4444", color: "#EF4444", borderRadius: 6, padding: "4px 10px", fontSize: "11px", fontWeight: 700, cursor: "pointer" }}
-                              >
-                                ✕ Reject Trade
-                              </button>
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-
-              {/* Step 2C: Fallback single Trade Certificate (when no tradeVerifications array) */}
-              {(!inspectPro.tradeVerifications || inspectPro.tradeVerifications.length === 0) && (
-                <div style={{ background: "#0F172A", padding: "14px", borderRadius: "10px", border: "1px solid #334155" }}>
-                  <strong style={{ fontSize: "12px", color: "#8B5CF6", textTransform: "uppercase", display: "block", marginBottom: 6 }}>
-                    2️⃣ Trade Certificate & Work Portfolio
-                  </strong>
-                  <div style={{ fontSize: "13px", color: "#CBD5E1", marginBottom: 6 }}>
-                    Certification:{" "}
-                    {inspectPro.tradeCertUrl ? (
-                      <button
-                        type="button"
-                        onClick={() => setPreviewMediaUrl(inspectPro.tradeCertUrl)}
-                        style={{ background: "none", border: "none", padding: 0, color: "#38BDF8", fontWeight: "bold", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 4 }}
-                      >
-                        Inspect Trade Cert PDF / Image 👁️ <ExternalLink size={12} />
-                      </button>
-                    ) : (
-                      <span style={{ color: "#EF4444", fontWeight: 700, fontSize: "12px" }}>
-                        ⚠️ No Trade Certificate Uploaded (Missing Document)
-                      </span>
-                    )}
-                  </div>
-                  {inspectPro.portfolioUrls && inspectPro.portfolioUrls.length > 0 ? (
-                    <div style={{ display: "flex", gap: 8, marginTop: 6, overflowX: "auto" }}>
-                      {inspectPro.portfolioUrls.map((url: string, idx: number) => (
-                        <div key={idx} onClick={() => setPreviewMediaUrl(url)} style={{ cursor: "pointer" }}>
-                          <img
-                            src={url}
-                            alt={`Portfolio Work ${idx + 1}`}
-                            style={{ width: 64, height: 64, borderRadius: 8, objectFit: "cover", border: "1px solid #0EA5E9", background: "#1E293B" }}
-                          />
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <span style={{ fontSize: "11px", color: "#94A3B8", display: "block", marginTop: 4 }}>
-                      No work portfolio photos uploaded
-                    </span>
-                  )}
-                </div>
-              )}
-
-
-              {/* Step 3: Guarantor Check */}
-              <div style={{ background: "#0F172A", padding: "14px", borderRadius: "10px", border: "1px solid #334155" }}>
-                <strong style={{ fontSize: "12px", color: "#F59E0B", textTransform: "uppercase", display: "block", marginBottom: 8 }}>
-                  3️⃣ 2 Guarantor Verification Records
-                </strong>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-                  <div style={{ background: "#1E293B", padding: 12, borderRadius: 8, border: "1px solid #334155" }}>
-                    {inspectPro.guarantor1?.name ? (
-                      <>
-                        <strong style={{ fontSize: "13px", color: "#F8FAFC", display: "block" }}>
-                          Guarantor 1: {inspectPro.guarantor1.name}
-                        </strong>
-                        <span style={{ fontSize: "11px", color: "#94A3B8", display: "block", marginTop: 2 }}>
-                          Phone: <strong style={{ color: "#CBD5E1" }}>{inspectPro.guarantor1.phone || "Not provided"}</strong>
-                        </span>
-                        <span style={{ fontSize: "11px", color: "#94A3B8", display: "block" }}>
-                          Role: <strong style={{ color: "#CBD5E1" }}>{inspectPro.guarantor1.relationship || "Not specified"}</strong>
-                        </span>
-                        <span style={{ fontSize: "11px", color: "#38BDF8", display: "block", marginTop: 4 }}>
-                          NIN: <strong>{inspectPro.guarantor1.nin || "N/A"}</strong>
-                        </span>
-                      </>
-                    ) : (
-                      <div style={{ padding: "6px 0" }}>
-                        <strong style={{ fontSize: "12px", color: "#94A3B8", display: "block" }}>Guarantor #1</strong>
-                        <span style={{ fontSize: "11px", color: "#EF4444", fontStyle: "italic", display: "block", marginTop: 2 }}>
-                          ⚠️ No Guarantor 1 submitted by applicant
-                        </span>
-                      </div>
-                    )}
-                  </div>
-
-                  <div style={{ background: "#1E293B", padding: 12, borderRadius: 8, border: "1px solid #334155" }}>
-                    {inspectPro.guarantor2?.name ? (
-                      <>
-                        <strong style={{ fontSize: "13px", color: "#F8FAFC", display: "block" }}>
-                          Guarantor 2: {inspectPro.guarantor2.name}
-                        </strong>
-                        <span style={{ fontSize: "11px", color: "#94A3B8", display: "block", marginTop: 2 }}>
-                          Phone: <strong style={{ color: "#CBD5E1" }}>{inspectPro.guarantor2.phone || "Not provided"}</strong>
-                        </span>
-                        <span style={{ fontSize: "11px", color: "#94A3B8", display: "block" }}>
-                          Role: <strong style={{ color: "#CBD5E1" }}>{inspectPro.guarantor2.relationship || "Not specified"}</strong>
-                        </span>
-                        <span style={{ fontSize: "11px", color: "#38BDF8", display: "block", marginTop: 4 }}>
-                          NIN: <strong>{inspectPro.guarantor2.nin || "N/A"}</strong>
-                        </span>
-                      </>
-                    ) : (
-                      <div style={{ padding: "6px 0" }}>
-                        <strong style={{ fontSize: "12px", color: "#94A3B8", display: "block" }}>Guarantor #2</strong>
-                        <span style={{ fontSize: "11px", color: "#EF4444", fontStyle: "italic", display: "block", marginTop: 2 }}>
-                          ⚠️ No Guarantor 2 submitted by applicant
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {/* Step 4: Category Trade Skill & Specialization (Admin Editable) */}
+              {/* 1. Identity, Name & NIMC Government ID Section */}
               <div style={{ background: "#0F172A", padding: "16px", borderRadius: "10px", border: "1px solid #334155" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12, flexWrap: "wrap", gap: 6 }}>
-                  <strong style={{ fontSize: "12px", color: "#38BDF8", textTransform: "uppercase", display: "flex", alignItems: "center", gap: 6 }}>
-                    <Wrench size={14} color="#38BDF8" /> 4️⃣ Trade Specialization & Category (Admin Editable)
-                  </strong>
-                  <span style={{ fontSize: "11px", color: "#10B981", fontWeight: 700 }}>Quiz: {inspectPro.quizScore || 100}% (PASSED)</span>
-                </div>
+                <strong style={{ fontSize: "12px", color: "#0EA5E9", textTransform: "uppercase", display: "flex", alignItems: "center", gap: 6, marginBottom: 10 }}>
+                  <User size={14} color="#0EA5E9" /> 1️⃣ Government Identity, Contact &amp; Biometrics (Admin Editable)
+                </strong>
 
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginBottom: "12px" }}>
+                <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr 1fr", gap: "12px", marginBottom: 12 }}>
                   <div>
-                    <label style={{ fontSize: "11px", color: "#94A3B8", textTransform: "uppercase", display: "block", marginBottom: "4px" }}>
-                      Select Primary Trade Category
-                    </label>
-                    <select
-                      value={selectedTradeCategory}
-                      onChange={(e) => setSelectedTradeCategory(e.target.value)}
-                      style={{ width: "100%", background: "#1E293B", border: "1px solid #334155", borderRadius: "6px", padding: "8px 10px", color: "#F8FAFC", fontSize: "13px" }}
-                    >
-                      {STANDARD_TRADE_CATEGORIES.map((cat) => (
-                        <option key={cat} value={cat}>{cat}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label style={{ fontSize: "11px", color: "#94A3B8", textTransform: "uppercase", display: "block", marginBottom: "4px" }}>
-                      Specific Skills / Sub-trades
-                    </label>
+                    <label style={{ fontSize: "11px", color: "#94A3B8", textTransform: "uppercase", display: "block", marginBottom: 4 }}>Full Name</label>
                     <input
                       type="text"
-                      placeholder="e.g., Pipe repairs, Drainage, Taps"
-                      value={customSkillsInput}
-                      onChange={(e) => setCustomSkillsInput(e.target.value)}
+                      value={editName}
+                      onChange={(e) => setEditName(e.target.value)}
+                      style={{ width: "100%", background: "#1E293B", border: "1px solid #334155", borderRadius: "6px", padding: "8px 10px", color: "#F8FAFC", fontSize: "13px" }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: "11px", color: "#94A3B8", textTransform: "uppercase", display: "block", marginBottom: 4 }}>Email Address</label>
+                    <input
+                      type="email"
+                      value={editEmail}
+                      onChange={(e) => setEditEmail(e.target.value)}
+                      style={{ width: "100%", background: "#1E293B", border: "1px solid #334155", borderRadius: "6px", padding: "8px 10px", color: "#F8FAFC", fontSize: "13px" }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: "11px", color: "#94A3B8", textTransform: "uppercase", display: "block", marginBottom: 4 }}>Phone Number</label>
+                    <input
+                      type="tel"
+                      value={editPhone}
+                      onChange={(e) => setEditPhone(e.target.value)}
                       style={{ width: "100%", background: "#1E293B", border: "1px solid #334155", borderRadius: "6px", padding: "8px 10px", color: "#F8FAFC", fontSize: "13px" }}
                     />
                   </div>
                 </div>
 
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderTop: "1px solid #1E293B", paddingTop: 8 }}>
-                  <span style={{ fontSize: "11.5px", color: "#64748B" }}>
-                    Current active trade: <strong style={{ color: "#38BDF8" }}>{inspectPro.field}</strong>
-                  </span>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1.5fr 1fr", gap: "12px", marginBottom: 12 }}>
+                  <div>
+                    <label style={{ fontSize: "11px", color: "#94A3B8", textTransform: "uppercase", display: "block", marginBottom: 4 }}>ID Document Type</label>
+                    <select
+                      value={editIdType}
+                      onChange={(e) => setEditIdType(e.target.value)}
+                      style={{ width: "100%", background: "#1E293B", border: "1px solid #334155", borderRadius: "6px", padding: "8px 10px", color: "#F8FAFC", fontSize: "13px" }}
+                    >
+                      <option value="NIN">National Identity Number (NIN)</option>
+                      <option value="DRIVERS_LICENSE">FRSC Driver&apos;s License</option>
+                      <option value="VOTERS_CARD">INEC Voter&apos;s Card</option>
+                      <option value="PASSPORT">International Passport</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label style={{ fontSize: "11px", color: "#94A3B8", textTransform: "uppercase", display: "block", marginBottom: 4 }}>ID Number / 11-Digit NIN</label>
+                    <input
+                      type="text"
+                      value={editIdNumber}
+                      onChange={(e) => setEditIdNumber(e.target.value)}
+                      placeholder="e.g. 99657332775"
+                      style={{ width: "100%", background: "#1E293B", border: "1px solid #334155", borderRadius: "6px", padding: "8px 10px", color: "#F8FAFC", fontSize: "13px", fontFamily: "monospace" }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: "11px", color: "#94A3B8", textTransform: "uppercase", display: "block", marginBottom: 4 }}>NIN Check Status</label>
+                    <select
+                      value={editNinStatus}
+                      onChange={(e) => setEditNinStatus(e.target.value)}
+                      style={{ width: "100%", background: "#1E293B", border: "1px solid #334155", borderRadius: "6px", padding: "8px 10px", color: editNinStatus === "VERIFIED" ? "#10B981" : "#F59E0B", fontSize: "13px", fontWeight: 700 }}
+                    >
+                      <option value="VERIFIED">VERIFIED ✓</option>
+                      <option value="PENDING">PENDING REVIEW ⏳</option>
+                      <option value="REJECTED">REJECTED ✕</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Media Preview Links */}
+                <div style={{ display: "flex", gap: 16, alignItems: "center", borderTop: "1px solid #334155", paddingTop: 10, flexWrap: "wrap" }}>
+                  {inspectPro.idUrl ? (
+                    <button
+                      type="button"
+                      onClick={() => setPreviewMediaUrl(inspectPro.idUrl)}
+                      style={{ background: "none", border: "none", color: "#38BDF8", fontSize: "12px", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 4, fontWeight: 700 }}
+                    >
+                      👁️ View Uploaded ID Document <ExternalLink size={12} />
+                    </button>
+                  ) : (
+                    <span style={{ color: "#EF4444", fontSize: "12px" }}>⚠️ No ID document attached</span>
+                  )}
+
+                  {inspectPro.selfieUrl ? (
+                    <button
+                      type="button"
+                      onClick={() => setPreviewMediaUrl(inspectPro.selfieUrl)}
+                      style={{ background: "none", border: "none", color: "#10B981", fontSize: "12px", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 4, fontWeight: 700 }}
+                    >
+                      📷 View Biometric Selfie <ExternalLink size={12} />
+                    </button>
+                  ) : (
+                    <span style={{ color: "#EF4444", fontSize: "12px" }}>⚠️ No selfie attached</span>
+                  )}
+                </div>
+              </div>
+
+              {/* 2. Residential & Workshop Address Dossier */}
+              <div style={{ background: "#0F172A", padding: "16px", borderRadius: "10px", border: "1px solid #334155" }}>
+                <strong style={{ fontSize: "12px", color: "#F59E0B", textTransform: "uppercase", display: "flex", alignItems: "center", gap: 6, marginBottom: 10 }}>
+                  <MapPin size={14} color="#F59E0B" /> 2️⃣ Residential &amp; Workshop Address Dossier (Admin Editable)
+                </strong>
+
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "12px", marginBottom: 12 }}>
+                  <div>
+                    <label style={{ fontSize: "11px", color: "#94A3B8", textTransform: "uppercase", display: "block", marginBottom: 4 }}>Operating State</label>
+                    <select
+                      value={editOperatingState}
+                      onChange={(e) => setEditOperatingState(e.target.value)}
+                      style={{ width: "100%", background: "#1E293B", border: "1px solid #334155", borderRadius: "6px", padding: "8px 10px", color: "#F8FAFC", fontSize: "13px" }}
+                    >
+                      {activeStates.map((st) => (
+                        <option key={st.code} value={st.name}>{st.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label style={{ fontSize: "11px", color: "#94A3B8", textTransform: "uppercase", display: "block", marginBottom: 4 }}>LGA / Corridor</label>
+                    <input
+                      type="text"
+                      value={editLga}
+                      onChange={(e) => setEditLga(e.target.value)}
+                      placeholder="e.g. AMAC, Ikeja, Bodija"
+                      style={{ width: "100%", background: "#1E293B", border: "1px solid #334155", borderRadius: "6px", padding: "8px 10px", color: "#F8FAFC", fontSize: "13px" }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: "11px", color: "#94A3B8", textTransform: "uppercase", display: "block", marginBottom: 4 }}>Address Status</label>
+                    <select
+                      value={editAddressStatus}
+                      onChange={(e) => setEditAddressStatus(e.target.value)}
+                      style={{ width: "100%", background: "#1E293B", border: "1px solid #334155", borderRadius: "6px", padding: "8px 10px", color: editAddressStatus === "VERIFIED" ? "#10B981" : "#F59E0B", fontSize: "13px", fontWeight: 700 }}
+                    >
+                      <option value="VERIFIED">VERIFIED ✓</option>
+                      <option value="PENDING">PENDING REVIEW ⏳</option>
+                      <option value="REJECTED">REJECTED ✕</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div style={{ marginBottom: 10 }}>
+                  <label style={{ fontSize: "11px", color: "#94A3B8", textTransform: "uppercase", display: "block", marginBottom: 4 }}>Full Residential / Workshop Street Address</label>
+                  <input
+                    type="text"
+                    value={editHomeAddress}
+                    onChange={(e) => setEditHomeAddress(e.target.value)}
+                    placeholder="e.g. Plot 104, Aminu Kano Crescent, Wuse 2, Abuja"
+                    style={{ width: "100%", background: "#1E293B", border: "1px solid #334155", borderRadius: "6px", padding: "8px 10px", color: "#F8FAFC", fontSize: "13px" }}
+                  />
+                </div>
+
+                {inspectPro.addressProofUrl && (
                   <button
                     type="button"
-                    onClick={handleSaveSkills}
-                    disabled={savingSkills}
-                    className="btn btn-secondary btn-xs"
-                    style={{ background: "#0EA5E9", color: "#FFFFFF", fontWeight: "bold", display: "inline-flex", alignItems: "center", gap: 4 }}
+                    onClick={() => setPreviewMediaUrl(inspectPro.addressProofUrl)}
+                    style={{ background: "none", border: "none", color: "#38BDF8", fontSize: "12px", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 4, fontWeight: 700 }}
                   >
-                    <Check size={12} /> {savingSkills ? "Saving..." : "Save Trade & Skills"}
+                    👁️ Inspect Utility Bill / Tenancy Receipt <ExternalLink size={12} />
                   </button>
+                )}
+              </div>
+
+              {/* 3. Guarantor 1 & Guarantor 2 Records */}
+              <div style={{ background: "#0F172A", padding: "16px", borderRadius: "10px", border: "1px solid #334155" }}>
+                <strong style={{ fontSize: "12px", color: "#F59E0B", textTransform: "uppercase", display: "flex", alignItems: "center", gap: 6, marginBottom: 10 }}>
+                  <UserCheck size={14} color="#F59E0B" /> 3️⃣ 2 Guarantor Verification Records (Admin Editable)
+                </strong>
+
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px" }}>
+                  {/* Guarantor 1 */}
+                  <div style={{ background: "#1E293B", padding: "12px", borderRadius: "8px", border: "1px solid #334155" }}>
+                    <span style={{ fontSize: "12px", fontWeight: 800, color: "#38BDF8", display: "block", marginBottom: 8 }}>Guarantor #1</span>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                      <input
+                        type="text"
+                        placeholder="Guarantor 1 Full Name"
+                        value={editGuarantor1.name || ""}
+                        onChange={(e) => setEditGuarantor1({ ...editGuarantor1, name: e.target.value })}
+                        style={{ width: "100%", background: "#0F172A", border: "1px solid #334155", borderRadius: "6px", padding: "6px 10px", color: "#F8FAFC", fontSize: "12px" }}
+                      />
+                      <input
+                        type="tel"
+                        placeholder="Guarantor 1 Phone (11 digits)"
+                        value={editGuarantor1.phone || ""}
+                        onChange={(e) => setEditGuarantor1({ ...editGuarantor1, phone: e.target.value })}
+                        style={{ width: "100%", background: "#0F172A", border: "1px solid #334155", borderRadius: "6px", padding: "6px 10px", color: "#F8FAFC", fontSize: "12px" }}
+                      />
+                      <select
+                        value={editGuarantor1.relationship || "Landlord / Property Owner"}
+                        onChange={(e) => setEditGuarantor1({ ...editGuarantor1, relationship: e.target.value })}
+                        style={{ width: "100%", background: "#0F172A", border: "1px solid #334155", borderRadius: "6px", padding: "6px 10px", color: "#F8FAFC", fontSize: "12px" }}
+                      >
+                        {GUARANTOR_ROLE_OPTIONS.map((opt) => (
+                          <option key={opt} value={opt}>{opt}</option>
+                        ))}
+                      </select>
+                      <input
+                        type="text"
+                        placeholder="Guarantor 1 NIN (11 digits)"
+                        value={editGuarantor1.nin || ""}
+                        onChange={(e) => setEditGuarantor1({ ...editGuarantor1, nin: e.target.value })}
+                        style={{ width: "100%", background: "#0F172A", border: "1px solid #334155", borderRadius: "6px", padding: "6px 10px", color: "#F8FAFC", fontSize: "12px", fontFamily: "monospace" }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Guarantor 2 */}
+                  <div style={{ background: "#1E293B", padding: "12px", borderRadius: "8px", border: "1px solid #334155" }}>
+                    <span style={{ fontSize: "12px", fontWeight: 800, color: "#38BDF8", display: "block", marginBottom: 8 }}>Guarantor #2</span>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                      <input
+                        type="text"
+                        placeholder="Guarantor 2 Full Name"
+                        value={editGuarantor2.name || ""}
+                        onChange={(e) => setEditGuarantor2({ ...editGuarantor2, name: e.target.value })}
+                        style={{ width: "100%", background: "#0F172A", border: "1px solid #334155", borderRadius: "6px", padding: "6px 10px", color: "#F8FAFC", fontSize: "12px" }}
+                      />
+                      <input
+                        type="tel"
+                        placeholder="Guarantor 2 Phone (11 digits)"
+                        value={editGuarantor2.phone || ""}
+                        onChange={(e) => setEditGuarantor2({ ...editGuarantor2, phone: e.target.value })}
+                        style={{ width: "100%", background: "#0F172A", border: "1px solid #334155", borderRadius: "6px", padding: "6px 10px", color: "#F8FAFC", fontSize: "12px" }}
+                      />
+                      <select
+                        value={editGuarantor2.relationship || "Master Craftsman / Apprenticeship Mentor"}
+                        onChange={(e) => setEditGuarantor2({ ...editGuarantor2, relationship: e.target.value })}
+                        style={{ width: "100%", background: "#0F172A", border: "1px solid #334155", borderRadius: "6px", padding: "6px 10px", color: "#F8FAFC", fontSize: "12px" }}
+                      >
+                        {GUARANTOR_ROLE_OPTIONS.map((opt) => (
+                          <option key={opt} value={opt}>{opt}</option>
+                        ))}
+                      </select>
+                      <input
+                        type="text"
+                        placeholder="Guarantor 2 NIN (11 digits)"
+                        value={editGuarantor2.nin || ""}
+                        onChange={(e) => setEditGuarantor2({ ...editGuarantor2, nin: e.target.value })}
+                        style={{ width: "100%", background: "#0F172A", border: "1px solid #334155", borderRadius: "6px", padding: "6px 10px", color: "#F8FAFC", fontSize: "12px", fontFamily: "monospace" }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* 4. Trade Specialization & Skill Categories */}
+              <div style={{ background: "#0F172A", padding: "16px", borderRadius: "10px", border: "1px solid #334155" }}>
+                <strong style={{ fontSize: "12px", color: "#38BDF8", textTransform: "uppercase", display: "flex", alignItems: "center", gap: 6, marginBottom: 10 }}>
+                  <Wrench size={14} color="#38BDF8" /> 4️⃣ Trade Specialization &amp; Skill Categories (Admin Configurable)
+                </strong>
+
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginBottom: 12 }}>
+                  <div>
+                    <label style={{ fontSize: "11px", color: "#94A3B8", textTransform: "uppercase", display: "block", marginBottom: 4 }}>
+                      Select Primary Trade Category
+                    </label>
+                    <select
+                      value={editPrimaryTrade}
+                      onChange={(e) => setEditPrimaryTrade(e.target.value)}
+                      style={{ width: "100%", background: "#1E293B", border: "1px solid #334155", borderRadius: "6px", padding: "8px 10px", color: "#F8FAFC", fontSize: "13px" }}
+                    >
+                      {MASTER_TRADE_CATEGORIES.map((cat) => (
+                        <option key={cat.value} value={cat.value}>
+                          {cat.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label style={{ fontSize: "11px", color: "#94A3B8", textTransform: "uppercase", display: "block", marginBottom: 4 }}>
+                      Select Secondary Trade Category (Optional)
+                    </label>
+                    <select
+                      value={editSecondaryTrade}
+                      onChange={(e) => setEditSecondaryTrade(e.target.value)}
+                      style={{ width: "100%", background: "#1E293B", border: "1px solid #334155", borderRadius: "6px", padding: "8px 10px", color: "#F8FAFC", fontSize: "13px" }}
+                    >
+                      <option value="">-- None / Single Trade --</option>
+                      {MASTER_TRADE_CATEGORIES.filter((c) => c.value !== editPrimaryTrade).map((cat) => (
+                        <option key={cat.value} value={cat.value}>
+                          {cat.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: "12px", marginBottom: 10 }}>
+                  <div>
+                    <label style={{ fontSize: "11px", color: "#94A3B8", textTransform: "uppercase", display: "block", marginBottom: 4 }}>
+                      Specific Skills / Sub-Trades
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Pipe repairs, Water heaters, Conduit wiring"
+                      value={editSkills}
+                      onChange={(e) => setEditSkills(e.target.value)}
+                      style={{ width: "100%", background: "#1E293B", border: "1px solid #334155", borderRadius: "6px", padding: "8px 10px", color: "#F8FAFC", fontSize: "13px" }}
+                    />
+                  </div>
+
+                  <div>
+                    <label style={{ fontSize: "11px", color: "#94A3B8", textTransform: "uppercase", display: "block", marginBottom: 4 }}>
+                      Quiz Assessment Score (%)
+                    </label>
+                    <input
+                      type="number"
+                      min={0}
+                      max={100}
+                      value={editQuizScore}
+                      onChange={(e) => setEditQuizScore(Number(e.target.value))}
+                      style={{ width: "100%", background: "#1E293B", border: "1px solid #334155", borderRadius: "6px", padding: "8px 10px", color: "#10B981", fontSize: "13px", fontWeight: 700 }}
+                    />
+                  </div>
+                </div>
+
+                {inspectPro.tradeCertUrl && (
+                  <button
+                    type="button"
+                    onClick={() => setPreviewMediaUrl(inspectPro.tradeCertUrl)}
+                    style={{ background: "none", border: "none", color: "#38BDF8", fontSize: "12px", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 4, fontWeight: 700 }}
+                  >
+                    👁️ Inspect Uploaded Trade Certificate / License <ExternalLink size={12} />
+                  </button>
+                )}
+              </div>
+
+              {/* 5. Compliance Audit Notes & Status Decision */}
+              <div style={{ background: "#0F172A", padding: "16px", borderRadius: "10px", border: "1px solid #334155" }}>
+                <strong style={{ fontSize: "12px", color: "#A855F7", textTransform: "uppercase", display: "flex", alignItems: "center", gap: 6, marginBottom: 10 }}>
+                  <Shield size={14} color="#A855F7" /> 5️⃣ Verification Officer Compliance Audit Decision
+                </strong>
+
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr", gap: "12px", marginBottom: 12 }}>
+                  <div>
+                    <label style={{ fontSize: "11px", color: "#94A3B8", textTransform: "uppercase", display: "block", marginBottom: 4 }}>
+                      Overall Compliance Status
+                    </label>
+                    <select
+                      value={editVerificationStatus}
+                      onChange={(e) => setEditVerificationStatus(e.target.value)}
+                      style={{
+                        width: "100%",
+                        background: "#1E293B",
+                        border: "1px solid #334155",
+                        borderRadius: "6px",
+                        padding: "8px 10px",
+                        color: editVerificationStatus === "VERIFIED" ? "#10B981" : editVerificationStatus === "REJECTED" ? "#EF4444" : "#F59E0B",
+                        fontSize: "13px",
+                        fontWeight: 700,
+                      }}
+                    >
+                      <option value="VERIFIED">VERIFIED (Full Approval) ✓</option>
+                      <option value="PENDING">PENDING REVIEW ⏳</option>
+                      <option value="UNDER_REVIEW">UNDER REVIEW 🔍</option>
+                      <option value="REJECTED">REJECTED (Missing / Invalid) ✕</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label style={{ fontSize: "11px", color: "#94A3B8", textTransform: "uppercase", display: "block", marginBottom: 4 }}>
+                      Officer Compliance Audit Notes
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Approved by Admin Compliance Team"
+                      value={editOfficerNotes}
+                      onChange={(e) => setEditOfficerNotes(e.target.value)}
+                      style={{ width: "100%", background: "#1E293B", border: "1px solid #334155", borderRadius: "6px", padding: "8px 10px", color: "#F8FAFC", fontSize: "13px" }}
+                    />
+                  </div>
                 </div>
               </div>
             </div>
 
-            <div style={{ marginBottom: "20px" }}>
-              <label style={{ fontSize: "12px", color: "#64748B", fontWeight: 700, textTransform: "uppercase", display: "block", marginBottom: "6px" }}>
-                Verification Officer Compliance Audit Notes
-              </label>
-              <textarea
-                rows={3}
-                placeholder="Enter audit notes or feedback for approval/rejection..."
-                value={officerNotes}
-                onChange={(e) => setOfficerNotes(e.target.value)}
-                style={{
-                  width: "100%",
-                  background: "#0F172A",
-                  border: "1px solid #334155",
-                  borderRadius: "8px",
-                  padding: "10px",
-                  color: "#F8FAFC",
-                  fontSize: "13px",
-                }}
-              />
-            </div>
-
-            <div style={{ display: "flex", gap: "10px", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap" }}>
+            {/* Modal Bottom Actions */}
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 10, borderTop: "1px solid #334155", paddingTop: 16 }}>
               <button
+                type="button"
                 onClick={() => handlePurgeArtisan(inspectPro)}
                 className="btn btn-secondary btn-sm"
-                style={{ borderColor: "#EF444440", color: "#EF4444", display: "inline-flex", alignItems: "center", gap: 6 }}
+                style={{ color: "#EF4444", borderColor: "rgba(239,68,68,0.4)", display: "inline-flex", alignItems: "center", gap: 6 }}
               >
-                <Trash2 size={15} /> Purge / Delete Test Artisan
+                <Trash2 size={14} /> Purge / Delete Artisan
               </button>
-              <div style={{ display: "flex", gap: "10px" }}>
+
+              <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
                 <button
-                  onClick={() => handleAuditDecision("REJECTED")}
+                  type="button"
+                  onClick={() => handleDecision("REJECTED")}
+                  disabled={savingDossier}
                   className="btn btn-secondary btn-sm"
-                  style={{ borderColor: "#EF4444", color: "#EF4444", display: "inline-flex", alignItems: "center", gap: 6 }}
+                  style={{ color: "#EF4444", borderColor: "#EF4444", display: "inline-flex", alignItems: "center", gap: 6 }}
                 >
-                  <XCircle size={16} /> Deny Verification Application
+                  <XCircle size={14} /> Deny Application
                 </button>
+
                 <button
-                  onClick={() => handleAuditDecision("VERIFIED")}
+                  type="button"
+                  onClick={handleSaveFullDossier}
+                  disabled={savingDossier}
                   className="btn btn-primary btn-sm"
-                  style={{ background: "#10B981", display: "inline-flex", alignItems: "center", gap: 6 }}
+                  style={{ background: "linear-gradient(135deg, #0EA5E9 0%, #0284C7 100%)", display: "inline-flex", alignItems: "center", gap: 6, fontWeight: 700 }}
                 >
-                  <CheckCircle2 size={16} /> Approve & Issue Verified Badge
+                  <Save size={14} /> {savingDossier ? "Saving Dossier..." : "Save & Update Artisan Audit Dossier"}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleDecision("VERIFIED")}
+                  disabled={savingDossier}
+                  className="btn btn-primary btn-sm"
+                  style={{ background: "linear-gradient(135deg, #10B981 0%, #059669 100%)", display: "inline-flex", alignItems: "center", gap: 6, fontWeight: 700 }}
+                >
+                  <CheckCircle size={14} /> Approve &amp; Issue Verified Badge
                 </button>
               </div>
             </div>
@@ -931,158 +983,46 @@ export default function ProfessionalVerificationPage() {
         </div>
       )}
 
-      {/* Standalone Quick-Edit Skills Modal */}
-      {editingSkillsPro && (
-        <div
-          style={{
-            position: "fixed",
-            inset: 0,
-            backgroundColor: "rgba(15,23,42,0.85)",
-            backdropFilter: "blur(8px)",
-            zIndex: 9999,
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            padding: "20px",
-          }}
-          onClick={() => setEditingSkillsPro(null)}
-        >
-          <div
-            className="card"
-            style={{ width: "100%", maxWidth: "480px", background: "#1E293B", border: "1px solid #334155", borderRadius: "16px", padding: "24px" }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid #334155", paddingBottom: "12px", marginBottom: "16px" }}>
-              <h3 className="h4" style={{ margin: 0, color: "#F8FAFC", display: "flex", alignItems: "center", gap: 8 }}>
-                <Wrench size={18} color="#38BDF8" /> Edit Artisan Skill & Field
-              </h3>
-              <button onClick={() => setEditingSkillsPro(null)} style={{ background: "none", border: "none", color: "#94A3B8", cursor: "pointer" }}>✕</button>
-            </div>
-
-            <p style={{ fontSize: "13px", color: "#94A3B8", marginBottom: "16px" }}>
-              Updating verified trade skill for <strong style={{ color: "#F8FAFC" }}>{editingSkillsPro.name}</strong> ({editingSkillsPro.email})
-            </p>
-
-            <div style={{ marginBottom: "16px" }}>
-              <label style={{ fontSize: "12px", color: "#64748B", fontWeight: 700, textTransform: "uppercase", display: "block", marginBottom: "6px" }}>
-                Primary Trade Category <span style={{ color: "#EF4444" }}>*</span>
-              </label>
-              <select
-                value={selectedTradeCategory}
-                onChange={(e) => setSelectedTradeCategory(e.target.value)}
-                style={{ width: "100%", background: "#0F172A", border: "1px solid #334155", borderRadius: "8px", padding: "10px", color: "#F8FAFC", fontSize: "14px", cursor: "pointer" }}
-              >
-                {STANDARD_TRADE_CATEGORIES.map((cat) => (
-                  <option key={cat} value={cat}>{cat}</option>
-                ))}
-              </select>
-            </div>
-
-            <div style={{ marginBottom: "20px" }}>
-              <label style={{ fontSize: "12px", color: "#64748B", fontWeight: 700, textTransform: "uppercase", display: "block", marginBottom: "6px" }}>
-                Specific Trade Skills / Specialties <span style={{ color: "#94A3B8", fontWeight: 400 }}>(Comma-separated)</span>
-              </label>
-              <input
-                type="text"
-                placeholder="e.g., Pipe repairs, Drainage, Water heater installation"
-                value={customSkillsInput}
-                onChange={(e) => setCustomSkillsInput(e.target.value)}
-                style={{ width: "100%", background: "#0F172A", border: "1px solid #334155", borderRadius: "8px", padding: "10px", color: "#F8FAFC", fontSize: "14px" }}
-              />
-            </div>
-
-            <div style={{ display: "flex", gap: "10px", justifyContent: "flex-end" }}>
-              <button
-                type="button"
-                onClick={() => setEditingSkillsPro(null)}
-                className="btn btn-secondary btn-sm"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={handleSaveSkills}
-                disabled={savingSkills}
-                className="btn btn-primary btn-sm"
-                style={{ background: "#0EA5E9", fontWeight: "bold" }}
-              >
-                {savingSkills ? "Saving..." : "Save Changes 💾"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* In-App Full Resolution Document & Photo Lightbox */}
+      {/* Media Inspection Modal */}
       {previewMediaUrl && (
         <div
           style={{
             position: "fixed",
             inset: 0,
-            zIndex: 10000,
-            background: "rgba(9, 13, 22, 0.95)",
-            backdropFilter: "blur(12px)",
+            background: "rgba(0,0,0,0.9)",
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
             justifyContent: "center",
-            padding: 24,
+            zIndex: 10000,
+            padding: "20px",
           }}
           onClick={() => setPreviewMediaUrl(null)}
         >
-          <div style={{ position: "absolute", top: 20, right: 20, display: "flex", gap: 12, zIndex: 10001 }}>
-            <a
-              href={previewMediaUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="btn btn-secondary btn-sm"
-              style={{ color: "#38BDF8", borderColor: "#0EA5E9", background: "#1E293B" }}
-              onClick={(e) => e.stopPropagation()}
-            >
-              Open Original File ↗
-            </a>
+          <div style={{ position: "relative", maxWidth: "90vw", maxHeight: "90vh" }} onClick={(e) => e.stopPropagation()}>
+            <img
+              src={previewMediaUrl}
+              alt="Verification Document"
+              style={{ maxWidth: "100%", maxHeight: "85vh", borderRadius: "8px", objectFit: "contain", border: "2px solid #38BDF8" }}
+            />
             <button
               onClick={() => setPreviewMediaUrl(null)}
-              className="btn btn-secondary btn-sm"
-              style={{ color: "#F8FAFC", background: "#1E293B" }}
+              style={{
+                position: "absolute",
+                top: -16,
+                right: -16,
+                background: "#EF4444",
+                color: "#FFFFFF",
+                border: "none",
+                borderRadius: "50%",
+                width: 32,
+                height: 32,
+                cursor: "pointer",
+                fontWeight: "bold",
+              }}
             >
-              Close Preview ✕
+              ✕
             </button>
-          </div>
-
-          <div
-            style={{
-              maxWidth: "90vw",
-              maxHeight: "82vh",
-              overflow: "auto",
-              borderRadius: 16,
-              border: "1px solid #334155",
-              boxShadow: "0 25px 50px -12px rgba(0,0,0,0.8)",
-              background: "#0F172A",
-              padding: 16,
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            {previewMediaUrl.includes(".pdf") || previewMediaUrl.includes("application/pdf") ? (
-              <iframe
-                src={previewMediaUrl}
-                style={{ width: "80vw", height: "75vh", border: "none", borderRadius: 8, background: "#FFFFFF" }}
-                title="Document PDF Inspection Preview"
-              />
-            ) : (
-              <img
-                src={previewMediaUrl}
-                alt="Document Full Resolution Inspection Preview"
-                style={{ maxWidth: "100%", maxHeight: "75vh", objectFit: "contain", borderRadius: 8 }}
-                onError={(e: any) => {
-                  console.warn("[Media Preview Error]: Image failed to load or unavailable");
-                  e.currentTarget.src = "data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='700' height='450' viewBox='0 0 700 450'%3E%3Crect width='700' height='450' rx='16' fill='%230F172A' stroke='%23EF4444' stroke-width='3'/%3E%3Crect x='20' y='20' width='660' height='410' rx='12' fill='%231E293B'/%3E%3Ctext x='350' y='175' font-family='sans-serif' font-size='22' font-weight='bold' fill='%23EF4444' text-anchor='middle'%3E⚠️ DOCUMENT FILE NOT FOUND / CORRUPTED%3C/text%3E%3Ctext x='350' y='215' font-family='sans-serif' font-size='14' fill='%2394A3B8' text-anchor='middle'%3EThe submitted media URL could not be retrieved from storage%3C/text%3E%3Crect x='100' y='265' width='500' height='50' rx='8' fill='%230F172A' stroke='%23EF4444'/%3E%3Ctext x='350' y='297' font-family='monospace' font-size='13' fill='%23F87171' text-anchor='middle'%3EACTION REQUIRED: REQUEST ARTISAN RE-UPLOAD%3C/text%3E%3C/svg%3E";
-                }}
-              />
-            )}
           </div>
         </div>
       )}

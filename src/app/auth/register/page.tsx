@@ -11,26 +11,8 @@ import {
 import { BrandLogo } from "@/components/common/BrandLogo";
 import { useActiveStates } from "@/hooks/useActiveStates";
 import { InactiveStateModal } from "@/components/common/InactiveStateModal";
+import { MASTER_TRADE_CATEGORIES } from "@/lib/trade-categories";
 import styles from "../auth.module.css";
-
-const PRO_SERVICE_OPTIONS = [
-  { value: "cleaning", label: "Cleaning (Residential, Commercial, Deep Clean, Post-Construction)" },
-  { value: "fumigation", label: "Fumigation & Pest Control (Eco-Safe Residential & Commercial Eradication)" },
-  { value: "upholstery", label: "Upholstery & Carpet Cleaning (Sofa, Mattress, Rug Extraction & Detailing)" },
-  { value: "plumbing", label: "Plumbing (Pipe Repairs, Drainage & Sewage, Water Heaters)" },
-  { value: "electrical", label: "Electrical (Wiring & Rewiring, Sockets, Lighting Installation)" },
-  { value: "hvac", label: "AC & HVAC (Split Unit Installation, Servicing, Gas Refill, Repairs)" },
-  { value: "painting", label: "Painting (Interior, Exterior, Screeding & POP Surface Finish)" },
-  { value: "carpentry", label: "Carpentry (Custom Furniture, Assembly, Cabinets & Woodwork)" },
-  { value: "security", label: "Security & CCTV (CCTV Camera Installation & Surveillance)" },
-  { value: "solar", label: "Solar, Inverter & Generator (Panels, Inverters, Generator Repairs)" },
-  { value: "home-improvement", label: "Home Improvement (Interior Decoration & Home Renovation)" },
-  { value: "outdoor", label: "Gardening (Lawn Care, Landscaping & Plant Maintenance)" },
-  { value: "laundry", label: "Laundry & Garment Care (Washing, Ironing & Dry Cleaning)" },
-  { value: "moving", label: "Moving (Home & Office Relocation Services)" },
-  { value: "general", label: "General Handyman (Odd Jobs, Fittings & Minor Repairs)" },
-  { value: "others", label: "Others (Custom Skillset Request)" },
-];
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -47,6 +29,7 @@ export default function RegisterPage() {
     confirmPassword: "",
     role: "CUSTOMER" as "CUSTOMER" | "PROFESSIONAL",
     serviceCategory: "",
+    secondaryCategory: "",
     customSkill: "",
     idType: "NIN",
     idNumber: "",
@@ -153,6 +136,7 @@ export default function RegisterPage() {
           password: form.password,
           role: form.role,
           serviceCategory: form.role === "PROFESSIONAL" ? form.serviceCategory : undefined,
+          secondaryCategory: form.role === "PROFESSIONAL" ? form.secondaryCategory || undefined : undefined,
           customSkill: form.role === "PROFESSIONAL" && form.serviceCategory === "others" ? form.customSkill.trim() : undefined,
           idType: form.role === "PROFESSIONAL" ? form.idType : undefined,
           idNumber: form.role === "PROFESSIONAL" ? form.idNumber.trim() : undefined,
@@ -323,32 +307,58 @@ export default function RegisterPage() {
               </div>
             </div>
 
-            {/* Mandatory Service Field Selection for Professionals */}
+            {/* Primary & Secondary Trade Category Selection for Professionals */}
             {form.role === "PROFESSIONAL" && (
-              <div className={styles.inputGroup}>
-                <label className={styles.label}>
-                  Primary Service / Skillset <span style={{ color: "#EF4444" }}>*</span>
-                </label>
-                <div className={styles.inputWrap}>
-                  <Wrench size={18} className={styles.inputIcon} />
-                  <select
-                    className={styles.input}
-                    value={form.serviceCategory}
-                    onChange={(e) => update("serviceCategory", e.target.value)}
-                    required
-                    style={{ cursor: "pointer" }}
-                  >
-                    <option value="" disabled>
-                      -- Select your service skillset --
-                    </option>
-                    {PRO_SERVICE_OPTIONS.map((opt) => (
-                      <option key={opt.value} value={opt.value}>
-                        {opt.label}
+              <>
+                <div className={styles.inputGroup}>
+                  <label className={styles.label}>
+                    Primary Service / Main Trade <span style={{ color: "#EF4444" }}>*</span>
+                  </label>
+                  <div className={styles.inputWrap}>
+                    <Wrench size={18} className={styles.inputIcon} />
+                    <select
+                      className={styles.input}
+                      value={form.serviceCategory}
+                      onChange={(e) => update("serviceCategory", e.target.value)}
+                      required
+                      style={{ cursor: "pointer" }}
+                    >
+                      <option value="" disabled>
+                        -- Select your primary trade specialization --
                       </option>
-                    ))}
-                  </select>
+                      {MASTER_TRADE_CATEGORIES.map((opt) => (
+                        <option key={opt.value} value={opt.value}>
+                          {opt.label} ({opt.description})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
-              </div>
+
+                <div className={styles.inputGroup}>
+                  <label className={styles.label}>
+                    Secondary / Additional Skillset <span style={{ color: "var(--text-secondary)", fontSize: "12px", fontWeight: 400 }}>(Optional)</span>
+                  </label>
+                  <div className={styles.inputWrap}>
+                    <Sparkles size={18} className={styles.inputIcon} />
+                    <select
+                      className={styles.input}
+                      value={form.secondaryCategory}
+                      onChange={(e) => update("secondaryCategory", e.target.value)}
+                      style={{ cursor: "pointer" }}
+                    >
+                      <option value="">
+                        -- None / Single Specialization Only --
+                      </option>
+                      {MASTER_TRADE_CATEGORIES.filter((opt) => opt.value !== form.serviceCategory).map((opt) => (
+                        <option key={opt.value} value={opt.value}>
+                          {opt.label} ({opt.description})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              </>
             )}
 
             {/* Custom Skill Input & Appreciation Banner if "Others" Selected */}

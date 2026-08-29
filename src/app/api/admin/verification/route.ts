@@ -208,8 +208,10 @@ export async function GET(request: Request) {
         digitalId: formatDigitalId(p),
         name: fullName,
         email: u.email || docs.email || p.email || "artisan@handyhubpro.ng",
-        phone: u.phone || docs.phone || p.phone || "Not Provided",
         field: proField,
+        primaryField: proField,
+        secondaryField: docs.secondaryCategory || "",
+        secondaryCategory: docs.secondaryCategory || "",
         city: proState,
         operatingState: proState,
         homeAddress: proAddress,
@@ -604,5 +606,209 @@ export async function DELETE(request: Request) {
   } catch (error: any) {
     console.error("[Verification DELETE Error]:", error);
     return NextResponse.json({ error: error.message || "Failed to purge artisan record" }, { status: 500 });
+  }
+}
+
+export async function PUT(request: Request) {
+  try {
+    const body = await request.json();
+    const {
+      proId,
+      userId,
+      email,
+      name,
+      firstName,
+      lastName,
+      phone,
+      idType,
+      idNumber,
+      ninStatus,
+      operatingState,
+      lga,
+      homeAddress,
+      addressStatus,
+      guarantor1,
+      guarantor2,
+      primaryField,
+      secondaryField,
+      skills,
+      quizScore,
+      verificationStatus,
+      verificationNotes,
+    } = body;
+
+    const rawIds = [proId, userId, body.id].filter(Boolean) as string[];
+    const candidateIds = Array.from(
+      new Set(rawIds.flatMap((val: string) => [val, val.replace(/^pro_/, ""), `pro_${val}`]))
+    );
+
+    // 1. Resolve Professional
+    let pro = await prisma.professional.findFirst({
+      where: {
+        OR: [
+          { id: { in: candidateIds } },
+          { userId: { in: candidateIds } },
+          email ? { user: { email: email.trim().toLowerCase() } } : undefined,
+        ].filter(Boolean) as any,
+      },
+      include: { user: true },
+    });
+
+    // 2. Resolve User
+    let user: any = pro?.user || null;
+    if (!user) {
+      user = await prisma.user.findFirst({
+        where: {
+          OR: [
+            { id: { in: candidateIds } },
+            email ? { email: email.trim().toLowerCase() } : undefined,
+          ].filter(Boolean) as any,
+        },
+        include: { professional: true },
+      });
+      if (user?.professional && !pro) {
+        pro = user.professional;
+      }
+    }
+
+    if (!pro && !user) {
+      return NextResponse.json({ error: "Artisan record not found" }, { status: 404 });
+    }
+
+    // 3. Name Parsing
+    let updatedFirstName = firstName;
+    let updatedLastName = lastName;
+    if (name && (!updatedFirstName || !updatedLastName)) {
+      const parts = name.trim().split(" ");
+      updatedFirstName = parts[0] || "Artisan";
+      updatedLastName = parts.slice(1).join(" ") || "Partner";
+    }
+
+    // 4. Parse Existing Documents
+    let docs: any = {};
+    try {
+      if (typeof pro?.documents === "string" && pro.documents.trim()) {
+        let parsed = JSON.parse(pro.documents);
+        if (typeof parsed === "string") parsed = JSON.parse(parsed);
+        docs = parsed || {};
+      } else if (pro?.documents && typeof pro.documents === "object") {
+        docs = pro.documents;
+      }
+    } catch {}
+
+    // Update documents object
+    if (primaryField) docs.serviceCategory = primaryField;
+    if (secondaryField !== undefined) docs.secondaryCategory = secondaryField;
+    if (idType) docs.idType = idType;
+    if (idNumber) docs.idNumber = idNumber;
+    if (operatingState) docs.operatingState = operatingState;
+    if (homeAddress) docs.homeAddress = homeAddress;
+    if (lga) docs.lga = lga;
+    if (guarantor1) docs.guarantor1 = guarantor1;
+    if (guarantor2) docs.guarantor2 = guarantor2;
+    if (quizScore !== undefined) docs.quizScore = Number(quizScore);
+    if (verificationNotes !== undefined) docs.notes = verificationNotes;
+
+    // 5. Build Skills Array
+    let skillsArray: string[] = [];
+    if (Array.isArray(skills)) {
+      skillsArray = skills.map((s) => String(s).trim()).filter(Boolean);
+    } else if (typeof skills === "string" && skills.trim()) {
+      skillsArray = skills.split(/[,;\n]/).map((s) => s.trim()).filter(Boolean);
+    }
+    if (primaryField && !skillsArray.includes(primaryField)) {
+      skillsArray.unshift(primaryField);
+    }
+    if (secondaryField && !skillsArray.includes(secondaryField)) {
+      skillsArray.push(secondaryField);
+    }
+
+    const targetVStatus = (verificationStatus || pro?.verificationStatus || "PENDING").toUpperCase();
+    const isTargetVerified = targetVStatus === "VERIFIED" || targetVStatus === "APPROVED";
+
+    // 6. Update User record
+    const targetUserId = user?.id || pro?.userId;
+    if (targetUserId) {
+      await prisma.user.update({
+        where: { id: targetUserId },
+        data: {
+          firstName: updatedFirstName || user?.firstName,
+          lastName: updatedLastName || user?.lastName,
+          phone: phone || user?.phone,
+          email: email ? email.trim().toLowerCase() : user?.email,
+          role: "PROFESSIONAL",
+          isVerified: isTargetVerified,
+          ninNumber: idNumber || user?.ninNumber,
+          ninStatus: (ninStatus || (isTargetVerified ? "VERIFIED" : user?.ninStatus || "PENDING")).toUpperCase(),
+          permanentAddress: homeAddress || user?.permanentAddress,
+          permanentAddressStatus: (addressStatus || (isTargetVerified ? "VERIFIED" : user?.permanentAddressStatus || "PENDING")).toUpperCase(),
+        },
+      }).catch((e) => console.warn("[Admin Verification PUT User Warn]:", e));
+    }
+
+    // 7. Update Professional record
+    let updatedPro = null;
+    if (pro) {
+      updatedPro = await prisma.professional.update({
+        where: { id: pro.id },
+        data: {
+          verificationStatus: targetVStatus,
+          verificationNotes: verificationNotes !== undefined ? verificationNotes : pro.verificationNotes,
+          isAvailable: isTargetVerified,
+          verifiedAt: isTargetVerified ? (pro.verifiedAt || new Date()) : null,
+          idType: idType || pro.idType,
+          idNumber: idNumber || pro.idNumber,
+          addressVerified: (addressStatus || "").toUpperCase() === "VERIFIED" || isTargetVerified,
+          skills: JSON.stringify(skillsArray.length > 0 ? skillsArray : [primaryField || "General Skilled Services"]),
+          documents: JSON.stringify(docs),
+        },
+      });
+    } else if (targetUserId) {
+      updatedPro = await prisma.professional.create({
+        data: {
+          userId: targetUserId,
+          verificationStatus: targetVStatus,
+          verificationNotes: verificationNotes || "Configured by Admin",
+          isAvailable: isTargetVerified,
+          verifiedAt: isTargetVerified ? new Date() : null,
+          idType: idType || "NIN",
+          idNumber: idNumber || null,
+          addressVerified: (addressStatus || "").toUpperCase() === "VERIFIED" || isTargetVerified,
+          skills: JSON.stringify(skillsArray.length > 0 ? skillsArray : [primaryField || "General Skilled Services"]),
+          documents: JSON.stringify(docs),
+        },
+      });
+    }
+
+    // 8. Create Audit Log
+    try {
+      await prisma.auditLog.create({
+        data: {
+          userId: targetUserId || "ADMIN_ACTION",
+          action: "MANUAL_AUDIT_DOSSIER_CONFIGURE",
+          entity: "Professional",
+          entityId: updatedPro?.id || targetUserId || "UNKNOWN",
+          details: JSON.stringify({
+            artisanName: `${updatedFirstName || ""} ${updatedLastName || ""}`.trim(),
+            primaryField,
+            secondaryField,
+            verificationStatus: targetVStatus,
+            ninStatus,
+            addressStatus,
+            quizScore,
+            verificationNotes,
+          }),
+        },
+      });
+    } catch {}
+
+    return NextResponse.json({
+      success: true,
+      message: `Artisan audit dossier for ${updatedFirstName || "Artisan"} updated successfully!`,
+      pro: updatedPro,
+    });
+  } catch (error: any) {
+    console.error("[Admin Verification PUT Error]:", error);
+    return NextResponse.json({ error: error.message || "Failed to update artisan audit dossier" }, { status: 500 });
   }
 }

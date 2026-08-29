@@ -13,6 +13,7 @@ import { getQuizForCategory, QuizQuestion } from "@/lib/quiz";
 import { getValidMediaUrl } from "@/lib/sample-documents";
 import { optimizeDocumentFile } from "@/lib/image-compression";
 import { useActiveStates } from "@/hooks/useActiveStates";
+import { MASTER_TRADE_CATEGORIES, normalizeTradeSlug, getTradeCategoryLabel } from "@/lib/trade-categories";
 import styles from "../pro.module.css";
 
 const steps = [
@@ -22,24 +23,7 @@ const steps = [
   { id: 4, label: "Trade Skill Assessment", desc: "Technical Competency Quiz" },
 ];
 
-export const PRO_VERIFICATION_CATEGORIES = [
-  { value: "cleaning", label: "Cleaning (Residential, Commercial, Deep Clean, Post-Construction)" },
-  { value: "fumigation", label: "Fumigation & Pest Control (Eco-Safe Residential & Commercial Eradication)" },
-  { value: "upholstery", label: "Upholstery & Carpet Cleaning (Sofa, Mattress, Rug Extraction & Detailing)" },
-  { value: "plumbing", label: "Plumbing (Pipe Repairs, Drainage & Sewage, Water Heaters)" },
-  { value: "electrical", label: "Electrical (Wiring & Rewiring, Sockets, Lighting Installation)" },
-  { value: "hvac", label: "AC & HVAC (Split Unit Installation, Servicing, Gas Refill, Repairs)" },
-  { value: "painting", label: "Painting (Interior, Exterior, Screeding & POP Surface Finish)" },
-  { value: "carpentry", label: "Carpentry (Custom Furniture, Assembly, Cabinets & Woodwork)" },
-  { value: "security", label: "Security & CCTV (CCTV Camera Installation & Surveillance)" },
-  { value: "solar", label: "Solar, Inverter & Generator (Panels, Inverters, Generator Repairs)" },
-  { value: "home-improvement", label: "Home Improvement (Interior Decoration & Home Renovation)" },
-  { value: "outdoor", label: "Gardening (Lawn Care, Landscaping & Plant Maintenance)" },
-  { value: "laundry", label: "Laundry & Garment Care (Washing, Ironing & Dry Cleaning)" },
-  { value: "moving", label: "Moving (Home & Office Relocation Services)" },
-  { value: "general", label: "General Handyman (Odd Jobs, Fittings & Minor Repairs)" },
-  { value: "others", label: "Others (Custom Skillset Request)" },
-];
+export const PRO_VERIFICATION_CATEGORIES = MASTER_TRADE_CATEGORIES;
 
 export const GUARANTOR_ROLE_OPTIONS = [
   "Landlord / Property Owner",
@@ -54,9 +38,7 @@ export const GUARANTOR_ROLE_OPTIONS = [
 ];
 
 const formatCategoryTitle = (cat: string) => {
-  const match = PRO_VERIFICATION_CATEGORIES.find((c) => c.value === cat);
-  if (match) return match.label;
-  return cat ? cat.charAt(0).toUpperCase() + cat.slice(1) : "General Skilled Services";
+  return getTradeCategoryLabel(cat);
 };
 
 export default function ProVerificationPage() {
@@ -68,7 +50,8 @@ export default function ProVerificationPage() {
   const [verifiedUserData, setVerifiedUserData] = useState<any>(null);
 
   // Form State & Category Verification
-  const [category, setCategory] = useState("plumbing");
+  const [category, setCategory] = useState("cleaning");
+  const [secondaryTrade, setSecondaryTrade] = useState("");
   const [initialCategory, setInitialCategory] = useState("");
   const [categoryConfirmed, setCategoryConfirmed] = useState(true);
   const [idType, setIdType] = useState("NIN");
@@ -113,6 +96,7 @@ export default function ProVerificationPage() {
     const draftPayload = {
       step: curStep,
       category: overrides?.category ?? category,
+      secondaryCategory: overrides?.secondaryCategory ?? secondaryTrade,
       idType: overrides?.idType ?? idType,
       idNumber: overrides?.idNumber ?? idNumber,
       operatingState: overrides?.operatingState ?? operatingState,
@@ -158,6 +142,7 @@ export default function ProVerificationPage() {
           currentStep: curStep,
           ...draftPayload,
           serviceCategory: overrides?.category ?? category,
+          secondaryCategory: overrides?.secondaryCategory ?? secondaryTrade,
           guarantor1: overrides?.g1 ?? g1,
           guarantor2: overrides?.g2 ?? g2,
         }),
@@ -192,6 +177,9 @@ export default function ProVerificationPage() {
             if (localDraft.category) {
               setCategory(localDraft.category);
               setInitialCategory(localDraft.category);
+            }
+            if (localDraft.secondaryCategory) {
+              setSecondaryTrade(localDraft.secondaryCategory);
             }
             if (localDraft.idType) setIdType(localDraft.idType);
             if (localDraft.idNumber) setIdNumber(localDraft.idNumber);
@@ -230,14 +218,17 @@ export default function ProVerificationPage() {
             }
             if (data.docs) {
               const docs = data.docs;
-              let registeredSkill = docs.serviceCategory ? docs.serviceCategory.toLowerCase() : "";
+              const registeredSkill = docs.serviceCategory || "";
+              const registeredSecondary = docs.secondaryCategory || "";
+
               if (registeredSkill) {
-                const matchedOption = PRO_VERIFICATION_CATEGORIES
-                  .map((c) => c.value)
-                  .find((opt) => registeredSkill.includes(opt));
-                const finalSlug = matchedOption || (registeredSkill.startsWith("other") ? "others" : "plumbing");
+                const finalSlug = normalizeTradeSlug(registeredSkill);
                 setInitialCategory(finalSlug);
                 if (!localDraft?.category) setCategory(finalSlug);
+              }
+              if (registeredSecondary) {
+                const finalSecSlug = normalizeTradeSlug(registeredSecondary);
+                if (!localDraft?.secondaryCategory) setSecondaryTrade(finalSecSlug);
               }
 
               if (docs.idType && !localDraft?.idType) setIdType(docs.idType);
@@ -565,6 +556,7 @@ export default function ProVerificationPage() {
           idType,
           idNumber,
           serviceCategory: category,
+          secondaryCategory: secondaryTrade || undefined,
           quizScore: finalScore,
           idDocumentUrl: idDocumentUrl || "",
           selfieUrl: selfieUrl || "",
@@ -1414,10 +1406,51 @@ export default function ProVerificationPage() {
                   </div>
                 </div>
 
+                {/* Primary & Secondary Trade Selector */}
+                <div style={{ background: "rgba(15, 23, 42, 0.85)", border: "1px solid var(--border-primary)", borderRadius: "12px", padding: "16px", marginBottom: "20px" }}>
+                  <h4 style={{ margin: "0 0 12px 0", fontSize: "14px", color: "var(--text-primary)", display: "flex", alignItems: "center", gap: 6 }}>
+                    <Award size={16} color="#00A8B5" /> Trade Specialization & Skill Categories
+                  </h4>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px" }}>
+                    <div>
+                      <label className={styles.label}>Primary Trade Specialization <span style={{ color: "#EF4444" }}>*</span></label>
+                      <select
+                        value={category}
+                        onChange={(e) => {
+                          setCategory(e.target.value);
+                          saveDraftState(2, { category: e.target.value });
+                        }}
+                        style={{ width: "100%", background: "var(--bg-secondary)", border: "1px solid var(--border-primary)", borderRadius: "8px", padding: "10px", color: "var(--text-primary)", fontSize: "13px" }}
+                      >
+                        {MASTER_TRADE_CATEGORIES.map((c) => (
+                          <option key={c.value} value={c.value}>{c.label} ({c.description})</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className={styles.label}>Secondary Trade Specialization <span style={{ color: "var(--text-secondary)", fontSize: "11px" }}>(Optional)</span></label>
+                      <select
+                        value={secondaryTrade}
+                        onChange={(e) => {
+                          setSecondaryTrade(e.target.value);
+                          saveDraftState(2, { secondaryCategory: e.target.value });
+                        }}
+                        style={{ width: "100%", background: "var(--bg-secondary)", border: "1px solid var(--border-primary)", borderRadius: "8px", padding: "10px", color: "var(--text-primary)", fontSize: "13px" }}
+                      >
+                        <option value="">-- None / Single Specialization --</option>
+                        {MASTER_TRADE_CATEGORIES.filter((c) => c.value !== category).map((c) => (
+                          <option key={c.value} value={c.value}>{c.label} ({c.description})</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
                 <div className={styles.formGrid}>
                   <div className={styles.uploadArea}>
                     <label className={styles.label}>
-                      Trade Certificate / Master Apprenticeship Document <span style={{ color: "#EF4444" }}>*</span>
+                      Trade Certificate / Master Apprenticeship Document ({formatCategoryTitle(category)}) <span style={{ color: "#EF4444" }}>*</span>
                     </label>
                     <input
                       type="file"
