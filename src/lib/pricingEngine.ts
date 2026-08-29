@@ -275,9 +275,13 @@ export function calculateJobPrice(
     breakdown.push({ label: "Base Service Rate", amountNgn: activeBasePrice });
   } else if (activePricingModel === "SUBSCRIPTION") {
     rawRoomsSubtotalNgn = activeBasePrice;
-    breakdown.push({ label: "Monthly Routine Maintenance Base Plan", amountNgn: activeBasePrice });
+    const isGardening = input.serviceId?.includes("gardening");
+    breakdown.push({
+      label: isGardening ? "Monthly Gardening Maintenance Plan" : "Monthly Routine Maintenance Base Plan",
+      amountNgn: activeBasePrice,
+    });
 
-    if (planMultiplier > 1.0) {
+    if (!isGardening && planMultiplier > 1.0) {
       planAdditionNgn = Math.round(rawRoomsSubtotalNgn * (planMultiplier - 1.0));
       const planPercent = Math.round((planMultiplier - 1.0) * 100);
       breakdown.push({

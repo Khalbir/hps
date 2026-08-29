@@ -498,7 +498,7 @@ export function StepService({ booking, updateBooking, onNext }: StepProps) {
                             : svc.pricingModel === "CUSTOM_QUOTE"
                             ? "FREE INSPECTION & QUOTE"
                             : svc.pricingModel === "SUBSCRIPTION"
-                            ? "MONTHLY SUBSCRIPTION PLAN"
+                            ? svc.unitLabel ? `MONTHLY PLAN (${svc.unitLabel.toUpperCase()})` : "MONTHLY SUBSCRIPTION PLAN"
                             : "FIXED RATE"}
                         </span>
                       </div>

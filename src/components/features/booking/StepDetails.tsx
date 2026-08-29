@@ -49,6 +49,7 @@ export function StepDetails({ booking, updateBooking, onNext, onBack }: StepProp
 
   const isCleaning = booking.serviceCategory === "cleaning";
   const isFumigation = booking.serviceCategory === "fumigation" || (booking.serviceId && booking.serviceId.includes("fumigation"));
+  const isGardening = booking.serviceCategory === "outdoor" || (booking.serviceId && booking.serviceId.includes("gardening"));
   const isUpholstery = booking.serviceCategory === "upholstery" || (booking.serviceId && (booking.serviceId.includes("sofa") || booking.serviceId.includes("mattress") || booking.serviceId.includes("rug") || booking.serviceId.includes("upholstery")));
   const isSubscription = booking.pricingModel === "SUBSCRIPTION";
   const isCustomQuote = booking.pricingModel === "CUSTOM_QUOTE" || booking.serviceId === "commercial-fumigation" || booking.serviceId === "termite-control" || booking.serviceId === "post-construction" || booking.serviceId === "landscaping-tree-felling";
@@ -152,11 +153,11 @@ export function StepDetails({ booking, updateBooking, onNext, onBack }: StepProp
         </div>
       </div>
 
-      {/* Service Plan Tier Selection (Silver, Gold, Platinum) for Subscriptions */}
-      {isSubscription && (
+      {/* Service Plan Tier Selection (Silver, Gold, Platinum) for Housekeeping Subscriptions */}
+      {isSubscription && !isGardening && (
         <div className={styles.fieldGroup}>
           <label className={styles.fieldLabel} style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-            <Sparkles size={16} color="#0EA5E9" /> Subscription Plan Tier
+            <Sparkles size={16} color="#0EA5E9" /> Housekeeping Subscription Plan Tier
           </label>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "12px" }}>
             {(["SILVER", "GOLD", "PLATINUM"] as ServicePlanTier[]).map((tierKey) => {
@@ -209,6 +210,25 @@ export function StepDetails({ booking, updateBooking, onNext, onBack }: StepProp
               );
             })}
           </div>
+        </div>
+      )}
+
+      {/* Gardening Monthly Plan Details Badge */}
+      {isSubscription && isGardening && (
+        <div style={{ background: "rgba(22, 163, 74, 0.08)", border: "1px solid rgba(22, 163, 74, 0.3)", borderRadius: "12px", padding: "16px 18px", marginBottom: "20px" }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
+            <strong style={{ color: "#4ADE80", fontSize: "14px", display: "flex", alignItems: "center", gap: "8px" }}>
+              🌿 {booking.serviceName || "Gardening Routine Maintenance Plan"}
+            </strong>
+            <span style={{ background: "rgba(22, 163, 74, 0.2)", color: "#4ADE80", fontSize: "11px", fontWeight: 800, padding: "3px 10px", borderRadius: "8px", border: "1px solid rgba(22, 163, 74, 0.4)" }}>
+              {booking.serviceId?.includes("once") ? "1 Visit / Month" : "2 Visits / Month (Bi-Weekly)"}
+            </span>
+          </div>
+          <p style={{ color: "var(--text-secondary)", fontSize: "12px", margin: 0, lineHeight: 1.5 }}>
+            {booking.serviceId?.includes("once")
+              ? "Includes monthly lawn mowing, hedge trimming, flowerbed weeding, tree pruning, soil nourishment & complete compound cleanup (1 visit per month)."
+              : "Includes fortnightly (every 2 weeks) lawn grooming, border shaping, weed eradication, soil aerating, tree pruning & full compound groundskeeping (2 visits per month)."}
+          </p>
         </div>
       )}
 

@@ -111,7 +111,11 @@ export function BookingSummary({ booking, currentStep }: Props) {
               <span className={styles.summaryLabel}>Options</span>
               <span className={styles.summaryValue}>
                 {effectivePricingModel === "SUBSCRIPTION"
-                  ? `${SERVICE_PLANS[planTier]?.name || planTier}`
+                  ? booking.serviceId?.includes("gardening")
+                    ? booking.serviceId?.includes("once")
+                      ? "Once a Month Plan (1 Visit/Month)"
+                      : "Twice a Month Plan (2 Visits/Month)"
+                    : `${SERVICE_PLANS[planTier]?.name || planTier}`
                   : isProp
                   ? `${booking.bedrooms || 1} Bed · ${booking.bathrooms || 1} Bath${booking.isFurnished ? " · Furnished" : ""}`
                   : booking.quantity && booking.quantity > 1
