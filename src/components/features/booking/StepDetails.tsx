@@ -51,7 +51,8 @@ export function StepDetails({ booking, updateBooking, onNext, onBack }: StepProp
   const isFumigation = booking.serviceCategory === "fumigation" || (booking.serviceId && booking.serviceId.includes("fumigation"));
   const isUpholstery = booking.serviceCategory === "upholstery" || (booking.serviceId && (booking.serviceId.includes("sofa") || booking.serviceId.includes("mattress") || booking.serviceId.includes("rug") || booking.serviceId.includes("upholstery")));
   const isSubscription = booking.pricingModel === "SUBSCRIPTION";
-  const isPropertyBased = !isSubscription && (isCleaning || isFumigation || booking.pricingModel === "PROPERTY_BASED");
+  const isCustomQuote = booking.pricingModel === "CUSTOM_QUOTE" || booking.serviceId === "commercial-fumigation" || booking.serviceId === "termite-control" || booking.serviceId === "post-construction" || booking.serviceId === "landscaping-tree-felling";
+  const isPropertyBased = !isSubscription && !isCustomQuote && (isCleaning || (isFumigation && booking.serviceId !== "commercial-fumigation") || booking.pricingModel === "PROPERTY_BASED");
   const isQuantityBased = booking.pricingModel === "QUANTITY_BASED" || isUpholstery;
 
   const getComputedPrice = (bedrooms: number, bathrooms: number, qty?: number, plan?: ServicePlanTier) => {
@@ -304,8 +305,8 @@ export function StepDetails({ booking, updateBooking, onNext, onBack }: StepProp
         </div>
       )}
 
-      {/* Fumigation Safety Advisory Notice */}
-      {isFumigation && (
+      {/* Fumigation Safety Advisory Notice (For Standard Residential/Bedbug Fumigation) */}
+      {isFumigation && !isCustomQuote && (
         <div style={{ background: "rgba(16, 185, 129, 0.08)", border: "1px solid rgba(16, 185, 129, 0.3)", borderRadius: "10px", padding: "14px 16px", marginBottom: "16px" }}>
           <strong style={{ color: "#10B981", fontSize: "13px", display: "block", marginBottom: 4 }}>
             🛡️ Certified Fumigation Safety Protocol
@@ -316,12 +317,24 @@ export function StepDetails({ booking, updateBooking, onNext, onBack }: StepProp
         </div>
       )}
 
+      {/* Custom Quote / Physical Inspection Advisory Notice */}
+      {isCustomQuote && (
+        <div style={{ background: "rgba(139, 92, 246, 0.08)", border: "1px solid rgba(139, 92, 246, 0.3)", borderRadius: "10px", padding: "14px 16px", marginBottom: "16px" }}>
+          <strong style={{ color: "#C084FC", fontSize: "13px", display: "block", marginBottom: 4 }}>
+            📋 Free Physical On-Site Inspection & Assessment
+          </strong>
+          <p style={{ color: "var(--text-secondary)", fontSize: "12px", margin: 0, lineHeight: 1.5 }}>
+            A certified HandyHub specialist will visit your facility at your chosen schedule to survey square footage, ductwork, structural zones, and environmental safety conditions. A formal itemized quote will be issued post-inspection.
+          </p>
+        </div>
+      )}
+
       {/* Special Notes */}
       <div className={styles.fieldGroup}>
         <label className={styles.fieldLabel}>Specific Requirements & Pests / Stains (Optional)</label>
         <textarea
           className={styles.textarea}
-          placeholder={isFumigation ? "E.g. High cockroach infestation in kitchen, termite traces in roof, or outdoor compound spraying..." : isUpholstery ? "E.g. Wine/coffee stain on light beige velvet couch, pet odor on master mattress..." : "Any specific instructions or areas of focus..."}
+          placeholder={isFumigation ? "E.g. High cockroach infestation in kitchen, warehouse perimeter treatment, or outdoor compound spraying..." : isUpholstery ? "E.g. Wine/coffee stain on light beige velvet couch, pet odor on master mattress..." : "Any specific instructions or areas of focus..."}
           value={booking.specialNotes}
           onChange={(e) => updateBooking({ specialNotes: e.target.value })}
           rows={3}
@@ -330,15 +343,21 @@ export function StepDetails({ booking, updateBooking, onNext, onBack }: StepProp
 
       {/* Price Preview */}
       <div className={styles.pricePreview}>
-        <span>Estimated Price</span>
-        <span className={styles.pricePreviewAmount}>₦{(booking.totalPrice || booking.servicePrice || 0).toLocaleString()}</span>
+        <span>{isCustomQuote ? "Upfront Inspection Fee" : "Estimated Price"}</span>
+        <span className={styles.pricePreviewAmount} style={{ color: isCustomQuote ? "#C084FC" : undefined }}>
+          {isCustomQuote ? "FREE (On-Site Assessment)" : `₦${(booking.totalPrice || booking.servicePrice || 0).toLocaleString()}`}
+        </span>
       </div>
 
       {/* Actions */}
       <div className={styles.stepActions}>
         <button className="btn btn-secondary btn-lg" onClick={onBack}>Back</button>
-        <button className="btn btn-primary btn-lg" onClick={onNext}>
-          Continue to Schedule
+        <button
+          className="btn btn-primary btn-lg"
+          onClick={onNext}
+          style={{ background: isCustomQuote ? "#8B5CF6" : undefined }}
+        >
+          {isCustomQuote ? "Continue to Schedule Inspection ➔" : "Continue to Schedule ➔"}
         </button>
       </div>
     </div>

@@ -127,9 +127,9 @@ export const SERVICE_CATEGORIES: ServiceCategory[] = [
     keywords: ["fumigation", "fumigate", "pest", "pest control", "insects", "cockroaches", "mosquitoes", "termites", "bedbugs", "bed bug", "rats", "rodents", "bugs", "spraying", "disinfection"],
     services: [
       { id: "residential-fumigation", name: "Residential Fumigation", price: 25000, desc: "Complete home & compound pest eradication", pricingModel: "PROPERTY_BASED" },
-      { id: "commercial-fumigation", name: "Commercial Fumigation", price: 45000, desc: "Offices, warehouses & commercial premises", pricingModel: "QUANTITY_BASED", unitLabel: "per commercial space" },
+      { id: "commercial-fumigation", name: "Commercial Fumigation", price: 0, desc: "Offices, warehouses, plazas, schools & commercial facilities (Free physical site inspection & assessment)", pricingModel: "CUSTOM_QUOTE" },
       { id: "bedbug-eradication", name: "Bedbug Eradication", price: 30000, desc: "Targeted deep heat & residual bedbug elimination", pricingModel: "PROPERTY_BASED" },
-      { id: "termite-control", name: "Anti-Termite Treatment", price: 0, desc: "Comprehensive foundation & woodwork anti-termite barrier", pricingModel: "CUSTOM_QUOTE" },
+      { id: "termite-control", name: "Anti-Termite Treatment", price: 0, desc: "Comprehensive foundation & woodwork anti-termite barrier (Free site inspection & quote)", pricingModel: "CUSTOM_QUOTE" },
     ],
   },
   {

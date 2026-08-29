@@ -710,7 +710,7 @@ export function StepService({ booking, updateBooking, onNext }: StepProps) {
                         boxSizing: "border-box",
                       }}
                     >
-                      {svc.pricingModel === "CUSTOM_QUOTE" ? "Request Free Inspection ➔" : "Select & Continue ➔"}
+                      {svc.pricingModel === "CUSTOM_QUOTE" ? "Request for Inspection ➔" : "Select & Continue ➔"}
                     </button>
                   </div>
                 </div>
