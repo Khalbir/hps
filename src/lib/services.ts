@@ -84,30 +84,6 @@ export const POPULAR_SUGGESTIONS: PopularSuggestion[] = [
 
 export const SERVICE_CATEGORIES: ServiceCategory[] = [
   {
-    id: "subscriptions",
-    name: "Monthly Subscriptions",
-    color: "#0284C7",
-    keywords: ["subscription", "monthly", "routine", "weekly", "housekeeper", "maid", "retainer", "cleanings per week"],
-    services: [
-      {
-        id: "residential-cleaning-monthly",
-        name: "Residential Cleaning (Monthly Subscription)",
-        price: 45000,
-        desc: "Routine recurring housekeeping: Silver (2 days/wk), Gold (3 days/wk), Platinum (6 days/wk)",
-        pricingModel: "SUBSCRIPTION",
-        unitLabel: "per month",
-      },
-      {
-        id: "gardening-monthly",
-        name: "Gardening (Monthly Subscription)",
-        price: 35000,
-        desc: "Routine weekly garden maintenance, lawn care, tree pruning, soil nourishment & groundskeeping",
-        pricingModel: "SUBSCRIPTION",
-        unitLabel: "per month",
-      },
-    ],
-  },
-  {
     id: "cleaning",
     name: "Cleaning",
     color: "#00A8B5",
