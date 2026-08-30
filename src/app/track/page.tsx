@@ -7,9 +7,10 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Search, MapPin, Clock, ShieldCheck, Phone, MessageSquare, CheckCircle2,
   Navigation, AlertTriangle, Key, Star, Car, ArrowRight, UserCheck, Shield, Award, Camera,
-  Wrench, DollarSign, Wallet, CreditCard, ExternalLink, RefreshCw, X
+  Wrench, DollarSign, Wallet, CreditCard, ExternalLink, RefreshCw, X, Copy, Check, MessageCircle
 } from "lucide-react";
 import { RateReviewModal } from "@/components/common/RateReviewModal";
+import { getArtisanContactChannels } from "@/lib/artisan-contact";
 
 function TrackContent() {
   const searchParams = useSearchParams();
@@ -18,6 +19,8 @@ function TrackContent() {
   const [error, setError] = useState("");
   const [booking, setBooking] = useState<any>(null);
   const [reviewModalOpen, setReviewModalOpen] = useState(false);
+  const [contactModalOpen, setContactModalOpen] = useState(false);
+  const [copiedMessage, setCopiedMessage] = useState(false);
   const [previewPhotoUrl, setPreviewPhotoUrl] = useState<string | null>(null);
   const [brokenImages, setBrokenImages] = useState<Record<string, boolean>>({});
 
@@ -546,34 +549,68 @@ function TrackContent() {
                   </div>
 
                   {/* Direct Contact & Rating Buttons */}
-                  <div style={{ display: "flex", gap: "var(--space-3)", flexWrap: "wrap" }}>
-                    <button
-                      type="button"
-                      onClick={() => setReviewModalOpen(true)}
-                      className="btn btn-secondary btn-md"
-                      style={{ color: "#F59E0B", borderColor: "rgba(245,158,11,0.5)", display: "inline-flex", alignItems: "center", gap: 6 }}
-                      title="Rate & Review Artisan"
-                    >
-                      <Star size={16} fill="#F59E0B" /> Rate Artisan
-                    </button>
-                    <a
-                      href={`tel:${booking.artisan.phone}`}
-                      className="btn btn-primary btn-md"
-                      title="Call Professional"
-                    >
-                      <Phone size={16} /> Call Artisan
-                    </a>
-                    <a
-                      href={`https://wa.me/2348122222936?text=Hello%20${encodeURIComponent(booking.artisan.name)},%20inquiring%20about%20booking%20${booking.id}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="btn btn-secondary btn-md"
-                      style={{ color: "#25D366", borderColor: "rgba(37,211,102,0.4)" }}
-                      title="WhatsApp Artisan"
-                    >
-                      <MessageSquare size={16} /> WhatsApp
-                    </a>
-                  </div>
+                  {(() => {
+                    const channels = getArtisanContactChannels(booking.artisan, booking);
+                    const handleWhatsAppAction = (e: React.MouseEvent) => {
+                      e.preventDefault();
+                      window.open(channels.whatsappUrl, "_blank", "noopener,noreferrer");
+                      setContactModalOpen(true);
+                    };
+
+                    return (
+                      <div style={{ display: "flex", gap: "var(--space-3)", flexWrap: "wrap", alignItems: "center" }}>
+                        <button
+                          type="button"
+                          onClick={() => setReviewModalOpen(true)}
+                          className="btn btn-secondary btn-md"
+                          style={{ color: "#F59E0B", borderColor: "rgba(245,158,11,0.5)", display: "inline-flex", alignItems: "center", gap: 6 }}
+                          title="Rate & Review Artisan"
+                        >
+                          <Star size={16} fill="#F59E0B" /> Rate Artisan
+                        </button>
+                        <a
+                          href={channels.callUrl}
+                          className="btn btn-primary btn-md"
+                          title={`Call ${channels.artisanName} (${channels.displayNumber})`}
+                          style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
+                        >
+                          <Phone size={16} /> Call Artisan
+                        </a>
+                        <button
+                          type="button"
+                          onClick={handleWhatsAppAction}
+                          className="btn btn-secondary btn-md"
+                          style={{
+                            color: "#25D366",
+                            borderColor: "rgba(37,211,102,0.4)",
+                            background: "rgba(37,211,102,0.08)",
+                            fontWeight: 700,
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: 6,
+                            cursor: "pointer",
+                          }}
+                          title={`Chat with ${channels.artisanName} on WhatsApp (${channels.whatsappNumber})`}
+                        >
+                          <MessageSquare size={16} color="#25D366" /> WhatsApp
+                        </button>
+                        <a
+                          href={channels.smsUrl}
+                          className="btn btn-secondary btn-md"
+                          style={{
+                            color: "#38BDF8",
+                            borderColor: "rgba(56,189,248,0.4)",
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: 6,
+                          }}
+                          title="Send SMS text message with pre-written text"
+                        >
+                          <MessageCircle size={16} /> SMS Text
+                        </a>
+                      </div>
+                    );
+                  })()}
                 </div>
 
                 <div style={{ padding: "var(--space-3) var(--space-4)", background: "var(--bg-tertiary)", borderRadius: "var(--radius-lg)", fontSize: "var(--fs-xs)", color: "var(--text-secondary)", display: "flex", alignItems: "center", gap: 8 }}>
@@ -759,6 +796,288 @@ function TrackContent() {
           onReviewSubmitted={() => fetchBookingTrack(query)}
         />
       )}
+
+      {/* Artisan Direct Contact & Fallback Hub Modal */}
+      {contactModalOpen && booking?.artisan && (() => {
+        const channels = getArtisanContactChannels(booking.artisan, booking);
+
+        const handleCopy = () => {
+          navigator.clipboard.writeText(channels.prewrittenMessage);
+          setCopiedMessage(true);
+          setTimeout(() => setCopiedMessage(false), 2500);
+        };
+
+        return (
+          <div
+            style={{
+              position: "fixed",
+              inset: 0,
+              zIndex: 9999,
+              background: "rgba(0, 0, 0, 0.85)",
+              backdropFilter: "blur(8px)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              padding: 16,
+            }}
+            onClick={() => setContactModalOpen(false)}
+          >
+            <div
+              style={{
+                background: "var(--bg-elevated)",
+                borderRadius: 20,
+                border: "1.5px solid rgba(37, 211, 102, 0.4)",
+                padding: "24px 28px",
+                maxWidth: 540,
+                width: "100%",
+                boxShadow: "0 24px 48px rgba(0,0,0,0.6)",
+                color: "var(--text-primary)",
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Modal Header */}
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <div style={{
+                    width: 38,
+                    height: 38,
+                    borderRadius: "50%",
+                    background: "rgba(37, 211, 102, 0.15)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}>
+                    <MessageSquare size={20} color="#25D366" />
+                  </div>
+                  <div>
+                    <h3 className="h4" style={{ margin: 0, fontSize: "17px", fontWeight: 800 }}>
+                      Contact Assigned Artisan
+                    </h3>
+                    <span style={{ fontSize: "12px", color: "var(--text-secondary)" }}>
+                      Direct communication channel for {channels.artisanName}
+                    </span>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setContactModalOpen(false)}
+                  style={{
+                    background: "var(--bg-tertiary)",
+                    border: "none",
+                    borderRadius: "50%",
+                    width: 32,
+                    height: 32,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    color: "var(--text-secondary)",
+                    cursor: "pointer",
+                  }}
+                >
+                  <X size={16} />
+                </button>
+              </div>
+
+              {/* Artisan Profile Snapshot */}
+              <div style={{
+                background: "var(--bg-tertiary)",
+                border: "1px solid var(--border-primary)",
+                borderRadius: 14,
+                padding: "14px 16px",
+                marginBottom: 16,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                flexWrap: "wrap",
+                gap: 10,
+              }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                  {booking.artisan.avatar ? (
+                    <img
+                      src={booking.artisan.avatar}
+                      alt={channels.artisanName}
+                      style={{ width: 44, height: 44, borderRadius: "50%", objectFit: "cover", border: "2px solid #10B981" }}
+                    />
+                  ) : (
+                    <div style={{
+                      width: 44,
+                      height: 44,
+                      borderRadius: "50%",
+                      background: "linear-gradient(135deg, #0EA5E9, #8B5CF6)",
+                      color: "#FFFFFF",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontWeight: "bold",
+                      fontSize: "16px",
+                    }}>
+                      {channels.artisanName.substring(0, 2).toUpperCase()}
+                    </div>
+                  )}
+                  <div>
+                    <strong style={{ fontSize: "14px", display: "block", color: "var(--text-primary)" }}>
+                      {channels.artisanName}
+                    </strong>
+                    <span style={{ fontSize: "12px", color: "#38BDF8", fontFamily: "monospace" }}>
+                      📞 {channels.displayNumber}
+                    </span>
+                  </div>
+                </div>
+                <span style={{
+                  padding: "4px 10px",
+                  background: "rgba(16,185,129,0.15)",
+                  color: "#10B981",
+                  borderRadius: 99,
+                  fontSize: "11px",
+                  fontWeight: 700,
+                }}>
+                  VERIFIED PRO
+                </span>
+              </div>
+
+              {/* Pre-written Message Box */}
+              <div style={{ marginBottom: 18 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+                  <label style={{ fontSize: "12px", fontWeight: 700, color: "var(--text-secondary)" }}>
+                    Pre-written Message for Artisan:
+                  </label>
+                  <button
+                    type="button"
+                    onClick={handleCopy}
+                    style={{
+                      background: "none",
+                      border: "none",
+                      color: copiedMessage ? "#10B981" : "#38BDF8",
+                      fontSize: "12px",
+                      fontWeight: 600,
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 4,
+                      cursor: "pointer",
+                    }}
+                  >
+                    {copiedMessage ? <Check size={14} /> : <Copy size={14} />}
+                    {copiedMessage ? "Copied!" : "Copy Text"}
+                  </button>
+                </div>
+                <div style={{
+                  background: "rgba(15, 23, 42, 0.8)",
+                  border: "1px solid rgba(255, 255, 255, 0.1)",
+                  borderRadius: 10,
+                  padding: "12px 14px",
+                  fontSize: "13px",
+                  color: "#E2E8F0",
+                  lineHeight: 1.5,
+                  fontFamily: "sans-serif",
+                }}>
+                  "{channels.prewrittenMessage}"
+                </div>
+              </div>
+
+              {/* Direct Channels & Fallback Options */}
+              <div style={{ marginBottom: 14 }}>
+                <span style={{ fontSize: "12px", fontWeight: 700, color: "var(--text-secondary)", display: "block", marginBottom: 10 }}>
+                  Artisan not registered on WhatsApp or unreachable? Try these direct fallback channels:
+                </span>
+
+                <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 10 }}>
+                  {/* WhatsApp Primary */}
+                  <a
+                    href={channels.whatsappUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="btn btn-secondary btn-md"
+                    style={{
+                      width: "100%",
+                      justifyContent: "center",
+                      background: "rgba(37, 211, 102, 0.15)",
+                      borderColor: "#25D366",
+                      color: "#25D366",
+                      fontWeight: 700,
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 8,
+                    }}
+                  >
+                    <MessageSquare size={16} color="#25D366" /> Open WhatsApp Chat ({channels.whatsappNumber})
+                  </a>
+
+                  {/* SMS Text Fallback */}
+                  <a
+                    href={channels.smsUrl}
+                    className="btn btn-secondary btn-md"
+                    style={{
+                      width: "100%",
+                      justifyContent: "center",
+                      background: "rgba(56, 189, 248, 0.12)",
+                      borderColor: "#38BDF8",
+                      color: "#38BDF8",
+                      fontWeight: 700,
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 8,
+                    }}
+                  >
+                    <MessageCircle size={16} /> Send SMS Text Message (Pre-written Text Included)
+                  </a>
+
+                  {/* Direct Phone Call Fallback */}
+                  <a
+                    href={channels.callUrl}
+                    className="btn btn-primary btn-md"
+                    style={{
+                      width: "100%",
+                      justifyContent: "center",
+                      fontWeight: 700,
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 8,
+                    }}
+                  >
+                    <Phone size={16} /> Direct Voice Call ({channels.displayNumber})
+                  </a>
+
+                  {/* Platform Concierge Support Hotline */}
+                  <a
+                    href={channels.conciergeUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{
+                      marginTop: 4,
+                      padding: "8px 12px",
+                      borderRadius: 8,
+                      background: "transparent",
+                      border: "1px dashed var(--border-primary)",
+                      color: "var(--text-secondary)",
+                      fontSize: "12px",
+                      textAlign: "center",
+                      textDecoration: "none",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: 6,
+                    }}
+                  >
+                    <ShieldCheck size={14} color="#10B981" /> Need Help? Escalate to HandyHub 24/7 Priority Support
+                  </a>
+                </div>
+              </div>
+
+              {/* Close Button */}
+              <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 16 }}>
+                <button
+                  type="button"
+                  onClick={() => setContactModalOpen(false)}
+                  className="btn btn-secondary btn-sm"
+                  style={{ width: "100%" }}
+                >
+                  Close Communication Hub
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Replacement Part Authorization & Rejection Modal */}
       {partModalOpen && selectedPart && (
