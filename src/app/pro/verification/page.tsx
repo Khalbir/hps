@@ -7,7 +7,7 @@ import {
   ShieldCheck, User, UploadCloud, CheckCircle, AlertTriangle,
   ArrowRight, ArrowLeft, FileText, Camera, Users, Award, Sparkles,
   HelpCircle, Check, X, ShieldAlert, Loader2, Image as ImageIcon,
-  CheckCircle2, RefreshCw
+  CheckCircle2, RefreshCw, RotateCcw
 } from "lucide-react";
 import { getQuizForCategory, QuizQuestion } from "@/lib/quiz";
 import { getValidMediaUrl } from "@/lib/sample-documents";
@@ -74,9 +74,14 @@ export default function ProVerificationPage() {
   const [showCameraModal, setShowCameraModal] = useState(false);
   const [cameraStream, setCameraStream] = useState<MediaStream | null>(null);
   const [cameraError, setCameraError] = useState("");
+  const [cameraFacingMode, setCameraFacingMode] = useState<"user" | "environment">("user");
+  const [capturedPhotoPreview, setCapturedPhotoPreview] = useState<string | null>(null);
+  const [capturedBlob, setCapturedBlob] = useState<Blob | null>(null);
+  const [isCameraStarting, setIsCameraStarting] = useState(false);
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const gallerySelfieInputRef = useRef<HTMLInputElement>(null);
 
   // Address Verification States
   const { activeStates } = useActiveStates();
@@ -268,41 +273,59 @@ export default function ProVerificationPage() {
     useRef<HTMLInputElement>(null),
   ];
 
-  // Request Native Device Camera Authorization with multi-level fallback
-  const startLiveFacialCamera = async () => {
+  // Request Native Device Camera Authorization with multi-level resilient fallback
+  const startLiveFacialCamera = async (overrideFacingMode?: "user" | "environment") => {
+    const targetFacing = overrideFacingMode || cameraFacingMode;
     setShowCameraModal(true);
     setCameraError("");
+    setCapturedPhotoPreview(null);
+    setCapturedBlob(null);
+    setIsCameraStarting(true);
+
+    // Cleanly stop any existing stream
+    if (cameraStream) {
+      cameraStream.getTracks().forEach((track) => track.stop());
+      setCameraStream(null);
+    }
 
     try {
       let stream: MediaStream | null = null;
 
-      // 1. Try standard getUserMedia with front-facing camera
+      // 1. Try standard navigator.mediaDevices.getUserMedia with fallback chain
       if (typeof navigator !== "undefined" && navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
         try {
           stream = await navigator.mediaDevices.getUserMedia({
             video: {
-              facingMode: "user",
-              width: { ideal: 1280 },
-              height: { ideal: 720 },
+              facingMode: targetFacing,
+              width: { ideal: 1280, min: 640 },
+              height: { ideal: 720, min: 480 },
             },
             audio: false,
           });
         } catch (e1) {
-          console.warn("Front-facing HD constraint failed, trying basic facingMode: user...", e1);
+          console.warn("Front-facing HD constraint failed, trying basic facingMode...", e1);
           try {
             stream = await navigator.mediaDevices.getUserMedia({
-              video: { facingMode: "user" },
+              video: { facingMode: targetFacing },
               audio: false,
             });
           } catch (e2) {
-            console.warn("facingMode user failed, trying generic video: true...", e2);
+            console.warn("Target facingMode failed, trying ideal constraint...", e2);
             try {
               stream = await navigator.mediaDevices.getUserMedia({
-                video: true,
+                video: { facingMode: { ideal: targetFacing } },
                 audio: false,
               });
             } catch (e3) {
-              console.warn("Generic video: true failed:", e3);
+              console.warn("Ideal facingMode failed, trying generic video: true...", e3);
+              try {
+                stream = await navigator.mediaDevices.getUserMedia({
+                  video: true,
+                  audio: false,
+                });
+              } catch (e4) {
+                console.warn("Generic video: true failed:", e4);
+              }
             }
           }
         }
@@ -326,6 +349,16 @@ export default function ProVerificationPage() {
       if (stream) {
         setCameraStream(stream);
         setCameraError("");
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+          videoRef.current.setAttribute("playsinline", "true");
+          videoRef.current.muted = true;
+          try {
+            await videoRef.current.play();
+          } catch (playErr) {
+            console.warn("Video play error (non-fatal):", playErr);
+          }
+        }
       } else {
         throw new Error("Unable to establish camera video stream.");
       }
@@ -334,25 +367,51 @@ export default function ProVerificationPage() {
       const isPermissionDenied =
         err?.name === "NotAllowedError" ||
         err?.name === "PermissionDeniedError" ||
-        err?.message?.includes("Permission") ||
-        err?.message?.includes("denied");
+        err?.message?.toLowerCase().includes("permission") ||
+        err?.message?.toLowerCase().includes("denied");
+
+      const isNotFound =
+        err?.name === "NotFoundError" ||
+        err?.name === "DevicesNotFoundError";
+
+      const isNotReadable =
+        err?.name === "NotReadableError" ||
+        err?.name === "TrackStartError";
 
       if (isPermissionDenied) {
         setCameraError(
           "Camera access was blocked by your browser. Please allow camera permissions in your browser URL bar (or site settings), then click 'Grant / Retry Camera', or tap 'Open Device Camera App' below."
+        );
+      } else if (isNotFound) {
+        setCameraError(
+          "No camera hardware was detected on this device. You can snap a photo with your device camera or select a photo from your gallery."
+        );
+      } else if (isNotReadable) {
+        setCameraError(
+          "Your camera is in use by another application. Please close other camera apps, then click 'Grant / Retry Camera', or tap 'Open Device Camera App' below."
         );
       } else {
         setCameraError(
           "Camera device is initializing or unavailable. Please click 'Grant / Retry Camera' to request browser permission, or tap 'Open Device Camera App' to snap your photo directly."
         );
       }
+    } finally {
+      setIsCameraStarting(false);
     }
   };
 
-  // Bind camera stream to video element when modal is mounted
+  const toggleCameraFacingMode = () => {
+    const nextMode = cameraFacingMode === "user" ? "environment" : "user";
+    setCameraFacingMode(nextMode);
+    startLiveFacialCamera(nextMode);
+  };
+
+  // Bind camera stream to video element when modal is mounted or stream updates
   useEffect(() => {
     if (showCameraModal && cameraStream && videoRef.current) {
       videoRef.current.srcObject = cameraStream;
+      videoRef.current.setAttribute("playsinline", "true");
+      videoRef.current.muted = true;
       videoRef.current.play().catch((playErr) => {
         console.warn("Video autoPlay warning:", playErr);
       });
@@ -364,6 +423,8 @@ export default function ProVerificationPage() {
       cameraStream.getTracks().forEach((track) => track.stop());
       setCameraStream(null);
     }
+    setCapturedPhotoPreview(null);
+    setCapturedBlob(null);
     setShowCameraModal(false);
   };
 
@@ -373,35 +434,68 @@ export default function ProVerificationPage() {
     const video = videoRef.current;
     const canvas = canvasRef.current;
 
-    canvas.width = video.videoWidth || 640;
-    canvas.height = video.videoHeight || 480;
+    const width = video.videoWidth || 640;
+    const height = video.videoHeight || 480;
+
+    canvas.width = width;
+    canvas.height = height;
 
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    // If front camera, mirror image so photo matches the natural selfie viewfinder
+    if (cameraFacingMode === "user") {
+      ctx.save();
+      ctx.translate(width, 0);
+      ctx.scale(-1, 1);
+      ctx.drawImage(video, 0, 0, width, height);
+      ctx.restore();
+    } else {
+      ctx.drawImage(video, 0, 0, width, height);
+    }
 
-    // Stop camera tracks cleanly
+    const previewDataUrl = canvas.toDataURL("image/jpeg", 0.9);
+    setCapturedPhotoPreview(previewDataUrl);
+
+    canvas.toBlob((blob) => {
+      if (blob) {
+        setCapturedBlob(blob);
+      }
+    }, "image/jpeg", 0.85);
+  };
+
+  const retakePhoto = () => {
+    setCapturedPhotoPreview(null);
+    setCapturedBlob(null);
+    if (!cameraStream) {
+      startLiveFacialCamera(cameraFacingMode);
+    }
+  };
+
+  const confirmAndUploadCapturedPhoto = async () => {
+    if (!capturedBlob) return;
+
+    const file = new File([capturedBlob], `facial_verification_${Date.now()}.jpg`, { type: "image/jpeg" });
+    
+    // Stop live stream
     if (cameraStream) {
       cameraStream.getTracks().forEach((track) => track.stop());
       setCameraStream(null);
     }
     setShowCameraModal(false);
+    setSelfieUploading(true);
 
-    canvas.toBlob(async (blob) => {
-      if (!blob) return;
-      const file = new File([blob], `facial_verification_${Date.now()}.jpg`, { type: "image/jpeg" });
-      setSelfieUploading(true);
-      try {
-        const url = await uploadToSupabase(file, "selfies");
-        setSelfieUrl(url);
-        saveDraftState(1, { selfieUrl: url });
-      } catch (err: any) {
-        alert(err.message || "Failed to upload facial photo");
-      } finally {
-        setSelfieUploading(false);
-      }
-    }, "image/jpeg", 0.82);
+    try {
+      const url = await uploadToSupabase(file, "selfies");
+      setSelfieUrl(url);
+      saveDraftState(1, { selfieUrl: url });
+    } catch (err: any) {
+      alert(err.message || "Failed to upload facial photo");
+    } finally {
+      setSelfieUploading(false);
+      setCapturedPhotoPreview(null);
+      setCapturedBlob(null);
+    }
   };
 
   // Helper Supabase File Upload Function with In-Browser Auto-Compression
@@ -1272,52 +1366,146 @@ export default function ProVerificationPage() {
                         }
                       }}
                     />
-                    <div style={{ display: "flex", flexDirection: "column", gap: 4, width: "100%" }}>
-                      <div
-                        className={`${styles.uploadBox} ${selfieUrl ? styles.uploadBoxDone : ""}`}
-                        onClick={startLiveFacialCamera}
-                        style={{ cursor: "pointer", position: "relative" }}
-                      >
-                        {selfieUploading ? (
-                          <>
-                            <Loader2 size={24} className="animate-spin" color="#0EA5E9" />
-                            <span>Uploading Facial Verification...</span>
-                          </>
-                        ) : selfieUrl ? (
-                          <>
-                            <CheckCircle size={24} color="#10B981" />
-                            <span style={{ color: "#10B981" }}>✓ Live Facial Verification Complete</span>
-                          </>
-                        ) : (
-                          <>
-                            <Camera size={24} />
-                            <span>Take Live Facial Verification Photo <span style={{ color: "#EF4444" }}>*</span></span>
-                          </>
-                        )}
-                      </div>
 
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingLeft: 4 }}>
-                        <span style={{ fontSize: "11px", color: "#94A3B8" }}>
-                          📷 Live Camera / Photo • Auto-optimized
-                        </span>
-                        {!selfieUrl && (
-                          <button
-                            type="button"
-                            onClick={() => selfieInputRef.current?.click()}
-                            style={{
-                              background: "none",
-                              border: "none",
-                              color: "#38BDF8",
-                              fontSize: "11px",
-                              cursor: "pointer",
-                              textDecoration: "underline",
-                              padding: "0 4px",
-                            }}
-                          >
-                            Snap with Device Camera
-                          </button>
-                        )}
-                      </div>
+                    {/* Secondary Gallery File Input Fallback */}
+                    <input
+                      type="file"
+                      ref={gallerySelfieInputRef}
+                      style={{ display: "none" }}
+                      accept="image/*"
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        setSelfieUploading(true);
+                        try {
+                          const url = await uploadToSupabase(file, "selfies");
+                          setSelfieUrl(url);
+                          saveDraftState(1, { selfieUrl: url });
+                        } catch (err: any) {
+                          alert(err.message || "Failed to upload selfie photo");
+                        } finally {
+                          setSelfieUploading(false);
+                        }
+                      }}
+                    />
+
+                    <div style={{ display: "flex", flexDirection: "column", gap: 6, width: "100%" }}>
+                      {selfieUrl ? (
+                        <div
+                          style={{
+                            background: "rgba(16, 185, 129, 0.08)",
+                            border: "1.5px solid #10B981",
+                            borderRadius: "14px",
+                            padding: "12px 16px",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "space-between",
+                            flexWrap: "wrap",
+                            gap: "12px",
+                          }}
+                        >
+                          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                            <img
+                              src={selfieUrl}
+                              alt="Live Facial Selfie"
+                              style={{
+                                width: 50,
+                                height: 50,
+                                borderRadius: "50%",
+                                objectFit: "cover",
+                                border: "2px solid #10B981",
+                                boxShadow: "0 2px 8px rgba(16, 185, 129, 0.3)",
+                              }}
+                            />
+                            <div>
+                              <span style={{ fontSize: "13px", fontWeight: 700, color: "#10B981", display: "flex", alignItems: "center", gap: 5 }}>
+                                <CheckCircle size={16} /> Live Facial Biometric Captured
+                              </span>
+                              <span style={{ fontSize: "11px", color: "#94A3B8", display: "block", marginTop: 2 }}>
+                                Verified & encrypted for compliance audit
+                              </span>
+                            </div>
+                          </div>
+                          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                            <button
+                              type="button"
+                              onClick={() => startLiveFacialCamera()}
+                              className="btn btn-secondary btn-xs"
+                              style={{ padding: "6px 12px", fontSize: "11.5px", fontWeight: 700, borderColor: "rgba(14,165,233,0.4)", color: "#38BDF8" }}
+                            >
+                              <Camera size={13} /> Retake Live Photo
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => selfieInputRef.current?.click()}
+                              className="btn btn-secondary btn-xs"
+                              style={{ padding: "6px 12px", fontSize: "11.5px", fontWeight: 700 }}
+                            >
+                              📱 Use Camera App
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div
+                          className={styles.uploadBox}
+                          onClick={() => startLiveFacialCamera()}
+                          style={{ cursor: "pointer", position: "relative" }}
+                        >
+                          {selfieUploading ? (
+                            <>
+                              <Loader2 size={24} className="animate-spin" color="#0EA5E9" />
+                              <span>Uploading Facial Verification...</span>
+                            </>
+                          ) : (
+                            <>
+                              <Camera size={24} />
+                              <span>Take Live Facial Verification Photo <span style={{ color: "#EF4444" }}>*</span></span>
+                            </>
+                          )}
+                        </div>
+                      )}
+
+                      {!selfieUrl && (
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingLeft: 4, flexWrap: "wrap", gap: 8 }}>
+                          <span style={{ fontSize: "11px", color: "#94A3B8" }}>
+                            📷 Live Camera / Photo • Auto-optimized
+                          </span>
+                          <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+                            <button
+                              type="button"
+                              onClick={() => selfieInputRef.current?.click()}
+                              style={{
+                                background: "none",
+                                border: "none",
+                                color: "#38BDF8",
+                                fontSize: "11px",
+                                cursor: "pointer",
+                                textDecoration: "underline",
+                                padding: "0 2px",
+                                fontWeight: 600,
+                              }}
+                            >
+                              📱 Open Phone Camera App
+                            </button>
+                            <span style={{ color: "#475569", fontSize: "11px" }}>•</span>
+                            <button
+                              type="button"
+                              onClick={() => gallerySelfieInputRef.current?.click()}
+                              style={{
+                                background: "none",
+                                border: "none",
+                                color: "#94A3B8",
+                                fontSize: "11px",
+                                cursor: "pointer",
+                                textDecoration: "underline",
+                                padding: "0 2px",
+                              }}
+                            >
+                              📁 Choose from Gallery
+                            </button>
+                          </div>
+                        </div>
+                      )}
                     </div>
 
                     {/* Proof of Address File Upload */}
@@ -1977,8 +2165,8 @@ export default function ProVerificationPage() {
             position: "fixed",
             inset: 0,
             zIndex: 9999,
-            background: "rgba(9, 13, 22, 0.92)",
-            backdropFilter: "blur(12px)",
+            background: "rgba(9, 13, 22, 0.94)",
+            backdropFilter: "blur(14px)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -1995,7 +2183,7 @@ export default function ProVerificationPage() {
               borderRadius: "var(--radius-2xl)",
               overflow: "hidden",
               textAlign: "center",
-              boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.7)",
+              boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.85)",
             }}
           >
             {/* Modal Header */}
@@ -2006,27 +2194,63 @@ export default function ProVerificationPage() {
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "space-between",
-                background: "rgba(15,23,42,0.8)",
+                background: "rgba(15,23,42,0.9)",
               }}
             >
               <div style={{ display: "flex", alignItems: "center", gap: 8, color: "#0EA5E9", fontWeight: "bold", fontSize: "14px" }}>
                 <Camera size={18} /> Live Facial Verification
               </div>
-              <button
-                onClick={stopCamera}
-                style={{ background: "transparent", border: "none", color: "white", cursor: "pointer" }}
-              >
-                <X size={20} />
-              </button>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                {!capturedPhotoPreview && !cameraError && (
+                  <button
+                    type="button"
+                    onClick={toggleCameraFacingMode}
+                    title="Switch between front and rear camera"
+                    style={{
+                      background: "rgba(14, 165, 233, 0.12)",
+                      border: "1px solid rgba(14, 165, 233, 0.3)",
+                      color: "#38BDF8",
+                      borderRadius: "8px",
+                      padding: "5px 10px",
+                      fontSize: "11px",
+                      fontWeight: 700,
+                      cursor: "pointer",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 4,
+                    }}
+                  >
+                    <RefreshCw size={12} /> {cameraFacingMode === "user" ? "Front" : "Rear"} Camera
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={stopCamera}
+                  style={{ background: "transparent", border: "none", color: "white", cursor: "pointer", padding: "4px" }}
+                  aria-label="Close Camera"
+                >
+                  <X size={20} />
+                </button>
+              </div>
             </div>
 
             {/* Viewfinder Body */}
             <div style={{ padding: 20, position: "relative" }}>
-              {cameraError ? (
+              {isCameraStarting ? (
+                <div style={{ padding: "48px 16px", textAlign: "center" }}>
+                  <Loader2 size={40} className="animate-spin" color="#0EA5E9" style={{ margin: "0 auto 16px" }} />
+                  <h4 style={{ color: "#F8FAFC", fontSize: "15px", fontWeight: 700, margin: "0 0 6px" }}>
+                    Connecting to Camera...
+                  </h4>
+                  <p style={{ fontSize: "12px", color: "#94A3B8", margin: 0 }}>
+                    Please allow browser camera permissions if prompted.
+                  </p>
+                </div>
+              ) : cameraError ? (
                 <div style={{ padding: "24px 16px", textAlign: "center" }}>
                   <AlertTriangle size={44} color="#EF4444" style={{ margin: "0 auto 12px" }} />
                   <h4 style={{ color: "#F8FAFC", fontSize: "16px", fontWeight: 700, margin: "0 0 8px" }}>
-                    Camera Access Required
+                    Camera Access Notice
                   </h4>
                   <p style={{ fontSize: "13px", color: "#94A3B8", marginBottom: 20, lineHeight: 1.5 }}>
                     {cameraError}
@@ -2035,7 +2259,7 @@ export default function ProVerificationPage() {
                     <button
                       type="button"
                       className="btn btn-primary btn-md"
-                      onClick={startLiveFacialCamera}
+                      onClick={() => startLiveFacialCamera()}
                       style={{ background: "#0EA5E9", fontWeight: 700 }}
                     >
                       <RefreshCw size={16} /> Grant / Retry Camera Access
@@ -2049,11 +2273,93 @@ export default function ProVerificationPage() {
                       }}
                       style={{ background: "rgba(255,255,255,0.1)", color: "#FFFFFF", fontWeight: 700 }}
                     >
-                      <Camera size={16} /> Open Device Camera App
+                      📱 Open Device Camera App
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn-secondary btn-md"
+                      onClick={() => {
+                        stopCamera();
+                        gallerySelfieInputRef.current?.click();
+                      }}
+                      style={{ background: "rgba(255,255,255,0.06)", color: "#94A3B8" }}
+                    >
+                      📁 Upload from Gallery
                     </button>
                   </div>
                 </div>
+              ) : capturedPhotoPreview ? (
+                /* Snapshot Review / Confirmation State */
+                <>
+                  <div
+                    style={{
+                      position: "relative",
+                      width: "100%",
+                      height: 300,
+                      borderRadius: "var(--radius-xl)",
+                      overflow: "hidden",
+                      background: "#000",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    <img
+                      src={capturedPhotoPreview}
+                      alt="Captured Facial Snapshot"
+                      style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                    />
+                    <div
+                      style={{
+                        position: "absolute",
+                        top: 12,
+                        right: 12,
+                        background: "rgba(16, 185, 129, 0.9)",
+                        color: "#FFFFFF",
+                        fontSize: "11px",
+                        fontWeight: 700,
+                        padding: "3px 10px",
+                        borderRadius: 99,
+                        boxShadow: "0 2px 6px rgba(0,0,0,0.4)",
+                      }}
+                    >
+                      ✓ Photo Captured
+                    </div>
+                  </div>
+
+                  <p style={{ fontSize: "12px", color: "rgba(255,255,255,0.8)", margin: "14px 0 16px" }}>
+                    Ensure your face is clear, unobstructed, and well-lit before confirming.
+                  </p>
+
+                  <div style={{ display: "flex", gap: 10, justifyContent: "center", flexWrap: "wrap" }}>
+                    <button
+                      type="button"
+                      className="btn btn-secondary btn-md"
+                      onClick={retakePhoto}
+                      disabled={selfieUploading}
+                      style={{ fontWeight: 700 }}
+                    >
+                      <RotateCcw size={16} /> Retake Photo
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn-primary btn-lg"
+                      onClick={confirmAndUploadCapturedPhoto}
+                      disabled={selfieUploading}
+                      style={{ background: "#10B981", minWidth: 170, fontWeight: 700 }}
+                    >
+                      {selfieUploading ? (
+                        <>
+                          <Loader2 size={16} className="animate-spin" /> Uploading...
+                        </>
+                      ) : (
+                        "✓ Confirm & Use Photo"
+                      )}
+                    </button>
+                  </div>
+                </>
               ) : (
+                /* Active Live Camera Stream */
                 <>
                   <div
                     style={{
@@ -2073,7 +2379,12 @@ export default function ProVerificationPage() {
                       autoPlay
                       playsInline
                       muted
-                      style={{ width: "100%", height: "100%", objectFit: "cover", transform: "scaleX(-1)" }}
+                      style={{
+                        width: "100%",
+                        height: "100%",
+                        objectFit: "cover",
+                        transform: cameraFacingMode === "user" ? "scaleX(-1)" : "none",
+                      }}
                     />
 
                     {/* Facial Oval Overlay Guide */}
@@ -2102,21 +2413,27 @@ export default function ProVerificationPage() {
                   </p>
 
                   <div style={{ display: "flex", gap: 10, justifyContent: "center", flexWrap: "wrap" }}>
-                    <button className="btn btn-secondary btn-md" onClick={stopCamera}>
+                    <button type="button" className="btn btn-secondary btn-md" onClick={stopCamera}>
                       Cancel
                     </button>
                     <button
-                      className="btn btn-primary btn-md"
+                      type="button"
+                      className="btn btn-secondary btn-md"
                       onClick={() => {
                         stopCamera();
                         selfieInputRef.current?.click();
                       }}
-                      style={{ background: "var(--bg-tertiary)", color: "var(--text-primary)" }}
+                      style={{ background: "rgba(255,255,255,0.08)", color: "#FFFFFF" }}
                     >
-                      Use Device Camera App
+                      📱 Phone Camera App
                     </button>
-                    <button className="btn btn-primary btn-lg" onClick={captureFacialPhoto} style={{ minWidth: 160 }}>
-                      Snap Facial Photo 📸
+                    <button
+                      type="button"
+                      className="btn btn-primary btn-lg"
+                      onClick={captureFacialPhoto}
+                      style={{ minWidth: 160, background: "#0EA5E9", fontWeight: 700 }}
+                    >
+                      📸 Snap Facial Photo
                     </button>
                   </div>
                 </>
