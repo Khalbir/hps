@@ -6,26 +6,36 @@ export const dynamic = "force-dynamic";
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
-    const rawIdentifier =
-      searchParams.get("partnerId") ||
-      searchParams.get("code") ||
-      searchParams.get("referralCode") ||
-      searchParams.get("email") ||
-      searchParams.get("id") ||
-      searchParams.get("phone");
+    const candidates = [
+      searchParams.get("partnerId"),
+      searchParams.get("code"),
+      searchParams.get("referralCode"),
+      searchParams.get("email"),
+      searchParams.get("phone"),
+      searchParams.get("id"),
+    ].filter(Boolean) as string[];
 
-    if (!rawIdentifier) {
+    if (candidates.length === 0) {
       return NextResponse.json(
         { success: false, error: "Partner identifier is required" },
         { status: 400 }
       );
     }
 
-    const identifier = decodeURIComponent(rawIdentifier).trim();
-    const partner = await partnerStore.findPartner(identifier);
+    let partner = null;
+    let checkedIdentifiers: string[] = [];
+
+    for (const raw of candidates) {
+      const clean = decodeURIComponent(raw).trim();
+      if (!clean) continue;
+      checkedIdentifiers.push(clean);
+      partner = await partnerStore.findPartner(clean);
+      if (partner) break;
+    }
+
     if (!partner) {
       return NextResponse.json(
-        { success: false, error: `Partner portal not found for "${identifier}". Please verify your Partner ID or Referral Code.` },
+        { success: false, error: `Partner portal not found for "${checkedIdentifiers.join(" / ")}". Please verify your Partner ID or Referral Code.` },
         { status: 404 }
       );
     }

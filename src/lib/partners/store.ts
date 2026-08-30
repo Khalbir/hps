@@ -92,6 +92,17 @@ function savePersistentStore(data: PersistentPartnerData) {
   }
 }
 
+function getDeterministicCode(seed: string, digits = 5): string {
+  let hash = 0;
+  for (let i = 0; i < seed.length; i++) {
+    hash = ((hash << 5) - hash) + seed.charCodeAt(i);
+    hash |= 0;
+  }
+  const max = Math.pow(10, digits);
+  const min = Math.pow(10, digits - 1);
+  return String(Math.abs(hash) % (max - min) + min);
+}
+
 /**
  * Deserializes Partner Profile and nested records from a PostgreSQL User entity
  */
@@ -110,20 +121,21 @@ function parseUserPartnerData(u: any): {
   let attributions: PartnerAttribution[] = [];
   let payouts: PartnerPayoutTransaction[] = [];
 
+  const fullName = `${u.firstName || ""} ${u.lastName || ""}`.trim() || u.email?.split("@")[0] || "Partner";
+
   // 1. Parse secondaryAddress (PartnerProfile JSON payload)
   if (u.secondaryAddress) {
     try {
       const parsed = typeof u.secondaryAddress === "string" ? JSON.parse(u.secondaryAddress) : u.secondaryAddress;
-      if (parsed && typeof parsed === "object" && (parsed.partnerId || parsed.category || parsed.referralCode)) {
-        const partnerId = parsed.partnerId || `HHP-PTR-${Math.floor(10000 + Math.random() * 90000)}`;
-        const referralCode = parsed.referralCode || `PTR-${(parsed.companyName || u.firstName || "PARTNER").toUpperCase().slice(0, 8)}-${Math.floor(100 + Math.random() * 900)}`;
-        const fullName = parsed.name || `${u.firstName || ""} ${u.lastName || ""}`.trim() || u.email.split("@")[0];
+      if (parsed && typeof parsed === "object") {
+        const partnerId = u.cacNumber || parsed.partnerId || `HHP-PTR-${getDeterministicCode(u.email || u.id, 5)}`;
+        const referralCode = parsed.referralCode || `PTR-${(parsed.companyName || u.firstName || "PARTNER").toUpperCase().slice(0, 8)}-${getDeterministicCode(u.email || u.id, 3)}`;
 
         partner = {
           id: parsed.id || `ptr_${u.id}`,
           partnerId,
           userId: u.id,
-          name: fullName,
+          name: parsed.name || fullName,
           companyName: parsed.companyName,
           email: u.email,
           phone: u.phone || parsed.phone || "",
@@ -152,11 +164,10 @@ function parseUserPartnerData(u: any): {
     }
   }
 
-  // 2. Synthesize if role is PARTNER but no JSON in secondaryAddress
-  if (!partner && u.role === "PARTNER") {
-    const fullName = `${u.firstName || ""} ${u.lastName || ""}`.trim() || u.email.split("@")[0];
-    const partnerId = `HHP-PTR-${Math.floor(10000 + Math.random() * 90000)}`;
-    const referralCode = `PTR-${(u.firstName || "PARTNER").toUpperCase().slice(0, 8)}-${Math.floor(100 + Math.random() * 900)}`;
+  // 2. Synthesize if role is PARTNER or if user has cacNumber (partnerId)
+  if (!partner && (u.role === "PARTNER" || (u.cacNumber && u.cacNumber.startsWith("HHP-PTR")))) {
+    const partnerId = u.cacNumber || `HHP-PTR-${getDeterministicCode(u.email || u.id, 5)}`;
+    const referralCode = `PTR-${(u.firstName || "PARTNER").toUpperCase().slice(0, 8)}-${getDeterministicCode(u.email || u.id, 3)}`;
     partner = {
       id: `ptr_${u.id}`,
       partnerId,
@@ -217,7 +228,13 @@ export const partnerStore = {
     // Query database for all PARTNER users
     try {
       const partnerUsers = await prisma.user.findMany({
-        where: { role: "PARTNER" },
+        where: {
+          OR: [
+            { role: "PARTNER" },
+            { cacNumber: { contains: "HHP-PTR" } },
+            { secondaryAddress: { contains: "HHP-PTR" } },
+          ],
+        },
         orderBy: { createdAt: "desc" },
       }).catch(() => []);
 
@@ -272,28 +289,50 @@ export const partnerStore = {
 
     // 2. Query PostgreSQL User & ReferralCode tables directly
     try {
-      const dbUsers = await prisma.user.findMany({
+      // A. Query by exact email, id, or cacNumber
+      const directUsers = await prisma.user.findMany({
         where: {
           OR: [
-            { email: { equals: cleanLower, mode: "insensitive" } },
+            { email: cleanLower },
+            { id: clean },
+            { cacNumber: cleanUpper },
+            { cacNumber: clean },
             ...(cleanPhone.length >= 7 ? [{ phone: { contains: cleanPhone } }] : []),
-            { role: "PARTNER" },
           ],
         },
       }).catch(() => []);
 
-      for (const u of dbUsers) {
-        const { partner, estates, residents, requests, payouts } = parseUserPartnerData(u);
+      for (const u of directUsers) {
+        const { partner, estates, residents } = parseUserPartnerData(u);
         if (partner) {
-          const matches =
-            partner.id.toLowerCase() === cleanLower ||
-            partner.partnerId.toUpperCase() === cleanUpper ||
-            partner.email.toLowerCase() === cleanLower ||
-            partner.referralCode.toUpperCase() === cleanUpper ||
-            (cleanPhone.length >= 7 && partner.phone && partner.phone.replace(/\D/g, "") === cleanPhone);
+          store.partners = store.partners.filter((p) => p.id !== partner.id && p.partnerId !== partner.partnerId);
+          store.partners.push(partner);
+          if (estates.length > 0) {
+            store.estates = [...store.estates.filter((e) => e.partnerId !== partner.id), ...estates];
+          }
+          if (residents.length > 0) {
+            store.residents = [...store.residents.filter((r) => r.partnerId !== partner.id), ...residents];
+          }
+          savePersistentStore(store);
+          return partner;
+        }
+      }
 
-          if (matches) {
-            // Cache to memory and disk
+      // B. Query ReferralCode table
+      const refCodes = await prisma.referralCode.findMany({
+        where: {
+          OR: [
+            { code: cleanUpper },
+            { code: clean },
+          ],
+        },
+        include: { user: true },
+      }).catch(() => []);
+
+      for (const ref of refCodes) {
+        if (ref.user) {
+          const { partner, estates, residents } = parseUserPartnerData(ref.user);
+          if (partner) {
             store.partners = store.partners.filter((p) => p.id !== partner.id && p.partnerId !== partner.partnerId);
             store.partners.push(partner);
             if (estates.length > 0) {
@@ -308,19 +347,41 @@ export const partnerStore = {
         }
       }
 
-      // Check ReferralCode table
-      const refCode = await prisma.referralCode.findFirst({
-        where: { code: { equals: clean, mode: "insensitive" } },
-        include: { user: true },
-      }).catch(() => null);
+      // C. Query ALL users with role = "PARTNER" or secondaryAddress matching clean
+      const partnerUsers = await prisma.user.findMany({
+        where: {
+          OR: [
+            { role: "PARTNER" },
+            { secondaryAddress: { contains: "HHP-PTR" } },
+            { secondaryAddress: { contains: clean } },
+          ],
+        },
+      }).catch(() => []);
 
-      if (refCode?.user) {
-        const { partner, estates, residents } = parseUserPartnerData(refCode.user);
+      for (const u of partnerUsers) {
+        const { partner, estates, residents } = parseUserPartnerData(u);
         if (partner) {
-          store.partners = store.partners.filter((p) => p.id !== partner.id && p.partnerId !== partner.partnerId);
-          store.partners.push(partner);
-          savePersistentStore(store);
-          return partner;
+          const matches =
+            partner.id.toLowerCase() === cleanLower ||
+            partner.partnerId.toUpperCase() === cleanUpper ||
+            partner.email.toLowerCase() === cleanLower ||
+            partner.referralCode.toUpperCase() === cleanUpper ||
+            (u.cacNumber && u.cacNumber.toUpperCase() === cleanUpper) ||
+            (u.secondaryAddress && u.secondaryAddress.includes(clean)) ||
+            (cleanPhone.length >= 7 && partner.phone && partner.phone.replace(/\D/g, "") === cleanPhone);
+
+          if (matches) {
+            store.partners = store.partners.filter((p) => p.id !== partner.id && p.partnerId !== partner.partnerId);
+            store.partners.push(partner);
+            if (estates.length > 0) {
+              store.estates = [...store.estates.filter((e) => e.partnerId !== partner.id), ...estates];
+            }
+            if (residents.length > 0) {
+              store.residents = [...store.residents.filter((r) => r.partnerId !== partner.id), ...residents];
+            }
+            savePersistentStore(store);
+            return partner;
+          }
         }
       }
     } catch (dbSearchErr) {
@@ -379,6 +440,7 @@ export const partnerStore = {
           data: {
             role: "PARTNER",
             phone: partner.phone || user.phone,
+            cacNumber: partner.partnerId,
             permanentAddress: partner.address || user.permanentAddress,
             secondaryAddress: JSON.stringify(partner),
             isActive: partner.status === "ACTIVE",
@@ -395,6 +457,7 @@ export const partnerStore = {
             firstName: firstName || "Partner",
             lastName,
             role: "PARTNER",
+            cacNumber: partner.partnerId,
             password: "$2a$10$e8wJp5f5.dummy_hash_placeholder",
             permanentAddress: partner.address || undefined,
             secondaryAddress: JSON.stringify(partner),
@@ -405,23 +468,37 @@ export const partnerStore = {
         });
       }
 
-      // Upsert ReferralCode
+      // Upsert ReferralCode records
       if (user && partner.referralCode) {
         await prisma.referralCode.upsert({
           where: { code: partner.referralCode },
+          update: {
+            userId: user.id,
+            qrPayload: partner.qrCodeUrl || `https://handyhubpro.ng/book?partner=${partner.referralCode}`,
+          },
           create: {
             userId: user.id,
             code: partner.referralCode,
-            qrPayload: `https://handyhubpro.ng/book?partner=${partner.referralCode}`,
-            isActive: partner.status === "ACTIVE",
+            qrPayload: partner.qrCodeUrl || `https://handyhubpro.ng/book?partner=${partner.referralCode}`,
           },
+        }).catch(() => null);
+
+        // Also upsert partnerId
+        await prisma.referralCode.upsert({
+          where: { code: partner.partnerId },
           update: {
-            isActive: partner.status === "ACTIVE",
+            userId: user.id,
+            qrPayload: partner.qrCodeUrl || `https://handyhubpro.ng/book?partner=${partner.referralCode}`,
           },
-        }).catch(() => {});
+          create: {
+            userId: user.id,
+            code: partner.partnerId,
+            qrPayload: partner.qrCodeUrl || `https://handyhubpro.ng/book?partner=${partner.referralCode}`,
+          },
+        }).catch(() => null);
       }
-    } catch (err) {
-      console.warn("[Partner DB Sync Error]:", err);
+    } catch (dbErr) {
+      console.warn("[Partner DB Save Warning]:", dbErr);
     }
 
     return partner;

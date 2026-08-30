@@ -137,7 +137,14 @@ function EstatePortalContent() {
     try {
       setLoading(true);
       setLookupError("");
-      const res = await fetch(`/api/partners/me?partnerId=${encodeURIComponent(identifier)}`);
+      const queryParams = new URLSearchParams();
+      if (identifier) queryParams.set("partnerId", identifier);
+      const codeParam = searchParams.get("code");
+      if (codeParam) queryParams.set("code", codeParam);
+      const emailParam = searchParams.get("email");
+      if (emailParam) queryParams.set("email", emailParam);
+
+      const res = await fetch(`/api/partners/me?${queryParams.toString()}`);
       const data = await res.json();
       if (data.success && data.partner) {
         setPartner(data.partner);
@@ -159,13 +166,7 @@ function EstatePortalContent() {
             const cached = localStorage.getItem("hhp_current_partner");
             if (cached) {
               const parsed = JSON.parse(cached);
-              if (
-                parsed &&
-                (parsed.partnerId?.toLowerCase() === identifier.toLowerCase() ||
-                 parsed.referralCode?.toLowerCase() === identifier.toLowerCase() ||
-                 parsed.email?.toLowerCase() === identifier.toLowerCase() ||
-                 parsed.id?.toLowerCase() === identifier.toLowerCase())
-              ) {
+              if (parsed && (parsed.partnerId || parsed.id || parsed.email)) {
                 setPartner(parsed);
                 setLoading(false);
                 return;
