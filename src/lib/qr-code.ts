@@ -26,7 +26,7 @@ export function generateScannableQrSvg(
 ): string {
   const {
     label = "HANDYHUB PARTNER",
-    subLabel = "SCAN TO BOOK VERIFIED ARTISANS",
+    subLabel = "SCAN TO VISIT HANDYHUB PRO",
     partnerId = "",
     referralCode = "",
     colorDark = "#0F172A",
@@ -34,8 +34,12 @@ export function generateScannableQrSvg(
     errorCorrectionLevel = "M",
   } = options;
 
+  const targetLink = (deepLink || "https://handyhubpro.ng")
+    .replace(/\/book\?partner=/g, "/?partner=")
+    .replace(/\/book\?/g, "/?");
+
   // Generate ISO-compliant QR BitMatrix
-  const qr = QRCode.create(deepLink || "https://handyhubpro.ng", {
+  const qr = QRCode.create(targetLink, {
     errorCorrectionLevel,
   });
 
@@ -133,7 +137,11 @@ export async function generateScannableQrPng(
   deepLink: string,
   options: QRCode.QRCodeToDataURLOptions = {}
 ): Promise<string> {
-  return QRCode.toDataURL(deepLink || "https://handyhubpro.ng", {
+  const targetLink = (deepLink || "https://handyhubpro.ng")
+    .replace(/\/book\?partner=/g, "/?partner=")
+    .replace(/\/book\?/g, "/?");
+
+  return QRCode.toDataURL(targetLink, {
     errorCorrectionLevel: "H",
     margin: 2,
     width: 600,
@@ -165,9 +173,13 @@ export async function downloadBrandedQrBadge(params: {
     partnerId = "",
     referralCode = "",
     title = "HANDYHUB PARTNER",
-    subtitle = "SCAN TO BOOK VERIFIED ARTISANS",
+    subtitle = "SCAN TO VISIT HANDYHUB PRO",
     filename,
   } = params;
+
+  const targetLink = (deepLink || "https://handyhubpro.ng")
+    .replace(/\/book\?partner=/g, "/?partner=")
+    .replace(/\/book\?/g, "/?");
 
   const outFilename =
     filename ||
@@ -175,7 +187,7 @@ export async function downloadBrandedQrBadge(params: {
 
   try {
     // 1. Generate high-res raw QR matrix data URL
-    const rawQrDataUrl = await QRCode.toDataURL(deepLink, {
+    const rawQrDataUrl = await QRCode.toDataURL(targetLink, {
       errorCorrectionLevel: "H",
       margin: 2,
       width: 760,

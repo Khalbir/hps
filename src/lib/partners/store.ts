@@ -144,7 +144,7 @@ function parseUserPartnerData(u: any): {
           city: parsed.city || "Abuja",
           address: parsed.address || u.permanentAddress || "",
           referralCode,
-          qrCodeUrl: parsed.qrCodeUrl || generatePartnerQrCode(`https://handyhubpro.ng/?partner=${referralCode}`, (parsed.companyName || fullName).toUpperCase(), partnerId, referralCode),
+          qrCodeUrl: generatePartnerQrCode(`https://handyhubpro.ng/?partner=${referralCode}`, (parsed.companyName || fullName).toUpperCase(), partnerId, referralCode),
           status: parsed.status || "ACTIVE",
           tierLevel: parsed.tierLevel || "BRONZE",
           walletBalance: Number(parsed.walletBalance || 0),

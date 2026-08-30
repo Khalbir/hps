@@ -39,11 +39,17 @@ export function generatePartnerQrCode(
   partnerId?: string,
   referralCode?: string
 ): string {
-  return generateScannableQrSvg(deepLink, {
+  const targetLink = deepLink
+    ? deepLink.replace(/\/book\?partner=/g, "/?partner=").replace(/\/book\?/g, "/?")
+    : referralCode
+    ? `https://handyhubpro.ng/?partner=${referralCode}`
+    : "https://handyhubpro.ng";
+
+  return generateScannableQrSvg(targetLink, {
     label,
     partnerId,
     referralCode,
-    subLabel: "SCAN TO BOOK VERIFIED ARTISANS",
+    subLabel: "SCAN TO VISIT HANDYHUB PRO",
   });
 }
 
