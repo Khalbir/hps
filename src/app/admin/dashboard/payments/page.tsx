@@ -109,6 +109,33 @@ export default function AdminPaymentsPage() {
     }
   };
 
+  const [clearingStale, setClearingStale] = useState(false);
+
+  const handleClearStaleEscrows = async () => {
+    if (!confirm("Are you sure you want to auto-clear inactive client escrows and abandoned bookings older than 14 days to preserve storage?")) return;
+    setClearingStale(true);
+    setNotice("🧹 Purging inactive client escrows older than 14 days to optimize database storage...");
+    try {
+      const res = await fetch("/api/admin/payments", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "CLEAR_STALE_ESCROWS" }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setNotice(`✅ ${data.message || "Stale escrows cleared and storage reclaimed!"}`);
+        fetchPayments();
+      } else {
+        setNotice(`⚠️ ${data.error || "Failed to clear stale records."}`);
+      }
+    } catch {
+      setNotice("❌ Network error while clearing stale escrows.");
+    } finally {
+      setClearingStale(false);
+      setTimeout(() => setNotice(""), 6000);
+    }
+  };
+
   const handleManualVerify = async (ref: string) => {
     setVerifyingRef(ref);
     try {
@@ -325,6 +352,28 @@ export default function AdminPaymentsPage() {
 
           <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
             <button
+              onClick={handleClearStaleEscrows}
+              disabled={clearingStale}
+              className="btn btn-secondary btn-sm"
+              style={{
+                background: "rgba(239, 68, 68, 0.1)",
+                border: "1px solid rgba(239, 68, 68, 0.35)",
+                color: "#F87171",
+                padding: "9px 16px",
+                borderRadius: "10px",
+                fontSize: "13px",
+                fontWeight: 700,
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                cursor: "pointer",
+              }}
+              title="Automatically clear inactive client escrows & abandoned bookings older than 14 days to preserve storage"
+            >
+              <RefreshCw size={14} className={clearingStale ? "spin" : ""} color="#F87171" />
+              {clearingStale ? "Clearing Stale..." : "Auto-Clear Stale (>14d)"}
+            </button>
+            <button
               onClick={handleSyncPaystackLive}
               className="btn btn-secondary btn-sm"
               style={{
@@ -382,6 +431,47 @@ export default function AdminPaymentsPage() {
               <FileSpreadsheet size={16} /> Export Ledger (.csv)
             </button>
           </div>
+        </div>
+
+        {/* 14-Day Storage Retention Policy Active Notice */}
+        <div
+          style={{
+            background: "rgba(14, 165, 233, 0.06)",
+            border: "1px solid rgba(14, 165, 233, 0.2)",
+            borderRadius: "12px",
+            padding: "12px 18px",
+            marginBottom: "24px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            flexWrap: "wrap",
+            gap: "12px",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+            <ShieldCheck size={20} color="#0EA5E9" style={{ flexShrink: 0 }} />
+            <div>
+              <span style={{ fontSize: "13px", fontWeight: 700, color: "#F8FAFC" }}>
+                14-Day Automated Escrow Storage Retention Active
+              </span>
+              <p style={{ fontSize: "12px", color: "#94A3B8", margin: "2px 0 0" }}>
+                Incoming client escrows and abandoned bookings without client action are automatically purged after 14 days to preserve database storage and optimize platform performance.
+              </p>
+            </div>
+          </div>
+          <span
+            style={{
+              background: "rgba(16, 185, 129, 0.12)",
+              color: "#10B981",
+              border: "1px solid rgba(16, 185, 129, 0.3)",
+              padding: "4px 10px",
+              borderRadius: "99px",
+              fontSize: "11px",
+              fontWeight: 700,
+            }}
+          >
+            ✓ Auto-Purge Protected (14 Days)
+          </span>
         </div>
 
         {notice && (

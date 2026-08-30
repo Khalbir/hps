@@ -481,3 +481,104 @@ export async function refundEscrowPayment({
     bookingRef: booking.reference,
   };
 }
+
+/**
+ * Automatically purge inactive / stale client escrow payments and unacted bookings older than 14 days to preserve database storage.
+ */
+export async function autoClearStaleEscrowsFromDB(daysThreshold = 14) {
+  const cutoffDate = new Date(Date.now() - daysThreshold * 24 * 60 * 60 * 1000);
+
+  try {
+    // 1. Find all stale payments older than 14 days
+    const stalePayments = await prisma.payment.findMany({
+      where: {
+        createdAt: { lte: cutoffDate },
+      },
+      include: {
+        booking: {
+          include: {
+            dispute: true,
+          },
+        },
+      },
+    }).catch(() => []);
+
+    // Filter out any payments associated with an OPEN dispute
+    const paymentsToPurge = stalePayments.filter(
+      (p) => !p.booking?.dispute || p.booking.dispute.status !== "OPEN"
+    );
+
+    const paymentIdsToPurge = paymentsToPurge.map((p) => p.id);
+
+    let clearedPaymentsCount = 0;
+    if (paymentIdsToPurge.length > 0) {
+      const delRes = await prisma.payment.deleteMany({
+        where: { id: { in: paymentIdsToPurge } },
+      }).catch(() => ({ count: 0 }));
+      clearedPaymentsCount = delRes.count;
+    }
+
+    // 2. Find and purge stale unacted or completed/abandoned bookings older than 14 days without open disputes
+    const staleBookings = await prisma.booking.findMany({
+      where: {
+        createdAt: { lte: cutoffDate },
+        status: { in: ["PENDING", "COMPLETED", "CANCELLED", "REFUNDED"] },
+      },
+      include: {
+        dispute: true,
+        payments: true,
+        replacementParts: true,
+      },
+    }).catch(() => []);
+
+    const bookingsToPurge = staleBookings.filter(
+      (b) => !b.dispute || b.dispute.status !== "OPEN"
+    );
+
+    const bookingIdsToPurge = bookingsToPurge.map((b) => b.id);
+
+    let clearedBookingsCount = 0;
+    if (bookingIdsToPurge.length > 0) {
+      // Remove reviews for these bookings
+      await prisma.review.deleteMany({
+        where: { bookingId: { in: bookingIdsToPurge } },
+      }).catch(() => {});
+
+      // Remove replacement parts for these bookings
+      await prisma.replacementPart.deleteMany({
+        where: { bookingId: { in: bookingIdsToPurge } },
+      }).catch(() => {});
+
+      // Remove remaining payments for these bookings
+      await prisma.payment.deleteMany({
+        where: { bookingId: { in: bookingIdsToPurge } },
+      }).catch(() => {});
+
+      const delBkgRes = await prisma.booking.deleteMany({
+        where: { id: { in: bookingIdsToPurge } },
+      }).catch(() => ({ count: 0 }));
+      clearedBookingsCount = delBkgRes.count;
+    }
+
+    const estimatedKbSaved = (clearedPaymentsCount * 4) + (clearedBookingsCount * 8);
+
+    return {
+      success: true,
+      clearedPaymentsCount,
+      clearedBookingsCount,
+      totalRecordsCleared: clearedPaymentsCount + clearedBookingsCount,
+      cutoffDate: cutoffDate.toISOString(),
+      daysThreshold,
+      estimatedKbSaved,
+    };
+  } catch (err: any) {
+    console.warn("[Auto-Clear Stale Escrow Warning]:", err);
+    return {
+      success: false,
+      clearedPaymentsCount: 0,
+      clearedBookingsCount: 0,
+      totalRecordsCleared: 0,
+      error: err.message,
+    };
+  }
+}

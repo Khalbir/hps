@@ -3,21 +3,26 @@ import { prisma } from "@/lib/db";
 import { purgeDemoRecordsFromDB, DEMO_EMAILS, DEMO_PAYMENT_REFS } from "@/lib/purge-demo-utility";
 import { verifyAndRecordPayment } from "@/lib/fintech";
 import { paystack } from "@/lib/paystack";
+import { autoClearStaleEscrowsFromDB } from "@/lib/escrow";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(request: Request) {
   try {
-    // Automatically purge pre-seeded demo records from database on fetch
+    // 1. Automatically purge demo records and auto-clear inactive escrows older than 14 days to preserve database storage
     await purgeDemoRecordsFromDB();
+    const staleClearResult = await autoClearStaleEscrowsFromDB(14);
 
     const { searchParams } = new URL(request.url);
     const status = searchParams.get("status");
     const provider = searchParams.get("provider");
 
-    // 1. Fetch database payments from Payment table
+    const fourteenDaysAgo = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000);
+
+    // 1. Fetch database payments from Payment table (strictly within 14-day active retention)
     const where: any = {
       reference: { notIn: DEMO_PAYMENT_REFS },
+      createdAt: { gte: fourteenDaysAgo },
     };
     if (status && status !== "ALL") where.status = status;
     if (provider && provider !== "ALL") where.provider = provider;
@@ -43,13 +48,14 @@ export async function GET(request: Request) {
       console.warn("[Admin Payments DB Warning - Payments]:", err);
     }
 
-    // 2. Fetch paid bookings from Booking table
+    // 2. Fetch paid bookings from Booking table (strictly within 14-day retention)
     let rawPaidBookings: any[] = [];
     try {
       rawPaidBookings = await prisma.booking.findMany({
         where: {
           paymentStatus: { in: ["PAID", "HELD_IN_ESCROW", "RELEASED", "REFUNDED"] },
           customer: { email: { notIn: DEMO_EMAILS } },
+          createdAt: { gte: fourteenDaysAgo },
         },
         include: {
           customer: { select: { firstName: true, lastName: true, email: true, phone: true } },
@@ -82,13 +88,16 @@ export async function GET(request: Request) {
 
     bookingPayments.forEach((bp) => existingRefsSet.add(bp.reference));
 
-    // 3. Query Live Paystack REST API for True Real-Time Transactions
+    // 3. Query Live Paystack REST API for True Real-Time Transactions (within 14-day window)
     let livePaystackTxs: any[] = [];
     try {
       const paystackRes = await paystack.listTransactions({ perPage: 50 });
       if (paystackRes.success && Array.isArray(paystackRes.data)) {
         livePaystackTxs = paystackRes.data
-          .filter((tx) => !existingRefsSet.has(tx.reference))
+          .filter((tx: any) => {
+            const txDate = new Date(tx.created_at || tx.createdAt || Date.now());
+            return !existingRefsSet.has(tx.reference) && txDate >= fourteenDaysAgo;
+          })
           .map((tx) => {
             const rawChannel = tx.channel || tx.authorization?.channel || "card";
             const meta = tx.metadata || {};
@@ -220,6 +229,8 @@ export async function GET(request: Request) {
         failedCount: filteredPayments.filter((p) => p.status === "FAILED").length,
         totalCount: filteredPayments.length,
         livePaystackCount: livePaystackTxs.length,
+        retentionDays: 14,
+        storagePolicy: "Incoming client escrows older than 14 days auto-cleared to preserve storage",
       },
     });
   } catch (error: any) {
@@ -229,7 +240,7 @@ export async function GET(request: Request) {
 }
 
 /**
- * POST handler for Admin Manual Payment Verification & Reconciliation
+ * POST handler for Admin Manual Payment Verification & Reconciliation & Escrow Clearance
  */
 export async function POST(request: Request) {
   try {
@@ -242,6 +253,15 @@ export async function POST(request: Request) {
         success: true,
         message: "Paystack live API synced successfully!",
         data: paystackRes.data,
+      });
+    }
+
+    if (action === "CLEAR_STALE_ESCROWS") {
+      const clearRes = await autoClearStaleEscrowsFromDB(14);
+      return NextResponse.json({
+        success: true,
+        message: `Successfully cleared ${clearRes.totalRecordsCleared} inactive escrow records (>14 days). Reclaimed ~${clearRes.estimatedKbSaved}KB storage!`,
+        data: clearRes,
       });
     }
 

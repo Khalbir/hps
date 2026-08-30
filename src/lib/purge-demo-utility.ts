@@ -96,6 +96,10 @@ export async function purgeDemoRecordsFromDB() {
         where: { id: { in: demoUserIds } },
       }).catch(() => {});
     }
+
+    // Auto-clear inactive escrows and abandoned records older than 14 days to preserve database storage
+    const { autoClearStaleEscrowsFromDB } = await import("@/lib/escrow");
+    await autoClearStaleEscrowsFromDB(14).catch(() => {});
   } catch (e) {
     console.warn("[Auto Purge Demo Warning]:", e);
   }
