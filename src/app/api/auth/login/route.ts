@@ -226,7 +226,13 @@ export async function POST(request: Request) {
       const sanitizeUser = (userObj: any) => {
         const isPro = userObj.role === "PROFESSIONAL" || Boolean(userObj.professional);
         const isAdminRole = ADMIN_ROLES.includes(userObj.role);
-        const isUserVerified = Boolean(userObj.isVerified || isAdminRole || userObj.professional?.verificationStatus === "VERIFIED");
+        const isUserVerified = Boolean(
+          userObj.isVerified ||
+          isAdminRole ||
+          userObj.professional?.verificationStatus === "VERIFIED" ||
+          userObj.professional?.verificationStatus === "APPROVED" ||
+          (userObj.ninStatus === "VERIFIED" && userObj.permanentAddressStatus === "VERIFIED")
+        );
 
         let sanitizedProfessional = null;
         if (userObj.professional || isPro || isAdminRole) {

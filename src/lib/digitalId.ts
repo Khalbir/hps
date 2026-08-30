@@ -24,5 +24,5 @@ export function formatDigitalId(pro?: { id?: string; digitalId?: string | null }
   if (pro.id) {
     return generateDigitalIdFromSeed(pro.id);
   }
-  return "HHP-PRO-84920";
+  return "HHP-PRO-UNASSIGNED";
 }

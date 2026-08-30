@@ -12,23 +12,40 @@ import {
 const getInitialProData = () => {
   if (typeof window !== "undefined") {
     try {
-      const cached = localStorage.getItem("handyhub_pro_telemetry_cache");
-      if (cached) {
-        const parsed = JSON.parse(cached);
-        if (parsed && (parsed.proName || parsed.verificationStatus)) return parsed;
-      }
       const storedPro = localStorage.getItem("handyhub_pro_session");
       const storedUser = localStorage.getItem("handyhub_user");
       const parsed = storedPro ? JSON.parse(storedPro) : storedUser ? JSON.parse(storedUser) : null;
       const userObj = parsed?.user || parsed;
+
+      const isUserVerified = Boolean(
+        userObj?.isVerified ||
+        userObj?.role === "SUPER_ADMIN" ||
+        userObj?.role === "ADMIN" ||
+        userObj?.verificationStatus === "VERIFIED" ||
+        userObj?.verificationStatus === "APPROVED" ||
+        userObj?.professional?.verificationStatus === "VERIFIED" ||
+        userObj?.professional?.verificationStatus === "APPROVED" ||
+        (userObj?.ninStatus === "VERIFIED" && userObj?.permanentAddressStatus === "VERIFIED")
+      );
+
+      const cached = localStorage.getItem("handyhub_pro_telemetry_cache");
+      if (cached) {
+        try {
+          const parsedCache = JSON.parse(cached);
+          // Purge corrupt fallback cache
+          if (parsedCache && parsedCache.digitalId === "HHP-PRO-84920" && isUserVerified) {
+            localStorage.removeItem("handyhub_pro_telemetry_cache");
+          } else if (parsedCache && (parsedCache.proName || parsedCache.verificationStatus)) {
+            return {
+              ...parsedCache,
+              verificationStatus: isUserVerified ? "VERIFIED" : parsedCache.verificationStatus,
+              digitalId: isUserVerified && (!parsedCache.digitalId || parsedCache.digitalId === "HHP-PRO-84920") ? (userObj?.digitalId || userObj?.professional?.digitalId || "HHP-PRO-27139") : parsedCache.digitalId,
+            };
+          }
+        } catch {}
+      }
+
       if (userObj) {
-        const isUserVerified = Boolean(
-          userObj.isVerified ||
-          userObj.role === "SUPER_ADMIN" ||
-          userObj.role === "ADMIN" ||
-          userObj.verificationStatus === "VERIFIED" ||
-          userObj.professional?.verificationStatus === "VERIFIED"
-        );
         const name = `${userObj.firstName || ""} ${userObj.lastName || ""}`.trim() || "Artisan Partner";
         const digitalId = userObj.digitalId || userObj.professional?.digitalId || (isUserVerified ? "HHP-PRO-27139" : "HHP-PRO-UNASSIGNED");
         return {

@@ -42,7 +42,14 @@ export async function GET(request: Request) {
       } catch {}
     }
 
-    const isVerified = pro?.verificationStatus === "VERIFIED" || targetUser.role === "SUPER_ADMIN" || targetUser.role === "ADMIN";
+    const isVerified = Boolean(
+      targetUser.isVerified ||
+      targetUser.role === "SUPER_ADMIN" ||
+      targetUser.role === "ADMIN" ||
+      pro?.verificationStatus === "VERIFIED" ||
+      pro?.verificationStatus === "APPROVED" ||
+      (targetUser.ninStatus === "VERIFIED" && targetUser.permanentAddressStatus === "VERIFIED")
+    );
     const verificationStatus = isVerified ? "VERIFIED" : (pro?.verificationStatus || "UNVERIFIED");
 
     // Auto-seed primary trade if pro has no tradeVerifications yet

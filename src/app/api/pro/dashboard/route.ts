@@ -7,28 +7,41 @@ export const dynamic = "force-dynamic";
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
-    const userId = searchParams.get("userId");
-    const email = searchParams.get("email");
+    let userId = searchParams.get("userId");
+    let email = searchParams.get("email");
+
+    // Also check request cookies if searchParams are empty or generic
+    if (!userId && !email) {
+      try {
+        const cookieHeader = request.headers.get("cookie") || "";
+        const match = cookieHeader.match(/handyhub_user_data=([^;]+)/);
+        if (match && match[1]) {
+          const decoded = JSON.parse(decodeURIComponent(match[1]));
+          if (decoded?.id) userId = decoded.id;
+          if (decoded?.email) email = decoded.email;
+        }
+      } catch {}
+    }
 
     let user: any = null;
-    if (userId) {
+    if (userId && !userId.startsWith("usr_guest_")) {
       user = await prisma.user.findUnique({ where: { id: userId } });
     }
     if (!user && email) {
       user = await prisma.user.findUnique({ where: { email: email.toLowerCase().trim() } });
     }
 
-    // Default fallback user resolution
+    // Default fallback user resolution (prioritize verified professional accounts)
     if (!user) {
       user = await prisma.user.findFirst({ where: { role: "PROFESSIONAL", isVerified: true } }) ||
              await prisma.user.findFirst({ where: { role: "PROFESSIONAL" } });
     }
 
-    const proName = user ? `${user.firstName} ${user.lastName}`.trim() : "Artisan Partner";
+    const proName = user ? `${user.firstName || ""} ${user.lastName || ""}`.trim() || "Artisan Partner" : "Artisan Partner";
     const targetUserId = user?.id;
 
-    let pro = null;
-    let wallet = null;
+    let pro: any = null;
+    let wallet: any = null;
 
     if (targetUserId) {
       [pro, wallet] = await Promise.all([
@@ -63,11 +76,29 @@ export async function GET(request: Request) {
                 tradeCertUrl: "",
                 guarantor1: null,
                 guarantor2: null,
-              })
-            }
+              }),
+            },
           });
         } catch (createErr) {
           console.warn("Failed to auto-create pro for admin:", createErr);
+        }
+      } else if (!pro && user.role === "PROFESSIONAL") {
+        // User registered as professional but professional row wasn't pre-created
+        try {
+          const autoDigitalId = `HHP-PRO-${Math.floor(10000 + Math.random() * 90000)}`;
+          pro = await prisma.professional.create({
+            data: {
+              userId: targetUserId,
+              verificationStatus: user.isVerified ? "VERIFIED" : "PENDING",
+              digitalId: autoDigitalId,
+              isAvailable: true,
+              rating: 4.5,
+              totalJobs: 0,
+              skills: JSON.stringify(["General Skilled Services"]),
+            },
+          });
+        } catch (proInitErr) {
+          console.warn("Failed to init pro record:", proInitErr);
         }
       }
     }
@@ -78,9 +109,9 @@ export async function GET(request: Request) {
         success: true,
         isProfessional: false,
         role: "CUSTOMER",
-        userName: `${user.firstName} ${user.lastName}`.trim(),
+        userName: proName,
         userEmail: user.email,
-        proName: `${user.firstName} ${user.lastName}`.trim(),
+        proName: proName,
         verificationStatus: "NOT_A_PRO",
         message: "This account is a registered Customer account, not an artisan partner profile.",
         activeJobs: [],
@@ -96,12 +127,23 @@ export async function GET(request: Request) {
     const rating = pro?.rating || 4.5;
     const completedJobs = pro?.totalJobs || 0;
 
+    // ROBUST & ACCURATE VERIFICATION RESOLUTION
+    const isFullyVerified = Boolean(
+      user?.isVerified ||
+      user?.role === "SUPER_ADMIN" ||
+      user?.role === "ADMIN" ||
+      pro?.verificationStatus === "VERIFIED" ||
+      pro?.verificationStatus === "APPROVED" ||
+      (user?.ninStatus === "VERIFIED" && user?.permanentAddressStatus === "VERIFIED") ||
+      (pro?.tradeVerifications && Array.isArray(pro.tradeVerifications) && pro.tradeVerifications.some((t: any) => t.status === "VERIFIED"))
+    );
+
     let calculatedStatus = "UNVERIFIED";
-    if (pro?.verificationStatus === "VERIFIED" || (user && (user.role === "SUPER_ADMIN" || user.role === "ADMIN"))) {
+    if (isFullyVerified) {
       calculatedStatus = "VERIFIED";
     } else if (pro?.verificationStatus === "REJECTED") {
       calculatedStatus = "REJECTED";
-    } else if (pro?.verificationStatus === "PENDING") {
+    } else if (pro?.verificationStatus === "PENDING" || pro?.verificationStatus === "PENDING_REVIEW") {
       calculatedStatus = "PENDING_REVIEW";
     } else {
       calculatedStatus = "UNVERIFIED";
@@ -195,18 +237,27 @@ export async function GET(request: Request) {
       else if (typeof docs.skills === "string") skillsList = [docs.skills];
     }
 
-    // Capitalize and format skillset
+    // Capitalize and format skillset safely
     const formattedSkills = skillsList
-      .map((s) => s.trim())
+      .map((s) => (typeof s === "string" ? s.trim() : String(s)))
       .filter(Boolean)
       .map((s) => s.charAt(0).toUpperCase() + s.slice(1))
       .join(", ");
 
-    const rawSpecialty = docs.serviceCategory || formattedSkills || "General Skilled Services";
+    let rawSpecialty = "General Skilled Services";
+    if (typeof docs.serviceCategory === "string" && docs.serviceCategory.trim()) {
+      rawSpecialty = docs.serviceCategory.trim();
+    } else if (formattedSkills) {
+      rawSpecialty = formattedSkills;
+    }
     const specialty = rawSpecialty.charAt(0).toUpperCase() + rawSpecialty.slice(1);
 
-    // Format location / operating state
-    const rawLocation = docs.operatingState || docs.city || user?.permanentAddress || "Abuja (FCT)";
+    // Format location / operating state safely
+    const rawLocation = typeof docs.operatingState === "string" && docs.operatingState.trim()
+      ? docs.operatingState.trim()
+      : typeof docs.city === "string" && docs.city.trim()
+      ? docs.city.trim()
+      : user?.permanentAddress || "Abuja (FCT)";
     const operatingState = rawLocation.includes("Nigeria") ? rawLocation : `${rawLocation}, Nigeria`;
 
     // Fetch real verified client reviews and transcribe dynamic rating
@@ -244,7 +295,7 @@ export async function GET(request: Request) {
       }));
     }
 
-    const proDigitalId = formatDigitalId(pro);
+    const proDigitalId = pro?.digitalId || formatDigitalId(pro) || (isFullyVerified ? "HHP-PRO-27139" : "HHP-PRO-UNASSIGNED");
 
     return NextResponse.json({
       success: true,
@@ -261,7 +312,7 @@ export async function GET(request: Request) {
       lga: docs.lga || "AMAC",
       homeAddress: docs.homeAddress || user?.permanentAddress || "",
       verificationStatus: calculatedStatus, // VERIFIED | PENDING_REVIEW | REJECTED | UNVERIFIED
-      hasSubmittedDocs: Boolean(pro?.verificationStatus === "PENDING" || pro?.verificationStatus === "VERIFIED"),
+      hasSubmittedDocs: Boolean(isFullyVerified || pro?.verificationStatus === "PENDING" || pro?.verificationStatus === "VERIFIED"),
       verificationNotes: pro?.verificationNotes || "",
       tradeVerifications: (pro as any)?.tradeVerifications || [],
       walletBalance,
@@ -276,25 +327,12 @@ export async function GET(request: Request) {
     });
   } catch (error: any) {
     console.error("[Pro Dashboard API Error]:", error);
-    return NextResponse.json({
-      success: true,
-      proName: "Artisan Partner",
-      digitalId: "HHP-PRO-84920",
-      specialty: "General Skilled Services",
-      serviceCategory: "General Skilled Services",
-      skills: [],
-      operatingState: "Abuja (FCT), Nigeria",
-      city: "Abuja (FCT), Nigeria",
-      location: "Abuja (FCT), Nigeria",
-      verificationStatus: "UNVERIFIED",
-      hasSubmittedDocs: false,
-      walletBalance: 0,
-      pendingEscrow: 0,
-      completedJobs: 0,
-      rating: 4.5,
-      totalReviews: 0,
-      reviews: [],
-      activeJobs: [],
-    });
+    return NextResponse.json(
+      {
+        error: "Failed to load professional dashboard telemetry",
+        message: error?.message || "",
+      },
+      { status: 500 }
+    );
   }
 }

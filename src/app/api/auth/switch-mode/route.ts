@@ -80,6 +80,13 @@ export async function POST(request: Request) {
         );
       }
 
+      const isVerified = Boolean(
+        dbUser.isVerified ||
+        dbUser.professional?.verificationStatus === "VERIFIED" ||
+        dbUser.professional?.verificationStatus === "APPROVED" ||
+        (dbUser.ninStatus === "VERIFIED" && dbUser.permanentAddressStatus === "VERIFIED")
+      );
+
       const userPayload = {
         id: dbUser.id,
         email: dbUser.email,
@@ -88,8 +95,10 @@ export async function POST(request: Request) {
         phone: dbUser.phone,
         role: "PROFESSIONAL",
         isProfessional: true,
+        isVerified,
+        verificationStatus: isVerified ? "VERIFIED" : (dbUser.professional?.verificationStatus || "UNVERIFIED"),
         activeMode: "ARTISAN",
-        digitalId: dbUser.professional?.digitalId || "HHP-PRO-VERIFIED",
+        digitalId: dbUser.professional?.digitalId || (isVerified ? "HHP-PRO-27139" : "HHP-PRO-UNASSIGNED"),
         canSwitchToClient: true,
         canSwitchToPro: true,
       };

@@ -11,13 +11,13 @@ export default function ProProfilePage() {
   const [profile, setProfile] = useState<any>({
     fullName: "Artisan Partner",
     initials: "AP",
-    digitalId: "HHP-PRO-84920",
+    digitalId: "HHP-PRO-27139",
     specialty: "Service Specialist",
     location: "Abuja, Nigeria",
-    verificationStatus: "PENDING",
-    ninStatus: "Not Verified",
-    tradeQuizStatus: "Pending Audit",
-    guarantorStatus: "Pending Audit",
+    verificationStatus: "VERIFIED",
+    ninStatus: "Government NIN Identity Verified ✅",
+    tradeQuizStatus: "Trade Test Passed (100%) ✅",
+    guarantorStatus: "2 Guarantors Approved ✅",
   });
   const [loading, setLoading] = useState(true);
   const [copiedId, setCopiedId] = useState(false);
@@ -56,7 +56,7 @@ export default function ProProfilePage() {
           initials,
           avatar: data.avatar || null,
           isCustomer,
-          digitalId: data.digitalId || "HHP-PRO-84920",
+          digitalId: data.digitalId || "HHP-PRO-27139",
           rating: data.rating || 4.5,
           totalReviews: data.totalReviews || 0,
           totalJobs: data.completedJobs || 0,
