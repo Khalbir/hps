@@ -247,7 +247,8 @@ export default function UsersRoleManagementPage() {
 
     if (activeTab === "CLIENTS") return u.role === "CUSTOMER" && !u.isProfessional;
     if (activeTab === "ARTISANS") return u.role === "PROFESSIONAL" || Boolean(u.isProfessional);
-    if (activeTab === "STAFF") return u.role !== "CUSTOMER" && u.role !== "PROFESSIONAL" && !u.isProfessional;
+    if (activeTab === "PARTNERS") return u.role === "PARTNER";
+    if (activeTab === "STAFF") return u.role !== "CUSTOMER" && u.role !== "PROFESSIONAL" && u.role !== "PARTNER" && !u.isProfessional;
 
     return true;
   });
@@ -256,7 +257,8 @@ export default function UsersRoleManagementPage() {
 
   const clientsCount = users.filter((u) => u.role === "CUSTOMER" && !u.isProfessional).length;
   const artisansCount = users.filter((u) => u.role === "PROFESSIONAL" || u.isProfessional).length;
-  const staffCount = users.filter((u) => u.role !== "CUSTOMER" && u.role !== "PROFESSIONAL").length;
+  const partnersCount = users.filter((u) => u.role === "PARTNER").length;
+  const staffCount = users.filter((u) => u.role !== "CUSTOMER" && u.role !== "PROFESSIONAL" && u.role !== "PARTNER").length;
 
   return (
     <AdminLayoutShell>
@@ -266,8 +268,8 @@ export default function UsersRoleManagementPage() {
             <h1 className="h3">All Users & Staff Role Directory</h1>
             <p style={{ color: "var(--text-secondary)", fontSize: "var(--fs-sm)" }}>
               {isChiefCommander
-                ? "Chief Commander Control Panel: Oversee all platform users (Clients, Artisans/Pros, and Administrative Staff) and manage role permissions."
-                : "User & Staff Registry: View live directories of all Clients, Artisans, and Staff members."}
+                ? "Chief Commander Control Panel: Oversee all platform users (Clients, Artisans/Pros, Partners, and Administrative Staff) and manage role permissions."
+                : "User & Staff Registry: View live directories of all Clients, Artisans, Partners, and Staff members."}
             </p>
           </div>
 
@@ -306,6 +308,7 @@ export default function UsersRoleManagementPage() {
             { id: "ALL", label: `All Users (${users.length})` },
             { id: "CLIENTS", label: `Clients / Customers (${clientsCount})` },
             { id: "ARTISANS", label: `Artisans / Pros (${artisansCount})` },
+            { id: "PARTNERS", label: `Partners (${partnersCount})` },
             { id: "STAFF", label: `Administrative Staff (${staffCount})` },
           ].map((tab) => (
             <button

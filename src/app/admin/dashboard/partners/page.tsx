@@ -346,47 +346,59 @@ export default function AdminPartnersPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredPartners.map((p) => (
-                    <tr key={p.id} style={{ borderBottom: "1px solid rgba(255,255,255,0.04)", fontSize: "0.9rem" }}>
-                      <td style={{ padding: 14 }}>
-                        <div style={{ fontWeight: 800, color: "#FFFFFF" }}>{p.companyName || p.name}</div>
-                        <div style={{ fontSize: "0.75rem", color: "#64748B" }}>{p.partnerId} &bull; {p.email}</div>
-                      </td>
-                      <td style={{ padding: 14 }}>
-                        <span style={{ fontSize: "0.8rem", color: "#CBD5E1" }}>{PARTNER_CATEGORIES_METADATA[p.category]?.label}</span>
-                      </td>
-                      <td style={{ padding: 14 }}><strong style={{ color: "#F59E0B" }}>{p.referralCode}</strong></td>
-                      <td style={{ padding: 14 }}>
-                        <span style={{ padding: "3px 8px", borderRadius: 4, background: "rgba(245, 158, 11, 0.15)", color: "#F59E0B", fontWeight: 800, fontSize: "0.75rem" }}>
-                          {p.tierLevel}
-                        </span>
-                      </td>
-                      <td style={{ padding: 14 }}><strong style={{ color: "#38BDF8" }}>₦{p.walletBalance.toLocaleString()}</strong></td>
-                      <td style={{ padding: 14 }}>₦{p.totalEarnings.toLocaleString()}</td>
-                      <td style={{ padding: 14 }}>
-                        <span style={{ padding: "3px 8px", borderRadius: 4, background: p.status === "ACTIVE" ? "rgba(16, 185, 129, 0.15)" : "rgba(239, 68, 68, 0.15)", color: p.status === "ACTIVE" ? "#10B981" : "#EF4444", fontSize: "0.75rem", fontWeight: 800 }}>
-                          ● {p.status}
-                        </span>
-                      </td>
-                      <td style={{ padding: 14 }}>
-                        <button
-                          onClick={() => handlePartnerStatusUpdate(p.id, p.status === "ACTIVE" ? "SUSPENDED" : "ACTIVE")}
-                          style={{
-                            padding: "6px 12px",
-                            borderRadius: 6,
-                            background: p.status === "ACTIVE" ? "rgba(239, 68, 68, 0.2)" : "rgba(16, 185, 129, 0.2)",
-                            color: p.status === "ACTIVE" ? "#FCA5A5" : "#6EE7B7",
-                            border: "none",
-                            fontWeight: 700,
-                            fontSize: "0.78rem",
-                            cursor: "pointer",
-                          }}
-                        >
-                          {p.status === "ACTIVE" ? "Suspend" : "Activate"}
-                        </button>
+                  {filteredPartners.length === 0 ? (
+                    <tr>
+                      <td colSpan={8} style={{ textAlign: "center", padding: "40px 20px" }}>
+                        <Building2 size={36} color="#00A8B5" style={{ opacity: 0.5, marginBottom: 8, display: "inline-block" }} />
+                        <div style={{ fontWeight: 700, color: "#E2E8F0", fontSize: "0.95rem" }}>No registered partners found</div>
+                        <div style={{ fontSize: "0.8rem", color: "#64748B", marginTop: 4 }}>
+                          When partners sign up via the Partner Network portal, their profiles, vanity referral codes, and estate metrics will appear here in real time.
+                        </div>
                       </td>
                     </tr>
-                  ))}
+                  ) : (
+                    filteredPartners.map((p) => (
+                      <tr key={p.id} style={{ borderBottom: "1px solid rgba(255,255,255,0.04)", fontSize: "0.9rem" }}>
+                        <td style={{ padding: 14 }}>
+                          <div style={{ fontWeight: 800, color: "#FFFFFF" }}>{p.companyName || p.name}</div>
+                          <div style={{ fontSize: "0.75rem", color: "#64748B" }}>{p.partnerId} &bull; {p.email}</div>
+                        </td>
+                        <td style={{ padding: 14 }}>
+                          <span style={{ fontSize: "0.8rem", color: "#CBD5E1" }}>{PARTNER_CATEGORIES_METADATA[p.category]?.label || p.category}</span>
+                        </td>
+                        <td style={{ padding: 14 }}><strong style={{ color: "#F59E0B" }}>{p.referralCode}</strong></td>
+                        <td style={{ padding: 14 }}>
+                          <span style={{ padding: "3px 8px", borderRadius: 4, background: "rgba(245, 158, 11, 0.15)", color: "#F59E0B", fontWeight: 800, fontSize: "0.75rem" }}>
+                            {p.tierLevel}
+                          </span>
+                        </td>
+                        <td style={{ padding: 14 }}><strong style={{ color: "#38BDF8" }}>₦{(p.walletBalance || 0).toLocaleString()}</strong></td>
+                        <td style={{ padding: 14 }}>₦{(p.totalEarnings || 0).toLocaleString()}</td>
+                        <td style={{ padding: 14 }}>
+                          <span style={{ padding: "3px 8px", borderRadius: 4, background: p.status === "ACTIVE" ? "rgba(16, 185, 129, 0.15)" : "rgba(239, 68, 68, 0.15)", color: p.status === "ACTIVE" ? "#10B981" : "#EF4444", fontSize: "0.75rem", fontWeight: 800 }}>
+                            ● {p.status}
+                          </span>
+                        </td>
+                        <td style={{ padding: 14 }}>
+                          <button
+                            onClick={() => handlePartnerStatusUpdate(p.id, p.status === "ACTIVE" ? "SUSPENDED" : "ACTIVE")}
+                            style={{
+                              padding: "6px 12px",
+                              borderRadius: 6,
+                              background: p.status === "ACTIVE" ? "rgba(239, 68, 68, 0.2)" : "rgba(16, 185, 129, 0.2)",
+                              color: p.status === "ACTIVE" ? "#FCA5A5" : "#6EE7B7",
+                              border: "none",
+                              fontWeight: 700,
+                              fontSize: "0.78rem",
+                              cursor: "pointer",
+                            }}
+                          >
+                            {p.status === "ACTIVE" ? "Suspend" : "Activate"}
+                          </button>
+                        </td>
+                      </tr>
+                    ))
+                  )}
                 </tbody>
               </table>
             </div>

@@ -3,6 +3,8 @@ import { partnerStore } from "@/lib/partners/store";
 import { generatePartnerId, generatePartnerQrCode, generatePartnerReferralCode } from "@/lib/partners/engine";
 import { PartnerCategory, PartnerProfile } from "@/lib/partners/types";
 
+export const dynamic = "force-dynamic";
+
 export async function POST(request: Request) {
   try {
     const body = await request.json();

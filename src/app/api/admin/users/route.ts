@@ -60,6 +60,28 @@ export async function GET() {
           existingUserMap.add(p.user.email.toLowerCase());
         }
       }
+
+      // Reconcile registered Partner Network accounts
+      const { partnerStore } = await import("@/lib/partners/store");
+      const partners = await partnerStore.getAllPartners().catch(() => []);
+      for (const ptr of partners) {
+        if (ptr.email && !existingUserMap.has(ptr.email.toLowerCase())) {
+          const [firstName, ...rest] = (ptr.name || "").trim().split(" ");
+          await prisma.user.create({
+            data: {
+              email: ptr.email.toLowerCase().trim(),
+              firstName: firstName || "Partner",
+              lastName: rest.join(" ") || (ptr.companyName ? `(${ptr.companyName})` : "Partner"),
+              phone: ptr.phone,
+              password: "$2a$10$e8wJp5f5.dummy_hash_placeholder",
+              role: "PARTNER",
+              permanentAddress: ptr.address || undefined,
+              isVerified: true,
+            },
+          }).catch(() => {});
+          existingUserMap.add(ptr.email.toLowerCase());
+        }
+      }
     } catch (reconcileErr) {
       console.warn("[Admin Users Reconcile Warning]:", reconcileErr);
     }

@@ -301,6 +301,13 @@ export const ROLE_LABELS: Record<string, { label: string; title: string; descrip
     badgeColor: "#EC4899",
     tier: 3,
   },
+  PARTNER: {
+    label: "Partner Network",
+    title: "Affiliate & Estate Partner",
+    description: "Registered HandyHub Partner Network member (Estate Manager, Realtor, Influencer, Facility Manager).",
+    badgeColor: "#00A8B5",
+    tier: 5,
+  },
 };
 
 /**

@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { partnerStore } from "@/lib/partners/store";
 
+export const dynamic = "force-dynamic";
+
 export async function GET() {
   try {
     const partners = await partnerStore.getAllPartners();
