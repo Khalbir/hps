@@ -33,17 +33,55 @@ export async function POST(request: Request) {
 
     const cleanEmail = email.toLowerCase().trim();
 
-    // Check if partner already exists
+    // Check if partner already exists; if so, update profile seamlessly and return existing credentials
     const existing = await partnerStore.findPartner(cleanEmail);
     if (existing) {
-      return NextResponse.json(
-        {
-          error: "An account with this email already exists in the HandyHub Partner Network.",
-          partnerId: existing.partnerId,
-          referralCode: existing.referralCode,
-        },
-        { status: 409 }
-      );
+      const updatedPartner: PartnerProfile = {
+        ...existing,
+        name: name?.trim() || existing.name,
+        companyName: companyName?.trim() || existing.companyName,
+        phone: phone?.trim() || existing.phone,
+        category: (category as PartnerCategory) || existing.category,
+        operatingState: operatingState || existing.operatingState,
+        city: city || existing.city,
+        address: address || existing.address,
+        bankName: bankName || existing.bankName,
+        bankAccount: bankAccount || existing.bankAccount,
+        accountName: accountName || existing.accountName,
+        status: "ACTIVE",
+        updatedAt: new Date().toISOString(),
+      };
+      await partnerStore.savePartner(updatedPartner);
+
+      if (category === "ESTATE_MANAGER") {
+        const existingEstates = await partnerStore.getEstatesByPartner(updatedPartner.id);
+        if (existingEstates.length === 0) {
+          await partnerStore.saveEstate({
+            id: `est_${Date.now()}`,
+            partnerId: updatedPartner.id,
+            name: estateName?.trim() || companyName?.trim() || `${name.trim()}'s Managed Estate`,
+            city: city || "Abuja",
+            state: operatingState || "FCT",
+            address: address || "Main Estate Gate, District Office",
+            totalUnits: Number(totalUnits) || 50,
+            occupiedUnits: 0,
+            gateSecurityPhone: phone.trim(),
+            gatePassRequired: true,
+            preferredCategories: ["plumbing", "electrical", "cleaning", "fumigation", "hvac"],
+            monthlyServiceVolume: 0,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          });
+        }
+      }
+
+      const redirectPath = updatedPartner.category === "ESTATE_MANAGER" ? "/partners/estate" : "/partners/dashboard";
+      return NextResponse.json({
+        success: true,
+        message: "Welcome back! Your partner account is active.",
+        partner: updatedPartner,
+        redirect: `${redirectPath}?partnerId=${updatedPartner.partnerId}&code=${updatedPartner.referralCode}`,
+      });
     }
 
     const partnerId = generatePartnerId();

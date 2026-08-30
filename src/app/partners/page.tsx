@@ -23,6 +23,7 @@ import {
   Clock,
   Banknote,
   Award,
+  AlertCircle,
 } from "lucide-react";
 import styles from "./partners.module.css";
 import { PARTNER_CATEGORIES_METADATA, PARTNER_TIERS } from "@/lib/partners/config";
@@ -81,6 +82,20 @@ export default function PartnersLandingPage() {
   const handleRegisterSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setFormError("");
+
+    if (!formData.name.trim()) {
+      setFormError("Please enter your Full Legal Name.");
+      return;
+    }
+    if (!formData.email.trim() || !formData.email.includes("@")) {
+      setFormError("Please enter a valid Email Address.");
+      return;
+    }
+    if (!formData.phone.trim()) {
+      setFormError("Please enter your WhatsApp Phone Number.");
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
@@ -91,7 +106,7 @@ export default function PartnersLandingPage() {
       });
 
       const data = await res.json();
-      if (!res.ok) {
+      if (!res.ok || !data.success) {
         throw new Error(data.error || "Failed to complete partner registration");
       }
 
@@ -528,14 +543,43 @@ export default function PartnersLandingPage() {
                     </div>
                   </div>
 
+                  {formError && (
+                    <div
+                      style={{
+                        padding: "12px 16px",
+                        borderRadius: 10,
+                        background: "rgba(239, 68, 68, 0.15)",
+                        border: "1px solid rgba(239, 68, 68, 0.3)",
+                        color: "#FCA5A5",
+                        fontSize: "0.9rem",
+                        marginBottom: 16,
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 8,
+                      }}
+                    >
+                      <AlertCircle size={18} color="#EF4444" />
+                      <span>{formError}</span>
+                    </div>
+                  )}
+
                   <button
                     type="submit"
                     disabled={isSubmitting}
                     className={styles.btnPrimary}
-                    style={{ width: "100%", justifyContent: "center" }}
+                    style={{ width: "100%", justifyContent: "center", opacity: isSubmitting ? 0.75 : 1, cursor: isSubmitting ? "not-allowed" : "pointer" }}
                   >
-                    {isSubmitting ? "Generating Partner Credentials..." : "Complete Registration & Get ID / QR Code"}
-                    <ArrowRight size={18} />
+                    {isSubmitting ? (
+                      <>
+                        <Zap size={18} />
+                        <span>Generating Partner Credentials...</span>
+                      </>
+                    ) : (
+                      <>
+                        <span>Complete Registration &amp; Get ID / QR Code</span>
+                        <ArrowRight size={18} />
+                      </>
+                    )}
                   </button>
                 </form>
               </>
