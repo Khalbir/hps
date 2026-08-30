@@ -37,16 +37,6 @@ const services = [
     bgColor: "rgba(14, 165, 233, 0.08)",
   },
   {
-    icon: Sparkles,
-    name: "Residential Cleaning (Monthly Plan)",
-    category: "cleaning",
-    slug: "residential-cleaning-monthly",
-    description: "Recurring housekeeping: Silver (2d/wk), Gold (3d/wk), Plat (6d/wk)",
-    price: "₦45,000/mo",
-    color: "#0284C7",
-    bgColor: "rgba(2, 132, 199, 0.10)",
-  },
-  {
     icon: Bug,
     name: "Fumigation & Pest Control",
     category: "fumigation",
