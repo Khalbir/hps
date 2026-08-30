@@ -29,6 +29,7 @@ import {
 import { AdminLayoutShell } from "@/components/layout/AdminLayoutShell";
 import { PartnerProfile, PartnerPayoutTransaction, PartnerCommissionConfig, PartnerCategory } from "@/lib/partners/types";
 import { PARTNER_CATEGORIES_METADATA, PARTNER_TIERS } from "@/lib/partners/config";
+import styles from "../../admin.module.css";
 
 export default function AdminPartnersPage() {
   const [partners, setPartners] = useState<PartnerProfile[]>([]);
@@ -213,22 +214,43 @@ export default function AdminPartnersPage() {
 
   return (
     <AdminLayoutShell>
-      <div style={{ padding: "24px 32px", maxWidth: 1400, margin: "0 auto" }}>
-        {/* Header */}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 28, flexWrap: "wrap", gap: 16 }}>
-          <div>
-            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
-              <Building2 size={28} color="#00A8B5" />
-              <h1 style={{ fontSize: "1.8rem", fontWeight: 900, color: "#FFFFFF", margin: 0 }}>
+      <div className={styles.adminContent}>
+        {/* Page Top Header */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "16px", marginBottom: "24px", width: "100%" }}>
+          <div style={{ minWidth: 0, flex: "1 1 300px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6, flexWrap: "wrap" }}>
+              <div style={{ width: 38, height: 38, borderRadius: 10, background: "rgba(0, 168, 181, 0.15)", border: "1px solid rgba(0, 168, 181, 0.35)", display: "flex", alignItems: "center", justifyContent: "center", color: "#38BDF8", flexShrink: 0 }}>
+                <Building2 size={22} />
+              </div>
+              <h1 style={{ fontSize: "clamp(1.25rem, 2.5vw, 1.75rem)", fontWeight: 900, color: "#FFFFFF", margin: 0, letterSpacing: "-0.02em" }}>
                 HandyHub Partner Network Manager
               </h1>
             </div>
-            <p style={{ color: "#94A3B8", margin: 0, fontSize: "0.95rem" }}>
+            <p style={{ color: "#94A3B8", margin: 0, fontSize: "0.88rem", lineHeight: 1.5 }}>
               Enterprise partner administration, dynamic commission rules engine, estate tracking &amp; monthly settlement audit.
             </p>
           </div>
 
-          <div style={{ display: "flex", gap: 10 }}>
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap", flexShrink: 0 }}>
+            <button
+              onClick={fetchAdminData}
+              className="btn btn-secondary btn-sm"
+              style={{
+                background: "#1E293B",
+                border: "1px solid rgba(255,255,255,0.12)",
+                color: "#CBD5E1",
+                padding: "8px 14px",
+                borderRadius: 8,
+                fontSize: "12.5px",
+                fontWeight: 600,
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 6,
+                cursor: "pointer",
+              }}
+            >
+              <RefreshCw size={13} className={loading ? "spin" : ""} color="#38BDF8" /> Refresh
+            </button>
             <Link
               href="/partners/estate"
               target="_blank"
@@ -236,18 +258,19 @@ export default function AdminPartnersPage() {
                 display: "inline-flex",
                 alignItems: "center",
                 gap: 6,
-                padding: "10px 18px",
+                padding: "8px 14px",
                 background: "rgba(0, 168, 181, 0.15)",
                 border: "1px solid rgba(0, 168, 181, 0.35)",
                 color: "#38BDF8",
                 borderRadius: 8,
                 textDecoration: "none",
                 fontWeight: 700,
-                fontSize: "0.88rem",
+                fontSize: "12.5px",
               }}
             >
-              <Building2 size={15} />
+              <Building2 size={14} />
               <span>Preview Estate Portal</span>
+              <ExternalLink size={12} />
             </Link>
           </div>
         </div>
@@ -255,64 +278,83 @@ export default function AdminPartnersPage() {
         {statusMessage && (
           <div
             style={{
-              padding: 14,
-              borderRadius: 8,
-              background: "rgba(16, 185, 129, 0.15)",
+              padding: "12px 16px",
+              borderRadius: 10,
+              background: "rgba(16, 185, 129, 0.12)",
               border: "1px solid rgba(16, 185, 129, 0.3)",
-              color: "#6EE7B7",
-              marginBottom: 24,
+              color: "#34D399",
+              marginBottom: 20,
               display: "flex",
+              alignItems: "center",
               justifyContent: "space-between",
+              fontSize: "13px",
+              fontWeight: 600,
+              gap: 12,
             }}
           >
             <span>{statusMessage}</span>
-            <button onClick={() => setStatusMessage("")} style={{ background: "none", border: "none", color: "#6EE7B7", cursor: "pointer" }}>✕</button>
+            <button onClick={() => setStatusMessage("")} style={{ background: "none", border: "none", color: "#34D399", cursor: "pointer", fontSize: "16px", padding: 0 }}>✕</button>
           </div>
         )}
 
-        {/* KPI Row */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 18, marginBottom: 28 }}>
-          <div style={{ background: "#1E293B", padding: 20, borderRadius: 12, border: "1px solid rgba(255,255,255,0.08)" }}>
-            <span style={{ fontSize: "0.75rem", color: "#94A3B8", fontWeight: 700, textTransform: "uppercase" }}>TOTAL PARTNERS</span>
-            <div style={{ fontSize: "1.8rem", fontWeight: 900, color: "#FFFFFF", margin: "4px 0" }}>{partners.length} Active</div>
-            <span style={{ fontSize: "0.78rem", color: "#38BDF8" }}>Across 6 Archetypes</span>
+        {/* Responsive Financial & Estate KPI Cards Row */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 14, marginBottom: 24, width: "100%" }}>
+          <div style={{ background: "#1E293B", padding: "16px 18px", borderRadius: 12, border: "1px solid rgba(255,255,255,0.08)", minWidth: 0 }}>
+            <span style={{ fontSize: "0.72rem", color: "#94A3B8", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.5px" }}>TOTAL PARTNERS</span>
+            <div style={{ fontSize: "clamp(1.4rem, 2.5vw, 1.75rem)", fontWeight: 900, color: "#FFFFFF", margin: "4px 0", wordBreak: "break-word" }}>{partners.length} Active</div>
+            <span style={{ fontSize: "0.76rem", color: "#38BDF8", fontWeight: 600 }}>Across 6 Archetypes</span>
           </div>
 
-          <div style={{ background: "#1E293B", padding: 20, borderRadius: 12, border: "1px solid rgba(255,255,255,0.08)" }}>
-            <span style={{ fontSize: "0.75rem", color: "#94A3B8", fontWeight: 700, textTransform: "uppercase" }}>GATED ESTATES</span>
-            <div style={{ fontSize: "1.8rem", fontWeight: 900, color: "#F59E0B", margin: "4px 0" }}>{metrics.totalEstates || 0} Estates</div>
-            <span style={{ fontSize: "0.78rem", color: "#94A3B8" }}>With security gate passes</span>
+          <div style={{ background: "#1E293B", padding: "16px 18px", borderRadius: 12, border: "1px solid rgba(255,255,255,0.08)", minWidth: 0 }}>
+            <span style={{ fontSize: "0.72rem", color: "#94A3B8", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.5px" }}>GATED ESTATES</span>
+            <div style={{ fontSize: "clamp(1.4rem, 2.5vw, 1.75rem)", fontWeight: 900, color: "#F59E0B", margin: "4px 0", wordBreak: "break-word" }}>{metrics.totalEstates || 0} Estates</div>
+            <span style={{ fontSize: "0.76rem", color: "#94A3B8" }}>With security gate passes</span>
           </div>
 
-          <div style={{ background: "#1E293B", padding: 20, borderRadius: 12, border: "1px solid rgba(255,255,255,0.08)" }}>
-            <span style={{ fontSize: "0.75rem", color: "#94A3B8", fontWeight: 700, textTransform: "uppercase" }}>TOTAL COMMISSIONS PAID</span>
-            <div style={{ fontSize: "1.8rem", fontWeight: 900, color: "#10B981", margin: "4px 0" }}>
+          <div style={{ background: "#1E293B", padding: "16px 18px", borderRadius: 12, border: "1px solid rgba(255,255,255,0.08)", minWidth: 0 }}>
+            <span style={{ fontSize: "0.72rem", color: "#94A3B8", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.5px" }}>COMMISSIONS PAID</span>
+            <div style={{ fontSize: "clamp(1.4rem, 2.5vw, 1.75rem)", fontWeight: 900, color: "#10B981", margin: "4px 0", wordBreak: "break-word" }}>
               ₦{(metrics.totalEarningsDisbursed || 0).toLocaleString()}
             </div>
-            <span style={{ fontSize: "0.78rem", color: "#10B981" }}>Settled to Bank Accounts</span>
+            <span style={{ fontSize: "0.76rem", color: "#10B981", fontWeight: 600 }}>Settled to Bank Accounts</span>
           </div>
 
-          <div style={{ background: "#1E293B", padding: 20, borderRadius: 12, border: "1px solid rgba(255,255,255,0.08)" }}>
-            <span style={{ fontSize: "0.75rem", color: "#94A3B8", fontWeight: 700, textTransform: "uppercase" }}>PENDING WITHDRAWALS</span>
-            <div style={{ fontSize: "1.8rem", fontWeight: 900, color: "#38BDF8", margin: "4px 0" }}>
+          <div style={{ background: "#1E293B", padding: "16px 18px", borderRadius: 12, border: "1px solid rgba(255,255,255,0.08)", minWidth: 0 }}>
+            <span style={{ fontSize: "0.72rem", color: "#94A3B8", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.5px" }}>PENDING WITHDRAWALS</span>
+            <div style={{ fontSize: "clamp(1.4rem, 2.5vw, 1.75rem)", fontWeight: 900, color: "#38BDF8", margin: "4px 0", wordBreak: "break-word" }}>
               ₦{(metrics.totalPendingPayouts || 0).toLocaleString()}
             </div>
-            <span style={{ fontSize: "0.78rem", color: "#94A3B8" }}>Monthly batch queue</span>
+            <span style={{ fontSize: "0.76rem", color: "#94A3B8" }}>Monthly batch queue</span>
           </div>
         </div>
 
-        {/* Tab Buttons */}
-        <div style={{ display: "flex", gap: 10, borderBottom: "1px solid rgba(255,255,255,0.08)", paddingBottom: 14, marginBottom: 24, overflowX: "auto", WebkitOverflowScrolling: "touch", whiteSpace: "nowrap" }}>
+        {/* Smooth Responsive Tab Buttons Bar */}
+        <div
+          style={{
+            display: "flex",
+            gap: 8,
+            borderBottom: "1px solid rgba(255,255,255,0.08)",
+            paddingBottom: 12,
+            marginBottom: 20,
+            overflowX: "auto",
+            WebkitOverflowScrolling: "touch",
+            scrollbarWidth: "none",
+            width: "100%",
+          }}
+        >
           <button
             onClick={() => setActiveTab("partners")}
             style={{
-              padding: "10px 18px",
+              padding: "8px 16px",
               borderRadius: 8,
-              background: activeTab === "partners" ? "rgba(0, 168, 181, 0.2)" : "transparent",
+              background: activeTab === "partners" ? "rgba(0, 168, 181, 0.2)" : "rgba(255,255,255,0.04)",
               color: activeTab === "partners" ? "#38BDF8" : "#94A3B8",
-              border: activeTab === "partners" ? "1px solid rgba(0, 168, 181, 0.4)" : "none",
+              border: activeTab === "partners" ? "1px solid rgba(0, 168, 181, 0.4)" : "1px solid rgba(255,255,255,0.06)",
               fontWeight: 700,
+              fontSize: "13px",
               cursor: "pointer",
+              whiteSpace: "nowrap",
+              flexShrink: 0,
             }}
           >
             Partner Directory ({partners.length})
@@ -321,13 +363,16 @@ export default function AdminPartnersPage() {
           <button
             onClick={() => setActiveTab("rules")}
             style={{
-              padding: "10px 18px",
+              padding: "8px 16px",
               borderRadius: 8,
-              background: activeTab === "rules" ? "rgba(245, 158, 11, 0.2)" : "transparent",
+              background: activeTab === "rules" ? "rgba(245, 158, 11, 0.2)" : "rgba(255,255,255,0.04)",
               color: activeTab === "rules" ? "#F59E0B" : "#94A3B8",
-              border: activeTab === "rules" ? "1px solid rgba(245, 158, 11, 0.4)" : "none",
+              border: activeTab === "rules" ? "1px solid rgba(245, 158, 11, 0.4)" : "1px solid rgba(255,255,255,0.06)",
               fontWeight: 700,
+              fontSize: "13px",
               cursor: "pointer",
+              whiteSpace: "nowrap",
+              flexShrink: 0,
             }}
           >
             Configurable Commission Rules (Live)
@@ -336,13 +381,16 @@ export default function AdminPartnersPage() {
           <button
             onClick={() => setActiveTab("payouts")}
             style={{
-              padding: "10px 18px",
+              padding: "8px 16px",
               borderRadius: 8,
-              background: activeTab === "payouts" ? "rgba(16, 185, 129, 0.2)" : "transparent",
+              background: activeTab === "payouts" ? "rgba(16, 185, 129, 0.2)" : "rgba(255,255,255,0.04)",
               color: activeTab === "payouts" ? "#10B981" : "#94A3B8",
-              border: activeTab === "payouts" ? "1px solid rgba(16, 185, 129, 0.4)" : "none",
+              border: activeTab === "payouts" ? "1px solid rgba(16, 185, 129, 0.4)" : "1px solid rgba(255,255,255,0.06)",
               fontWeight: 700,
+              fontSize: "13px",
               cursor: "pointer",
+              whiteSpace: "nowrap",
+              flexShrink: 0,
             }}
           >
             Monthly Payout Settlements ({payouts.length})
@@ -351,23 +399,52 @@ export default function AdminPartnersPage() {
 
         {/* TAB 1: PARTNER DIRECTORY */}
         {activeTab === "partners" && (
-          <div style={{ background: "#1E293B", borderRadius: 14, padding: 24, border: "1px solid rgba(255,255,255,0.08)" }}>
-            <div style={{ display: "flex", gap: 14, marginBottom: 20, flexWrap: "wrap" }}>
-              <div style={{ flex: 1, minWidth: 260 }}>
+          <div
+            style={{
+              background: "#1E293B",
+              borderRadius: 14,
+              border: "1px solid rgba(255,255,255,0.08)",
+              overflow: "hidden",
+              width: "100%",
+            }}
+          >
+            {/* Search & Filter Header */}
+            <div style={{ padding: "14px 16px", borderBottom: "1px solid rgba(255,255,255,0.06)", display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
+              <div style={{ flex: "1 1 240px", minWidth: 0, position: "relative" }}>
                 <input
                   type="text"
                   placeholder="Search by Partner ID, Name, Email, or Referral Code..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  style={{ width: "100%", padding: "10px 14px", background: "#0F172A", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 8, color: "#FFFFFF" }}
+                  style={{
+                    width: "100%",
+                    padding: "9px 14px 9px 36px",
+                    background: "#0F172A",
+                    border: "1px solid rgba(255,255,255,0.12)",
+                    borderRadius: 8,
+                    color: "#FFFFFF",
+                    fontSize: "13px",
+                    boxSizing: "border-box",
+                  }}
                 />
+                <Search size={15} color="#64748B" style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)" }} />
               </div>
 
-              <div>
+              <div style={{ flex: "0 1 auto", minWidth: 160 }}>
                 <select
                   value={categoryFilter}
                   onChange={(e) => setCategoryFilter(e.target.value)}
-                  style={{ padding: "10px 14px", background: "#0F172A", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 8, color: "#FFFFFF" }}
+                  style={{
+                    width: "100%",
+                    padding: "9px 14px",
+                    background: "#0F172A",
+                    border: "1px solid rgba(255,255,255,0.12)",
+                    borderRadius: 8,
+                    color: "#FFFFFF",
+                    fontSize: "13px",
+                    boxSizing: "border-box",
+                    cursor: "pointer",
+                  }}
                 >
                   <option value="ALL">All Categories</option>
                   <option value="ESTATE_MANAGER">Estate &amp; Facility Managers</option>
@@ -379,18 +456,19 @@ export default function AdminPartnersPage() {
               </div>
             </div>
 
-            <div style={{ overflowX: "auto" }}>
-              <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left" }}>
+            {/* Responsive Table Viewport Container */}
+            <div style={{ width: "100%", overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
+              <table style={{ width: "100%", minWidth: 840, borderCollapse: "collapse", textAlign: "left" }}>
                 <thead>
-                  <tr style={{ borderBottom: "1px solid rgba(255,255,255,0.1)", color: "#94A3B8", fontSize: "0.78rem", textTransform: "uppercase", letterSpacing: "0.05em" }}>
-                    <th style={{ padding: "14px 16px" }}>Partner Details</th>
-                    <th style={{ padding: "14px 16px" }}>Category</th>
-                    <th style={{ padding: "14px 16px" }}>Referral Code</th>
-                    <th style={{ padding: "14px 16px" }}>Tier Level</th>
-                    <th style={{ padding: "14px 16px" }}>Wallet Balance</th>
-                    <th style={{ padding: "14px 16px" }}>Total Earned</th>
-                    <th style={{ padding: "14px 16px" }}>Status</th>
-                    <th style={{ padding: "14px 16px", textAlign: "right" }}>Action</th>
+                  <tr style={{ background: "rgba(15, 23, 42, 0.6)", borderBottom: "1px solid rgba(255,255,255,0.08)", color: "#94A3B8", fontSize: "0.75rem", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                    <th style={{ padding: "12px 16px", whiteSpace: "nowrap" }}>Partner Details</th>
+                    <th style={{ padding: "12px 14px", whiteSpace: "nowrap" }}>Category</th>
+                    <th style={{ padding: "12px 14px", whiteSpace: "nowrap" }}>Referral Code</th>
+                    <th style={{ padding: "12px 14px", whiteSpace: "nowrap" }}>Tier Level</th>
+                    <th style={{ padding: "12px 14px", whiteSpace: "nowrap" }}>Wallet Balance</th>
+                    <th style={{ padding: "12px 14px", whiteSpace: "nowrap" }}>Total Earned</th>
+                    <th style={{ padding: "12px 14px", whiteSpace: "nowrap" }}>Status</th>
+                    <th style={{ padding: "12px 16px", textAlign: "right", whiteSpace: "nowrap" }}>Action</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -422,12 +500,12 @@ export default function AdminPartnersPage() {
                           }}
                         >
                           {/* 1. PARTNER DETAILS */}
-                          <td style={{ padding: "16px 14px" }}>
+                          <td style={{ padding: "14px 16px" }}>
                             <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                               <div
                                 style={{
-                                  width: 42,
-                                  height: 42,
+                                  width: 38,
+                                  height: 38,
                                   borderRadius: 10,
                                   background: "linear-gradient(135deg, rgba(0, 168, 181, 0.3) 0%, rgba(2, 132, 199, 0.2) 100%)",
                                   border: "1px solid rgba(0, 168, 181, 0.4)",
@@ -436,21 +514,21 @@ export default function AdminPartnersPage() {
                                   justifyContent: "center",
                                   color: "#38BDF8",
                                   fontWeight: 900,
-                                  fontSize: "1.05rem",
+                                  fontSize: "0.95rem",
                                   flexShrink: 0,
                                 }}
                               >
                                 {(p.companyName || p.name || "P").charAt(0).toUpperCase()}
                               </div>
-                              <div>
-                                <div style={{ fontWeight: 800, color: "#FFFFFF", fontSize: "0.95rem" }}>
+                              <div style={{ minWidth: 0 }}>
+                                <div style={{ fontWeight: 800, color: "#FFFFFF", fontSize: "0.9rem", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                                   {p.companyName || p.name}
                                 </div>
-                                <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 4, flexWrap: "wrap" }}>
+                                <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 3, flexWrap: "wrap" }}>
                                   <span
                                     style={{
                                       fontFamily: "monospace",
-                                      fontSize: "0.75rem",
+                                      fontSize: "0.72rem",
                                       background: "rgba(0, 168, 181, 0.12)",
                                       color: "#38BDF8",
                                       padding: "1px 6px",
@@ -460,25 +538,25 @@ export default function AdminPartnersPage() {
                                   >
                                     {p.partnerId}
                                   </span>
-                                  <span style={{ fontSize: "0.78rem", color: "#94A3B8" }}>&bull; {p.email}</span>
+                                  <span style={{ fontSize: "0.76rem", color: "#94A3B8" }}>&bull; {p.email}</span>
                                 </div>
                               </div>
                             </div>
                           </td>
 
                           {/* 2. CATEGORY */}
-                          <td style={{ padding: "16px 14px" }}>
+                          <td style={{ padding: "14px 14px", whiteSpace: "nowrap" }}>
                             <span
                               style={{
                                 display: "inline-flex",
                                 alignItems: "center",
                                 gap: 6,
-                                padding: "4px 10px",
+                                padding: "4px 9px",
                                 borderRadius: 6,
                                 background: catBadge.bg,
                                 border: `1px solid ${catBadge.border}`,
                                 color: catBadge.color,
-                                fontSize: "0.78rem",
+                                fontSize: "0.76rem",
                                 fontWeight: 700,
                               }}
                             >
@@ -488,7 +566,7 @@ export default function AdminPartnersPage() {
                           </td>
 
                           {/* 3. REFERRAL CODE */}
-                          <td style={{ padding: "16px 14px" }}>
+                          <td style={{ padding: "14px 14px", whiteSpace: "nowrap" }}>
                             <button
                               onClick={() => handleCopyCode(p.referralCode)}
                               title="Click to copy referral code"
@@ -496,38 +574,38 @@ export default function AdminPartnersPage() {
                                 display: "inline-flex",
                                 alignItems: "center",
                                 gap: 6,
-                                padding: "5px 10px",
+                                padding: "4px 8px",
                                 borderRadius: 6,
                                 background: "rgba(245, 158, 11, 0.12)",
                                 border: "1px solid rgba(245, 158, 11, 0.3)",
                                 color: "#F59E0B",
                                 fontFamily: "monospace",
                                 fontWeight: 800,
-                                fontSize: "0.82rem",
+                                fontSize: "0.78rem",
                                 cursor: "pointer",
                               }}
                             >
                               <span>{p.referralCode}</span>
                               {copiedCode === p.referralCode ? (
-                                <Check size={13} color="#10B981" />
+                                <Check size={12} color="#10B981" />
                               ) : (
-                                <Copy size={13} style={{ opacity: 0.7 }} />
+                                <Copy size={12} style={{ opacity: 0.7 }} />
                               )}
                             </button>
                           </td>
 
                           {/* 4. TIER LEVEL */}
-                          <td style={{ padding: "16px 14px" }}>
+                          <td style={{ padding: "14px 14px", whiteSpace: "nowrap" }}>
                             <span
                               style={{
                                 display: "inline-block",
-                                padding: "3px 9px",
+                                padding: "3px 8px",
                                 borderRadius: 5,
                                 background: tierBadge.bg,
                                 border: `1px solid ${tierBadge.border}`,
                                 color: tierBadge.color,
                                 fontWeight: 900,
-                                fontSize: "0.75rem",
+                                fontSize: "0.72rem",
                                 letterSpacing: "0.03em",
                               }}
                             >
@@ -536,45 +614,45 @@ export default function AdminPartnersPage() {
                           </td>
 
                           {/* 5. WALLET BALANCE */}
-                          <td style={{ padding: "16px 14px" }}>
-                            <div style={{ fontWeight: 900, color: "#38BDF8", fontSize: "1rem" }}>
+                          <td style={{ padding: "14px 14px", whiteSpace: "nowrap" }}>
+                            <div style={{ fontWeight: 900, color: "#38BDF8", fontSize: "0.95rem" }}>
                               ₦{(p.walletBalance || 0).toLocaleString()}
                             </div>
-                            <div style={{ fontSize: "0.72rem", color: "#64748B", marginTop: 2 }}>
+                            <div style={{ fontSize: "0.7rem", color: "#64748B", marginTop: 1 }}>
                               Withdrawable
                             </div>
                           </td>
 
-                          {/* 6. TOTAL EARNED (HIGH VISIBILITY EMERALD GLOW) */}
-                          <td style={{ padding: "16px 14px" }}>
+                          {/* 6. TOTAL EARNED */}
+                          <td style={{ padding: "14px 14px", whiteSpace: "nowrap" }}>
                             <div
                               style={{
                                 fontWeight: 900,
                                 color: "#10B981",
-                                fontSize: "1.05rem",
-                                textShadow: "0 0 10px rgba(16, 185, 129, 0.25)",
+                                fontSize: "0.98rem",
+                                textShadow: "0 0 8px rgba(16, 185, 129, 0.2)",
                               }}
                             >
                               ₦{(p.totalEarnings || 0).toLocaleString()}
                             </div>
-                            <div style={{ fontSize: "0.72rem", color: "#34D399", opacity: 0.8, marginTop: 2 }}>
+                            <div style={{ fontSize: "0.7rem", color: "#34D399", opacity: 0.8, marginTop: 1 }}>
                               Gross Comm.
                             </div>
                           </td>
 
                           {/* 7. STATUS */}
-                          <td style={{ padding: "16px 14px" }}>
+                          <td style={{ padding: "14px 14px", whiteSpace: "nowrap" }}>
                             <span
                               style={{
                                 display: "inline-flex",
                                 alignItems: "center",
-                                gap: 6,
-                                padding: "4px 10px",
+                                gap: 5,
+                                padding: "3px 8px",
                                 borderRadius: 20,
                                 background: p.status === "ACTIVE" ? "rgba(16, 185, 129, 0.15)" : "rgba(239, 68, 68, 0.15)",
                                 border: p.status === "ACTIVE" ? "1px solid rgba(16, 185, 129, 0.35)" : "1px solid rgba(239, 68, 68, 0.35)",
                                 color: p.status === "ACTIVE" ? "#34D399" : "#F87171",
-                                fontSize: "0.75rem",
+                                fontSize: "0.72rem",
                                 fontWeight: 800,
                               }}
                             >
@@ -591,8 +669,8 @@ export default function AdminPartnersPage() {
                           </td>
 
                           {/* 8. ACTIONS */}
-                          <td style={{ padding: "16px 14px", textAlign: "right" }}>
-                            <div style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+                          <td style={{ padding: "14px 16px", textAlign: "right", whiteSpace: "nowrap" }}>
+                            <div style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
                               <Link
                                 href={portalHref}
                                 target="_blank"
@@ -601,30 +679,30 @@ export default function AdminPartnersPage() {
                                   display: "inline-flex",
                                   alignItems: "center",
                                   gap: 4,
-                                  padding: "6px 11px",
+                                  padding: "5px 10px",
                                   borderRadius: 6,
                                   background: "rgba(0, 168, 181, 0.15)",
                                   border: "1px solid rgba(0, 168, 181, 0.35)",
                                   color: "#38BDF8",
                                   textDecoration: "none",
                                   fontWeight: 700,
-                                  fontSize: "0.78rem",
+                                  fontSize: "0.76rem",
                                 }}
                               >
                                 <span>Portal</span>
-                                <ExternalLink size={12} />
+                                <ExternalLink size={11} />
                               </Link>
 
                               <button
                                 onClick={() => handlePartnerStatusUpdate(p.id, p.status === "ACTIVE" ? "SUSPENDED" : "ACTIVE")}
                                 style={{
-                                  padding: "6px 12px",
+                                  padding: "5px 10px",
                                   borderRadius: 6,
                                   background: p.status === "ACTIVE" ? "rgba(239, 68, 68, 0.15)" : "rgba(16, 185, 129, 0.15)",
                                   border: p.status === "ACTIVE" ? "1px solid rgba(239, 68, 68, 0.3)" : "1px solid rgba(16, 185, 129, 0.3)",
                                   color: p.status === "ACTIVE" ? "#FCA5A5" : "#6EE7B7",
                                   fontWeight: 700,
-                                  fontSize: "0.78rem",
+                                  fontSize: "0.76rem",
                                   cursor: "pointer",
                                 }}
                               >
@@ -644,27 +722,27 @@ export default function AdminPartnersPage() {
 
         {/* TAB 2: CONFIGURABLE COMMISSION RULES (NOT HARDCODED) */}
         {activeTab === "rules" && (
-          <div style={{ background: "#1E293B", borderRadius: 14, padding: 32, border: "1px solid rgba(0, 168, 181, 0.3)" }}>
-            <div style={{ marginBottom: 24 }}>
+          <div style={{ background: "#1E293B", borderRadius: 14, padding: "20px 22px", border: "1px solid rgba(0, 168, 181, 0.3)", width: "100%", boxSizing: "border-box" }}>
+            <div style={{ marginBottom: 20 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-                <Settings size={22} color="#00A8B5" />
-                <h2 style={{ fontSize: "1.4rem", fontWeight: 800, color: "#FFFFFF", margin: 0 }}>
+                <Settings size={20} color="#00A8B5" />
+                <h2 style={{ fontSize: "1.25rem", fontWeight: 800, color: "#FFFFFF", margin: 0 }}>
                   Dynamic Partner Commission Rates &amp; Payout Engine
                 </h2>
               </div>
-              <p style={{ color: "#94A3B8", fontSize: "0.9rem", margin: 0 }}>
+              <p style={{ color: "#94A3B8", fontSize: "0.85rem", margin: 0, lineHeight: 1.5 }}>
                 Configure live commission % rates, recruitment bonuses, and payout rules. Changes update calculations in real-time across the database without code redeployment.
               </p>
             </div>
 
             <form onSubmit={handleSaveCommissionRules}>
-              <h3 style={{ fontSize: "1.1rem", fontWeight: 800, color: "#38BDF8", marginBottom: 16 }}>
+              <h3 style={{ fontSize: "1rem", fontWeight: 800, color: "#38BDF8", marginBottom: 14 }}>
                 1. Category Booking Commission Rates (%)
               </h3>
 
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 18, marginBottom: 28 }}>
-                <div style={{ background: "#0F172A", padding: 16, borderRadius: 10 }}>
-                  <label style={{ fontSize: "0.82rem", color: "#CBD5E1", fontWeight: 700, display: "block", marginBottom: 6 }}>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 14, marginBottom: 24, width: "100%" }}>
+                <div style={{ background: "#0F172A", padding: 14, borderRadius: 10, border: "1px solid rgba(255,255,255,0.06)" }}>
+                  <label style={{ fontSize: "0.78rem", color: "#CBD5E1", fontWeight: 700, display: "block", marginBottom: 6 }}>
                     Estate Managers Booking Rev-Share (%)
                   </label>
                   <input
@@ -672,24 +750,24 @@ export default function AdminPartnersPage() {
                     step="0.1"
                     value={editableRates.estateManagerBookingPercent}
                     onChange={(e) => setEditableRates({ ...editableRates, estateManagerBookingPercent: Number(e.target.value) })}
-                    style={{ width: "100%", padding: 10, background: "#1E293B", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 6, color: "#FFFFFF", fontSize: "1.1rem", fontWeight: 800 }}
+                    style={{ width: "100%", padding: 8, background: "#1E293B", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 6, color: "#FFFFFF", fontSize: "1rem", fontWeight: 800, boxSizing: "border-box" }}
                   />
                 </div>
 
-                <div style={{ background: "#0F172A", padding: 16, borderRadius: 10 }}>
-                  <label style={{ fontSize: "0.82rem", color: "#CBD5E1", fontWeight: 700, display: "block", marginBottom: 6 }}>
+                <div style={{ background: "#0F172A", padding: 14, borderRadius: 10, border: "1px solid rgba(255,255,255,0.06)" }}>
+                  <label style={{ fontSize: "0.78rem", color: "#CBD5E1", fontWeight: 700, display: "block", marginBottom: 6 }}>
                     Estate Resident Activation Bonus (₦)
                   </label>
                   <input
                     type="number"
                     value={editableRates.estateManagerResidentBonusNgn}
                     onChange={(e) => setEditableRates({ ...editableRates, estateManagerResidentBonusNgn: Number(e.target.value) })}
-                    style={{ width: "100%", padding: 10, background: "#1E293B", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 6, color: "#FFFFFF", fontSize: "1.1rem", fontWeight: 800 }}
+                    style={{ width: "100%", padding: 8, background: "#1E293B", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 6, color: "#FFFFFF", fontSize: "1rem", fontWeight: 800, boxSizing: "border-box" }}
                   />
                 </div>
 
-                <div style={{ background: "#0F172A", padding: 16, borderRadius: 10 }}>
-                  <label style={{ fontSize: "0.82rem", color: "#CBD5E1", fontWeight: 700, display: "block", marginBottom: 6 }}>
+                <div style={{ background: "#0F172A", padding: 14, borderRadius: 10, border: "1px solid rgba(255,255,255,0.06)" }}>
+                  <label style={{ fontSize: "0.78rem", color: "#CBD5E1", fontWeight: 700, display: "block", marginBottom: 6 }}>
                     Realtors Move-in Setup Rev-Share (%)
                   </label>
                   <input
@@ -697,12 +775,12 @@ export default function AdminPartnersPage() {
                     step="0.1"
                     value={editableRates.realtorBookingPercent}
                     onChange={(e) => setEditableRates({ ...editableRates, realtorBookingPercent: Number(e.target.value) })}
-                    style={{ width: "100%", padding: 10, background: "#1E293B", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 6, color: "#FFFFFF", fontSize: "1.1rem", fontWeight: 800 }}
+                    style={{ width: "100%", padding: 8, background: "#1E293B", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 6, color: "#FFFFFF", fontSize: "1rem", fontWeight: 800, boxSizing: "border-box" }}
                   />
                 </div>
 
-                <div style={{ background: "#0F172A", padding: 16, borderRadius: 10 }}>
-                  <label style={{ fontSize: "0.82rem", color: "#CBD5E1", fontWeight: 700, display: "block", marginBottom: 6 }}>
+                <div style={{ background: "#0F172A", padding: 14, borderRadius: 10, border: "1px solid rgba(255,255,255,0.06)" }}>
+                  <label style={{ fontSize: "0.78rem", color: "#CBD5E1", fontWeight: 700, display: "block", marginBottom: 6 }}>
                     Influencers &amp; Creators Rev-Share (%)
                   </label>
                   <input
@@ -710,12 +788,12 @@ export default function AdminPartnersPage() {
                     step="0.1"
                     value={editableRates.influencerBookingPercent}
                     onChange={(e) => setEditableRates({ ...editableRates, influencerBookingPercent: Number(e.target.value) })}
-                    style={{ width: "100%", padding: 10, background: "#1E293B", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 6, color: "#FFFFFF", fontSize: "1.1rem", fontWeight: 800 }}
+                    style={{ width: "100%", padding: 8, background: "#1E293B", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 6, color: "#FFFFFF", fontSize: "1rem", fontWeight: 800, boxSizing: "border-box" }}
                   />
                 </div>
 
-                <div style={{ background: "#0F172A", padding: 16, borderRadius: 10 }}>
-                  <label style={{ fontSize: "0.82rem", color: "#CBD5E1", fontWeight: 700, display: "block", marginBottom: 6 }}>
+                <div style={{ background: "#0F172A", padding: 14, borderRadius: 10, border: "1px solid rgba(255,255,255,0.06)" }}>
+                  <label style={{ fontSize: "0.78rem", color: "#CBD5E1", fontWeight: 700, display: "block", marginBottom: 6 }}>
                     Corporate Fleet Maintenance (%)
                   </label>
                   <input
@@ -723,43 +801,43 @@ export default function AdminPartnersPage() {
                     step="0.1"
                     value={editableRates.corporatePartnerBookingPercent}
                     onChange={(e) => setEditableRates({ ...editableRates, corporatePartnerBookingPercent: Number(e.target.value) })}
-                    style={{ width: "100%", padding: 10, background: "#1E293B", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 6, color: "#FFFFFF", fontSize: "1.1rem", fontWeight: 800 }}
+                    style={{ width: "100%", padding: 8, background: "#1E293B", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 6, color: "#FFFFFF", fontSize: "1rem", fontWeight: 800, boxSizing: "border-box" }}
                   />
                 </div>
 
-                <div style={{ background: "#0F172A", padding: 16, borderRadius: 10 }}>
-                  <label style={{ fontSize: "0.82rem", color: "#CBD5E1", fontWeight: 700, display: "block", marginBottom: 6 }}>
+                <div style={{ background: "#0F172A", padding: 14, borderRadius: 10, border: "1px solid rgba(255,255,255,0.06)" }}>
+                  <label style={{ fontSize: "0.78rem", color: "#CBD5E1", fontWeight: 700, display: "block", marginBottom: 6 }}>
                     Artisan Recruitment Bonus (₦)
                   </label>
                   <input
                     type="number"
                     value={editableRates.artisanRecruitmentBonusNgn}
                     onChange={(e) => setEditableRates({ ...editableRates, artisanRecruitmentBonusNgn: Number(e.target.value) })}
-                    style={{ width: "100%", padding: 10, background: "#1E293B", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 6, color: "#FFFFFF", fontSize: "1.1rem", fontWeight: 800 }}
+                    style={{ width: "100%", padding: 8, background: "#1E293B", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 6, color: "#FFFFFF", fontSize: "1rem", fontWeight: 800, boxSizing: "border-box" }}
                   />
                 </div>
               </div>
 
-              <h3 style={{ fontSize: "1.1rem", fontWeight: 800, color: "#F59E0B", marginBottom: 16 }}>
+              <h3 style={{ fontSize: "1rem", fontWeight: 800, color: "#F59E0B", marginBottom: 14 }}>
                 2. Monthly Settlement &amp; Anti-Fraud Rules
               </h3>
 
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 18, marginBottom: 32 }}>
-                <div style={{ background: "#0F172A", padding: 16, borderRadius: 10 }}>
-                  <label style={{ fontSize: "0.82rem", color: "#CBD5E1", fontWeight: 700, display: "block", marginBottom: 6 }}>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 14, marginBottom: 28, width: "100%" }}>
+                <div style={{ background: "#0F172A", padding: 14, borderRadius: 10, border: "1px solid rgba(255,255,255,0.06)" }}>
+                  <label style={{ fontSize: "0.78rem", color: "#CBD5E1", fontWeight: 700, display: "block", marginBottom: 6 }}>
                     Minimum Withdrawal Threshold (₦)
                   </label>
                   <input
                     type="number"
                     value={editablePayoutRules.minimumPayoutNgn}
                     onChange={(e) => setEditablePayoutRules({ ...editablePayoutRules, minimumPayoutNgn: Number(e.target.value) })}
-                    style={{ width: "100%", padding: 10, background: "#1E293B", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 6, color: "#FFFFFF", fontSize: "1.1rem", fontWeight: 800 }}
+                    style={{ width: "100%", padding: 8, background: "#1E293B", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 6, color: "#FFFFFF", fontSize: "1rem", fontWeight: 800, boxSizing: "border-box" }}
                   />
                 </div>
 
-                <div style={{ background: "#0F172A", padding: 16, borderRadius: 10 }}>
-                  <label style={{ fontSize: "0.82rem", color: "#CBD5E1", fontWeight: 700, display: "block", marginBottom: 6 }}>
-                    Monthly Automated Payout Day (Day of Month)
+                <div style={{ background: "#0F172A", padding: 14, borderRadius: 10, border: "1px solid rgba(255,255,255,0.06)" }}>
+                  <label style={{ fontSize: "0.78rem", color: "#CBD5E1", fontWeight: 700, display: "block", marginBottom: 6 }}>
+                    Monthly Automated Payout Day
                   </label>
                   <input
                     type="number"
@@ -767,19 +845,19 @@ export default function AdminPartnersPage() {
                     max={28}
                     value={editablePayoutRules.monthlyPayoutDay}
                     onChange={(e) => setEditablePayoutRules({ ...editablePayoutRules, monthlyPayoutDay: Number(e.target.value) })}
-                    style={{ width: "100%", padding: 10, background: "#1E293B", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 6, color: "#FFFFFF", fontSize: "1.1rem", fontWeight: 800 }}
+                    style={{ width: "100%", padding: 8, background: "#1E293B", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 6, color: "#FFFFFF", fontSize: "1rem", fontWeight: 800, boxSizing: "border-box" }}
                   />
                 </div>
 
-                <div style={{ background: "#0F172A", padding: 16, borderRadius: 10 }}>
-                  <label style={{ fontSize: "0.82rem", color: "#CBD5E1", fontWeight: 700, display: "block", marginBottom: 6 }}>
-                    Max Fraud Risk Score (Threshold to Block)
+                <div style={{ background: "#0F172A", padding: 14, borderRadius: 10, border: "1px solid rgba(255,255,255,0.06)" }}>
+                  <label style={{ fontSize: "0.78rem", color: "#CBD5E1", fontWeight: 700, display: "block", marginBottom: 6 }}>
+                    Max Fraud Risk Score Threshold
                   </label>
                   <input
                     type="number"
                     value={editablePayoutRules.maxFraudRiskScore}
                     onChange={(e) => setEditablePayoutRules({ ...editablePayoutRules, maxFraudRiskScore: Number(e.target.value) })}
-                    style={{ width: "100%", padding: 10, background: "#1E293B", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 6, color: "#FFFFFF", fontSize: "1.1rem", fontWeight: 800 }}
+                    style={{ width: "100%", padding: 8, background: "#1E293B", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 6, color: "#FFFFFF", fontSize: "1rem", fontWeight: 800, boxSizing: "border-box" }}
                   />
                 </div>
               </div>
@@ -790,18 +868,18 @@ export default function AdminPartnersPage() {
                 style={{
                   display: "inline-flex",
                   alignItems: "center",
-                  gap: 10,
-                  padding: "14px 28px",
-                  borderRadius: 10,
+                  gap: 8,
+                  padding: "12px 24px",
+                  borderRadius: 8,
                   background: "linear-gradient(135deg, #00A8B5 0%, #0284C7 100%)",
                   color: "#FFFFFF",
                   border: "none",
                   fontWeight: 800,
-                  fontSize: "1rem",
+                  fontSize: "0.92rem",
                   cursor: "pointer",
                 }}
               >
-                <Save size={18} />
+                <Save size={16} />
                 <span>{savingConfig ? "Saving Configuration..." : "Save Live Commission Rules"}</span>
               </button>
             </form>
@@ -810,43 +888,45 @@ export default function AdminPartnersPage() {
 
         {/* TAB 3: MONTHLY PAYOUT SETTLEMENTS */}
         {activeTab === "payouts" && (
-          <div style={{ background: "#1E293B", borderRadius: 14, padding: 24, border: "1px solid rgba(255,255,255,0.08)" }}>
-            <h3 style={{ fontSize: "1.2rem", fontWeight: 800, color: "#FFFFFF", marginBottom: 16 }}>
-              Monthly Partner Commission Payout Queue
-            </h3>
+          <div style={{ background: "#1E293B", borderRadius: 14, border: "1px solid rgba(255,255,255,0.08)", overflow: "hidden", width: "100%" }}>
+            <div style={{ padding: "16px 18px", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+              <h3 style={{ fontSize: "1.1rem", fontWeight: 800, color: "#FFFFFF", margin: 0 }}>
+                Monthly Partner Commission Payout Queue
+              </h3>
+            </div>
 
-            <div style={{ overflowX: "auto" }}>
-              <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left" }}>
+            <div style={{ width: "100%", overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
+              <table style={{ width: "100%", minWidth: 700, borderCollapse: "collapse", textAlign: "left" }}>
                 <thead>
-                  <tr style={{ borderBottom: "1px solid rgba(255,255,255,0.08)", color: "#94A3B8", fontSize: "0.78rem", textTransform: "uppercase" }}>
-                    <th style={{ padding: 12 }}>Batch Ref</th>
-                    <th style={{ padding: 12 }}>Partner</th>
-                    <th style={{ padding: 12 }}>Bank Destination</th>
-                    <th style={{ padding: 12 }}>Amount</th>
-                    <th style={{ padding: 12 }}>Requested Date</th>
-                    <th style={{ padding: 12 }}>Status</th>
-                    <th style={{ padding: 12 }}>Action</th>
+                  <tr style={{ background: "rgba(15, 23, 42, 0.6)", borderBottom: "1px solid rgba(255,255,255,0.08)", color: "#94A3B8", fontSize: "0.75rem", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                    <th style={{ padding: "12px 14px", whiteSpace: "nowrap" }}>Batch Ref</th>
+                    <th style={{ padding: "12px 14px", whiteSpace: "nowrap" }}>Partner</th>
+                    <th style={{ padding: "12px 14px", whiteSpace: "nowrap" }}>Bank Destination</th>
+                    <th style={{ padding: "12px 14px", whiteSpace: "nowrap" }}>Amount</th>
+                    <th style={{ padding: "12px 14px", whiteSpace: "nowrap" }}>Requested Date</th>
+                    <th style={{ padding: "12px 14px", whiteSpace: "nowrap" }}>Status</th>
+                    <th style={{ padding: "12px 14px", textAlign: "right", whiteSpace: "nowrap" }}>Action</th>
                   </tr>
                 </thead>
                 <tbody>
                   {payouts.length > 0 ? (
                     payouts.map((p) => (
-                      <tr key={p.id} style={{ borderBottom: "1px solid rgba(255,255,255,0.04)", fontSize: "0.9rem" }}>
-                        <td style={{ padding: 14 }}><strong style={{ color: "#38BDF8" }}>{p.reference}</strong></td>
-                        <td style={{ padding: 14 }}>{p.partnerName}</td>
-                        <td style={{ padding: 14 }}>{p.bankName} &bull; {p.accountNumber} ({p.accountName})</td>
-                        <td style={{ padding: 14 }}><strong style={{ color: "#10B981" }}>₦{p.amount.toLocaleString()}</strong></td>
-                        <td style={{ padding: 14 }}>{p.requestedAt?.split("T")[0]}</td>
-                        <td style={{ padding: 14 }}>
-                          <span style={{ padding: "3px 8px", borderRadius: 4, background: p.status === "PAID" ? "rgba(16, 185, 129, 0.15)" : "rgba(245, 158, 11, 0.15)", color: p.status === "PAID" ? "#10B981" : "#F59E0B", fontSize: "0.75rem", fontWeight: 800 }}>
+                      <tr key={p.id} style={{ borderBottom: "1px solid rgba(255,255,255,0.04)", fontSize: "0.88rem" }}>
+                        <td style={{ padding: "12px 14px", whiteSpace: "nowrap" }}><strong style={{ color: "#38BDF8" }}>{p.reference}</strong></td>
+                        <td style={{ padding: "12px 14px", whiteSpace: "nowrap" }}>{p.partnerName}</td>
+                        <td style={{ padding: "12px 14px", whiteSpace: "nowrap" }}>{p.bankName} &bull; {p.accountNumber} ({p.accountName})</td>
+                        <td style={{ padding: "12px 14px", whiteSpace: "nowrap" }}><strong style={{ color: "#10B981" }}>₦{p.amount.toLocaleString()}</strong></td>
+                        <td style={{ padding: "12px 14px", whiteSpace: "nowrap" }}>{p.requestedAt?.split("T")[0]}</td>
+                        <td style={{ padding: "12px 14px", whiteSpace: "nowrap" }}>
+                          <span style={{ padding: "3px 8px", borderRadius: 4, background: p.status === "PAID" ? "rgba(16, 185, 129, 0.15)" : "rgba(245, 158, 11, 0.15)", color: p.status === "PAID" ? "#10B981" : "#F59E0B", fontSize: "0.72rem", fontWeight: 800 }}>
                             ● {p.status}
                           </span>
                         </td>
-                        <td style={{ padding: 14 }}>
+                        <td style={{ padding: "12px 14px", textAlign: "right", whiteSpace: "nowrap" }}>
                           {p.status === "PENDING" && (
                             <button
                               onClick={() => handleProcessPayout(p.id, "PAID")}
-                              style={{ padding: "6px 12px", borderRadius: 6, background: "rgba(16, 185, 129, 0.2)", color: "#6EE7B7", border: "none", fontWeight: 700, fontSize: "0.78rem", cursor: "pointer" }}
+                              style={{ padding: "5px 10px", borderRadius: 6, background: "rgba(16, 185, 129, 0.2)", color: "#6EE7B7", border: "none", fontWeight: 700, fontSize: "0.76rem", cursor: "pointer" }}
                             >
                               Approve &amp; Settle
                             </button>
@@ -856,7 +936,7 @@ export default function AdminPartnersPage() {
                     ))
                   ) : (
                     <tr>
-                      <td colSpan={7} style={{ textAlign: "center", color: "#94A3B8", padding: 24 }}>
+                      <td colSpan={7} style={{ textAlign: "center", color: "#94A3B8", padding: 24, fontSize: "0.88rem" }}>
                         No pending payouts in queue.
                       </td>
                     </tr>
