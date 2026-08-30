@@ -41,7 +41,7 @@ export default function PartnerDashboardPage() {
 
 function PartnerDashboardContent() {
   const searchParams = useSearchParams();
-  const partnerParam = searchParams.get("partnerId") || searchParams.get("code") || "ptr_apex_properties";
+  const partnerParam = searchParams.get("partnerId") || searchParams.get("code") || searchParams.get("email") || "";
 
   const [partner, setPartner] = useState<PartnerProfile | null>(null);
   const [attributions, setAttributions] = useState<PartnerAttribution[]>([]);
@@ -53,6 +53,11 @@ function PartnerDashboardContent() {
   const [message, setMessage] = useState("");
 
   const fetchDashboardData = async () => {
+    if (!partnerParam) {
+      setPartner(null);
+      setLoading(false);
+      return;
+    }
     try {
       setLoading(true);
       const res = await fetch(`/api/partners/me?partnerId=${encodeURIComponent(partnerParam)}`);
@@ -61,9 +66,12 @@ function PartnerDashboardContent() {
         setPartner(data.partner);
         setAttributions(data.attributions || []);
         setPayouts(data.payouts || []);
+      } else {
+        setPartner(null);
       }
     } catch (err) {
       console.error("Failed to load partner dashboard", err);
+      setPartner(null);
     } finally {
       setLoading(false);
     }
@@ -105,6 +113,26 @@ function PartnerDashboardContent() {
 
   const categoryMeta = partner ? PARTNER_CATEGORIES_METADATA[partner.category] : null;
   const tierMeta = partner ? PARTNER_TIERS[partner.tierLevel] : null;
+
+  if (!loading && !partner) {
+    return (
+      <div style={{ minHeight: "100vh", background: "#0B132B", color: "#F8FAFC", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "40px 20px", textAlign: "center" }}>
+        <Award size={56} color="#00A8B5" style={{ marginBottom: 16 }} />
+        <h1 style={{ fontSize: "2rem", fontWeight: 900, marginBottom: 8 }}>Partner Dashboard</h1>
+        <p style={{ color: "#94A3B8", maxWidth: 500, margin: "0 auto 24px", lineHeight: 1.6 }}>
+          No active partner portal session found with this identifier. Please register for the HandyHub Partner Network or check your Partner ID.
+        </p>
+        <div style={{ display: "flex", gap: 12 }}>
+          <Link href="/partners" style={{ padding: "12px 24px", borderRadius: 10, background: "linear-gradient(135deg, #00A8B5 0%, #0284C7 100%)", color: "#FFFFFF", textDecoration: "none", fontWeight: 800 }}>
+            Join Partner Network ➔
+          </Link>
+          <Link href="/" style={{ padding: "12px 24px", borderRadius: 10, background: "rgba(255,255,255,0.08)", color: "#FFFFFF", textDecoration: "none", fontWeight: 800 }}>
+            Return Home
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div style={{ minHeight: "100vh", background: "#0B132B", color: "#F8FAFC", paddingBottom: 80 }}>

@@ -4,27 +4,21 @@ import { partnerStore } from "@/lib/partners/store";
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
-    const identifier = searchParams.get("partnerId") || searchParams.get("code") || searchParams.get("email") || "ptr_sunnyvale_facility";
+    const identifier = searchParams.get("partnerId") || searchParams.get("code") || searchParams.get("email");
+
+    if (!identifier) {
+      return NextResponse.json(
+        { success: false, error: "Partner identifier is required" },
+        { status: 400 }
+      );
+    }
 
     const partner = await partnerStore.findPartner(identifier);
     if (!partner) {
-      // Return default top estate manager if not found
-      const fallback = await partnerStore.findPartner("ptr_sunnyvale_facility");
-      const estates = await partnerStore.getEstatesByPartner(fallback!.id);
-      const residents = await partnerStore.getResidentsByPartner(fallback!.id);
-      const requests = await partnerStore.getServiceRequestsByPartner(fallback!.id);
-      const attributions = await partnerStore.getAttributionsByPartner(fallback!.id);
-      const payouts = await partnerStore.getPayouts(fallback!.id);
-
-      return NextResponse.json({
-        success: true,
-        partner: fallback,
-        estates,
-        residents,
-        requests,
-        attributions,
-        payouts,
-      });
+      return NextResponse.json(
+        { success: false, error: "Partner portal not found. Please register or verify your Partner ID." },
+        { status: 404 }
+      );
     }
 
     const estates = await partnerStore.getEstatesByPartner(partner.id);

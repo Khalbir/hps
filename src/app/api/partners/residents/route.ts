@@ -5,7 +5,10 @@ import { EstateResident } from "@/lib/partners/types";
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
-    const partnerId = searchParams.get("partnerId") || "ptr_sunnyvale_facility";
+    const partnerId = searchParams.get("partnerId");
+    if (!partnerId) {
+      return NextResponse.json({ success: true, residents: [] });
+    }
     const residents = await partnerStore.getResidentsByPartner(partnerId);
     return NextResponse.json({ success: true, residents });
   } catch (error: any) {

@@ -50,7 +50,7 @@ export default function EstatePortalPage() {
 
 function EstatePortalContent() {
   const searchParams = useSearchParams();
-  const partnerParam = searchParams.get("partnerId") || searchParams.get("code") || "ptr_sunnyvale_facility";
+  const partnerParam = searchParams.get("partnerId") || searchParams.get("code") || searchParams.get("email") || "";
 
   const [activeTab, setActiveTab] = useState<
     "estates" | "residents" | "requests" | "artisans" | "wallet" | "reports"
@@ -61,6 +61,7 @@ function EstatePortalContent() {
   const [residents, setResidents] = useState<EstateResident[]>([]);
   const [requests, setRequests] = useState<EstateServiceRequest[]>([]);
   const [payouts, setPayouts] = useState<PartnerPayoutTransaction[]>([]);
+  const [liveArtisans, setLiveArtisans] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Modals
@@ -76,7 +77,7 @@ function EstatePortalContent() {
     address: "",
     city: "Abuja",
     state: "FCT",
-    totalUnits: 120,
+    totalUnits: 50,
     gateSecurityPhone: "",
     gatePassRequired: true,
   });
@@ -89,11 +90,16 @@ function EstatePortalContent() {
     email: "",
   });
 
-  const [withdrawAmount, setWithdrawAmount] = useState<number>(50000);
+  const [withdrawAmount, setWithdrawAmount] = useState<number>(10000);
   const [actionSuccess, setActionSuccess] = useState("");
   const [actionError, setActionError] = useState("");
 
   const fetchPortalData = async () => {
+    if (!partnerParam) {
+      setPartner(null);
+      setLoading(false);
+      return;
+    }
     try {
       setLoading(true);
       const res = await fetch(`/api/partners/me?partnerId=${encodeURIComponent(partnerParam)}`);
@@ -107,9 +113,12 @@ function EstatePortalContent() {
         if (data.estates?.length > 0 && !residentForm.estateId) {
           setResidentForm((prev) => ({ ...prev, estateId: data.estates[0].id }));
         }
+      } else {
+        setPartner(null);
       }
     } catch (err) {
       console.error("Failed to load estate portal data", err);
+      setPartner(null);
     } finally {
       setLoading(false);
     }
@@ -118,6 +127,24 @@ function EstatePortalContent() {
   useEffect(() => {
     fetchPortalData();
   }, [partnerParam]);
+
+  useEffect(() => {
+    async function loadLiveArtisans() {
+      try {
+        const res = await fetch("/api/admin/verification");
+        const data = await res.json();
+        if (res.ok && Array.isArray(data.professionals)) {
+          const verified = data.professionals.filter(
+            (p: any) => p.verificationStatus === "VERIFIED" || p.verificationStatus === "APPROVED" || p.status === "VERIFIED"
+          );
+          setLiveArtisans(verified);
+        }
+      } catch (err) {
+        console.warn("Failed to load verified artisans:", err);
+      }
+    }
+    loadLiveArtisans();
+  }, []);
 
   const handleCreateEstate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -130,9 +157,19 @@ function EstatePortalContent() {
         body: JSON.stringify({ ...estateForm, partnerId: partner.id }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed to add estate");
-      setActionSuccess("Estate added successfully!");
+      if (!res.ok) throw new Error(data.error || "Failed to register estate");
+
+      setActionSuccess(`Estate "${estateForm.name}" registered successfully!`);
       setIsAddEstateOpen(false);
+      setEstateForm({
+        name: "",
+        address: "",
+        city: "Abuja",
+        state: "FCT",
+        totalUnits: 50,
+        gateSecurityPhone: "",
+        gatePassRequired: true,
+      });
       fetchPortalData();
     } catch (err: any) {
       setActionError(err.message);
@@ -150,9 +187,17 @@ function EstatePortalContent() {
         body: JSON.stringify({ ...residentForm, partnerId: partner.id }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed to enroll resident");
-      setActionSuccess(data.message || "Resident enrolled successfully!");
+      if (!res.ok) throw new Error(data.error || "Failed to add resident");
+
+      setActionSuccess(`Resident "${residentForm.residentName}" enrolled! +₦1,000 bonus added to wallet.`);
       setIsAddResidentOpen(false);
+      setResidentForm({
+        estateId: estates[0]?.id || "",
+        residentName: "",
+        unitNumber: "",
+        phone: "",
+        email: "",
+      });
       fetchPortalData();
     } catch (err: any) {
       setActionError(err.message);
@@ -167,16 +212,11 @@ function EstatePortalContent() {
       const res = await fetch("/api/partners/withdraw", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          partnerId: partner.id,
-          amount: withdrawAmount,
-          bankName: partner.bankName,
-          accountNumber: partner.bankAccount,
-          accountName: partner.accountName,
-        }),
+        body: JSON.stringify({ partnerId: partner.id, amount: withdrawAmount }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed to submit withdrawal request");
+      if (!res.ok) throw new Error(data.error || "Withdrawal failed");
+
       setActionSuccess(data.message || "Withdrawal request submitted!");
       setIsWithdrawOpen(false);
       fetchPortalData();
@@ -193,57 +233,28 @@ function EstatePortalContent() {
     setTimeout(() => setCopiedLink(false), 2000);
   };
 
-  // Preferred Artisans for Estate
-  const preferredArtisans = [
-    {
-      name: "Musa Danladi",
-      trade: "Master Plumber & Pipe Engineer",
-      rating: 4.9,
-      jobsCompleted: 142,
-      phone: "08029988112",
-      state: "FCT Abuja",
-      securityBadge: "VERIFIED_GATE_PASS_APPROVED",
-    },
-    {
-      name: "Ibrahim Yakubu",
-      trade: "HVAC & AC Inverter Specialist",
-      rating: 4.8,
-      jobsCompleted: 98,
-      phone: "08145566778",
-      state: "FCT Abuja",
-      securityBadge: "VERIFIED_GATE_PASS_APPROVED",
-    },
-    {
-      name: "Biodun Olatunji",
-      trade: "NAFDAC Certified Pest Control Tech",
-      rating: 5.0,
-      jobsCompleted: 215,
-      phone: "08033221144",
-      state: "FCT Abuja",
-      securityBadge: "VERIFIED_GATE_PASS_APPROVED",
-    },
-    {
-      name: "Blessing Amadi",
-      trade: "Industrial & Steam Upholstery Lead",
-      rating: 4.9,
-      jobsCompleted: 178,
-      phone: "08187766554",
-      state: "FCT Abuja",
-      securityBadge: "VERIFIED_GATE_PASS_APPROVED",
-    },
-    {
-      name: "Sunday Ogbonna",
-      trade: "Solar, Inverter & High Voltage Electrician",
-      rating: 4.9,
-      jobsCompleted: 160,
-      phone: "08077665544",
-      state: "FCT Abuja",
-      securityBadge: "VERIFIED_GATE_PASS_APPROVED",
-    },
-  ];
-
-  const totalUnitsAcrossEstates = estates.reduce((sum, e) => sum + (e.totalUnits || 0), 0);
+  const totalUnitsAcrossEstates = estates.reduce((sum, e) => sum + (Number(e.totalUnits) || 0), 0);
   const totalOccupiedUnits = estates.reduce((sum, e) => sum + (e.occupiedUnits || 0), 0);
+
+  if (!loading && !partner) {
+    return (
+      <div style={{ minHeight: "100vh", background: "#070E1A", color: "#F8FAFC", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "40px 20px", textAlign: "center" }}>
+        <Building2 size={56} color="#00A8B5" style={{ marginBottom: 16 }} />
+        <h1 style={{ fontSize: "2rem", fontWeight: 900, marginBottom: 8 }}>Estate Management Portal</h1>
+        <p style={{ color: "#94A3B8", maxWidth: 500, margin: "0 auto 24px", lineHeight: 1.6 }}>
+          No active estate partner portal session found with this identifier. Please register for the HandyHub Partner Network or log in with your verified Partner ID.
+        </p>
+        <div style={{ display: "flex", gap: 12 }}>
+          <Link href="/partners" className={styles.btnTurquoise} style={{ textDecoration: "none" }}>
+            Join Partner Network ➔
+          </Link>
+          <Link href="/" className={styles.btnOutline} style={{ textDecoration: "none" }}>
+            Return Home
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={styles.portal}>
@@ -267,14 +278,14 @@ function EstatePortalContent() {
               }}
             >
               <Award size={14} />
-              <span>{partner?.tierLevel || "GOLD"} TIER PARTNER</span>
+              <span>{partner?.tierLevel || "BRONZE"} TIER PARTNER</span>
             </div>
 
             <div style={{ textAlign: "right" }}>
               <div style={{ fontWeight: 800, color: "#FFFFFF", fontSize: "0.92rem" }}>
-                {partner?.companyName || partner?.name || "Sunnyvale Facility Services"}
+                {partner?.companyName || partner?.name || "Estate Partner"}
               </div>
-              <div style={{ fontSize: "0.78rem", color: "#94A3B8" }}>ID: {partner?.partnerId || "HHP-PTR-88210"}</div>
+              <div style={{ fontSize: "0.78rem", color: "#94A3B8" }}>ID: {partner?.partnerId || "N/A"}</div>
             </div>
           </div>
         </div>
@@ -285,7 +296,7 @@ function EstatePortalContent() {
         <div className={styles.bannerContainer}>
           <div>
             <h1 className={styles.bannerTitle}>
-              {partner?.companyName || "Sunnyvale Facilities & Asset Management"}
+              {partner?.companyName || partner?.name || "Estate Management Hub"}
             </h1>
             <p className={styles.bannerSubtitle}>
               Estate facility management hub &bull; 5.0% recurring revenue-share on all verified resident maintenance bookings.
@@ -342,7 +353,7 @@ function EstatePortalContent() {
             </div>
           </div>
           <div className={styles.kpiValue} style={{ color: "#38BDF8" }}>
-            ₦{(partner?.walletBalance || 285400).toLocaleString()}
+            ₦{(partner?.walletBalance ?? 0).toLocaleString()}
           </div>
           <div className={styles.kpiSubtext}>Ready for instant monthly payout</div>
         </div>
@@ -379,9 +390,9 @@ function EstatePortalContent() {
             </div>
           </div>
           <div className={styles.kpiValue} style={{ color: "#F59E0B" }}>
-            ₦{(partner?.totalEarnings || 842000).toLocaleString()}
+            ₦{(partner?.totalEarnings ?? 0).toLocaleString()}
           </div>
-          <div className={styles.kpiSubtext}>₦{(partner?.totalWithdrawn || 556600).toLocaleString()} Paid Out</div>
+          <div className={styles.kpiSubtext}>₦{(partner?.totalWithdrawn ?? 0).toLocaleString()} Paid Out</div>
         </div>
       </div>
 
@@ -416,7 +427,7 @@ function EstatePortalContent() {
           className={`${styles.tabBtn} ${activeTab === "artisans" ? styles.activeTab : ""}`}
         >
           <ShieldCheck size={16} />
-          <span>Preferred Artisan Roster ({preferredArtisans.length})</span>
+          <span>Preferred Artisan Roster ({liveArtisans.length})</span>
         </button>
 
         <button
@@ -679,61 +690,80 @@ function EstatePortalContent() {
               </div>
             </div>
 
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: 20 }}>
-              {preferredArtisans.map((art, idx) => (
-                <div
-                  key={idx}
-                  style={{
-                    background: "rgba(15, 29, 51, 0.7)",
-                    border: "1px solid rgba(0, 168, 181, 0.2)",
-                    borderRadius: 14,
-                    padding: 20,
-                  }}
-                >
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 10 }}>
-                    <div>
-                      <h4 style={{ fontSize: "1.1rem", fontWeight: 800, color: "#FFFFFF", margin: "0 0 2px 0" }}>{art.name}</h4>
-                      <span style={{ fontSize: "0.82rem", color: "#38BDF8", fontWeight: 600 }}>{art.trade}</span>
-                    </div>
-                    <span style={{ padding: "3px 8px", background: "rgba(245, 158, 11, 0.15)", color: "#F59E0B", borderRadius: 6, fontSize: "0.78rem", fontWeight: 800 }}>
-                      ★ {art.rating}
-                    </span>
-                  </div>
-
-                  <div style={{ fontSize: "0.82rem", color: "#94A3B8", margin: "12px 0" }}>
-                    Verified Jobs in FCT: <strong style={{ color: "#E2E8F0" }}>{art.jobsCompleted} Completed</strong>
-                  </div>
-
+            {liveArtisans.length === 0 ? (
+              <div style={{ textAlign: "center", padding: "40px 20px", background: "rgba(15, 29, 51, 0.5)", borderRadius: 14, border: "1px solid rgba(255,255,255,0.06)" }}>
+                <ShieldCheck size={40} color="#00A8B5" style={{ opacity: 0.6, marginBottom: 10 }} />
+                <h4 style={{ fontSize: "1.1rem", fontWeight: 800, color: "#FFFFFF", marginBottom: 6 }}>No Active Artisans Rostered Yet</h4>
+                <p style={{ color: "#94A3B8", fontSize: "0.88rem", maxWidth: 460, margin: "0 auto", lineHeight: 1.5 }}>
+                  Pre-screened, background-checked HandyHub artisans assigned to your estate bookings will automatically be rostered here with security gate clearance.
+                </p>
+              </div>
+            ) : (
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: 20 }}>
+                {liveArtisans.map((art: any, idx: number) => (
                   <div
+                    key={art.id || idx}
                     style={{
-                      padding: "6px 10px",
-                      background: "rgba(16, 185, 129, 0.1)",
-                      border: "1px solid rgba(16, 185, 129, 0.3)",
-                      borderRadius: 6,
-                      fontSize: "0.75rem",
-                      color: "#34D399",
-                      fontWeight: 700,
-                      marginBottom: 14,
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: 6,
+                      background: "rgba(15, 29, 51, 0.7)",
+                      border: "1px solid rgba(0, 168, 181, 0.2)",
+                      borderRadius: 14,
+                      padding: 20,
                     }}
                   >
-                    <ShieldCheck size={13} />
-                    <span>GATE SECURITY PASS CLEARED</span>
-                  </div>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 10 }}>
+                      <div>
+                        <h4 style={{ fontSize: "1.1rem", fontWeight: 800, color: "#FFFFFF", margin: "0 0 2px 0" }}>{art.name}</h4>
+                        <span style={{ fontSize: "0.82rem", color: "#38BDF8", fontWeight: 600 }}>{art.field || art.primaryField || "Certified Partner"}</span>
+                      </div>
+                      <span style={{ padding: "3px 8px", background: "rgba(245, 158, 11, 0.15)", color: "#F59E0B", borderRadius: 6, fontSize: "0.78rem", fontWeight: 800 }}>
+                        ★ {art.rating || 5.0}
+                      </span>
+                    </div>
 
-                  <a
-                    href={`tel:${art.phone}`}
-                    className={styles.btnTurquoise}
-                    style={{ width: "100%", justifyContent: "center", padding: "10px", fontSize: "0.85rem", textDecoration: "none" }}
-                  >
-                    <Phone size={14} />
-                    <span>Contact / Dispatch Artisan</span>
-                  </a>
-                </div>
-              ))}
-            </div>
+                    <div style={{ fontSize: "0.82rem", color: "#94A3B8", margin: "12px 0" }}>
+                      Verified Jobs in {art.city || art.operatingState || "Region"}: <strong style={{ color: "#E2E8F0" }}>{art.totalJobs || 0} Completed</strong>
+                    </div>
+
+                    <div
+                      style={{
+                        padding: "6px 10px",
+                        background: "rgba(16, 185, 129, 0.1)",
+                        border: "1px solid rgba(16, 185, 129, 0.3)",
+                        borderRadius: 6,
+                        fontSize: "0.75rem",
+                        color: "#34D399",
+                        fontWeight: 700,
+                        marginBottom: 14,
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: 6,
+                      }}
+                    >
+                      <ShieldCheck size={13} />
+                      <span>GATE SECURITY PASS CLEARED</span>
+                    </div>
+
+                    {art.phone ? (
+                      <a
+                        href={`tel:${art.phone}`}
+                        className={styles.btnTurquoise}
+                        style={{ width: "100%", justifyContent: "center", padding: "10px", fontSize: "0.85rem", textDecoration: "none" }}
+                      >
+                        <Phone size={14} />
+                        <span>Contact / Dispatch Artisan</span>
+                      </a>
+                    ) : (
+                      <div
+                        className={styles.btnTurquoise}
+                        style={{ width: "100%", justifyContent: "center", padding: "10px", fontSize: "0.85rem", opacity: 0.7 }}
+                      >
+                        <span>Verified Dispatch Active</span>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 

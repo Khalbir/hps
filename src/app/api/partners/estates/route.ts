@@ -5,7 +5,11 @@ import { PartnerEstate } from "@/lib/partners/types";
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
-    const partnerId = searchParams.get("partnerId") || "ptr_sunnyvale_facility";
+    const partnerId = searchParams.get("partnerId");
+
+    if (!partnerId) {
+      return NextResponse.json({ success: true, estates: [] });
+    }
 
     const estates = await partnerStore.getEstatesByPartner(partnerId);
     return NextResponse.json({ success: true, estates });
@@ -50,8 +54,8 @@ export async function POST(request: Request) {
       city: city || "Abuja",
       state: state || "FCT",
       address: address.trim(),
-      totalUnits: Number(totalUnits) || 100,
-      occupiedUnits: Number(occupiedUnits) || Math.round((Number(totalUnits) || 100) * 0.8),
+      totalUnits: Number(totalUnits) || 0,
+      occupiedUnits: Number(occupiedUnits) || 0,
       gateSecurityPhone: gateSecurityPhone?.trim() || partner.phone,
       gatePassRequired: gatePassRequired !== undefined ? Boolean(gatePassRequired) : true,
       preferredCategories: Array.isArray(preferredCategories) && preferredCategories.length > 0
