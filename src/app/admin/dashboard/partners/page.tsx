@@ -18,10 +18,17 @@ import {
   DollarSign,
   Award,
   RefreshCw,
+  Copy,
+  Check,
+  ExternalLink,
+  Sparkles,
+  Home,
+  Briefcase,
+  Video,
 } from "lucide-react";
 import { AdminLayoutShell } from "@/components/layout/AdminLayoutShell";
-import { PartnerProfile, PartnerPayoutTransaction, PartnerCommissionConfig } from "@/lib/partners/types";
-import { PARTNER_CATEGORIES_METADATA } from "@/lib/partners/config";
+import { PartnerProfile, PartnerPayoutTransaction, PartnerCommissionConfig, PartnerCategory } from "@/lib/partners/types";
+import { PARTNER_CATEGORIES_METADATA, PARTNER_TIERS } from "@/lib/partners/config";
 
 export default function AdminPartnersPage() {
   const [partners, setPartners] = useState<PartnerProfile[]>([]);
@@ -40,6 +47,7 @@ export default function AdminPartnersPage() {
   const [loading, setLoading] = useState(true);
   const [savingConfig, setSavingConfig] = useState(false);
   const [statusMessage, setStatusMessage] = useState("");
+  const [copiedCode, setCopiedCode] = useState<string | null>(null);
 
   // Config editing state
   const [editableRates, setEditableRates] = useState({
@@ -153,12 +161,52 @@ export default function AdminPartnersPage() {
     }
   };
 
+  const getCategoryBadge = (category: PartnerCategory) => {
+    switch (category) {
+      case "ESTATE_MANAGER":
+        return { bg: "rgba(0, 168, 181, 0.15)", border: "rgba(0, 168, 181, 0.35)", color: "#38BDF8", icon: <Building2 size={13} /> };
+      case "REALTOR":
+        return { bg: "rgba(234, 88, 12, 0.15)", border: "rgba(234, 88, 12, 0.35)", color: "#FB923C", icon: <Home size={13} /> };
+      case "INFLUENCER":
+        return { bg: "rgba(139, 92, 246, 0.15)", border: "rgba(139, 92, 246, 0.35)", color: "#C084FC", icon: <Sparkles size={13} /> };
+      case "COMMUNITY_LEADER":
+        return { bg: "rgba(16, 185, 129, 0.15)", border: "rgba(16, 185, 129, 0.35)", color: "#34D399", icon: <Users size={13} /> };
+      case "CORPORATE_PARTNER":
+        return { bg: "rgba(14, 165, 233, 0.15)", border: "rgba(14, 165, 233, 0.35)", color: "#60A5FA", icon: <Briefcase size={13} /> };
+      case "CONTENT_CREATOR":
+        return { bg: "rgba(236, 72, 153, 0.15)", border: "rgba(236, 72, 153, 0.35)", color: "#F472B6", icon: <Video size={13} /> };
+      default:
+        return { bg: "rgba(148, 163, 184, 0.15)", border: "rgba(148, 163, 184, 0.35)", color: "#CBD5E1", icon: <Users size={13} /> };
+    }
+  };
+
+  const getTierBadge = (tier: string) => {
+    switch (tier) {
+      case "PLATINUM":
+        return { bg: "rgba(168, 85, 247, 0.18)", border: "rgba(168, 85, 247, 0.4)", color: "#E9D5FF" };
+      case "GOLD":
+        return { bg: "rgba(234, 179, 8, 0.18)", border: "rgba(234, 179, 8, 0.4)", color: "#FEF08A" };
+      case "SILVER":
+        return { bg: "rgba(148, 163, 184, 0.18)", border: "rgba(148, 163, 184, 0.4)", color: "#E2E8F0" };
+      case "BRONZE":
+      default:
+        return { bg: "rgba(217, 119, 6, 0.18)", border: "rgba(217, 119, 6, 0.4)", color: "#FDE68A" };
+    }
+  };
+
+  const handleCopyCode = (code: string) => {
+    navigator.clipboard.writeText(code);
+    setCopiedCode(code);
+    setTimeout(() => setCopiedCode(null), 2000);
+  };
+
   const filteredPartners = partners.filter((p) => {
     const matchesSearch =
       p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       p.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
       p.partnerId.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      p.referralCode.toLowerCase().includes(searchTerm.toLowerCase());
+      p.referralCode.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (p.companyName && p.companyName.toLowerCase().includes(searchTerm.toLowerCase()));
     const matchesCategory = categoryFilter === "ALL" || p.category === categoryFilter;
     return matchesSearch && matchesCategory;
   });
@@ -334,70 +382,259 @@ export default function AdminPartnersPage() {
             <div style={{ overflowX: "auto" }}>
               <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left" }}>
                 <thead>
-                  <tr style={{ borderBottom: "1px solid rgba(255,255,255,0.08)", color: "#94A3B8", fontSize: "0.78rem", textTransform: "uppercase" }}>
-                    <th style={{ padding: 12 }}>Partner Details</th>
-                    <th style={{ padding: 12 }}>Category</th>
-                    <th style={{ padding: 12 }}>Referral Code</th>
-                    <th style={{ padding: 12 }}>Tier Level</th>
-                    <th style={{ padding: 12 }}>Wallet Balance</th>
-                    <th style={{ padding: 12 }}>Total Earned</th>
-                    <th style={{ padding: 12 }}>Status</th>
-                    <th style={{ padding: 12 }}>Action</th>
+                  <tr style={{ borderBottom: "1px solid rgba(255,255,255,0.1)", color: "#94A3B8", fontSize: "0.78rem", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                    <th style={{ padding: "14px 16px" }}>Partner Details</th>
+                    <th style={{ padding: "14px 16px" }}>Category</th>
+                    <th style={{ padding: "14px 16px" }}>Referral Code</th>
+                    <th style={{ padding: "14px 16px" }}>Tier Level</th>
+                    <th style={{ padding: "14px 16px" }}>Wallet Balance</th>
+                    <th style={{ padding: "14px 16px" }}>Total Earned</th>
+                    <th style={{ padding: "14px 16px" }}>Status</th>
+                    <th style={{ padding: "14px 16px", textAlign: "right" }}>Action</th>
                   </tr>
                 </thead>
                 <tbody>
                   {filteredPartners.length === 0 ? (
                     <tr>
-                      <td colSpan={8} style={{ textAlign: "center", padding: "40px 20px" }}>
-                        <Building2 size={36} color="#00A8B5" style={{ opacity: 0.5, marginBottom: 8, display: "inline-block" }} />
-                        <div style={{ fontWeight: 700, color: "#E2E8F0", fontSize: "0.95rem" }}>No registered partners found</div>
-                        <div style={{ fontSize: "0.8rem", color: "#64748B", marginTop: 4 }}>
-                          When partners sign up via the Partner Network portal, their profiles, vanity referral codes, and estate metrics will appear here in real time.
+                      <td colSpan={8} style={{ textAlign: "center", padding: "48px 20px" }}>
+                        <Building2 size={40} color="#00A8B5" style={{ opacity: 0.6, marginBottom: 12, display: "inline-block" }} />
+                        <div style={{ fontWeight: 800, color: "#FFFFFF", fontSize: "1rem" }}>No registered partners found</div>
+                        <div style={{ fontSize: "0.85rem", color: "#94A3B8", marginTop: 4, maxWidth: 440, margin: "6px auto 0" }}>
+                          When partners sign up via the Partner Network portal, their live profiles, referral codes, and estate metrics will appear here in real time.
                         </div>
                       </td>
                     </tr>
                   ) : (
-                    filteredPartners.map((p) => (
-                      <tr key={p.id} style={{ borderBottom: "1px solid rgba(255,255,255,0.04)", fontSize: "0.9rem" }}>
-                        <td style={{ padding: 14 }}>
-                          <div style={{ fontWeight: 800, color: "#FFFFFF" }}>{p.companyName || p.name}</div>
-                          <div style={{ fontSize: "0.75rem", color: "#64748B" }}>{p.partnerId} &bull; {p.email}</div>
-                        </td>
-                        <td style={{ padding: 14 }}>
-                          <span style={{ fontSize: "0.8rem", color: "#CBD5E1" }}>{PARTNER_CATEGORIES_METADATA[p.category]?.label || p.category}</span>
-                        </td>
-                        <td style={{ padding: 14 }}><strong style={{ color: "#F59E0B" }}>{p.referralCode}</strong></td>
-                        <td style={{ padding: 14 }}>
-                          <span style={{ padding: "3px 8px", borderRadius: 4, background: "rgba(245, 158, 11, 0.15)", color: "#F59E0B", fontWeight: 800, fontSize: "0.75rem" }}>
-                            {p.tierLevel}
-                          </span>
-                        </td>
-                        <td style={{ padding: 14 }}><strong style={{ color: "#38BDF8" }}>₦{(p.walletBalance || 0).toLocaleString()}</strong></td>
-                        <td style={{ padding: 14 }}>₦{(p.totalEarnings || 0).toLocaleString()}</td>
-                        <td style={{ padding: 14 }}>
-                          <span style={{ padding: "3px 8px", borderRadius: 4, background: p.status === "ACTIVE" ? "rgba(16, 185, 129, 0.15)" : "rgba(239, 68, 68, 0.15)", color: p.status === "ACTIVE" ? "#10B981" : "#EF4444", fontSize: "0.75rem", fontWeight: 800 }}>
-                            ● {p.status}
-                          </span>
-                        </td>
-                        <td style={{ padding: 14 }}>
-                          <button
-                            onClick={() => handlePartnerStatusUpdate(p.id, p.status === "ACTIVE" ? "SUSPENDED" : "ACTIVE")}
-                            style={{
-                              padding: "6px 12px",
-                              borderRadius: 6,
-                              background: p.status === "ACTIVE" ? "rgba(239, 68, 68, 0.2)" : "rgba(16, 185, 129, 0.2)",
-                              color: p.status === "ACTIVE" ? "#FCA5A5" : "#6EE7B7",
-                              border: "none",
-                              fontWeight: 700,
-                              fontSize: "0.78rem",
-                              cursor: "pointer",
-                            }}
-                          >
-                            {p.status === "ACTIVE" ? "Suspend" : "Activate"}
-                          </button>
-                        </td>
-                      </tr>
-                    ))
+                    filteredPartners.map((p) => {
+                      const catBadge = getCategoryBadge(p.category);
+                      const tierBadge = getTierBadge(p.tierLevel);
+                      const portalHref =
+                        p.category === "ESTATE_MANAGER"
+                          ? `/partners/estate?partnerId=${encodeURIComponent(p.partnerId)}&code=${encodeURIComponent(p.referralCode)}`
+                          : `/partners/dashboard?partnerId=${encodeURIComponent(p.partnerId)}&code=${encodeURIComponent(p.referralCode)}`;
+
+                      return (
+                        <tr
+                          key={p.id}
+                          style={{
+                            borderBottom: "1px solid rgba(255,255,255,0.06)",
+                            transition: "background 0.2s ease",
+                          }}
+                        >
+                          {/* 1. PARTNER DETAILS */}
+                          <td style={{ padding: "16px 14px" }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                              <div
+                                style={{
+                                  width: 42,
+                                  height: 42,
+                                  borderRadius: 10,
+                                  background: "linear-gradient(135deg, rgba(0, 168, 181, 0.3) 0%, rgba(2, 132, 199, 0.2) 100%)",
+                                  border: "1px solid rgba(0, 168, 181, 0.4)",
+                                  display: "flex",
+                                  alignItems: "center",
+                                  justifyContent: "center",
+                                  color: "#38BDF8",
+                                  fontWeight: 900,
+                                  fontSize: "1.05rem",
+                                  flexShrink: 0,
+                                }}
+                              >
+                                {(p.companyName || p.name || "P").charAt(0).toUpperCase()}
+                              </div>
+                              <div>
+                                <div style={{ fontWeight: 800, color: "#FFFFFF", fontSize: "0.95rem" }}>
+                                  {p.companyName || p.name}
+                                </div>
+                                <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 4, flexWrap: "wrap" }}>
+                                  <span
+                                    style={{
+                                      fontFamily: "monospace",
+                                      fontSize: "0.75rem",
+                                      background: "rgba(0, 168, 181, 0.12)",
+                                      color: "#38BDF8",
+                                      padding: "1px 6px",
+                                      borderRadius: 4,
+                                      border: "1px solid rgba(0, 168, 181, 0.25)",
+                                    }}
+                                  >
+                                    {p.partnerId}
+                                  </span>
+                                  <span style={{ fontSize: "0.78rem", color: "#94A3B8" }}>&bull; {p.email}</span>
+                                </div>
+                              </div>
+                            </div>
+                          </td>
+
+                          {/* 2. CATEGORY */}
+                          <td style={{ padding: "16px 14px" }}>
+                            <span
+                              style={{
+                                display: "inline-flex",
+                                alignItems: "center",
+                                gap: 6,
+                                padding: "4px 10px",
+                                borderRadius: 6,
+                                background: catBadge.bg,
+                                border: `1px solid ${catBadge.border}`,
+                                color: catBadge.color,
+                                fontSize: "0.78rem",
+                                fontWeight: 700,
+                              }}
+                            >
+                              {catBadge.icon}
+                              <span>{PARTNER_CATEGORIES_METADATA[p.category]?.label || p.category}</span>
+                            </span>
+                          </td>
+
+                          {/* 3. REFERRAL CODE */}
+                          <td style={{ padding: "16px 14px" }}>
+                            <button
+                              onClick={() => handleCopyCode(p.referralCode)}
+                              title="Click to copy referral code"
+                              style={{
+                                display: "inline-flex",
+                                alignItems: "center",
+                                gap: 6,
+                                padding: "5px 10px",
+                                borderRadius: 6,
+                                background: "rgba(245, 158, 11, 0.12)",
+                                border: "1px solid rgba(245, 158, 11, 0.3)",
+                                color: "#F59E0B",
+                                fontFamily: "monospace",
+                                fontWeight: 800,
+                                fontSize: "0.82rem",
+                                cursor: "pointer",
+                              }}
+                            >
+                              <span>{p.referralCode}</span>
+                              {copiedCode === p.referralCode ? (
+                                <Check size={13} color="#10B981" />
+                              ) : (
+                                <Copy size={13} style={{ opacity: 0.7 }} />
+                              )}
+                            </button>
+                          </td>
+
+                          {/* 4. TIER LEVEL */}
+                          <td style={{ padding: "16px 14px" }}>
+                            <span
+                              style={{
+                                display: "inline-block",
+                                padding: "3px 9px",
+                                borderRadius: 5,
+                                background: tierBadge.bg,
+                                border: `1px solid ${tierBadge.border}`,
+                                color: tierBadge.color,
+                                fontWeight: 900,
+                                fontSize: "0.75rem",
+                                letterSpacing: "0.03em",
+                              }}
+                            >
+                              {p.tierLevel}
+                            </span>
+                          </td>
+
+                          {/* 5. WALLET BALANCE */}
+                          <td style={{ padding: "16px 14px" }}>
+                            <div style={{ fontWeight: 900, color: "#38BDF8", fontSize: "1rem" }}>
+                              ₦{(p.walletBalance || 0).toLocaleString()}
+                            </div>
+                            <div style={{ fontSize: "0.72rem", color: "#64748B", marginTop: 2 }}>
+                              Withdrawable
+                            </div>
+                          </td>
+
+                          {/* 6. TOTAL EARNED (HIGH VISIBILITY EMERALD GLOW) */}
+                          <td style={{ padding: "16px 14px" }}>
+                            <div
+                              style={{
+                                fontWeight: 900,
+                                color: "#10B981",
+                                fontSize: "1.05rem",
+                                textShadow: "0 0 10px rgba(16, 185, 129, 0.25)",
+                              }}
+                            >
+                              ₦{(p.totalEarnings || 0).toLocaleString()}
+                            </div>
+                            <div style={{ fontSize: "0.72rem", color: "#34D399", opacity: 0.8, marginTop: 2 }}>
+                              Gross Comm.
+                            </div>
+                          </td>
+
+                          {/* 7. STATUS */}
+                          <td style={{ padding: "16px 14px" }}>
+                            <span
+                              style={{
+                                display: "inline-flex",
+                                alignItems: "center",
+                                gap: 6,
+                                padding: "4px 10px",
+                                borderRadius: 20,
+                                background: p.status === "ACTIVE" ? "rgba(16, 185, 129, 0.15)" : "rgba(239, 68, 68, 0.15)",
+                                border: p.status === "ACTIVE" ? "1px solid rgba(16, 185, 129, 0.35)" : "1px solid rgba(239, 68, 68, 0.35)",
+                                color: p.status === "ACTIVE" ? "#34D399" : "#F87171",
+                                fontSize: "0.75rem",
+                                fontWeight: 800,
+                              }}
+                            >
+                              <span
+                                style={{
+                                  width: 6,
+                                  height: 6,
+                                  borderRadius: "50%",
+                                  background: p.status === "ACTIVE" ? "#10B981" : "#EF4444",
+                                }}
+                              />
+                              {p.status}
+                            </span>
+                          </td>
+
+                          {/* 8. ACTIONS */}
+                          <td style={{ padding: "16px 14px", textAlign: "right" }}>
+                            <div style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+                              <Link
+                                href={portalHref}
+                                target="_blank"
+                                title="Open Live Partner Portal"
+                                style={{
+                                  display: "inline-flex",
+                                  alignItems: "center",
+                                  gap: 4,
+                                  padding: "6px 11px",
+                                  borderRadius: 6,
+                                  background: "rgba(0, 168, 181, 0.15)",
+                                  border: "1px solid rgba(0, 168, 181, 0.35)",
+                                  color: "#38BDF8",
+                                  textDecoration: "none",
+                                  fontWeight: 700,
+                                  fontSize: "0.78rem",
+                                }}
+                              >
+                                <span>Portal</span>
+                                <ExternalLink size={12} />
+                              </Link>
+
+                              <button
+                                onClick={() => handlePartnerStatusUpdate(p.id, p.status === "ACTIVE" ? "SUSPENDED" : "ACTIVE")}
+                                style={{
+                                  padding: "6px 12px",
+                                  borderRadius: 6,
+                                  background: p.status === "ACTIVE" ? "rgba(239, 68, 68, 0.15)" : "rgba(16, 185, 129, 0.15)",
+                                  border: p.status === "ACTIVE" ? "1px solid rgba(239, 68, 68, 0.3)" : "1px solid rgba(16, 185, 129, 0.3)",
+                                  color: p.status === "ACTIVE" ? "#FCA5A5" : "#6EE7B7",
+                                  fontWeight: 700,
+                                  fontSize: "0.78rem",
+                                  cursor: "pointer",
+                                }}
+                              >
+                                {p.status === "ACTIVE" ? "Suspend" : "Activate"}
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })
                   )}
                 </tbody>
               </table>
