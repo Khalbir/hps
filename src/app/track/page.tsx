@@ -617,11 +617,8 @@ function TrackContent() {
                         <button
                           type="button"
                           onClick={handleWhatsAppAction}
-                          className="btn btn-secondary btn-md"
+                          className="btn btn-whatsapp btn-md"
                           style={{
-                            color: "#25D366",
-                            borderColor: "rgba(37,211,102,0.4)",
-                            background: "rgba(37,211,102,0.08)",
                             fontWeight: 700,
                             display: "inline-flex",
                             alignItems: "center",
@@ -630,7 +627,7 @@ function TrackContent() {
                           }}
                           title={`Chat with ${channels.artisanName} on WhatsApp (${channels.whatsappNumber})`}
                         >
-                          <MessageSquare size={16} color="#25D366" /> WhatsApp
+                          <MessageSquare size={16} color="#FFFFFF" /> WhatsApp
                         </button>
                         <a
                           href={channels.smsUrl}
@@ -1055,20 +1052,17 @@ function TrackContent() {
                         channel: "WHATSAPP",
                       });
                     }}
-                    className="btn btn-secondary btn-md"
+                    className="btn btn-whatsapp btn-md"
                     style={{
                       width: "100%",
                       justifyContent: "center",
-                      background: "rgba(37, 211, 102, 0.15)",
-                      borderColor: "#25D366",
-                      color: "#25D366",
                       fontWeight: 700,
                       display: "flex",
                       alignItems: "center",
                       gap: 8,
                     }}
                   >
-                    <MessageSquare size={16} color="#25D366" /> Open WhatsApp Chat ({channels.whatsappNumber})
+                    <MessageSquare size={18} color="#FFFFFF" /> Open WhatsApp Chat ({channels.whatsappNumber})
                   </a>
 
                   {/* SMS Text Fallback */}
