@@ -94,15 +94,50 @@ function EstatePortalContent() {
   const [actionSuccess, setActionSuccess] = useState("");
   const [actionError, setActionError] = useState("");
 
-  const fetchPortalData = async () => {
-    if (!partnerParam) {
+  const [lookupIdentifier, setLookupIdentifier] = useState(partnerParam || "");
+  const [lookupError, setLookupError] = useState("");
+  const [lookupLoading, setLookupLoading] = useState(false);
+
+  const fetchPortalData = async (overrideIdentifier?: string) => {
+    let identifier = overrideIdentifier || partnerParam;
+
+    // Check storage if no identifier in URL
+    if (!identifier && typeof window !== "undefined") {
+      identifier = sessionStorage.getItem("hhp_partner_id") || "";
+      if (!identifier) {
+        try {
+          const cached = localStorage.getItem("hhp_current_partner");
+          if (cached) {
+            const parsed = JSON.parse(cached);
+            if (parsed?.partnerId) identifier = parsed.partnerId;
+          }
+        } catch {}
+      }
+    }
+
+    if (!identifier) {
+      if (typeof window !== "undefined") {
+        try {
+          const cached = localStorage.getItem("hhp_current_partner");
+          if (cached) {
+            const parsed = JSON.parse(cached);
+            if (parsed && (parsed.partnerId || parsed.id)) {
+              setPartner(parsed);
+              setLoading(false);
+              return;
+            }
+          }
+        } catch {}
+      }
       setPartner(null);
       setLoading(false);
       return;
     }
+
     try {
       setLoading(true);
-      const res = await fetch(`/api/partners/me?partnerId=${encodeURIComponent(partnerParam)}`);
+      setLookupError("");
+      const res = await fetch(`/api/partners/me?partnerId=${encodeURIComponent(identifier)}`);
       const data = await res.json();
       if (data.success && data.partner) {
         setPartner(data.partner);
@@ -110,23 +145,71 @@ function EstatePortalContent() {
         setResidents(data.residents || []);
         setRequests(data.requests || []);
         setPayouts(data.payouts || []);
+        if (typeof window !== "undefined") {
+          localStorage.setItem("hhp_current_partner", JSON.stringify(data.partner));
+          sessionStorage.setItem("hhp_partner_id", data.partner.partnerId);
+        }
         if (data.estates?.length > 0 && !residentForm.estateId) {
           setResidentForm((prev) => ({ ...prev, estateId: data.estates[0].id }));
         }
       } else {
+        // Fallback to local cache
+        if (typeof window !== "undefined") {
+          try {
+            const cached = localStorage.getItem("hhp_current_partner");
+            if (cached) {
+              const parsed = JSON.parse(cached);
+              if (
+                parsed &&
+                (parsed.partnerId?.toLowerCase() === identifier.toLowerCase() ||
+                 parsed.referralCode?.toLowerCase() === identifier.toLowerCase() ||
+                 parsed.email?.toLowerCase() === identifier.toLowerCase() ||
+                 parsed.id?.toLowerCase() === identifier.toLowerCase())
+              ) {
+                setPartner(parsed);
+                setLoading(false);
+                return;
+              }
+            }
+          } catch {}
+        }
         setPartner(null);
+        if (overrideIdentifier) {
+          setLookupError("No partner account found with this Partner ID, Code, or Email.");
+        }
       }
     } catch (err) {
       console.error("Failed to load estate portal data", err);
+      if (typeof window !== "undefined") {
+        try {
+          const cached = localStorage.getItem("hhp_current_partner");
+          if (cached) {
+            const parsed = JSON.parse(cached);
+            if (parsed) {
+              setPartner(parsed);
+              setLoading(false);
+              return;
+            }
+          }
+        } catch {}
+      }
       setPartner(null);
     } finally {
       setLoading(false);
+      setLookupLoading(false);
     }
   };
 
   useEffect(() => {
     fetchPortalData();
   }, [partnerParam]);
+
+  const handleLookupSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!lookupIdentifier.trim()) return;
+    setLookupLoading(true);
+    fetchPortalData(lookupIdentifier.trim());
+  };
 
   useEffect(() => {
     async function loadLiveArtisans() {
@@ -239,18 +322,48 @@ function EstatePortalContent() {
   if (!loading && !partner) {
     return (
       <div style={{ minHeight: "100vh", background: "#070E1A", color: "#F8FAFC", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "40px 20px", textAlign: "center" }}>
-        <Building2 size={56} color="#00A8B5" style={{ marginBottom: 16 }} />
-        <h1 style={{ fontSize: "2rem", fontWeight: 900, marginBottom: 8 }}>Estate Management Portal</h1>
-        <p style={{ color: "#94A3B8", maxWidth: 500, margin: "0 auto 24px", lineHeight: 1.6 }}>
-          No active estate partner portal session found with this identifier. Please register for the HandyHub Partner Network or log in with your verified Partner ID.
-        </p>
-        <div style={{ display: "flex", gap: 12 }}>
-          <Link href="/partners" className={styles.btnTurquoise} style={{ textDecoration: "none" }}>
-            Join Partner Network ➔
-          </Link>
-          <Link href="/" className={styles.btnOutline} style={{ textDecoration: "none" }}>
-            Return Home
-          </Link>
+        <div style={{ maxWidth: 480, width: "100%", background: "#0F172A", border: "1px solid rgba(0, 168, 181, 0.3)", borderRadius: 16, padding: 32, boxShadow: "0 20px 40px rgba(0,0,0,0.5)" }}>
+          <Building2 size={48} color="#00A8B5" style={{ marginBottom: 14 }} />
+          <h1 style={{ fontSize: "1.6rem", fontWeight: 900, marginBottom: 8, color: "#FFFFFF" }}>Estate Management Portal</h1>
+          <p style={{ color: "#94A3B8", fontSize: "0.88rem", margin: "0 auto 20px", lineHeight: 1.5 }}>
+            Access your gated estate dashboard, resident service requests, and commission analytics.
+          </p>
+
+          <form onSubmit={handleLookupSubmit} style={{ marginBottom: 20 }}>
+            <div style={{ marginBottom: 12 }}>
+              <input
+                type="text"
+                value={lookupIdentifier}
+                onChange={(e) => setLookupIdentifier(e.target.value)}
+                placeholder="Enter Partner ID (e.g. HHP-PTR-10739), Code, or Email"
+                style={{ width: "100%", padding: "12px 16px", background: "#1E293B", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 10, color: "#FFFFFF", fontSize: "0.95rem", textAlign: "center", fontWeight: 700 }}
+              />
+            </div>
+
+            {lookupError && (
+              <div style={{ color: "#EF4444", fontSize: "0.82rem", marginBottom: 12, fontWeight: 600 }}>
+                {lookupError}
+              </div>
+            )}
+
+            <button
+              type="submit"
+              disabled={lookupLoading || !lookupIdentifier.trim()}
+              className={styles.btnTurquoise}
+              style={{ width: "100%", justifyContent: "center", padding: 12, fontSize: "1rem" }}
+            >
+              {lookupLoading ? "Locating Portal Session..." : "Unlock Estate Portal ➔"}
+            </button>
+          </form>
+
+          <div style={{ display: "flex", gap: 12, justifyContent: "center", borderTop: "1px solid rgba(255,255,255,0.08)", paddingTop: 16 }}>
+            <Link href="/partners" className={styles.btnOutline} style={{ textDecoration: "none", fontSize: "0.85rem", padding: "8px 14px" }}>
+              Join Partner Network
+            </Link>
+            <Link href="/" className={styles.btnOutline} style={{ textDecoration: "none", fontSize: "0.85rem", padding: "8px 14px" }}>
+              Return Home
+            </Link>
+          </div>
         </div>
       </div>
     );

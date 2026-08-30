@@ -79,16 +79,16 @@ export async function POST(request: Request) {
 
     await partnerStore.savePartner(newPartner);
 
-    // If category is ESTATE_MANAGER and estate details provided, create initial Estate
-    if (category === "ESTATE_MANAGER" && (estateName || companyName)) {
+    // If category is ESTATE_MANAGER, ensure initial Estate is created
+    if (category === "ESTATE_MANAGER") {
       const estate = {
         id: `est_${Date.now()}`,
         partnerId: newPartner.id,
-        name: estateName?.trim() || companyName?.trim() || `${name}'s Managed Estate`,
+        name: estateName?.trim() || companyName?.trim() || `${name.trim()}'s Managed Estate`,
         city: city || "Abuja",
         state: operatingState || "FCT",
         address: address || "Main Estate Gate, District Office",
-        totalUnits: Number(totalUnits) || 0,
+        totalUnits: Number(totalUnits) || 50,
         occupiedUnits: 0,
         gateSecurityPhone: phone.trim(),
         gatePassRequired: true,

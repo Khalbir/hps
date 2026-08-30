@@ -6,19 +6,26 @@ export const dynamic = "force-dynamic";
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
-    const identifier = searchParams.get("partnerId") || searchParams.get("code") || searchParams.get("email");
+    const rawIdentifier =
+      searchParams.get("partnerId") ||
+      searchParams.get("code") ||
+      searchParams.get("referralCode") ||
+      searchParams.get("email") ||
+      searchParams.get("id") ||
+      searchParams.get("phone");
 
-    if (!identifier) {
+    if (!rawIdentifier) {
       return NextResponse.json(
         { success: false, error: "Partner identifier is required" },
         { status: 400 }
       );
     }
 
+    const identifier = decodeURIComponent(rawIdentifier).trim();
     const partner = await partnerStore.findPartner(identifier);
     if (!partner) {
       return NextResponse.json(
-        { success: false, error: "Partner portal not found. Please register or verify your Partner ID." },
+        { success: false, error: `Partner portal not found for "${identifier}". Please verify your Partner ID or Referral Code.` },
         { status: 404 }
       );
     }

@@ -96,6 +96,15 @@ export default function PartnersLandingPage() {
       }
 
       setRegisteredPartner(data.partner);
+      try {
+        if (typeof window !== "undefined") {
+          localStorage.setItem("hhp_current_partner", JSON.stringify(data.partner));
+          sessionStorage.setItem("hhp_partner_id", data.partner.partnerId);
+          document.cookie = `hhp_partner_id=${encodeURIComponent(data.partner.partnerId)}; path=/; max-age=2592000`;
+        }
+      } catch (storageErr) {
+        console.warn("Storage write error", storageErr);
+      }
     } catch (err: any) {
       setFormError(err.message || "An unexpected error occurred.");
     } finally {
