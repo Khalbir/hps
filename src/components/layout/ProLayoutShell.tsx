@@ -82,6 +82,22 @@ export function ProLayoutShell({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  // Lock body scroll when mobile sidebar is open
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      if (sidebarOpen) {
+        document.body.style.overflow = "hidden";
+      } else {
+        document.body.style.overflow = "";
+      }
+    }
+    return () => {
+      if (typeof window !== "undefined") {
+        document.body.style.overflow = "";
+      }
+    };
+  }, [sidebarOpen]);
+
   const handleToggleAvailability = async () => {
     const nextVal = !available;
     setAvailable(nextVal);
@@ -113,7 +129,7 @@ export function ProLayoutShell({ children }: { children: ReactNode }) {
           <Link href="/pro" className={styles.sidebarLogo} style={{ textDecoration: "none" }}>
             <BrandLogo size="sm" lightText={false} />
           </Link>
-          <button className={styles.closeSidebar} onClick={() => setSidebarOpen(false)}>
+          <button className={styles.closeSidebar} onClick={() => setSidebarOpen(false)} aria-label="Close Sidebar">
             <X size={20} />
           </button>
         </div>
