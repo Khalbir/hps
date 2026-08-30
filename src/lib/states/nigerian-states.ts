@@ -17,9 +17,9 @@ export const INITIAL_NIGERIAN_STATES: NigerianState[] = [
     coverageSummary: "AMAC (Maitama, Wuse 2, Garki, Asokoro, Jabi, Utako, Gwarinpa, Apo), Bwari (Kubwa), Gwagwalada, Kuje, Kwali, Abaji",
     lgas: ["Abaji", "Abuja Municipal (AMAC)", "Bwari", "Gwagwalada", "Kuje", "Kwali"],
     coordinates: { lat: 9.0765, lng: 7.4723 },
-    activeArtisansCount: 420,
-    activeEstatesCount: 310,
-    totalBookingsCount: 14500,
+    activeArtisansCount: 0,
+    activeEstatesCount: 0,
+    totalBookingsCount: 0,
     waitlistCount: 0,
     launchedAt: "2025-01-01T00:00:00.000Z",
     updatedAt: new Date().toISOString(),
@@ -42,9 +42,9 @@ export const INITIAL_NIGERIAN_STATES: NigerianState[] = [
       "Shomolu", "Surulere"
     ],
     coordinates: { lat: 6.5244, lng: 3.3792 },
-    activeArtisansCount: 380,
-    activeEstatesCount: 195,
-    totalBookingsCount: 9800,
+    activeArtisansCount: 0,
+    activeEstatesCount: 0,
+    totalBookingsCount: 0,
     waitlistCount: 0,
     launchedAt: "2025-06-01T00:00:00.000Z",
     updatedAt: new Date().toISOString(),
@@ -67,9 +67,9 @@ export const INITIAL_NIGERIAN_STATES: NigerianState[] = [
       "Oyigbo", "Port Harcourt", "Tai"
     ],
     coordinates: { lat: 4.8156, lng: 7.0498 },
-    activeArtisansCount: 145,
-    activeEstatesCount: 65,
-    totalBookingsCount: 2900,
+    activeArtisansCount: 0,
+    activeEstatesCount: 0,
+    totalBookingsCount: 0,
     waitlistCount: 0,
     launchedAt: "2026-01-15T00:00:00.000Z",
     updatedAt: new Date().toISOString(),
@@ -93,9 +93,9 @@ export const INITIAL_NIGERIAN_STATES: NigerianState[] = [
       "Oluyole", "Ona Ara", "Orelope", "Ori Ire", "Oyo East", "Oyo West", "Saki East", "Saki West", "Surulere"
     ],
     coordinates: { lat: 7.3775, lng: 3.9470 },
-    activeArtisansCount: 95,
-    activeEstatesCount: 42,
-    totalBookingsCount: 1400,
+    activeArtisansCount: 0,
+    activeEstatesCount: 0,
+    totalBookingsCount: 0,
     waitlistCount: 0,
     launchedAt: "2026-03-01T00:00:00.000Z",
     updatedAt: new Date().toISOString(),
@@ -120,9 +120,9 @@ export const INITIAL_NIGERIAN_STATES: NigerianState[] = [
       "Tsanyawa", "Tudun Wada", "Ungogo", "Warawa", "Wudil"
     ],
     coordinates: { lat: 12.0022, lng: 8.5920 },
-    activeArtisansCount: 110,
-    activeEstatesCount: 38,
-    totalBookingsCount: 1850,
+    activeArtisansCount: 0,
+    activeEstatesCount: 0,
+    totalBookingsCount: 0,
     waitlistCount: 0,
     launchedAt: "2026-04-10T00:00:00.000Z",
     updatedAt: new Date().toISOString(),
@@ -147,7 +147,7 @@ export const INITIAL_NIGERIAN_STATES: NigerianState[] = [
     activeArtisansCount: 0,
     activeEstatesCount: 0,
     totalBookingsCount: 0,
-    waitlistCount: 342,
+    waitlistCount: 0,
     updatedAt: new Date().toISOString(),
   },
 
@@ -170,7 +170,7 @@ export const INITIAL_NIGERIAN_STATES: NigerianState[] = [
     activeArtisansCount: 0,
     activeEstatesCount: 0,
     totalBookingsCount: 0,
-    waitlistCount: 184,
+    waitlistCount: 0,
     updatedAt: new Date().toISOString(),
   },
 
@@ -194,7 +194,7 @@ export const INITIAL_NIGERIAN_STATES: NigerianState[] = [
     activeArtisansCount: 0,
     activeEstatesCount: 0,
     totalBookingsCount: 0,
-    waitlistCount: 520,
+    waitlistCount: 0,
     updatedAt: new Date().toISOString(),
   },
 
@@ -218,7 +218,7 @@ export const INITIAL_NIGERIAN_STATES: NigerianState[] = [
     activeArtisansCount: 0,
     activeEstatesCount: 0,
     totalBookingsCount: 0,
-    waitlistCount: 680,
+    waitlistCount: 0,
     updatedAt: new Date().toISOString(),
   },
 
@@ -241,7 +241,7 @@ export const INITIAL_NIGERIAN_STATES: NigerianState[] = [
     activeArtisansCount: 0,
     activeEstatesCount: 0,
     totalBookingsCount: 0,
-    waitlistCount: 215,
+    waitlistCount: 0,
     updatedAt: new Date().toISOString(),
   },
 
@@ -262,7 +262,7 @@ export const INITIAL_NIGERIAN_STATES: NigerianState[] = [
     activeArtisansCount: 0,
     activeEstatesCount: 0,
     totalBookingsCount: 0,
-    waitlistCount: 195,
+    waitlistCount: 0,
     updatedAt: new Date().toISOString(),
   },
 
@@ -285,7 +285,7 @@ export const INITIAL_NIGERIAN_STATES: NigerianState[] = [
     activeArtisansCount: 0,
     activeEstatesCount: 0,
     totalBookingsCount: 0,
-    waitlistCount: 310,
+    waitlistCount: 0,
     updatedAt: new Date().toISOString(),
   },
 
@@ -308,7 +308,7 @@ export const INITIAL_NIGERIAN_STATES: NigerianState[] = [
     activeArtisansCount: 0,
     activeEstatesCount: 0,
     totalBookingsCount: 0,
-    waitlistCount: 160,
+    waitlistCount: 0,
     updatedAt: new Date().toISOString(),
   },
 
@@ -330,7 +330,7 @@ export const INITIAL_NIGERIAN_STATES: NigerianState[] = [
     activeArtisansCount: 0,
     activeEstatesCount: 0,
     totalBookingsCount: 0,
-    waitlistCount: 390,
+    waitlistCount: 0,
     updatedAt: new Date().toISOString(),
   },
 
@@ -354,7 +354,7 @@ export const INITIAL_NIGERIAN_STATES: NigerianState[] = [
     activeArtisansCount: 0,
     activeEstatesCount: 0,
     totalBookingsCount: 0,
-    waitlistCount: 710,
+    waitlistCount: 0,
     updatedAt: new Date().toISOString(),
   },
 
@@ -376,7 +376,7 @@ export const INITIAL_NIGERIAN_STATES: NigerianState[] = [
     activeArtisansCount: 0,
     activeEstatesCount: 0,
     totalBookingsCount: 0,
-    waitlistCount: 145,
+    waitlistCount: 0,
     updatedAt: new Date().toISOString(),
   },
 
@@ -399,7 +399,7 @@ export const INITIAL_NIGERIAN_STATES: NigerianState[] = [
     activeArtisansCount: 0,
     activeEstatesCount: 0,
     totalBookingsCount: 0,
-    waitlistCount: 620,
+    waitlistCount: 0,
     updatedAt: new Date().toISOString(),
   },
 
@@ -422,7 +422,7 @@ export const INITIAL_NIGERIAN_STATES: NigerianState[] = [
     activeArtisansCount: 0,
     activeEstatesCount: 0,
     totalBookingsCount: 0,
-    waitlistCount: 175,
+    waitlistCount: 0,
     updatedAt: new Date().toISOString(),
   },
 
@@ -445,7 +445,7 @@ export const INITIAL_NIGERIAN_STATES: NigerianState[] = [
     activeArtisansCount: 0,
     activeEstatesCount: 0,
     totalBookingsCount: 0,
-    waitlistCount: 540,
+    waitlistCount: 0,
     updatedAt: new Date().toISOString(),
   },
 
@@ -467,7 +467,7 @@ export const INITIAL_NIGERIAN_STATES: NigerianState[] = [
     activeArtisansCount: 0,
     activeEstatesCount: 0,
     totalBookingsCount: 0,
-    waitlistCount: 130,
+    waitlistCount: 0,
     updatedAt: new Date().toISOString(),
   },
 
@@ -492,7 +492,7 @@ export const INITIAL_NIGERIAN_STATES: NigerianState[] = [
     activeArtisansCount: 0,
     activeEstatesCount: 0,
     totalBookingsCount: 0,
-    waitlistCount: 460,
+    waitlistCount: 0,
     updatedAt: new Date().toISOString(),
   },
 
@@ -516,7 +516,7 @@ export const INITIAL_NIGERIAN_STATES: NigerianState[] = [
     activeArtisansCount: 0,
     activeEstatesCount: 0,
     totalBookingsCount: 0,
-    waitlistCount: 110,
+    waitlistCount: 0,
     updatedAt: new Date().toISOString(),
   },
 
@@ -539,7 +539,7 @@ export const INITIAL_NIGERIAN_STATES: NigerianState[] = [
     activeArtisansCount: 0,
     activeEstatesCount: 0,
     totalBookingsCount: 0,
-    waitlistCount: 890,
+    waitlistCount: 0,
     updatedAt: new Date().toISOString(),
   },
 
@@ -564,7 +564,7 @@ export const INITIAL_NIGERIAN_STATES: NigerianState[] = [
     activeArtisansCount: 0,
     activeEstatesCount: 0,
     totalBookingsCount: 0,
-    waitlistCount: 220,
+    waitlistCount: 0,
     updatedAt: new Date().toISOString(),
   },
 
@@ -587,7 +587,7 @@ export const INITIAL_NIGERIAN_STATES: NigerianState[] = [
     activeArtisansCount: 0,
     activeEstatesCount: 0,
     totalBookingsCount: 0,
-    waitlistCount: 95,
+    waitlistCount: 0,
     updatedAt: new Date().toISOString(),
   },
 
@@ -610,7 +610,7 @@ export const INITIAL_NIGERIAN_STATES: NigerianState[] = [
     activeArtisansCount: 0,
     activeEstatesCount: 0,
     totalBookingsCount: 0,
-    waitlistCount: 280,
+    waitlistCount: 0,
     updatedAt: new Date().toISOString(),
   },
 
@@ -632,7 +632,7 @@ export const INITIAL_NIGERIAN_STATES: NigerianState[] = [
     activeArtisansCount: 0,
     activeEstatesCount: 0,
     totalBookingsCount: 0,
-    waitlistCount: 410,
+    waitlistCount: 0,
     updatedAt: new Date().toISOString(),
   },
 
@@ -654,7 +654,7 @@ export const INITIAL_NIGERIAN_STATES: NigerianState[] = [
     activeArtisansCount: 0,
     activeEstatesCount: 0,
     totalBookingsCount: 0,
-    waitlistCount: 480,
+    waitlistCount: 0,
     updatedAt: new Date().toISOString(),
   },
 
@@ -677,7 +677,7 @@ export const INITIAL_NIGERIAN_STATES: NigerianState[] = [
     activeArtisansCount: 0,
     activeEstatesCount: 0,
     totalBookingsCount: 0,
-    waitlistCount: 350,
+    waitlistCount: 0,
     updatedAt: new Date().toISOString(),
   },
 
@@ -701,7 +701,7 @@ export const INITIAL_NIGERIAN_STATES: NigerianState[] = [
     activeArtisansCount: 0,
     activeEstatesCount: 0,
     totalBookingsCount: 0,
-    waitlistCount: 760,
+    waitlistCount: 0,
     updatedAt: new Date().toISOString(),
   },
 
@@ -724,7 +724,7 @@ export const INITIAL_NIGERIAN_STATES: NigerianState[] = [
     activeArtisansCount: 0,
     activeEstatesCount: 0,
     totalBookingsCount: 0,
-    waitlistCount: 290,
+    waitlistCount: 0,
     updatedAt: new Date().toISOString(),
   },
 
@@ -748,7 +748,7 @@ export const INITIAL_NIGERIAN_STATES: NigerianState[] = [
     activeArtisansCount: 0,
     activeEstatesCount: 0,
     totalBookingsCount: 0,
-    waitlistCount: 240,
+    waitlistCount: 0,
     updatedAt: new Date().toISOString(),
   },
 
@@ -771,7 +771,7 @@ export const INITIAL_NIGERIAN_STATES: NigerianState[] = [
     activeArtisansCount: 0,
     activeEstatesCount: 0,
     totalBookingsCount: 0,
-    waitlistCount: 375,
+    waitlistCount: 0,
     updatedAt: new Date().toISOString(),
   },
 
@@ -794,7 +794,7 @@ export const INITIAL_NIGERIAN_STATES: NigerianState[] = [
     activeArtisansCount: 0,
     activeEstatesCount: 0,
     totalBookingsCount: 0,
-    waitlistCount: 165,
+    waitlistCount: 0,
     updatedAt: new Date().toISOString(),
   },
 
@@ -816,7 +816,7 @@ export const INITIAL_NIGERIAN_STATES: NigerianState[] = [
     activeArtisansCount: 0,
     activeEstatesCount: 0,
     totalBookingsCount: 0,
-    waitlistCount: 120,
+    waitlistCount: 0,
     updatedAt: new Date().toISOString(),
   },
 
@@ -838,7 +838,7 @@ export const INITIAL_NIGERIAN_STATES: NigerianState[] = [
     activeArtisansCount: 0,
     activeEstatesCount: 0,
     totalBookingsCount: 0,
-    waitlistCount: 105,
+    waitlistCount: 0,
     updatedAt: new Date().toISOString(),
   },
 
@@ -860,7 +860,7 @@ export const INITIAL_NIGERIAN_STATES: NigerianState[] = [
     activeArtisansCount: 0,
     activeEstatesCount: 0,
     totalBookingsCount: 0,
-    waitlistCount: 90,
+    waitlistCount: 0,
     updatedAt: new Date().toISOString(),
   },
 ];

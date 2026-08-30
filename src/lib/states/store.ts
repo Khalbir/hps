@@ -21,77 +21,6 @@ function initializeStore() {
   INITIAL_NIGERIAN_STATES.forEach((state) => {
     inMemoryStates.set(state.code.toUpperCase(), { ...state });
   });
-
-  // Seed Initial Audit Log
-  inMemoryAuditLogs.push({
-    id: "audit_init_01",
-    stateCode: "FCT",
-    stateName: "FCT Abuja",
-    action: "ACTIVATED",
-    previousStatus: "INACTIVE",
-    newStatus: "ACTIVE",
-    actorId: "usr_super_admin",
-    actorEmail: "khalbir@hotmail.com",
-    actorRole: "SUPER_ADMIN",
-    reason: "Platform Primary Operations Launch in Federal Capital Territory",
-    timestamp: new Date(Date.now() - 30 * 86400000).toISOString(),
-  });
-
-  inMemoryAuditLogs.push({
-    id: "audit_init_02",
-    stateCode: "LAGOS",
-    stateName: "Lagos State",
-    action: "ACTIVATED",
-    previousStatus: "INACTIVE",
-    newStatus: "ACTIVE",
-    actorId: "usr_super_admin",
-    actorEmail: "khalbir@hotmail.com",
-    actorRole: "SUPER_ADMIN",
-    reason: "Commercial Hub Expansion: Lekki, Victoria Island, Ikeja GRA & Surulere",
-    timestamp: new Date(Date.now() - 15 * 86400000).toISOString(),
-  });
-
-  inMemoryAuditLogs.push({
-    id: "audit_init_03",
-    stateCode: "RIVERS",
-    stateName: "Rivers State",
-    action: "ACTIVATED",
-    previousStatus: "INACTIVE",
-    newStatus: "ACTIVE",
-    actorId: "usr_super_admin",
-    actorEmail: "khalbir@hotmail.com",
-    actorRole: "SUPER_ADMIN",
-    reason: "South South Hub Launch: Port Harcourt GRA & Obio-Akpor",
-    timestamp: new Date(Date.now() - 10 * 86400000).toISOString(),
-  });
-
-  inMemoryAuditLogs.push({
-    id: "audit_init_04",
-    stateCode: "OYO",
-    stateName: "Oyo State",
-    action: "ACTIVATED",
-    previousStatus: "INACTIVE",
-    newStatus: "ACTIVE",
-    actorId: "usr_super_admin",
-    actorEmail: "khalbir@hotmail.com",
-    actorRole: "SUPER_ADMIN",
-    reason: "South West Regional Expansion: Ibadan North, Bodija & Dugbe",
-    timestamp: new Date(Date.now() - 5 * 86400000).toISOString(),
-  });
-
-  inMemoryAuditLogs.push({
-    id: "audit_init_05",
-    stateCode: "KANO",
-    stateName: "Kano State",
-    action: "ACTIVATED",
-    previousStatus: "INACTIVE",
-    newStatus: "ACTIVE",
-    actorId: "usr_super_admin",
-    actorEmail: "khalbir@hotmail.com",
-    actorRole: "SUPER_ADMIN",
-    reason: "Northern Commercial Hub Launch: Kano Municipal & Nassarawa GRA",
-    timestamp: new Date(Date.now() - 2 * 86400000).toISOString(),
-  });
 }
 
 // Call on module load
@@ -294,7 +223,7 @@ export const stateStore = {
     initializeStore();
     const all = Array.from(inMemoryStates.values());
     const active = all.filter((s) => s.isActive && s.status === "ACTIVE");
-    const totalWaitlist = inMemoryWaitlist.length + all.reduce((sum, s) => sum + (s.waitlistCount || 0), 0);
+    const totalWaitlist = inMemoryWaitlist.length;
 
     const latestAudit = inMemoryAuditLogs[0];
 
