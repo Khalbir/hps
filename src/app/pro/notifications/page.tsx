@@ -111,7 +111,9 @@ export default function ProNotificationsPage() {
           </div>
         ) : (
           notifications.map((n) => {
-            const isJobDispatch = n.title.includes("Assigned") || n.type === "BOOKING" || n.jobAction === "ACCEPT_REQUIRED";
+            const isActionRequired = (n.title.includes("Assigned") || n.title.includes("Available") || n.jobAction === "ACCEPT_REQUIRED") && !n.title.includes("Cancelled") && !n.title.includes("Completed");
+            const isCompletedOrPayout = n.title.includes("Completed") || n.type === "PAYMENT" || n.title.includes("Payout");
+
             return (
               <div
                 key={n.id}
@@ -138,7 +140,7 @@ export default function ProNotificationsPage() {
                   {n.message}
                 </p>
 
-                {isJobDispatch && (
+                {isActionRequired && (
                   <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 8 }}>
                     <Link
                       href="/pro/jobs"
@@ -153,6 +155,25 @@ export default function ProNotificationsPage() {
                       }}
                     >
                       ⚡ View & Accept Job Dispatch <ArrowRight size={12} />
+                    </Link>
+                  </div>
+                )}
+
+                {isCompletedOrPayout && (
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 8 }}>
+                    <Link
+                      href="/pro/earnings"
+                      className="btn btn-secondary btn-xs"
+                      style={{
+                        fontWeight: 600,
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: 6,
+                        textDecoration: "none",
+                        fontSize: "11px",
+                      }}
+                    >
+                      💰 View Wallet & Payout Details <ArrowRight size={12} />
                     </Link>
                   </div>
                 )}

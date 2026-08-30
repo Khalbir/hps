@@ -100,6 +100,16 @@ export async function purgeDemoRecordsFromDB() {
     // Auto-clear inactive escrows and abandoned records older than 14 days to preserve database storage
     const { autoClearStaleEscrowsFromDB } = await import("@/lib/escrow");
     await autoClearStaleEscrowsFromDB(14).catch(() => {});
+
+    // Clean up stale demo notifications
+    await prisma.notification.deleteMany({
+      where: {
+        OR: [
+          { message: { contains: "demo_booking" } },
+          { data: { contains: "demo_booking" } },
+        ],
+      },
+    }).catch(() => {});
   } catch (e) {
     console.warn("[Auto Purge Demo Warning]:", e);
   }

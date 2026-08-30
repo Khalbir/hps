@@ -5,6 +5,7 @@ import { notifyBookingStatusChange, broadcastNewJobToArtisans } from "@/lib/noti
 import { getBookingOtp } from "@/lib/bookingOtp";
 import { stateStore } from "@/lib/states/store";
 import { processPartnerBookingAttribution } from "@/lib/partners/engine";
+import { isArtisanQualifiedForJob } from "@/lib/trade-categories";
 
 export const dynamic = "force-dynamic";
 
@@ -205,53 +206,63 @@ export async function POST(request: Request) {
     }
 
     // 4. TRADE-GATED DISPATCH ENGINE
-    // Normalize the requested service category into a trade slug for matching
-    const requestedTradeSlugs = normalizeTradeSlugs(serviceCategory || serviceName || "");
+    // Normalize the requested service category and service name into trade slugs for matching
+    const requestedTradeSlugs = Array.from(
+      new Set([
+        ...normalizeTradeSlugs(serviceCategory || ""),
+        ...normalizeTradeSlugs(serviceName || ""),
+        ...normalizeTradeSlugs(service.name || ""),
+      ])
+    ).filter(Boolean);
 
     let assignedProfessionalId: string | null = null;
 
     if (!autoAssign && technicianId) {
-      // Direct technician requested — gate: ensure they are verified for this specific trade
+      // Direct technician requested — gate: ensure they are qualified for this specific trade
       const selectedPro = await prisma.professional.findUnique({
         where: { id: technicianId },
-        include: { tradeVerifications: true },
+        include: { tradeVerifications: true, services: true },
       });
 
-      const isEligible = selectedPro && isProEligibleForTrade(selectedPro, requestedTradeSlugs);
+      const isEligible = selectedPro && isArtisanQualifiedForJob(selectedPro, {
+        serviceName: service.name,
+        serviceCategory: serviceCategory,
+        tradeCategories: requestedTradeSlugs,
+      });
+
       if (isEligible) {
         assignedProfessionalId = selectedPro!.id;
       }
-      // If not eligible, fall through to auto-assign from trade-verified pool
     }
 
     if (!assignedProfessionalId) {
-      // Auto-assign: Find pros verified for THIS specific trade category, ordered by rating
-      const candidates = await prisma.professional.findMany({
+      // Auto-assign: Find pros qualified for THIS specific trade category or skillset, ordered by rating
+      const allCandidatePros = await prisma.professional.findMany({
         where: {
           isAvailable: true,
-          verificationStatus: "VERIFIED",
-          tradeVerifications: {
-            some: {
-              status: "VERIFIED",
-              tradeCategory: { in: requestedTradeSlugs },
-            },
-          },
+          verificationStatus: { in: ["VERIFIED", "APPROVED"] },
         },
-        include: { tradeVerifications: true },
+        include: {
+          tradeVerifications: true,
+          services: { include: { service: true } },
+          user: { select: { id: true, firstName: true, lastName: true, phone: true } },
+        },
         orderBy: [{ rating: "desc" }, { totalJobs: "desc" }],
-        take: 5,
+        take: 20,
       });
 
-      if (candidates.length > 0) {
-        assignedProfessionalId = candidates[0].id;
-      } else {
-        // Fallback: any VERIFIED pro (no trade-gating) — for markets without enough specialists
-        const fallbackPro = await prisma.professional.findFirst({
-          where: { isAvailable: true, verificationStatus: "VERIFIED" },
-          orderBy: { rating: "desc" },
-        });
-        if (fallbackPro) assignedProfessionalId = fallbackPro.id;
+      const qualifiedCandidates = allCandidatePros.filter((pro) =>
+        isArtisanQualifiedForJob(pro, {
+          serviceName: service.name,
+          serviceCategory: serviceCategory,
+          tradeCategories: requestedTradeSlugs,
+        })
+      );
+
+      if (qualifiedCandidates.length > 0) {
+        assignedProfessionalId = qualifiedCandidates[0].id;
       }
+      // If no qualified specialist is available, assignedProfessionalId remains null (no unqualified fallback)
     }
 
 

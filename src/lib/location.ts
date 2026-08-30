@@ -208,7 +208,19 @@ export function rankArtisansForBooking(
       cats.push(...artisan.serviceCategory.toLowerCase().split(/[,;|\s]+/).map((c) => c.trim()));
     }
 
-    const matchesCategory = cats.length === 0 || cats.some((c) => c.includes(targetCat) || targetCat.includes(c) || c === "general");
+    if (cats.length === 0) return false;
+
+    const matchesCategory = cats.some((c) => {
+      const normC = c.toLowerCase().replace(/_/g, "-");
+      const normTarget = targetCat.toLowerCase().replace(/_/g, "-");
+      return (
+        normC === normTarget ||
+        normC.includes(normTarget) ||
+        normTarget.includes(normC) ||
+        (normTarget === "general" && normC === "general")
+      );
+    });
+
     if (!matchesCategory) return false;
 
     const distance = calculateHaversineDistanceKm(bookingLocation, artisan.location);

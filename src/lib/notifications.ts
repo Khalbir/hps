@@ -287,11 +287,21 @@ async function sendEmailNotification(params: {
 /**
  * Broadcast new open booking to verified artisans in the vicinity
  */
+import {
+  isArtisanQualifiedForJob,
+  extractTradeSlugsFromText,
+  getJobRequiredTradeSlugs,
+} from "@/lib/trade-categories";
+
+/**
+ * Broadcast new open booking to verified artisans qualified strictly for the job's trade category/skillset
+ */
 export async function broadcastNewJobToArtisans(booking: {
   id: string;
   reference: string;
   serviceId: string;
   serviceName: string;
+  serviceCategory?: string;
   estimatedPrice: number;
   scheduledDate: string | Date;
   scheduledTime?: string;
@@ -299,47 +309,54 @@ export async function broadcastNewJobToArtisans(booking: {
   tradeCategories?: string[];  // Trade-gating: only notify pros verified for these trades
 }) {
   try {
-    const tradeSlugs = booking.tradeCategories || [];
+    const tradeSlugs = Array.from(
+      new Set([
+        ...(booking.tradeCategories || []),
+        ...extractTradeSlugsFromText(booking.serviceName),
+        ...extractTradeSlugsFromText(booking.serviceCategory || ""),
+      ])
+    ).filter(Boolean);
 
-    // Build trade-gated filter: if tradeCategories provided, match only pros with those verified trades
-    const tradeFilter = tradeSlugs.length > 0
-      ? {
-          tradeVerifications: {
-            some: {
-              status: "VERIFIED",
-              tradeCategory: { in: tradeSlugs },
-            },
-          },
-        }
-      : {};
+    if (tradeSlugs.length === 0) {
+      console.warn(`[Broadcast Skipped]: No valid trade category identified for job "${booking.serviceName}".`);
+      return;
+    }
 
-    const verifiedPros = await prisma.professional.findMany({
+    // Query all verified/approved professionals
+    const candidatePros = await prisma.professional.findMany({
       where: {
         verificationStatus: { in: ["VERIFIED", "APPROVED"] },
         isAvailable: true,
-        ...tradeFilter,
       },
       include: {
         user: { select: { id: true, firstName: true, lastName: true, phone: true, email: true } },
-        tradeVerifications: { select: { tradeCategory: true, status: true } },
+        tradeVerifications: { select: { tradeCategory: true, tradeName: true, status: true } },
+        services: { include: { service: { include: { category: true } } } },
       },
-      take: 8,
+      take: 25,
     });
 
-    // Fallback: if no trade-specific pros found, broadcast to all verified pros
-    const targetPros = verifiedPros.length > 0
-      ? verifiedPros
-      : await prisma.professional.findMany({
-          where: { verificationStatus: { in: ["VERIFIED", "APPROVED"] }, isAvailable: true },
-          include: {
-            user: { select: { id: true, firstName: true, lastName: true, phone: true, email: true } },
-          },
-          take: 5,
-        });
+    // STRICT TRADE & SKILLSET FILTERING:
+    // Only include artisans who possess verified credentials or declared skills matching this job
+    const qualifiedPros = candidatePros.filter((pro) =>
+      isArtisanQualifiedForJob(pro, {
+        serviceName: booking.serviceName,
+        serviceCategory: booking.serviceCategory,
+        tradeCategories: tradeSlugs,
+      })
+    );
+
+    if (qualifiedPros.length === 0) {
+      console.log(`[Broadcast Info]: No verified artisans found matching trade categories: [${tradeSlugs.join(", ")}] for job #${booking.reference}. Notification safely suppressed.`);
+      return;
+    }
 
     const dateStr = typeof booking.scheduledDate === "string"
       ? booking.scheduledDate
       : new Date(booking.scheduledDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+
+    // Broadcast only to qualified artisans (max 8 nearest/highest rated)
+    const targetPros = qualifiedPros.slice(0, 8);
 
     for (const pro of targetPros) {
       if (pro.user?.phone) {
@@ -353,6 +370,25 @@ export async function broadcastNewJobToArtisans(booking: {
           scheduledTime: booking.scheduledTime || "Flexible / As Agreed",
           bookingRef: booking.reference,
         }).catch((err) => console.warn("[Broadcast Artisan WhatsApp Error]:", err));
+      }
+
+      // Also create In-App Notification for the qualified artisan
+      if (pro.user?.id) {
+        await prisma.notification.create({
+          data: {
+            userId: pro.user.id,
+            type: "BOOKING",
+            title: `New Trade Job Available (${booking.serviceName}) ⚡`,
+            message: `A new client booking #${booking.reference} matching your verified trade (${booking.serviceName}) in ${booking.address || "your coverage zone"} is open for dispatch.`,
+            data: JSON.stringify({
+              "Booking Reference": `#${booking.reference}`,
+              Service: booking.serviceName,
+              "Job Price": formatNaira(booking.estimatedPrice),
+              "Job Action": "ACCEPT_REQUIRED",
+              tradeCategories: tradeSlugs,
+            }),
+          },
+        }).catch(() => {});
       }
     }
   } catch (err) {
@@ -596,38 +632,48 @@ export async function notifyBookingStatusChange(booking: {
 
   // 2. Notify Professional (Artisan) via In-App and Email
   if (booking.professional && config.proMsg) {
-    let proUserId = booking.professional.user?.id || (booking.professional as any)?.userId;
-    if (!proUserId && booking.professional.user?.email) {
-      try {
-        const u = await prisma.user.findUnique({
-          where: { email: booking.professional.user.email.toLowerCase().trim() },
-          select: { id: true },
-        });
-        if (u) proUserId = u.id;
-      } catch {}
-    }
+    // Strict trade qualification guard: ensure the assigned artisan possesses verified trade/skills for this job
+    const isProQualified = isArtisanQualifiedForJob(booking.professional, {
+      serviceName,
+      service: booking.service,
+    });
 
-    if (proUserId) {
-      await sendMultiChannelNotification({
-        userId: proUserId,
-        recipientEmail: booking.professional.user.email,
-        recipientPhone: booking.professional.user.phone || undefined,
-        recipientName: proName,
-        type: "BOOKING",
-        title: config.title,
-        message: config.proMsg,
-        bookingRef: booking.reference,
-        stageName: config.stageName,
-        metadata: {
-          "Booking Reference": `#${booking.reference}`,
-          Service: serviceName,
-          "Job Price": amountStr,
-          "Current Stage": config.stageName,
-          "Customer Name": customerName,
-          "Customer Phone": booking.customer?.phone || undefined,
-          "Job Action": stage === "ASSIGNED" ? "ACCEPT_REQUIRED" : "UPDATE",
-        },
-      });
+    if (!isProQualified) {
+      console.warn(`[Pro Notification Suppressed]: Artisan ${proName} does not possess matching trade skills for "${serviceName}". Notification skipped.`);
+    } else {
+      let proUserId = booking.professional.user?.id || (booking.professional as any)?.userId;
+      if (!proUserId && booking.professional.user?.email) {
+        try {
+          const u = await prisma.user.findUnique({
+            where: { email: booking.professional.user.email.toLowerCase().trim() },
+            select: { id: true },
+          });
+          if (u) proUserId = u.id;
+        } catch {}
+      }
+
+      if (proUserId) {
+        await sendMultiChannelNotification({
+          userId: proUserId,
+          recipientEmail: booking.professional.user.email,
+          recipientPhone: booking.professional.user.phone || undefined,
+          recipientName: proName,
+          type: "BOOKING",
+          title: `Artisan Job Update: ${config.title}`,
+          message: config.proMsg,
+          bookingRef: booking.reference,
+          stageName: config.stageName,
+          metadata: {
+            "Booking Reference": `#${booking.reference}`,
+            Service: serviceName,
+            "Job Price": amountStr,
+            "Current Stage": config.stageName,
+            "Customer Name": customerName,
+            "Customer Phone": booking.customer?.phone || undefined,
+            "Job Action": stage === "ASSIGNED" ? "ACCEPT_REQUIRED" : "UPDATE",
+          },
+        });
+      }
     }
   }
 }
