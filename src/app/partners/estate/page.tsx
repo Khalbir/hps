@@ -311,7 +311,7 @@ function EstatePortalContent() {
 
   const handleCopyBookingLink = () => {
     if (!partner) return;
-    const url = `https://handyhubpro.ng/book?partner=${partner.referralCode}`;
+    const url = `https://handyhubpro.ng/?partner=${partner.referralCode}`;
     navigator.clipboard.writeText(url);
     setCopiedLink(true);
     setTimeout(() => setCopiedLink(false), 2000);
@@ -1264,13 +1264,13 @@ function EstatePortalContent() {
               <button
                 onClick={async () => {
                   if (!partner) return;
-                  const deepLink = `https://handyhubpro.ng/book?partner=${partner.referralCode}`;
+                  const deepLink = `https://handyhubpro.ng/?partner=${partner.referralCode}`;
                   await downloadBrandedQrBadge({
                     deepLink,
                     partnerId: partner.partnerId,
                     referralCode: partner.referralCode,
                     title: partner.companyName || partner.name || "ESTATE MANAGEMENT PASS",
-                    subtitle: "SCAN TO BOOK VERIFIED ARTISANS",
+                    subtitle: "SCAN TO VISIT & BOOK VERIFIED ARTISANS",
                     filename: `HandyHub_Estate_Pass_${partner.partnerId}.png`,
                   });
                 }}

@@ -644,23 +644,23 @@ export default function PartnersLandingPage() {
 
                 <div style={{ display: "flex", gap: 12, marginBottom: 20 }}>
                   <button
-                    onClick={() => handleCopy(`https://handyhubpro.ng/book?partner=${registeredPartner.referralCode}`)}
+                    onClick={() => handleCopy(`https://handyhubpro.ng/?partner=${registeredPartner.referralCode}`)}
                     className={styles.btnSecondary}
                     style={{ flex: 1, justifyContent: "center" }}
                   >
                     <Copy size={16} />
-                    <span>{copiedLink ? "Link Copied!" : "Copy Booking Link"}</span>
+                    <span>{copiedLink ? "Link Copied!" : "Copy Referral Link"}</span>
                   </button>
 
                   <button
                     onClick={async () => {
-                      const deepLink = `https://handyhubpro.ng/book?partner=${registeredPartner.referralCode}`;
+                      const deepLink = `https://handyhubpro.ng/?partner=${registeredPartner.referralCode}`;
                       await downloadBrandedQrBadge({
                         deepLink,
                         partnerId: registeredPartner.partnerId,
                         referralCode: registeredPartner.referralCode,
                         title: registeredPartner.companyName || registeredPartner.name || "HANDYHUB PARTNER",
-                        subtitle: "SCAN TO BOOK VERIFIED ARTISANS",
+                        subtitle: "SCAN TO VISIT & BOOK VERIFIED ARTISANS",
                         filename: `HandyHub_Partner_QR_${registeredPartner.partnerId}.png`,
                       });
                     }}

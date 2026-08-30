@@ -144,7 +144,7 @@ function parseUserPartnerData(u: any): {
           city: parsed.city || "Abuja",
           address: parsed.address || u.permanentAddress || "",
           referralCode,
-          qrCodeUrl: parsed.qrCodeUrl || generatePartnerQrCode(`https://handyhubpro.ng/book?partner=${referralCode}`, (parsed.companyName || fullName).toUpperCase(), partnerId, referralCode),
+          qrCodeUrl: parsed.qrCodeUrl || generatePartnerQrCode(`https://handyhubpro.ng/?partner=${referralCode}`, (parsed.companyName || fullName).toUpperCase(), partnerId, referralCode),
           status: parsed.status || "ACTIVE",
           tierLevel: parsed.tierLevel || "BRONZE",
           walletBalance: Number(parsed.walletBalance || 0),
@@ -180,7 +180,7 @@ function parseUserPartnerData(u: any): {
       city: "Abuja",
       address: u.permanentAddress || "",
       referralCode,
-      qrCodeUrl: generatePartnerQrCode(`https://handyhubpro.ng/book?partner=${referralCode}`, fullName.toUpperCase(), partnerId, referralCode),
+      qrCodeUrl: generatePartnerQrCode(`https://handyhubpro.ng/?partner=${referralCode}`, fullName.toUpperCase(), partnerId, referralCode),
       status: "ACTIVE",
       tierLevel: "BRONZE",
       walletBalance: 0,
@@ -474,12 +474,12 @@ export const partnerStore = {
           where: { code: partner.referralCode },
           update: {
             userId: user.id,
-            qrPayload: partner.qrCodeUrl || `https://handyhubpro.ng/book?partner=${partner.referralCode}`,
+            qrPayload: partner.qrCodeUrl || `https://handyhubpro.ng/?partner=${partner.referralCode}`,
           },
           create: {
             userId: user.id,
             code: partner.referralCode,
-            qrPayload: partner.qrCodeUrl || `https://handyhubpro.ng/book?partner=${partner.referralCode}`,
+            qrPayload: partner.qrCodeUrl || `https://handyhubpro.ng/?partner=${partner.referralCode}`,
           },
         }).catch(() => null);
 
@@ -488,12 +488,12 @@ export const partnerStore = {
           where: { code: partner.partnerId },
           update: {
             userId: user.id,
-            qrPayload: partner.qrCodeUrl || `https://handyhubpro.ng/book?partner=${partner.referralCode}`,
+            qrPayload: partner.qrCodeUrl || `https://handyhubpro.ng/?partner=${partner.referralCode}`,
           },
           create: {
             userId: user.id,
             code: partner.partnerId,
-            qrPayload: partner.qrCodeUrl || `https://handyhubpro.ng/book?partner=${partner.referralCode}`,
+            qrPayload: partner.qrCodeUrl || `https://handyhubpro.ng/?partner=${partner.referralCode}`,
           },
         }).catch(() => null);
       }
