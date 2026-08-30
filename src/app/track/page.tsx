@@ -10,7 +10,7 @@ import {
   Wrench, DollarSign, Wallet, CreditCard, ExternalLink, RefreshCw, X, Copy, Check, MessageCircle
 } from "lucide-react";
 import { RateReviewModal } from "@/components/common/RateReviewModal";
-import { getArtisanContactChannels } from "@/lib/artisan-contact";
+import { getArtisanContactChannels, syncCommunicationWithConcierge } from "@/lib/artisan-contact";
 
 function TrackContent() {
   const searchParams = useSearchParams();
@@ -21,6 +21,7 @@ function TrackContent() {
   const [reviewModalOpen, setReviewModalOpen] = useState(false);
   const [contactModalOpen, setContactModalOpen] = useState(false);
   const [copiedMessage, setCopiedMessage] = useState(false);
+  const [interventionRequested, setInterventionRequested] = useState(false);
   const [previewPhotoUrl, setPreviewPhotoUrl] = useState<string | null>(null);
   const [brokenImages, setBrokenImages] = useState<Record<string, boolean>>({});
 
@@ -555,6 +556,42 @@ function TrackContent() {
                       e.preventDefault();
                       window.open(channels.whatsappUrl, "_blank", "noopener,noreferrer");
                       setContactModalOpen(true);
+                      syncCommunicationWithConcierge({
+                        bookingRef: booking.id,
+                        clientName: booking.customerName,
+                        clientPhone: booking.customerPhone,
+                        artisanName: channels.artisanName,
+                        artisanPhone: channels.displayNumber,
+                        serviceName: booking.serviceName,
+                        messageCopy: channels.prewrittenMessage,
+                        channel: "WHATSAPP",
+                      });
+                    };
+
+                    const handleSmsAction = () => {
+                      syncCommunicationWithConcierge({
+                        bookingRef: booking.id,
+                        clientName: booking.customerName,
+                        clientPhone: booking.customerPhone,
+                        artisanName: channels.artisanName,
+                        artisanPhone: channels.displayNumber,
+                        serviceName: booking.serviceName,
+                        messageCopy: channels.prewrittenMessage,
+                        channel: "SMS",
+                      });
+                    };
+
+                    const handleCallAction = () => {
+                      syncCommunicationWithConcierge({
+                        bookingRef: booking.id,
+                        clientName: booking.customerName,
+                        clientPhone: booking.customerPhone,
+                        artisanName: channels.artisanName,
+                        artisanPhone: channels.displayNumber,
+                        serviceName: booking.serviceName,
+                        messageCopy: channels.prewrittenMessage,
+                        channel: "CALL",
+                      });
                     };
 
                     return (
@@ -570,6 +607,7 @@ function TrackContent() {
                         </button>
                         <a
                           href={channels.callUrl}
+                          onClick={handleCallAction}
                           className="btn btn-primary btn-md"
                           title={`Call ${channels.artisanName} (${channels.displayNumber})`}
                           style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
@@ -596,6 +634,7 @@ function TrackContent() {
                         </button>
                         <a
                           href={channels.smsUrl}
+                          onClick={handleSmsAction}
                           className="btn btn-secondary btn-md"
                           style={{
                             color: "#38BDF8",
@@ -974,6 +1013,24 @@ function TrackContent() {
                 </div>
               </div>
 
+              {/* Proactive Dispute Protection Banner */}
+              <div style={{
+                background: "linear-gradient(135deg, rgba(16, 185, 129, 0.12) 0%, rgba(14, 165, 233, 0.12) 100%)",
+                border: "1px solid rgba(16, 185, 129, 0.35)",
+                borderRadius: 12,
+                padding: "12px 14px",
+                marginBottom: 16,
+                display: "flex",
+                alignItems: "center",
+                gap: 10,
+              }}>
+                <ShieldCheck size={22} color="#10B981" style={{ flexShrink: 0 }} />
+                <div style={{ fontSize: "12px", color: "var(--text-primary)", lineHeight: 1.45 }}>
+                  <strong style={{ color: "#10B981", display: "block" }}>🛡️ HandyHub Dispute Prevention & Concierge Shield Active</strong>
+                  A copy of this communication session is automatically forwarded to HandyHub Support Concierge (<code>wa.me/2348122222936</code>) for proactive monitoring and fast dispute mediation before any escalation.
+                </div>
+              </div>
+
               {/* Direct Channels & Fallback Options */}
               <div style={{ marginBottom: 14 }}>
                 <span style={{ fontSize: "12px", fontWeight: 700, color: "var(--text-secondary)", display: "block", marginBottom: 10 }}>
@@ -986,6 +1043,18 @@ function TrackContent() {
                     href={channels.whatsappUrl}
                     target="_blank"
                     rel="noopener noreferrer"
+                    onClick={() => {
+                      syncCommunicationWithConcierge({
+                        bookingRef: booking.id,
+                        clientName: booking.customerName,
+                        clientPhone: booking.customerPhone,
+                        artisanName: channels.artisanName,
+                        artisanPhone: channels.displayNumber,
+                        serviceName: booking.serviceName,
+                        messageCopy: channels.prewrittenMessage,
+                        channel: "WHATSAPP",
+                      });
+                    }}
                     className="btn btn-secondary btn-md"
                     style={{
                       width: "100%",
@@ -1005,6 +1074,18 @@ function TrackContent() {
                   {/* SMS Text Fallback */}
                   <a
                     href={channels.smsUrl}
+                    onClick={() => {
+                      syncCommunicationWithConcierge({
+                        bookingRef: booking.id,
+                        clientName: booking.customerName,
+                        clientPhone: booking.customerPhone,
+                        artisanName: channels.artisanName,
+                        artisanPhone: channels.displayNumber,
+                        serviceName: booking.serviceName,
+                        messageCopy: channels.prewrittenMessage,
+                        channel: "SMS",
+                      });
+                    }}
                     className="btn btn-secondary btn-md"
                     style={{
                       width: "100%",
@@ -1024,6 +1105,18 @@ function TrackContent() {
                   {/* Direct Phone Call Fallback */}
                   <a
                     href={channels.callUrl}
+                    onClick={() => {
+                      syncCommunicationWithConcierge({
+                        bookingRef: booking.id,
+                        clientName: booking.customerName,
+                        clientPhone: booking.customerPhone,
+                        artisanName: channels.artisanName,
+                        artisanPhone: channels.displayNumber,
+                        serviceName: booking.serviceName,
+                        messageCopy: channels.prewrittenMessage,
+                        channel: "CALL",
+                      });
+                    }}
                     className="btn btn-primary btn-md"
                     style={{
                       width: "100%",
@@ -1036,6 +1129,49 @@ function TrackContent() {
                   >
                     <Phone size={16} /> Direct Voice Call ({channels.displayNumber})
                   </a>
+
+                  {/* Urgent Dispute Intervention Action */}
+                  <button
+                    type="button"
+                    disabled={interventionRequested}
+                    onClick={async () => {
+                      setInterventionRequested(true);
+                      await syncCommunicationWithConcierge({
+                        bookingRef: booking.id,
+                        clientName: booking.customerName,
+                        clientPhone: booking.customerPhone,
+                        artisanName: channels.artisanName,
+                        artisanPhone: channels.displayNumber,
+                        serviceName: booking.serviceName,
+                        messageCopy: channels.prewrittenMessage,
+                        channel: "INTERVENTION_REQUEST",
+                        isUrgent: true,
+                      });
+                    }}
+                    className="btn btn-secondary btn-sm"
+                    style={{
+                      width: "100%",
+                      justifyContent: "center",
+                      background: interventionRequested ? "rgba(16, 185, 129, 0.15)" : "rgba(239, 68, 68, 0.12)",
+                      borderColor: interventionRequested ? "#10B981" : "#EF4444",
+                      color: interventionRequested ? "#10B981" : "#EF4444",
+                      fontWeight: 700,
+                      marginTop: 4,
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 6,
+                    }}
+                  >
+                    {interventionRequested ? (
+                      <>
+                        <CheckCircle2 size={16} color="#10B981" /> Urgent Dispute Alert Logged with Support Concierge Desk
+                      </>
+                    ) : (
+                      <>
+                        <AlertTriangle size={16} color="#EF4444" /> Request Immediate Concierge Dispute Intervention
+                      </>
+                    )}
+                  </button>
 
                   {/* Platform Concierge Support Hotline */}
                   <a
@@ -1058,7 +1194,7 @@ function TrackContent() {
                       gap: 6,
                     }}
                   >
-                    <ShieldCheck size={14} color="#10B981" /> Need Help? Escalate to HandyHub 24/7 Priority Support
+                    <ShieldCheck size={14} color="#10B981" /> Open HandyHub 24/7 Priority Support Hotline Directly
                   </a>
                 </div>
               </div>

@@ -467,3 +467,43 @@ export async function sendArtisanPartVoucherAlert(params: {
   });
 }
 
+/**
+ * Send communication log copy to HandyHub Concierge Desk for early dispute intervention
+ */
+export async function sendConciergeCommunicationSyncAlert(params: {
+  bookingRef: string;
+  clientName: string;
+  clientPhone: string;
+  artisanName: string;
+  artisanPhone: string;
+  serviceName: string;
+  channel: "WHATSAPP" | "SMS" | "CALL" | "INTERVENTION_REQUEST";
+  messageCopy: string;
+  isUrgent?: boolean;
+}) {
+  const supportPhone = process.env.NEXT_PUBLIC_SUPPORT_WHATSAPP || "2348122222936";
+  const body =
+    `🚨 *CLIENT-ARTISAN COMMUNICATION TRANSCRIPT LOG (EARLY INTERVENTION)*\n\n` +
+    `A client has initiated direct communication with an assigned artisan.\n\n` +
+    `🔖 *Booking Reference:* #${params.bookingRef}\n` +
+    `🛠️ *Service:* ${params.serviceName}\n` +
+    `👤 *Client:* ${params.clientName} (📞 ${params.clientPhone})\n` +
+    `👷 *Artisan:* ${params.artisanName} (📞 ${params.artisanPhone})\n` +
+    `📡 *Channel:* ${params.channel}\n\n` +
+    `📝 *Pre-written Message Transcript:*\n` +
+    `"${params.messageCopy}"\n\n` +
+    `🛡️ *Intervention Note:* Proactively monitoring this dispatch for SLA compliance, early dispute resolution, and on-platform safety.`;
+
+  return sendWhatsAppAlert({
+    recipientPhone: supportPhone,
+    recipientName: "HandyHub Support Concierge Desk",
+    title: `Intervention Log: #${params.bookingRef}`,
+    body,
+    bookingRef: params.bookingRef,
+    actionUrl: `https://handyhubpro.ng/admin/dashboard/bookings`,
+    actionLabel: "Open Admin Booking Hub",
+    isUrgent: Boolean(params.isUrgent),
+  });
+}
+
+

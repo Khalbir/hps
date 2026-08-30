@@ -80,3 +80,41 @@ export function getArtisanContactChannels(
     conciergeUrl,
   };
 }
+
+/**
+ * Automatically syncs client-artisan communication transcript to HandyHub Support Concierge
+ */
+export async function syncCommunicationWithConcierge(params: {
+  bookingRef: string;
+  clientName?: string;
+  clientPhone?: string;
+  artisanName: string;
+  artisanPhone: string;
+  serviceName?: string;
+  messageCopy: string;
+  channel?: "WHATSAPP" | "SMS" | "CALL" | "INTERVENTION_REQUEST";
+  isUrgent?: boolean;
+}): Promise<boolean> {
+  try {
+    const res = await fetch("/api/contact/concierge-sync", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        bookingRef: params.bookingRef,
+        clientName: params.clientName || "Valued Client",
+        clientPhone: params.clientPhone || "+234 812 222 2936",
+        artisanName: params.artisanName,
+        artisanPhone: params.artisanPhone,
+        serviceName: params.serviceName || "Property Service",
+        messageCopy: params.messageCopy,
+        channel: params.channel || "WHATSAPP",
+        isUrgent: Boolean(params.isUrgent),
+      }),
+    });
+    return res.ok;
+  } catch (err) {
+    console.warn("[Concierge Sync Client warning]:", err);
+    return false;
+  }
+}
+
