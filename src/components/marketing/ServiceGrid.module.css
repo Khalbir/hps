@@ -114,7 +114,18 @@
 }
 
 @media (max-width: 480px) {
+  .header {
+    margin-bottom: var(--space-8);
+  }
+  .subtitle {
+    font-size: 14px;
+    line-height: 1.5;
+  }
   .grid {
     grid-template-columns: 1fr;
+    gap: var(--space-3);
+  }
+  .serviceCard {
+    padding: var(--space-4) !important;
   }
 }

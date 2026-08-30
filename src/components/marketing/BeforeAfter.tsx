@@ -36,15 +36,20 @@ export function BeforeAfter() {
   const isInView = useInView(ref, { once: true, margin: "-100px" });
   const [sliderPositions, setSliderPositions] = useState<Record<number, number>>({});
 
-  const handleSlider = (id: number, e: React.MouseEvent<HTMLDivElement>) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    const x = ((e.clientX - rect.left) / rect.width) * 100;
+  const handleSlider = (id: number, clientX: number, currentTarget: HTMLDivElement) => {
+    const rect = currentTarget.getBoundingClientRect();
+    const x = ((clientX - rect.left) / rect.width) * 100;
     setSliderPositions((prev) => ({ ...prev, [id]: Math.max(5, Math.min(95, x)) }));
   };
 
   const handleSliderMove = (id: number, e: React.MouseEvent<HTMLDivElement>) => {
     if (e.buttons !== 1) return;
-    handleSlider(id, e);
+    handleSlider(id, e.clientX, e.currentTarget);
+  };
+
+  const handleTouchSlider = (id: number, e: React.TouchEvent<HTMLDivElement>) => {
+    if (!e.touches[0]) return;
+    handleSlider(id, e.touches[0].clientX, e.currentTarget);
   };
 
   return (
@@ -76,8 +81,10 @@ export function BeforeAfter() {
               >
                 <div
                   className={styles.slider}
-                  onMouseDown={(e) => handleSlider(project.id, e)}
+                  onMouseDown={(e) => handleSlider(project.id, e.clientX, e.currentTarget)}
                   onMouseMove={(e) => handleSliderMove(project.id, e)}
+                  onTouchStart={(e) => handleTouchSlider(project.id, e)}
+                  onTouchMove={(e) => handleTouchSlider(project.id, e)}
                 >
                   {/* Before */}
                   <div className={styles.before}>

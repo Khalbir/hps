@@ -44,6 +44,22 @@ export function Header() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  // Lock body scroll when mobile menu is open
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      if (mobileOpen) {
+        document.body.style.overflow = "hidden";
+      } else {
+        document.body.style.overflow = "";
+      }
+    }
+    return () => {
+      if (typeof window !== "undefined") {
+        document.body.style.overflow = "";
+      }
+    };
+  }, [mobileOpen]);
+
   useEffect(() => {
     const checkAuth = () => {
       const hasCookieSession = document.cookie.includes("handyhub_user_session=authenticated") ||

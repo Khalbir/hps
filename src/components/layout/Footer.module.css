@@ -287,3 +287,29 @@
     text-align: center;
   }
 }
+
+@media (max-width: 480px) {
+  .main {
+    padding: 36px 0 24px 0;
+  }
+  .newsletter {
+    padding: 28px 0;
+  }
+  .contactPillsGroup {
+    flex-direction: column;
+    width: 100%;
+    align-items: stretch;
+  }
+  .contactPillCall,
+  .contactPillWhatsApp {
+    width: 100%;
+    justify-content: center;
+    min-height: 40px;
+  }
+  .brandDesc {
+    font-size: 13px;
+  }
+  .socials {
+    justify-content: center;
+  }
+}
