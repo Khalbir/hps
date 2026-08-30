@@ -459,3 +459,70 @@
 .formInput:focus, .formSelect:focus {
   border-color: #00A8B5;
 }
+
+/* ========================================================================= */
+/* RESPONSIVE BREAKPOINTS (Mobile & Tablets)                                */
+/* ========================================================================= */
+
+@media (max-width: 768px) {
+  .hero {
+    padding: 100px 16px 50px;
+  }
+
+  .title {
+    font-size: 2rem;
+  }
+
+  .subtitle {
+    font-size: 0.95rem;
+    margin-bottom: 28px;
+  }
+
+  .heroActions {
+    flex-direction: column;
+    width: 100%;
+    gap: 12px;
+  }
+
+  .btnPrimary,
+  .btnSecondary {
+    width: 100%;
+    justify-content: center;
+    padding: 14px 20px;
+  }
+
+  .calculatorCard {
+    padding: 24px 16px;
+    border-radius: 18px;
+  }
+
+  .modalContent {
+    padding: 24px 18px;
+    border-radius: 18px;
+    margin: 10px;
+  }
+
+  .formGrid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .hero {
+    padding: 90px 12px 40px;
+  }
+
+  .badge {
+    font-size: 0.78rem;
+    padding: 6px 12px;
+  }
+
+  .title {
+    font-size: 1.75rem;
+  }
+
+  .resultAmount {
+    font-size: 2rem;
+  }
+}

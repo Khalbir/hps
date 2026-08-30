@@ -347,3 +347,149 @@
   position: relative;
   box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
 }
+
+/* ========================================================================= */
+/* RESPONSIVE BREAKPOINTS (Mobile & Tablets)                                */
+/* ========================================================================= */
+
+@media (max-width: 900px) {
+  .overviewBanner {
+    padding: 30px 20px;
+  }
+
+  .bannerContainer {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .quickActions {
+    width: 100%;
+  }
+
+  .btnTurquoise,
+  .btnOrange {
+    flex: 1;
+    min-width: 160px;
+    justify-content: center;
+  }
+
+  .kpiGrid {
+    grid-template-columns: repeat(2, 1fr);
+    margin-top: -16px;
+  }
+}
+
+@media (max-width: 768px) {
+  .topNav {
+    padding: 12px 16px;
+  }
+
+  .topNavInner {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .brandGroup {
+    justify-content: space-between;
+  }
+
+  .partnerInfo {
+    justify-content: space-between;
+  }
+
+  .overviewBanner {
+    padding: 24px 16px;
+  }
+
+  .bannerTitle {
+    font-size: 1.4rem;
+  }
+
+  .bannerSubtitle {
+    font-size: 0.88rem;
+  }
+
+  .quickActions {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .btnTurquoise,
+  .btnOrange {
+    width: 100%;
+    padding: 14px;
+    font-size: 0.95rem;
+  }
+
+  .kpiGrid {
+    padding: 0 16px;
+    gap: 12px;
+  }
+
+  .kpiCard {
+    padding: 16px 14px;
+  }
+
+  .kpiValue {
+    font-size: 1.45rem;
+  }
+
+  .tabsBar {
+    padding: 0 16px 14px;
+    gap: 6px;
+  }
+
+  .tabBtn {
+    padding: 10px 14px;
+    font-size: 0.84rem;
+  }
+
+  .contentArea {
+    padding: 20px 16px 60px;
+  }
+
+  .cardPanel {
+    padding: 20px 16px;
+    border-radius: 14px;
+  }
+
+  .panelHeader {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 14px;
+  }
+
+  .panelTitle {
+    font-size: 1.15rem;
+  }
+
+  .modalBox {
+    padding: 24px 18px;
+    border-radius: 16px;
+    margin: 10px;
+  }
+}
+
+@media (max-width: 480px) {
+  .kpiGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .partnerInfo {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .tierBadge {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .portalTable th,
+  .portalTable td {
+    padding: 12px 10px;
+    font-size: 0.82rem;
+  }
+}
