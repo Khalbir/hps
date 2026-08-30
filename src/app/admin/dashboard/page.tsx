@@ -205,27 +205,27 @@ export default function AdminDashboardPage() {
   };
 
   const stats = telemetry?.stats || {
-    totalRevenueNgn: 60000,
+    totalRevenueNgn: 0,
     activeBookingsCount: 0,
-    verifiedArtisansCount: 4,
+    verifiedArtisansCount: 0,
     pendingVerificationsCount: 0,
     onlineArtisansCount: 0,
-    totalArtisansCount: 4,
+    totalArtisansCount: 0,
     openDisputesCount: 0,
-    completedJobsCount: 2,
-    avgResponseTimeMin: 18,
-    totalBookingsAll: 2,
-    totalUsersCount: 14,
-    registeredClientsCount: 9,
+    completedJobsCount: 0,
+    avgResponseTimeMin: 0,
+    totalBookingsAll: 0,
+    totalUsersCount: 0,
+    registeredClientsCount: 0,
   };
 
   const kpiStats = [
-    { id: "rev", label: "Total Platform Volume", value: `₦${(stats.totalRevenueNgn || 60000).toLocaleString()}`, change: "Real Database Sum", icon: DollarSign, color: "#10B981", bg: "rgba(16,185,129,0.15)" },
+    { id: "rev", label: "Total Platform Volume", value: `₦${(stats.totalRevenueNgn || 0).toLocaleString()}`, change: "Real Database Sum", icon: DollarSign, color: "#10B981", bg: "rgba(16,185,129,0.15)" },
     { id: "online_pros", label: "Online Artisans", value: String(stats.onlineArtisansCount ?? 0), change: `${stats.totalArtisansCount || stats.verifiedArtisansCount || 0} Registered Artisans`, icon: Zap, color: "#10B981", bg: "rgba(16,185,129,0.15)" },
-    { id: "pros", label: "Verified Artisans", value: String(stats.verifiedArtisansCount ?? 4), change: `${stats.pendingVerificationsCount || 0} Pending Verification`, icon: ShieldCheck, color: "#8B5CF6", bg: "rgba(139,92,246,0.15)" },
-    { id: "users", label: "Registered Accounts", value: String(stats.totalUsersCount || 14), change: `${stats.registeredClientsCount || 9} Registered Clients`, icon: Users, color: "#0EA5E9", bg: "rgba(14,165,233,0.15)" },
+    { id: "pros", label: "Verified Artisans", value: String(stats.verifiedArtisansCount ?? 0), change: `${stats.pendingVerificationsCount || 0} Pending Verification`, icon: ShieldCheck, color: "#8B5CF6", bg: "rgba(139,92,246,0.15)" },
+    { id: "users", label: "Registered Accounts", value: String(stats.totalUsersCount || 0), change: `${stats.registeredClientsCount || 0} Registered Clients`, icon: Users, color: "#0EA5E9", bg: "rgba(14,165,233,0.15)" },
     { id: "active", label: "In-Flight Bookings", value: String(stats.activeBookingsCount || 0), change: "Active Operations", icon: ClipboardList, color: "#3B82F6", bg: "rgba(59,130,246,0.15)" },
-    { id: "completed", label: "Completed Jobs", value: String(stats.completedJobsCount || 2), change: `${stats.totalBookingsAll || 2} Total Placed`, icon: CheckCircle2, color: "#10B981", bg: "rgba(16,185,129,0.15)" },
+    { id: "completed", label: "Completed Jobs", value: String(stats.completedJobsCount || 0), change: `${stats.totalBookingsAll || 0} Total Placed`, icon: CheckCircle2, color: "#10B981", bg: "rgba(16,185,129,0.15)" },
     { id: "disputes", label: "Open Disputes", value: String(stats.openDisputesCount || 0), change: stats.openDisputesCount > 0 ? "Requires Action" : "All Clear (0 Disputes)", icon: AlertCircle, color: stats.openDisputesCount > 0 ? "#EF4444" : "#10B981", bg: stats.openDisputesCount > 0 ? "rgba(239,68,68,0.15)" : "rgba(16,185,129,0.15)" },
   ];
 

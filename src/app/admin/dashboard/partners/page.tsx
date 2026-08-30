@@ -232,14 +232,14 @@ export default function AdminPartnersPage() {
 
           <div style={{ background: "#1E293B", padding: 20, borderRadius: 12, border: "1px solid rgba(255,255,255,0.08)" }}>
             <span style={{ fontSize: "0.75rem", color: "#94A3B8", fontWeight: 700, textTransform: "uppercase" }}>GATED ESTATES</span>
-            <div style={{ fontSize: "1.8rem", fontWeight: 900, color: "#F59E0B", margin: "4px 0" }}>{metrics.totalEstates || 2} Estates</div>
+            <div style={{ fontSize: "1.8rem", fontWeight: 900, color: "#F59E0B", margin: "4px 0" }}>{metrics.totalEstates || 0} Estates</div>
             <span style={{ fontSize: "0.78rem", color: "#94A3B8" }}>With security gate passes</span>
           </div>
 
           <div style={{ background: "#1E293B", padding: 20, borderRadius: 12, border: "1px solid rgba(255,255,255,0.08)" }}>
             <span style={{ fontSize: "0.75rem", color: "#94A3B8", fontWeight: 700, textTransform: "uppercase" }}>TOTAL COMMISSIONS PAID</span>
             <div style={{ fontSize: "1.8rem", fontWeight: 900, color: "#10B981", margin: "4px 0" }}>
-              ₦{(metrics.totalEarningsDisbursed || 809600).toLocaleString()}
+              ₦{(metrics.totalEarningsDisbursed || 0).toLocaleString()}
             </div>
             <span style={{ fontSize: "0.78rem", color: "#10B981" }}>Settled to Bank Accounts</span>
           </div>
