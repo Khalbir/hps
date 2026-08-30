@@ -86,6 +86,22 @@ export function AdminLayoutShell({ children }: { children: ReactNode }) {
     }
   }, [router]);
 
+  // Lock body scroll when mobile sidebar is open
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      if (sidebarOpen) {
+        document.body.style.overflow = "hidden";
+      } else {
+        document.body.style.overflow = "";
+      }
+    }
+    return () => {
+      if (typeof window !== "undefined") {
+        document.body.style.overflow = "";
+      }
+    };
+  }, [sidebarOpen]);
+
   // Global Keyboard Shortcut (Ctrl+K or Cmd+K for Search)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -153,8 +169,8 @@ export function AdminLayoutShell({ children }: { children: ReactNode }) {
               src="/logo.png"
               alt="HandyHub Pro"
               style={{
-                width: 38,
-                height: 38,
+                width: 36,
+                height: 36,
                 objectFit: "contain",
                 flexShrink: 0,
                 filter: "drop-shadow(0 2px 8px rgba(0, 168, 181, 0.35))",
@@ -162,7 +178,7 @@ export function AdminLayoutShell({ children }: { children: ReactNode }) {
             />
             <div style={{ display: "flex", flexDirection: "column", gap: "1px", minWidth: 0 }}>
               <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                <span style={{ fontSize: "16px", fontWeight: 800, color: "#F8FAFC", letterSpacing: "-0.4px" }}>HandyHub</span>
+                <span style={{ fontSize: "15px", fontWeight: 800, color: "#F8FAFC", letterSpacing: "-0.4px" }}>HandyHub</span>
                 <span style={{
                   fontSize: "10px",
                   fontWeight: 800,
@@ -173,7 +189,7 @@ export function AdminLayoutShell({ children }: { children: ReactNode }) {
                   textTransform: "uppercase",
                 }}>COMMAND</span>
               </div>
-              <span style={{ fontSize: "9px", fontWeight: 700, color: "#64748B", letterSpacing: "1.5px", textTransform: "uppercase" }}>
+              <span style={{ fontSize: "8.5px", fontWeight: 700, color: "#64748B", letterSpacing: "1.2px", textTransform: "uppercase" }}>
                 EXECUTIVE SUITE
               </span>
             </div>
@@ -181,9 +197,10 @@ export function AdminLayoutShell({ children }: { children: ReactNode }) {
           <button
             className={styles.adminMenuBtn}
             onClick={() => setSidebarOpen(false)}
-            style={{ display: sidebarOpen ? "block" : undefined }}
+            aria-label="Close Navigation"
+            style={{ display: "inline-flex" }}
           >
-            <X size={20} />
+            <X size={18} />
           </button>
         </div>
 
@@ -269,9 +286,9 @@ export function AdminLayoutShell({ children }: { children: ReactNode }) {
       {/* Main Content Area */}
       <main className={styles.adminMain}>
         {/* Top Command Bar */}
-        <div style={{ padding: "14px 20px", background: "#0B132B", borderBottom: "1px solid rgba(255, 255, 255, 0.08)", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "12px", position: "sticky", top: 0, zIndex: 40 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "12px", width: "100%", maxWidth: "500px" }}>
-            <button className={styles.adminMenuBtn} onClick={() => setSidebarOpen(true)}>
+        <div className={styles.adminTopBar}>
+          <div style={{ display: "flex", alignItems: "center", gap: "10px", width: "100%", maxWidth: "520px" }}>
+            <button className={styles.adminMenuBtn} onClick={() => setSidebarOpen(true)} aria-label="Open Navigation Menu">
               <Menu size={20} />
             </button>
 
@@ -290,18 +307,19 @@ export function AdminLayoutShell({ children }: { children: ReactNode }) {
                 fontSize: "13px",
                 cursor: "pointer",
                 flex: 1,
+                minWidth: 0,
               }}
             >
-              <Search size={16} color="#0EA5E9" />
-              <span>Search customers, pros, ref...</span>
-              <kbd style={{ marginLeft: "auto", background: "#0F172A", padding: "2px 6px", borderRadius: "4px", fontSize: "10px", color: "#64748B" }}>Ctrl+K</kbd>
+              <Search size={16} color="#0EA5E9" style={{ flexShrink: 0 }} />
+              <span style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>Search entities, pros, jobs...</span>
+              <kbd style={{ marginLeft: "auto", background: "#0F172A", padding: "2px 6px", borderRadius: "4px", fontSize: "10px", color: "#64748B", flexShrink: 0 }}>Ctrl+K</kbd>
             </button>
           </div>
 
-          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-            <span style={{ fontSize: "12px", color: "#10B981", display: "flex", alignItems: "center", gap: "6px" }}>
-              <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#10B981", display: "inline-block", animation: "pulse 2s infinite" }} />
-              Live Server: Abuja & Expansion
+          <div style={{ display: "flex", alignItems: "center", gap: "12px", marginLeft: "auto" }}>
+            <span style={{ fontSize: "12px", color: "#10B981", display: "flex", alignItems: "center", gap: "6px", fontWeight: 600 }}>
+              <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#10B981", display: "inline-block" }} />
+              Live Server: Active
             </span>
           </div>
         </div>

@@ -195,13 +195,18 @@
    ADMIN DASHBOARD
    ============================================ */
 
+/* ============================================
+   ADMIN DASHBOARD
+   ============================================ */
+
 .adminDashLayout {
   display: flex;
   min-height: 100vh;
-  width: 100vw;
-  max-width: 100vw;
+  width: 100%;
+  max-width: 100%;
   background: #0F172A;
   overflow-x: hidden;
+  position: relative;
 }
 
 .adminSidebar {
@@ -214,17 +219,18 @@
   top: 0;
   left: 0;
   bottom: 0;
-  z-index: 50;
-  transition: transform var(--duration-medium) var(--ease-default);
-  box-shadow: 4px 0 24px rgba(0, 0, 0, 0.3);
+  z-index: 999;
+  transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 4px 0 24px rgba(0, 0, 0, 0.4);
 }
 
 .adminSidebarHeader {
-  padding: 20px 18px;
+  padding: 18px 16px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 10px;
 }
 
 .adminLogo {
@@ -236,6 +242,7 @@
   font-weight: var(--fw-bold);
   color: white;
   text-decoration: none;
+  min-width: 0;
 }
 
 .adminNav {
@@ -245,6 +252,7 @@
   flex-direction: column;
   gap: 4px;
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .adminNavSection {
@@ -313,25 +321,29 @@
 .adminMain {
   flex: 1;
   margin-left: 275px;
-  width: calc(100vw - 275px);
-  max-width: calc(100vw - 275px);
+  width: calc(100% - 275px);
+  max-width: calc(100% - 275px);
   min-height: 100vh;
   box-sizing: border-box;
   overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 .adminTopBar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 20px 32px;
+  padding: 16px 24px;
   background: #1E293B;
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
   position: sticky;
   top: 0;
-  z-index: 10;
+  z-index: 30;
   width: 100%;
   box-sizing: border-box;
+  flex-wrap: wrap;
+  gap: 14px;
 }
 
 .adminTopLeft {
@@ -342,11 +354,19 @@
 
 .adminMenuBtn {
   display: none;
-  background: none;
-  border: none;
-  color: rgba(255, 255, 255, 0.6);
+  background: rgba(14, 165, 233, 0.12);
+  border: 1px solid rgba(14, 165, 233, 0.3);
+  color: #38BDF8;
   cursor: pointer;
-  padding: var(--space-2);
+  padding: 8px 12px;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.adminMenuBtn:hover {
+  background: rgba(14, 165, 233, 0.25);
+  color: #FFFFFF;
 }
 
 .adminGreeting {
@@ -362,11 +382,12 @@
 }
 
 .adminContent {
-  padding: var(--space-8);
+  padding: 24px 20px;
   display: flex;
   flex-direction: column;
   gap: var(--space-6);
-  max-width: 100vw;
+  width: 100%;
+  max-width: 100%;
   box-sizing: border-box;
   overflow-x: hidden;
 }
@@ -375,34 +396,29 @@
 .gridTwoCol {
   display: grid;
   grid-template-columns: 1.8fr 1fr;
-  gap: 24px;
+  gap: 20px;
+  width: 100%;
 }
 
 .gridTwoColEqual {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 20px;
+  width: 100%;
 }
 
 .gridThreeCol {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 20px;
+  gap: 18px;
+  width: 100%;
 }
 
 .gridMainDrawer {
   display: grid;
   grid-template-columns: 1.6fr 1fr;
   gap: 20px;
-}
-
-@media (max-width: 1024px) {
-  .gridTwoCol,
-  .gridTwoColEqual,
-  .gridThreeCol,
-  .gridMainDrawer {
-    grid-template-columns: 1fr !important;
-  }
+  width: 100%;
 }
 
 /* Admin Stats */
@@ -414,6 +430,7 @@
   display: flex;
   align-items: flex-start;
   gap: var(--space-4);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 .adminStatIcon {
@@ -433,6 +450,7 @@
   font-weight: var(--fw-bold);
   color: white;
   line-height: 1;
+  word-break: break-word;
 }
 
 .adminStatLabel {
@@ -456,6 +474,8 @@
   padding: var(--space-6);
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .adminTable {
@@ -472,6 +492,7 @@
   text-transform: uppercase;
   letter-spacing: 0.05em;
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  white-space: nowrap;
 }
 
 .adminTable td {
@@ -494,10 +515,14 @@
   z-index: 998;
 }
 
+/* ========================================================================= */
+/* RESPONSIVE BREAKPOINTS (Mobile & Tablets)                                */
+/* ========================================================================= */
+
 @media (max-width: 1024px) {
   .adminSidebar {
     transform: translateX(-100%);
-    width: 280px !important;
+    width: min(290px, 85vw) !important;
     z-index: 999;
   }
 
@@ -507,37 +532,39 @@
 
   .adminMain {
     margin-left: 0 !important;
-    width: 100vw !important;
-    max-width: 100vw !important;
+    width: 100% !important;
+    max-width: 100% !important;
     padding: 0 !important;
   }
 
   .adminTopBar {
     padding: 14px 16px !important;
     flex-direction: column !important;
-    align-items: flex-start !important;
+    align-items: stretch !important;
     gap: 12px !important;
   }
 
   .adminContent {
-    padding: 16px !important;
+    padding: 16px 12px !important;
     gap: 16px !important;
   }
 
   .adminMenuBtn {
-    display: flex !important;
+    display: inline-flex !important;
     align-items: center;
     justify-content: center;
-    padding: 8px 12px;
-    background: rgba(14, 165, 233, 0.15);
-    border: 1px solid #0EA5E9;
-    border-radius: 8px;
-    color: #38BDF8;
-    cursor: pointer;
   }
 
   .adminOverlay {
     display: block;
+  }
+
+  .gridTwoCol,
+  .gridTwoColEqual,
+  .gridThreeCol,
+  .gridMainDrawer {
+    grid-template-columns: 1fr !important;
+    gap: 16px !important;
   }
 
   .loginCard {
@@ -551,6 +578,20 @@
   }
 
   .adminContent {
-    padding: 12px !important;
+    padding: 12px 8px !important;
+    gap: 14px !important;
+  }
+
+  .adminStatCard {
+    padding: 14px 12px;
+  }
+
+  .adminStatValue {
+    font-size: 1.5rem;
+  }
+
+  .adminTableCard {
+    padding: 14px 10px;
+    border-radius: 12px;
   }
 }

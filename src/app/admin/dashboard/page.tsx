@@ -656,7 +656,7 @@ export default function AdminDashboardPage() {
               </span>
             </div>
 
-            <div style={{ height: "200px", display: "flex", alignItems: "flex-end", gap: "16px", padding: "10px 0 0 0" }}>
+            <div style={{ height: "200px", display: "flex", alignItems: "flex-end", gap: "14px", padding: "10px 0 0 0", overflowX: "auto", WebkitOverflowScrolling: "touch", minWidth: "100%" }}>
               {revenueMonthly.map((r: any) => {
                 const heightPercent = maxRev > 0 ? Math.round((r.amount / maxRev) * 100) : 0;
                 return (

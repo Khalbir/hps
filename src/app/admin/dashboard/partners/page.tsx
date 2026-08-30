@@ -302,7 +302,7 @@ export default function AdminPartnersPage() {
         </div>
 
         {/* Tab Buttons */}
-        <div style={{ display: "flex", gap: 10, borderBottom: "1px solid rgba(255,255,255,0.08)", paddingBottom: 14, marginBottom: 24 }}>
+        <div style={{ display: "flex", gap: 10, borderBottom: "1px solid rgba(255,255,255,0.08)", paddingBottom: 14, marginBottom: 24, overflowX: "auto", WebkitOverflowScrolling: "touch", whiteSpace: "nowrap" }}>
           <button
             onClick={() => setActiveTab("partners")}
             style={{
