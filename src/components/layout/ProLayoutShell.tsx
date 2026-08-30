@@ -215,31 +215,6 @@ export function ProLayoutShell({ children }: { children: ReactNode }) {
               <ShieldCheck size={15} color="#10B981" /> HandyHub Pro Console
             </span>
           </div>
-
-          {!isCustomerAccount && (
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <Link
-                href="/dashboard"
-                className="btn btn-secondary btn-xs"
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: 5,
-                  fontSize: "11px",
-                  fontWeight: 700,
-                  color: "#38BDF8",
-                  borderColor: "rgba(14,165,233,0.3)",
-                  background: "rgba(14,165,233,0.1)",
-                  textDecoration: "none",
-                  padding: "6px 12px",
-                  borderRadius: "8px",
-                }}
-                title="Switch to Client Portal to book services for your own property"
-              >
-                🔄 Switch to Client Mode
-              </Link>
-            </div>
-          )}
         </div>
 
         {isCustomerAccount && (
