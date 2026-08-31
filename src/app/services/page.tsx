@@ -13,10 +13,19 @@ import { PricingRulesConfig, getEffectiveServiceItem } from "@/lib/pricingEngine
 const serviceCatalog = [
   {
     id: "cleaning",
-    title: "Residential & Deep Cleaning",
+    title: "Residential Routine Cleaning",
+    icon: Sparkles,
+    price: "From ₦45,000/mo",
+    desc: "Scheduled recurring housekeeping & maid service: Silver (2 days/wk · 8 visits), Gold (3 days/wk · 12 visits) & Platinum (6 days/wk · 24 visits).",
+    popularItems: ["Silver Plan (2 Days/Wk · 8 Visits)", "Gold Plan (3 Days/Wk · 12 Visits)", "Platinum VIP (6 Days/Wk · 24 Visits)", "Dedicated Verified Housekeeper"],
+    badge: "Monthly Plans (Silver, Gold, Platinum)",
+  },
+  {
+    id: "cleaning",
+    title: "Residential Deep Cleaning (One-Time)",
     icon: Sparkles,
     price: "From ₦15,000",
-    desc: "Complete home sanitization, kitchen degreasing, bathroom scrubbing, and post-construction cleaning.",
+    desc: "Complete one-off home sanitization, kitchen degreasing, bathroom scrubbing, and post-construction deep turnaround.",
     popularItems: ["Full Flat Deep Cleaning", "Move-in / Move-out Scrub", "Post-Construction Cleaning", "Commercial Janitorial"],
     badge: "Most Popular",
   },

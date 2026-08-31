@@ -27,6 +27,12 @@ export interface PopularSuggestion {
 
 export const POPULAR_SUGGESTIONS: PopularSuggestion[] = [
   {
+    text: "Residential routine cleaning monthly plan",
+    label: "Residential Routine Cleaning (Monthly Plans)",
+    categoryId: "cleaning",
+    serviceId: "residential-routine-cleaning",
+  },
+  {
     text: "My kitchen sink is leaking",
     label: "My kitchen sink is leaking",
     categoryId: "plumbing",
@@ -87,8 +93,9 @@ export const SERVICE_CATEGORIES: ServiceCategory[] = [
     id: "cleaning",
     name: "Cleaning",
     color: "#00A8B5",
-    keywords: ["clean", "cleaning", "maid", "housekeeper", "dust", "deep clean", "office clean", "janitor", "wash", "sweeping", "mopping"],
+    keywords: ["clean", "cleaning", "routine", "maid", "housekeeper", "subscription", "recurring", "dust", "deep clean", "office clean", "janitor", "wash", "sweeping", "mopping"],
     services: [
+      { id: "residential-routine-cleaning", name: "Residential Routine Cleaning (Monthly Plans)", price: 45000, desc: "Scheduled recurring housekeeping: Silver (2 days/wk · 8 visits), Gold (3 days/wk · 12 visits) & Platinum (6 days/wk · 24 visits)", pricingModel: "SUBSCRIPTION" },
       { id: "residential-cleaning", name: "Residential Cleaning (One-Time)", price: 15000, desc: "Standard deep cleaning for apartments and houses", pricingModel: "PROPERTY_BASED" },
       { id: "deep-cleaning", name: "Deep Cleaning", price: 25000, desc: "Thorough deep cleaning of every surface", pricingModel: "PROPERTY_BASED" },
       { id: "commercial-cleaning", name: "Commercial Cleaning", price: 35000, desc: "Office and business space cleaning", pricingModel: "QUANTITY_BASED", unitLabel: "per office space" },

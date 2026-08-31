@@ -28,6 +28,16 @@ import styles from "./ServiceGrid.module.css";
 const services = [
   {
     icon: Sparkles,
+    name: "Residential Routine Cleaning",
+    category: "cleaning",
+    slug: "residential-routine-cleaning",
+    description: "Scheduled recurring housekeeping: Silver, Gold & Platinum monthly plans",
+    price: "₦45,000",
+    color: "#00A8B5",
+    bgColor: "rgba(0, 168, 181, 0.08)",
+  },
+  {
+    icon: Sparkles,
     name: "Residential Cleaning (One-Time)",
     category: "cleaning",
     slug: "residential-cleaning",
