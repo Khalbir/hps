@@ -232,18 +232,23 @@ export function StepDetails({ booking, updateBooking, onNext, onBack }: StepProp
         </div>
       )}
 
-      {/* Bedrooms & Bathrooms (For Cleaning & Fumigation) */}
-      {isPropertyBased && (
+      {/* Bedrooms & Bathrooms (For Cleaning, Routine Cleaning & Fumigation) */}
+      {(isPropertyBased || (isSubscription && !isGardening)) && (
         <>
           <div className={styles.fieldGroup}>
-            <label className={styles.fieldLabel}>
-              {isFumigation ? "Number of Bedrooms / Main Rooms to Fumigate" : "Number of Bedrooms"}
+            <label className={styles.fieldLabel} style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <span>{isFumigation ? "Number of Bedrooms / Main Rooms to Fumigate" : "Number of Bedrooms"}</span>
+              {isSubscription && !isGardening && (booking.bedrooms || 1) > 1 && (
+                <span style={{ fontSize: "11px", color: "#38BDF8", fontWeight: 700 }}>
+                  +{((booking.bedrooms || 1) - 1) * 25}% to monthly rate
+                </span>
+              )}
             </label>
             <div className={styles.counterRow}>
               {[1, 2, 3, 4, 5, 6].map((n) => (
                 <button
                   key={n}
-                  className={`${styles.counterBtn} ${booking.bedrooms === n ? styles.counterBtnActive : ""}`}
+                  className={`${styles.counterBtn} ${(booking.bedrooms || (isSubscription && !isGardening ? 1 : 2)) === n ? styles.counterBtnActive : ""}`}
                   onClick={() => handleBedrooms(n)}
                 >
                   {n}{n === 6 ? "+" : ""}
@@ -253,14 +258,19 @@ export function StepDetails({ booking, updateBooking, onNext, onBack }: StepProp
           </div>
 
           <div className={styles.fieldGroup}>
-            <label className={styles.fieldLabel}>
-              {isFumigation ? "Number of Bathrooms / Wet Areas to Treat" : "Number of Bathrooms"}
+            <label className={styles.fieldLabel} style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <span>{isFumigation ? "Number of Bathrooms / Wet Areas to Treat" : "Number of Bathrooms"}</span>
+              {isSubscription && !isGardening && (booking.bathrooms || 1) > 1 && (
+                <span style={{ fontSize: "11px", color: "#38BDF8", fontWeight: 700 }}>
+                  +{((booking.bathrooms || 1) - 1) * 5}% to monthly rate
+                </span>
+              )}
             </label>
             <div className={styles.counterRow}>
               {[1, 2, 3, 4, 5].map((n) => (
                 <button
                   key={n}
-                  className={`${styles.counterBtn} ${booking.bathrooms === n ? styles.counterBtnActive : ""}`}
+                  className={`${styles.counterBtn} ${(booking.bathrooms || 1) === n ? styles.counterBtnActive : ""}`}
                   onClick={() => handleBathrooms(n)}
                 >
                   {n}{n === 5 ? "+" : ""}
@@ -269,38 +279,40 @@ export function StepDetails({ booking, updateBooking, onNext, onBack }: StepProp
             </div>
           </div>
 
-          {/* Furnished / Inhabited Toggle */}
-          <div className={styles.fieldGroup}>
-            <label className={styles.fieldLabel}>
-              {isFumigation ? "Premises Inhabited / Furnished Status" : "Property Furnished Status"}
-            </label>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", maxWidth: "340px" }}>
-              <button
-                type="button"
-                onClick={() => {
-                  updateBooking({ isFurnished: false });
-                  const total = getComputedPrice(booking.bedrooms || 2, booking.bathrooms || 1, booking.quantity || 1, booking.planTier as ServicePlanTier);
-                  updateBooking({ isFurnished: false, totalPrice: total });
-                }}
-                className={`${styles.counterBtn} ${!booking.isFurnished ? styles.counterBtnActive : ""}`}
-                style={{ padding: "10px", height: "auto", fontSize: "12px", fontWeight: 700 }}
-              >
-                {isFumigation ? "Vacant / Empty" : "Unfurnished"}
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  updateBooking({ isFurnished: true });
-                  const total = getComputedPrice(booking.bedrooms || 2, booking.bathrooms || 1, booking.quantity || 1, booking.planTier as ServicePlanTier);
-                  updateBooking({ isFurnished: true, totalPrice: total });
-                }}
-                className={`${styles.counterBtn} ${booking.isFurnished ? styles.counterBtnActive : ""}`}
-                style={{ padding: "10px", height: "auto", fontSize: "12px", fontWeight: 700 }}
-              >
-                Furnished (+₦5k)
-              </button>
+          {/* Furnished / Inhabited Toggle (Only for One-Time Cleaning & Fumigation) */}
+          {isPropertyBased && (
+            <div className={styles.fieldGroup}>
+              <label className={styles.fieldLabel}>
+                {isFumigation ? "Premises Inhabited / Furnished Status" : "Property Furnished Status"}
+              </label>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", maxWidth: "340px" }}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    updateBooking({ isFurnished: false });
+                    const total = getComputedPrice(booking.bedrooms || 2, booking.bathrooms || 1, booking.quantity || 1, booking.planTier as ServicePlanTier);
+                    updateBooking({ isFurnished: false, totalPrice: total });
+                  }}
+                  className={`${styles.counterBtn} ${!booking.isFurnished ? styles.counterBtnActive : ""}`}
+                  style={{ padding: "10px", height: "auto", fontSize: "12px", fontWeight: 700 }}
+                >
+                  {isFumigation ? "Vacant / Empty" : "Unfurnished"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    updateBooking({ isFurnished: true });
+                    const total = getComputedPrice(booking.bedrooms || 2, booking.bathrooms || 1, booking.quantity || 1, booking.planTier as ServicePlanTier);
+                    updateBooking({ isFurnished: true, totalPrice: total });
+                  }}
+                  className={`${styles.counterBtn} ${booking.isFurnished ? styles.counterBtnActive : ""}`}
+                  style={{ padding: "10px", height: "auto", fontSize: "12px", fontWeight: 700 }}
+                >
+                  Furnished (+₦5k)
+                </button>
+              </div>
             </div>
-          </div>
+          )}
         </>
       )}
 

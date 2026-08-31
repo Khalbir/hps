@@ -96,8 +96,8 @@ export function StepService({ booking, updateBooking, onNext }: StepProps) {
         pricingModel: pModel,
         basePrice: svc.price,
         plan: planToUse,
-        bedrooms: isProp ? (booking.bedrooms || 2) : 1,
-        bathrooms: isProp ? (booking.bathrooms || 1) : 1,
+        bedrooms: isProp ? (booking.bedrooms || 2) : (pModel === "SUBSCRIPTION" ? (booking.bedrooms || 1) : 1),
+        bathrooms: isProp ? (booking.bathrooms || 1) : (pModel === "SUBSCRIPTION" ? (booking.bathrooms || 1) : 1),
         isFurnished: isProp ? Boolean(booking.isFurnished) : false,
         dirtLevel: isProp ? (booking.dirtLevel || "MODERATE") : "LIGHT",
         quantity: svcQty,
@@ -152,8 +152,8 @@ export function StepService({ booking, updateBooking, onNext }: StepProps) {
           pricingModel: pModel,
           basePrice: svc.price,
           plan: selectedPlanTier || (booking.planTier as ServicePlanTier) || "SILVER",
-          bedrooms: isProp ? (booking.bedrooms || 2) : 1,
-          bathrooms: isProp ? (booking.bathrooms || 1) : 1,
+          bedrooms: isProp ? (booking.bedrooms || 2) : (pModel === "SUBSCRIPTION" ? (booking.bedrooms || 1) : 1),
+          bathrooms: isProp ? (booking.bathrooms || 1) : (pModel === "SUBSCRIPTION" ? (booking.bathrooms || 1) : 1),
           isFurnished: isProp ? Boolean(booking.isFurnished) : false,
           dirtLevel: isProp ? (booking.dirtLevel || "MODERATE") : "LIGHT",
           quantity: svcQty,
@@ -221,8 +221,8 @@ export function StepService({ booking, updateBooking, onNext }: StepProps) {
         pricingModel: pModel,
         basePrice: svc.price,
         plan: planToUse,
-        bedrooms: isProp ? (booking.bedrooms || 2) : 1,
-        bathrooms: isProp ? (booking.bathrooms || 1) : 1,
+        bedrooms: isProp ? (booking.bedrooms || 2) : (pModel === "SUBSCRIPTION" ? (booking.bedrooms || 1) : 1),
+        bathrooms: isProp ? (booking.bathrooms || 1) : (pModel === "SUBSCRIPTION" ? (booking.bathrooms || 1) : 1),
         isFurnished: isProp ? Boolean(booking.isFurnished) : false,
         dirtLevel: isProp ? (booking.dirtLevel || "MODERATE") : "LIGHT",
         quantity: svcQty,
@@ -290,39 +290,55 @@ export function StepService({ booking, updateBooking, onNext }: StepProps) {
           </button>
           <h2 className={styles.stepTitle}>{activeCategory?.name} Options</h2>
 
-          {/* Property-Based Controls for Cleaning, Painting & Fumigation */}
-          {(selectedCategory === "cleaning" || selectedCategory === "painting" || selectedCategory === "fumigation") && (
+          {/* Property-Based Controls for Routine Cleaning, Deep Cleaning, Painting & Fumigation */}
+          {(selectedCategory === "routine-cleaning" || selectedCategory === "cleaning" || selectedCategory === "painting" || selectedCategory === "fumigation") && (
             <div className={styles.configCard} style={{ background: "#1E293B", border: "1px solid #334155", padding: "20px", borderRadius: "16px", marginBottom: "24px" }}>
               <div className={styles.configHeader} style={{ marginBottom: "16px" }}>
                 <h4 className={styles.configTitle} style={{ margin: 0, color: "#F8FAFC", fontSize: "16px", display: "flex", alignItems: "center", gap: "8px" }}>
-                  <Building2 size={18} color="#0EA5E9" /> {selectedCategory === "fumigation" ? "Property Size & Infestation Level Configuration" : "Property Size & Condition Configuration"}
+                  <Building2 size={18} color={selectedCategory === "routine-cleaning" ? "#00A8B5" : "#0EA5E9"} />
+                  {selectedCategory === "routine-cleaning"
+                    ? "Property Size Configuration"
+                    : selectedCategory === "fumigation"
+                    ? "Property Size & Infestation Level Configuration"
+                    : "Property Size & Condition Configuration"}
                 </h4>
                 <p className={styles.configSubtitle} style={{ margin: "4px 0 0", color: "#94A3B8", fontSize: "13px" }}>
-                  {selectedCategory === "fumigation"
+                  {selectedCategory === "routine-cleaning"
+                    ? "Configure number of bedrooms and bathrooms (each additional bedroom adds +25%, each additional bathroom adds +5% to the monthly plan rate)."
+                    : selectedCategory === "fumigation"
                     ? "Customize bedrooms, bathrooms, and pest infestation severity for instant upfront fumigation pricing."
                     : "Customize rooms, furnished fitting, and grime level for instant upfront pricing."}
                 </p>
               </div>
 
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))", gap: "12px" }}>
+              <div style={{ display: "grid", gridTemplateColumns: selectedCategory === "routine-cleaning" ? "repeat(auto-fit, minmax(200px, 1fr))" : "repeat(auto-fit, minmax(170px, 1fr))", gap: "12px" }}>
                 {/* Bedrooms Counter */}
                 <div style={{ background: "#0F172A", padding: "12px 14px", borderRadius: "12px", border: "1px solid #334155", minWidth: 0, boxSizing: "border-box" }}>
-                  <span style={{ fontSize: "12px", color: "#94A3B8", fontWeight: 600, display: "block" }}>
-                    {selectedCategory === "fumigation" ? "Bedrooms / Main Rooms" : "Bedrooms"}
-                  </span>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                    <span style={{ fontSize: "12px", color: "#94A3B8", fontWeight: 600, display: "block" }}>
+                      {selectedCategory === "fumigation" ? "Bedrooms / Main Rooms" : "Bedrooms"}
+                    </span>
+                    {selectedCategory === "routine-cleaning" && (booking.bedrooms || 1) > 1 && (
+                      <span style={{ fontSize: "10px", color: "#38BDF8", fontWeight: 700 }}>
+                        +{((booking.bedrooms || 1) - 1) * 25}%
+                      </span>
+                    )}
+                  </div>
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: "8px" }}>
                     <button
                       type="button"
-                      onClick={() => handleBedroomsChange(Math.max(1, (booking.bedrooms || 2) - 1))}
+                      onClick={() => handleBedroomsChange(Math.max(1, (booking.bedrooms || (selectedCategory === "routine-cleaning" ? 1 : 2)) - 1))}
                       style={{ background: "#1E293B", border: "1px solid #334155", color: "#F8FAFC", width: 32, height: 32, borderRadius: 8, cursor: "pointer", fontWeight: "bold" }}
-                      disabled={(booking.bedrooms || 2) <= 1}
+                      disabled={(booking.bedrooms || (selectedCategory === "routine-cleaning" ? 1 : 2)) <= 1}
                     >
                       -
                     </button>
-                    <span style={{ fontSize: "16px", fontWeight: "bold", color: "#F8FAFC" }}>{booking.bedrooms || 2}</span>
+                    <span style={{ fontSize: "16px", fontWeight: "bold", color: "#F8FAFC" }}>
+                      {booking.bedrooms || (selectedCategory === "routine-cleaning" ? 1 : 2)}
+                    </span>
                     <button
                       type="button"
-                      onClick={() => handleBedroomsChange((booking.bedrooms || 2) + 1)}
+                      onClick={() => handleBedroomsChange((booking.bedrooms || (selectedCategory === "routine-cleaning" ? 1 : 2)) + 1)}
                       style={{ background: "#1E293B", border: "1px solid #334155", color: "#F8FAFC", width: 32, height: 32, borderRadius: 8, cursor: "pointer", fontWeight: "bold" }}
                     >
                       +
@@ -332,9 +348,16 @@ export function StepService({ booking, updateBooking, onNext }: StepProps) {
 
                 {/* Bathrooms Counter */}
                 <div style={{ background: "#0F172A", padding: "12px 14px", borderRadius: "12px", border: "1px solid #334155", minWidth: 0, boxSizing: "border-box" }}>
-                  <span style={{ fontSize: "12px", color: "#94A3B8", fontWeight: 600, display: "block" }}>
-                    {selectedCategory === "fumigation" ? "Bathrooms / Wet Areas" : "Bathrooms"}
-                  </span>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                    <span style={{ fontSize: "12px", color: "#94A3B8", fontWeight: 600, display: "block" }}>
+                      {selectedCategory === "fumigation" ? "Bathrooms / Wet Areas" : "Bathrooms"}
+                    </span>
+                    {selectedCategory === "routine-cleaning" && (booking.bathrooms || 1) > 1 && (
+                      <span style={{ fontSize: "10px", color: "#38BDF8", fontWeight: 700 }}>
+                        +{((booking.bathrooms || 1) - 1) * 5}%
+                      </span>
+                    )}
+                  </div>
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: "8px" }}>
                     <button
                       type="button"
@@ -355,83 +378,87 @@ export function StepService({ booking, updateBooking, onNext }: StepProps) {
                   </div>
                 </div>
 
-                {/* Furnished Toggle */}
-                <div style={{ background: "#0F172A", padding: "12px 14px", borderRadius: "12px", border: "1px solid #334155", minWidth: 0, boxSizing: "border-box" }}>
-                  <span style={{ fontSize: "12px", color: "#94A3B8", fontWeight: 600, display: "block" }}>
-                    {selectedCategory === "fumigation" ? "Premises Status" : "Furnished Status"}
-                  </span>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "6px", marginTop: "8px" }}>
-                    <button
-                      type="button"
-                      onClick={() => handleFurnishedToggle(false)}
-                      style={{
-                        padding: "6px 4px",
-                        borderRadius: "6px",
-                        fontSize: "11px",
-                        fontWeight: 700,
-                        border: !booking.isFurnished ? "1px solid #0EA5E9" : "1px solid #334155",
-                        background: !booking.isFurnished ? "rgba(14,165,233,0.15)" : "#1E293B",
-                        color: !booking.isFurnished ? "#38BDF8" : "#94A3B8",
-                        cursor: "pointer",
-                        textAlign: "center",
-                        whiteSpace: "nowrap",
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                        boxSizing: "border-box",
-                      }}
-                    >
-                      {selectedCategory === "fumigation" ? "Vacant/Empty" : "Unfurnished"}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleFurnishedToggle(true)}
-                      style={{
-                        padding: "6px 4px",
-                        borderRadius: "6px",
-                        fontSize: "11px",
-                        fontWeight: 700,
-                        border: booking.isFurnished ? "1px solid #0EA5E9" : "1px solid #334155",
-                        background: booking.isFurnished ? "rgba(14,165,233,0.15)" : "#1E293B",
-                        color: booking.isFurnished ? "#38BDF8" : "#94A3B8",
-                        cursor: "pointer",
-                        textAlign: "center",
-                        whiteSpace: "nowrap",
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                        boxSizing: "border-box",
-                      }}
-                    >
-                      Furnished (+₦5k)
-                    </button>
+                {/* Furnished Toggle (Only for One-Time Cleaning, Painting, Fumigation) */}
+                {selectedCategory !== "routine-cleaning" && (
+                  <div style={{ background: "#0F172A", padding: "12px 14px", borderRadius: "12px", border: "1px solid #334155", minWidth: 0, boxSizing: "border-box" }}>
+                    <span style={{ fontSize: "12px", color: "#94A3B8", fontWeight: 600, display: "block" }}>
+                      {selectedCategory === "fumigation" ? "Premises Status" : "Furnished Status"}
+                    </span>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "6px", marginTop: "8px" }}>
+                      <button
+                        type="button"
+                        onClick={() => handleFurnishedToggle(false)}
+                        style={{
+                          padding: "6px 4px",
+                          borderRadius: "6px",
+                          fontSize: "11px",
+                          fontWeight: 700,
+                          border: !booking.isFurnished ? "1px solid #0EA5E9" : "1px solid #334155",
+                          background: !booking.isFurnished ? "rgba(14,165,233,0.15)" : "#1E293B",
+                          color: !booking.isFurnished ? "#38BDF8" : "#94A3B8",
+                          cursor: "pointer",
+                          textAlign: "center",
+                          whiteSpace: "nowrap",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          boxSizing: "border-box",
+                        }}
+                      >
+                        {selectedCategory === "fumigation" ? "Vacant/Empty" : "Unfurnished"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleFurnishedToggle(true)}
+                        style={{
+                          padding: "6px 4px",
+                          borderRadius: "6px",
+                          fontSize: "11px",
+                          fontWeight: 700,
+                          border: booking.isFurnished ? "1px solid #0EA5E9" : "1px solid #334155",
+                          background: booking.isFurnished ? "rgba(14,165,233,0.15)" : "#1E293B",
+                          color: booking.isFurnished ? "#38BDF8" : "#94A3B8",
+                          cursor: "pointer",
+                          textAlign: "center",
+                          whiteSpace: "nowrap",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          boxSizing: "border-box",
+                        }}
+                      >
+                        Furnished (+₦5k)
+                      </button>
+                    </div>
                   </div>
-                </div>
+                )}
 
-                {/* Dirt / Infestation Level Selector */}
-                <div style={{ background: "#0F172A", padding: "12px 14px", borderRadius: "12px", border: "1px solid #334155", minWidth: 0, boxSizing: "border-box" }}>
-                  <span style={{ fontSize: "12px", color: "#94A3B8", fontWeight: 600, display: "block" }}>
-                    {selectedCategory === "fumigation" ? "Infestation Severity" : "Condition / Grime"}
-                  </span>
-                  <select
-                    value={booking.dirtLevel || "MODERATE"}
-                    onChange={(e: any) => handleDirtLevelChange(e.target.value)}
-                    style={{
-                      width: "100%",
-                      marginTop: "8px",
-                      background: "#1E293B",
-                      border: "1px solid #334155",
-                      color: "#F8FAFC",
-                      padding: "6px 8px",
-                      borderRadius: "6px",
-                      fontSize: "11px",
-                      fontWeight: 600,
-                      boxSizing: "border-box",
-                    }}
-                  >
-                    <option value="LIGHT">{selectedCategory === "fumigation" ? "Light Infestation (1.0x)" : "Light (1.0x)"}</option>
-                    <option value="MODERATE">{selectedCategory === "fumigation" ? "Moderate Infestation (1.15x)" : "Moderate (1.15x)"}</option>
-                    <option value="HEAVY">{selectedCategory === "fumigation" ? "Severe / Heavy Infestation (1.35x)" : "Heavy / Post (1.35x)"}</option>
-                  </select>
-                </div>
+                {/* Dirt / Infestation Level Selector (Only for One-Time Cleaning, Painting, Fumigation) */}
+                {selectedCategory !== "routine-cleaning" && (
+                  <div style={{ background: "#0F172A", padding: "12px 14px", borderRadius: "12px", border: "1px solid #334155", minWidth: 0, boxSizing: "border-box" }}>
+                    <span style={{ fontSize: "12px", color: "#94A3B8", fontWeight: 600, display: "block" }}>
+                      {selectedCategory === "fumigation" ? "Infestation Severity" : "Condition / Grime"}
+                    </span>
+                    <select
+                      value={booking.dirtLevel || "MODERATE"}
+                      onChange={(e: any) => handleDirtLevelChange(e.target.value)}
+                      style={{
+                        width: "100%",
+                        marginTop: "8px",
+                        background: "#1E293B",
+                        border: "1px solid #334155",
+                        color: "#F8FAFC",
+                        padding: "6px 8px",
+                        borderRadius: "6px",
+                        fontSize: "11px",
+                        fontWeight: 600,
+                        boxSizing: "border-box",
+                      }}
+                    >
+                      <option value="LIGHT">{selectedCategory === "fumigation" ? "Light Infestation (1.0x)" : "Light (1.0x)"}</option>
+                      <option value="MODERATE">{selectedCategory === "fumigation" ? "Moderate Infestation (1.15x)" : "Moderate (1.15x)"}</option>
+                      <option value="HEAVY">{selectedCategory === "fumigation" ? "Severe / Heavy Infestation (1.35x)" : "Heavy / Post (1.35x)"}</option>
+                    </select>
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -449,8 +476,8 @@ export function StepService({ booking, updateBooking, onNext }: StepProps) {
                   pricingModel: pModel,
                   basePrice: svc.price,
                   plan: planForCalc,
-                  bedrooms: isProp ? (booking.bedrooms || 2) : 1,
-                  bathrooms: isProp ? (booking.bathrooms || 1) : 1,
+                  bedrooms: isProp ? (booking.bedrooms || 2) : (pModel === "SUBSCRIPTION" ? (booking.bedrooms || 1) : 1),
+                  bathrooms: isProp ? (booking.bathrooms || 1) : (pModel === "SUBSCRIPTION" ? (booking.bathrooms || 1) : 1),
                   isFurnished: isProp ? Boolean(booking.isFurnished) : false,
                   dirtLevel: isProp ? (booking.dirtLevel || "MODERATE") : "LIGHT",
                   quantity: svcQty,

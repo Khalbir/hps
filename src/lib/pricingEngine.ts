@@ -288,27 +288,53 @@ export function calculateJobPrice(
       const isRoutineGold = input.serviceId?.includes("gold");
       const isRoutinePlatinum = input.serviceId?.includes("platinum");
 
+      let baseMonthlyPrice = activeBasePrice;
       if (isRoutineSilver) {
-        rawRoomsSubtotalNgn = 45000;
+        baseMonthlyPrice = 45000;
         breakdown.push({ label: "Silver Routine Plan (2 Days / Wk · 8 Visits/Mo)", amountNgn: 45000 });
       } else if (isRoutineGold) {
-        rawRoomsSubtotalNgn = 56250;
+        baseMonthlyPrice = 56250;
         breakdown.push({ label: "Gold Routine Plan (3 Days / Wk · 12 Visits/Mo)", amountNgn: 56250 });
       } else if (isRoutinePlatinum) {
-        rawRoomsSubtotalNgn = 67500;
+        baseMonthlyPrice = 67500;
         breakdown.push({ label: "Platinum VIP Routine Plan (6 Days / Wk · 24 Visits/Mo)", amountNgn: 67500 });
       } else {
-        rawRoomsSubtotalNgn = activeBasePrice;
+        baseMonthlyPrice = activeBasePrice;
         breakdown.push({ label: "Monthly Routine Maintenance Base Plan", amountNgn: activeBasePrice });
 
         if (planMultiplier > 1.0) {
-          planAdditionNgn = Math.round(rawRoomsSubtotalNgn * (planMultiplier - 1.0));
+          planAdditionNgn = Math.round(baseMonthlyPrice * (planMultiplier - 1.0));
           const planPercent = Math.round((planMultiplier - 1.0) * 100);
           breakdown.push({
             label: `${SERVICE_PLANS[safePlan]?.name || safePlan} Plan Multiplier (+${planPercent}%)`,
             amountNgn: planAdditionNgn,
           });
         }
+      }
+
+      rawRoomsSubtotalNgn = baseMonthlyPrice;
+
+      // Property Size Additions for Housekeeping / Routine Cleaning
+      // Each extra bedroom adds +25% of base monthly price (e.g. 3 bedrooms = 2 extra = +50%)
+      const extraBedrooms = Math.max(0, (bedrooms || 1) - 1);
+      if (extraBedrooms > 0) {
+        const bedroomAdditionNgn = Math.round(baseMonthlyPrice * (extraBedrooms * 0.25));
+        rawRoomsSubtotalNgn += bedroomAdditionNgn;
+        breakdown.push({
+          label: `Additional Bedrooms (${extraBedrooms} extra @ +25% each · +${extraBedrooms * 25}%)`,
+          amountNgn: bedroomAdditionNgn,
+        });
+      }
+
+      // Each extra bathroom adds +5% of base monthly price
+      const extraBathrooms = Math.max(0, (bathrooms || 1) - 1);
+      if (extraBathrooms > 0) {
+        const bathroomAdditionNgn = Math.round(baseMonthlyPrice * (extraBathrooms * 0.05));
+        rawRoomsSubtotalNgn += bathroomAdditionNgn;
+        breakdown.push({
+          label: `Additional Bathrooms (${extraBathrooms} extra @ +5% each · +${extraBathrooms * 5}%)`,
+          amountNgn: bathroomAdditionNgn,
+        });
       }
     }
   } else if (activePricingModel === "QUANTITY_BASED") {
