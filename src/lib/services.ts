@@ -90,15 +90,43 @@ export const POPULAR_SUGGESTIONS: PopularSuggestion[] = [
 
 export const SERVICE_CATEGORIES: ServiceCategory[] = [
   {
-    id: "cleaning",
-    name: "Cleaning",
+    id: "routine-cleaning",
+    name: "Residential Routine Cleaning",
     color: "#00A8B5",
-    keywords: ["clean", "cleaning", "routine", "maid", "housekeeper", "subscription", "recurring", "dust", "deep clean", "office clean", "janitor", "wash", "sweeping", "mopping"],
+    keywords: ["routine", "routine cleaning", "maid", "housekeeper", "subscription", "recurring", "monthly cleaning", "daily cleaning", "weekly cleaning", "silver plan", "gold plan", "platinum plan", "cleaning plan", "housekeeping"],
     services: [
-      { id: "residential-routine-cleaning", name: "Residential Routine Cleaning (Monthly Plans)", price: 45000, desc: "Scheduled recurring housekeeping: Silver (2 days/wk · 8 visits), Gold (3 days/wk · 12 visits) & Platinum (6 days/wk · 24 visits)", pricingModel: "SUBSCRIPTION" },
-      { id: "residential-cleaning", name: "Residential Cleaning (One-Time)", price: 15000, desc: "Standard deep cleaning for apartments and houses", pricingModel: "PROPERTY_BASED" },
-      { id: "deep-cleaning", name: "Deep Cleaning", price: 25000, desc: "Thorough deep cleaning of every surface", pricingModel: "PROPERTY_BASED" },
-      { id: "commercial-cleaning", name: "Commercial Cleaning", price: 35000, desc: "Office and business space cleaning", pricingModel: "QUANTITY_BASED", unitLabel: "per office space" },
+      {
+        id: "routine-cleaning-silver",
+        name: "Silver Routine Plan (2 Days / Wk)",
+        price: 45000,
+        desc: "2 days per week (8 cleanings / month) · Essential home maintenance, routine dusting, vacuuming & floor sanitization",
+        pricingModel: "SUBSCRIPTION",
+      },
+      {
+        id: "routine-cleaning-gold",
+        name: "Gold Routine Plan (3 Days / Wk)",
+        price: 56250,
+        desc: "3 days per week (12 cleanings / month) · Senior specialist (top 5% rated), deep kitchen & bathroom degrease, priority scheduling",
+        pricingModel: "SUBSCRIPTION",
+      },
+      {
+        id: "routine-cleaning-platinum",
+        name: "Platinum VIP Routine Plan (6 Days / Wk)",
+        price: 67500,
+        desc: "6 days per week (24 cleanings / month · Mon–Sat) · Full-time VIP executive housekeeping lead, laundry & concierge dispatch",
+        pricingModel: "SUBSCRIPTION",
+      },
+    ],
+  },
+  {
+    id: "cleaning",
+    name: "Deep & One-Time Cleaning",
+    color: "#0EA5E9",
+    keywords: ["clean", "cleaning", "dust", "deep clean", "office clean", "janitor", "wash", "sweeping", "mopping", "post construction"],
+    services: [
+      { id: "residential-cleaning", name: "Residential Deep Cleaning (One-Time)", price: 15000, desc: "Standard deep cleaning for apartments and houses", pricingModel: "PROPERTY_BASED" },
+      { id: "deep-cleaning", name: "Full Flat Deep Scrub", price: 25000, desc: "Thorough deep cleaning of every surface, kitchen and bathrooms", pricingModel: "PROPERTY_BASED" },
+      { id: "commercial-cleaning", name: "Commercial & Office Cleaning", price: 35000, desc: "Office and business space cleaning", pricingModel: "QUANTITY_BASED", unitLabel: "per office space" },
       { id: "post-construction", name: "Post Construction Cleaning", price: 0, desc: "Cleanup after renovation (Free site inspection & quote)", pricingModel: "CUSTOM_QUOTE" },
     ],
   },

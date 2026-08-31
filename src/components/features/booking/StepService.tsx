@@ -3,13 +3,33 @@
 import {
   Sparkles, Droplets, Zap, Paintbrush, Wind, Camera, Sun,
   Hammer, Home, TreePine, Shirt, Truck, Settings, Search,
-  Building2, CheckCircle2, ShieldCheck, HelpCircle, Layers, Sliders
+  Building2, CheckCircle2, ShieldCheck, HelpCircle, Layers, Sliders,
+  Bug, Sofa
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import type { BookingData } from "@/app/book/page";
 import { SERVICE_CATEGORIES, ServiceCategory, ServiceItem } from "@/lib/services";
 import { calculateJobPrice, DEFAULT_PRICING_RULES, PricingModel, getEffectiveServiceItem, ServicePlanTier, SERVICE_PLANS } from "@/lib/pricingEngine";
 import styles from "./Steps.module.css";
+
+const CATEGORY_ICON_MAP: Record<string, any> = {
+  "routine-cleaning": Sparkles,
+  cleaning: Sparkles,
+  fumigation: Bug,
+  upholstery: Sofa,
+  plumbing: Droplets,
+  electrical: Zap,
+  hvac: Wind,
+  painting: Paintbrush,
+  carpentry: Hammer,
+  security: Camera,
+  solar: Sun,
+  "home-improvement": Home,
+  outdoor: TreePine,
+  laundry: Shirt,
+  moving: Truck,
+  general: Settings,
+};
 
 interface StepProps {
   booking: BookingData;
@@ -63,7 +83,12 @@ export function StepService({ booking, updateBooking, onNext }: StepProps) {
     const svc = getEffectiveServiceItem(rawSvc, pricingRules);
     const pModel = (svc.pricingModel as PricingModel) || "FIXED";
     const svcQty = customQty !== undefined ? customQty : getServiceQuantity(svc.id);
-    const planToUse = overridePlanTier || selectedPlanTier || (booking.planTier as ServicePlanTier) || "SILVER";
+    
+    let planToUse = overridePlanTier || selectedPlanTier || (booking.planTier as ServicePlanTier) || "SILVER";
+    if (svc.id.includes("silver")) planToUse = "SILVER";
+    if (svc.id.includes("gold")) planToUse = "GOLD";
+    if (svc.id.includes("platinum")) planToUse = "PLATINUM";
+
     const isProp = pModel === "PROPERTY_BASED";
     const calc = calculateJobPrice(
       {
@@ -82,6 +107,7 @@ export function StepService({ booking, updateBooking, onNext }: StepProps) {
       pricingRules
     );
 
+    setSelectedPlanTier(planToUse);
     updateBooking({
       serviceCategory: selectedCategory,
       serviceId: svc.id,
@@ -237,19 +263,24 @@ export function StepService({ booking, updateBooking, onNext }: StepProps) {
         <>
           <h2 className={styles.stepTitle}>Select Your Service Category</h2>
           <div className={styles.categoryGrid}>
-            {filteredCategories.map((cat) => (
-              <button
-                key={cat.id}
-                className={styles.categoryCard}
-                onClick={() => setSelectedCategory(cat.id)}
-              >
-                <div className={styles.categoryIcon} style={{ backgroundColor: `${cat.color}15`, color: cat.color }}>
-                  <Layers size={24} />
-                </div>
-                <span className={styles.categoryName}>{cat.name}</span>
-                <span className={styles.categoryCount}>{cat.services.length} service{cat.services.length > 1 ? "s" : ""}</span>
-              </button>
-            ))}
+            {filteredCategories.map((cat) => {
+              const IconComp = CATEGORY_ICON_MAP[cat.id] || Layers;
+              return (
+                <button
+                  key={cat.id}
+                  className={styles.categoryCard}
+                  onClick={() => setSelectedCategory(cat.id)}
+                >
+                  <div className={styles.categoryIcon} style={{ backgroundColor: `${cat.color}15`, color: cat.color }}>
+                    <IconComp size={24} />
+                  </div>
+                  <span className={styles.categoryName}>{cat.name}</span>
+                  <span className={styles.categoryCount}>
+                    {cat.services.length} {cat.id === "routine-cleaning" ? "plans" : cat.services.length > 1 ? "services" : "service"}
+                  </span>
+                </button>
+              );
+            })}
           </div>
         </>
       ) : (
@@ -505,6 +536,38 @@ export function StepService({ booking, updateBooking, onNext }: StepProps) {
                       <p style={{ margin: 0, fontSize: "13px", color: "#94A3B8", lineHeight: 1.4 }}>{svc.desc}</p>
                     </div>
 
+                    {/* Routine Cleaning Plan Features Breakdown */}
+                    {selectedCategory === "routine-cleaning" && (
+                      <div style={{ width: "100%", marginTop: "10px", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "8px", background: "rgba(15, 23, 42, 0.6)", padding: "12px 14px", borderRadius: "10px", border: "1px solid #334155" }}>
+                        {(svc.id.includes("silver")
+                          ? [
+                              "2 Visits / Week (8 visits / month)",
+                              "Dedicated verified background-checked housekeeper",
+                              "Routine dusting, sweeping, mopping & vacuuming",
+                              "Kitchen surface degreasing & dishwashing",
+                            ]
+                          : svc.id.includes("gold")
+                          ? [
+                              "3 Visits / Week (12 visits / month)",
+                              "Senior Housekeeper specialist (Top 5% rated)",
+                              "Deep kitchen degrease + bed linen & ironing",
+                              "Supervisor bi-weekly quality inspection check",
+                            ]
+                          : [
+                              "6 Visits / Week · Mon–Sat (24 visits / month)",
+                              "Full-Time VIP Executive Housekeeper lead",
+                              "Daily comprehensive cleaning, laundry & wardrobe",
+                              "24/7 Concierge priority & replacement guarantee",
+                            ]
+                        ).map((feat, fi) => (
+                          <div key={fi} style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "12px", color: "#CBD5E1" }}>
+                            <span style={{ color: svc.id.includes("silver") ? "#94A3B8" : svc.id.includes("gold") ? "#F59E0B" : "#8B5CF6", fontWeight: "bold" }}>✓</span>
+                            <span>{feat}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
                     {/* Quantity Counter for Quantity-Based Model */}
                     {svc.pricingModel === "QUANTITY_BASED" && (
                       <div
@@ -541,7 +604,7 @@ export function StepService({ booking, updateBooking, onNext }: StepProps) {
                   </div>
 
                   {/* Plan Tier Selector for Subscription Services */}
-                  {pModel === "SUBSCRIPTION" && (
+                  {pModel === "SUBSCRIPTION" && selectedCategory !== "routine-cleaning" && (
                     <div
                       onClick={(e) => e.stopPropagation()}
                       style={{
@@ -767,6 +830,8 @@ export function StepService({ booking, updateBooking, onNext }: StepProps) {
                       <span style={{ fontSize: "11px", color: "#94A3B8", display: "block", marginBottom: "2px" }}>
                         {svc.pricingModel === "CUSTOM_QUOTE"
                           ? "Assessment Deposit"
+                          : selectedCategory === "routine-cleaning"
+                          ? `${svc.name.split("(")[0].trim()} Monthly Plan`
                           : svc.pricingModel === "SUBSCRIPTION"
                           ? svc.id.includes("gardening")
                             ? selectedPlanTier === "GOLD" ? "Twice a Month Plan" : "Once a Month Plan"

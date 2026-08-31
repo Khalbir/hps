@@ -284,16 +284,31 @@ export function calculateJobPrice(
         amountNgn: gPrice,
       });
     } else {
-      rawRoomsSubtotalNgn = activeBasePrice;
-      breakdown.push({ label: "Monthly Routine Maintenance Base Plan", amountNgn: activeBasePrice });
+      const isRoutineSilver = input.serviceId?.includes("silver");
+      const isRoutineGold = input.serviceId?.includes("gold");
+      const isRoutinePlatinum = input.serviceId?.includes("platinum");
 
-      if (planMultiplier > 1.0) {
-        planAdditionNgn = Math.round(rawRoomsSubtotalNgn * (planMultiplier - 1.0));
-        const planPercent = Math.round((planMultiplier - 1.0) * 100);
-        breakdown.push({
-          label: `${SERVICE_PLANS[safePlan]?.name || safePlan} Plan Multiplier (+${planPercent}%)`,
-          amountNgn: planAdditionNgn,
-        });
+      if (isRoutineSilver) {
+        rawRoomsSubtotalNgn = 45000;
+        breakdown.push({ label: "Silver Routine Plan (2 Days / Wk · 8 Visits/Mo)", amountNgn: 45000 });
+      } else if (isRoutineGold) {
+        rawRoomsSubtotalNgn = 56250;
+        breakdown.push({ label: "Gold Routine Plan (3 Days / Wk · 12 Visits/Mo)", amountNgn: 56250 });
+      } else if (isRoutinePlatinum) {
+        rawRoomsSubtotalNgn = 67500;
+        breakdown.push({ label: "Platinum VIP Routine Plan (6 Days / Wk · 24 Visits/Mo)", amountNgn: 67500 });
+      } else {
+        rawRoomsSubtotalNgn = activeBasePrice;
+        breakdown.push({ label: "Monthly Routine Maintenance Base Plan", amountNgn: activeBasePrice });
+
+        if (planMultiplier > 1.0) {
+          planAdditionNgn = Math.round(rawRoomsSubtotalNgn * (planMultiplier - 1.0));
+          const planPercent = Math.round((planMultiplier - 1.0) * 100);
+          breakdown.push({
+            label: `${SERVICE_PLANS[safePlan]?.name || safePlan} Plan Multiplier (+${planPercent}%)`,
+            amountNgn: planAdditionNgn,
+          });
+        }
       }
     }
   } else if (activePricingModel === "QUANTITY_BASED") {

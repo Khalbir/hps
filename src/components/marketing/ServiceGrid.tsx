@@ -29,8 +29,8 @@ const services = [
   {
     icon: Sparkles,
     name: "Residential Routine Cleaning",
-    category: "cleaning",
-    slug: "residential-routine-cleaning",
+    category: "routine-cleaning",
+    slug: "routine-cleaning-silver",
     description: "Scheduled recurring housekeeping: Silver, Gold & Platinum monthly plans",
     price: "₦45,000",
     color: "#00A8B5",
