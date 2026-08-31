@@ -315,13 +315,12 @@ export function calculateJobPrice(
       rawRoomsSubtotalNgn = baseMonthlyPrice;
 
       // Property Size Additions for Housekeeping / Routine Cleaning
-      // Each extra bedroom adds +25% of base monthly price (e.g. 3 bedrooms = 2 extra = +50%)
       const extraBedrooms = Math.max(0, (bedrooms || 1) - 1);
       if (extraBedrooms > 0) {
         const bedroomAdditionNgn = Math.round(baseMonthlyPrice * (extraBedrooms * 0.25));
         rawRoomsSubtotalNgn += bedroomAdditionNgn;
         breakdown.push({
-          label: `Additional Bedrooms (${extraBedrooms} extra @ +25% each · +${extraBedrooms * 25}%)`,
+          label: `Additional Bedrooms (${extraBedrooms} extra bedroom${extraBedrooms > 1 ? "s" : ""})`,
           amountNgn: bedroomAdditionNgn,
         });
       }
@@ -332,7 +331,7 @@ export function calculateJobPrice(
         const bathroomAdditionNgn = Math.round(baseMonthlyPrice * (extraBathrooms * 0.05));
         rawRoomsSubtotalNgn += bathroomAdditionNgn;
         breakdown.push({
-          label: `Additional Bathrooms (${extraBathrooms} extra @ +5% each · +${extraBathrooms * 5}%)`,
+          label: `Additional Bathrooms (${extraBathrooms} extra bathroom${extraBathrooms > 1 ? "s" : ""})`,
           amountNgn: bathroomAdditionNgn,
         });
       }

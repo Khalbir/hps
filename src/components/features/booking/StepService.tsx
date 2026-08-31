@@ -304,7 +304,7 @@ export function StepService({ booking, updateBooking, onNext }: StepProps) {
                 </h4>
                 <p className={styles.configSubtitle} style={{ margin: "4px 0 0", color: "#94A3B8", fontSize: "13px" }}>
                   {selectedCategory === "routine-cleaning"
-                    ? "Configure number of bedrooms and bathrooms (each additional bedroom adds +25%, each additional bathroom adds +5% to the monthly plan rate)."
+                    ? "Select the number of bedrooms and bathrooms to customize your monthly housekeeping plan."
                     : selectedCategory === "fumigation"
                     ? "Customize bedrooms, bathrooms, and pest infestation severity for instant upfront fumigation pricing."
                     : "Customize rooms, furnished fitting, and grime level for instant upfront pricing."}
@@ -318,11 +318,6 @@ export function StepService({ booking, updateBooking, onNext }: StepProps) {
                     <span style={{ fontSize: "12px", color: "#94A3B8", fontWeight: 600, display: "block" }}>
                       {selectedCategory === "fumigation" ? "Bedrooms / Main Rooms" : "Bedrooms"}
                     </span>
-                    {selectedCategory === "routine-cleaning" && (booking.bedrooms || 1) > 1 && (
-                      <span style={{ fontSize: "10px", color: "#38BDF8", fontWeight: 700 }}>
-                        +{((booking.bedrooms || 1) - 1) * 25}%
-                      </span>
-                    )}
                   </div>
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: "8px" }}>
                     <button
@@ -352,11 +347,6 @@ export function StepService({ booking, updateBooking, onNext }: StepProps) {
                     <span style={{ fontSize: "12px", color: "#94A3B8", fontWeight: 600, display: "block" }}>
                       {selectedCategory === "fumigation" ? "Bathrooms / Wet Areas" : "Bathrooms"}
                     </span>
-                    {selectedCategory === "routine-cleaning" && (booking.bathrooms || 1) > 1 && (
-                      <span style={{ fontSize: "10px", color: "#38BDF8", fontWeight: 700 }}>
-                        +{((booking.bathrooms || 1) - 1) * 5}%
-                      </span>
-                    )}
                   </div>
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: "8px" }}>
                     <button

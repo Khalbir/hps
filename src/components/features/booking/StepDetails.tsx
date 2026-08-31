@@ -236,13 +236,8 @@ export function StepDetails({ booking, updateBooking, onNext, onBack }: StepProp
       {(isPropertyBased || (isSubscription && !isGardening)) && (
         <>
           <div className={styles.fieldGroup}>
-            <label className={styles.fieldLabel} style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-              <span>{isFumigation ? "Number of Bedrooms / Main Rooms to Fumigate" : "Number of Bedrooms"}</span>
-              {isSubscription && !isGardening && (booking.bedrooms || 1) > 1 && (
-                <span style={{ fontSize: "11px", color: "#38BDF8", fontWeight: 700 }}>
-                  +{((booking.bedrooms || 1) - 1) * 25}% to monthly rate
-                </span>
-              )}
+            <label className={styles.fieldLabel}>
+              {isFumigation ? "Number of Bedrooms / Main Rooms to Fumigate" : "Number of Bedrooms"}
             </label>
             <div className={styles.counterRow}>
               {[1, 2, 3, 4, 5, 6].map((n) => (
@@ -258,13 +253,8 @@ export function StepDetails({ booking, updateBooking, onNext, onBack }: StepProp
           </div>
 
           <div className={styles.fieldGroup}>
-            <label className={styles.fieldLabel} style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-              <span>{isFumigation ? "Number of Bathrooms / Wet Areas to Treat" : "Number of Bathrooms"}</span>
-              {isSubscription && !isGardening && (booking.bathrooms || 1) > 1 && (
-                <span style={{ fontSize: "11px", color: "#38BDF8", fontWeight: 700 }}>
-                  +{((booking.bathrooms || 1) - 1) * 5}% to monthly rate
-                </span>
-              )}
+            <label className={styles.fieldLabel}>
+              {isFumigation ? "Number of Bathrooms / Wet Areas to Treat" : "Number of Bathrooms"}
             </label>
             <div className={styles.counterRow}>
               {[1, 2, 3, 4, 5].map((n) => (
