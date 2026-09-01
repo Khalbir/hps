@@ -986,16 +986,19 @@
 .summaryCard {
   position: sticky;
   top: calc(var(--header-height) + var(--space-8));
+  background: var(--bg-card, #ffffff);
+  border: 1px solid var(--border-primary, #E2E8F0);
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05);
 }
 
 .summaryTitle {
   font-family: var(--font-display);
   font-size: var(--fs-lg);
   font-weight: var(--fw-semibold);
-  color: var(--text-primary);
+  color: var(--text-primary, #0F172A);
   margin-bottom: var(--space-5);
   padding-bottom: var(--space-4);
-  border-bottom: 1px solid var(--border-primary);
+  border-bottom: 1px solid var(--border-primary, #E2E8F0);
 }
 
 .summarySection {
@@ -1005,21 +1008,22 @@
 .summaryLabel {
   display: block;
   font-size: var(--fs-xs);
-  color: var(--text-tertiary);
+  color: var(--text-tertiary, #64748B);
   text-transform: uppercase;
   letter-spacing: 0.05em;
   margin-bottom: var(--space-1);
+  font-weight: 600;
 }
 
 .summaryValue {
   font-size: var(--fs-sm);
-  font-weight: var(--fw-medium);
-  color: var(--text-primary);
+  font-weight: var(--fw-semibold);
+  color: var(--text-primary, #0F172A);
 }
 
 .summaryDivider {
   height: 1px;
-  background: var(--border-primary);
+  background: var(--border-primary, #E2E8F0);
   margin: var(--space-5) 0;
 }
 
@@ -1027,15 +1031,15 @@
   display: flex;
   justify-content: space-between;
   font-size: var(--fs-sm);
-  color: var(--text-secondary);
+  color: var(--text-secondary, #334155);
   padding: var(--space-1) 0;
 }
 
 .summaryTotal {
   font-size: var(--fs-lg);
   font-weight: var(--fw-bold);
-  color: var(--text-primary);
-  border-top: 1px solid var(--border-primary);
+  color: var(--text-primary, #0F172A);
+  border-top: 1px solid var(--border-primary, #E2E8F0);
   padding-top: var(--space-3);
   margin-top: var(--space-2);
 }

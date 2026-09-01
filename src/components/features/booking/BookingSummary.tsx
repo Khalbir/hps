@@ -159,9 +159,9 @@ export function BookingSummary({ booking, currentStep }: Props) {
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: "6px", marginBottom: "12px" }}>
               {calc.breakdown.map((b, idx) => (
-                <div key={idx} className={styles.summaryPriceRow} style={{ fontSize: "12px", color: "#94A3B8" }}>
-                  <span>{b.label}</span>
-                  <span style={{ fontWeight: 600, color: "#F8FAFC" }}>₦{b.amountNgn.toLocaleString()}</span>
+                <div key={idx} className={styles.summaryPriceRow} style={{ fontSize: "13px" }}>
+                  <span style={{ color: "var(--text-secondary, #475569)" }}>{b.label}</span>
+                  <span style={{ fontWeight: 600, color: "var(--text-primary, #0F172A)" }}>₦{b.amountNgn.toLocaleString()}</span>
                 </div>
               ))}
             </div>
