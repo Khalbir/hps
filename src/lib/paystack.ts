@@ -348,6 +348,125 @@ export class PaystackService {
       return false;
     }
   }
+
+  /**
+   * Resolve NUBAN Bank Account Details using Paystack Identity Resolution API
+   * GET /bank/resolve?account_number=...&bank_code=...
+   */
+  async resolveNubanAccount(accountNumber: string, bankCode: string): Promise<{
+    success: boolean;
+    accountName?: string;
+    accountNumber?: string;
+    bankId?: number;
+    error?: string;
+  }> {
+    try {
+      if (!accountNumber || accountNumber.length !== 10 || !bankCode) {
+        return {
+          success: false,
+          error: "Invalid 10-digit account number or bank code",
+        };
+      }
+
+      // If live secret key is available, query Paystack API
+      if (this.secretKey && !this.secretKey.includes("mock")) {
+        const url = `${this.baseUrl}/bank/resolve?account_number=${encodeURIComponent(accountNumber)}&bank_code=${encodeURIComponent(bankCode)}`;
+        const response = await fetch(url, {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${this.secretKey}`,
+            "Content-Type": "application/json",
+          },
+          cache: "no-store",
+        });
+
+        const result = await response.json();
+        if (response.ok && result.status && result.data) {
+          return {
+            success: true,
+            accountName: result.data.account_name,
+            accountNumber: result.data.account_number,
+            bankId: result.data.bank_id,
+          };
+        } else {
+          return {
+            success: false,
+            error: result.message || "Could not resolve bank account details with Paystack",
+          };
+        }
+      }
+
+      // Safe fallback for local/mock development
+      return {
+        success: true,
+        accountName: "MOCK VERIFIED ARTISAN",
+        accountNumber,
+      };
+    } catch (err: any) {
+      console.error("[PaystackService] resolveNubanAccount Error:", err);
+      return {
+        success: false,
+        error: err.message || "Network error resolving bank account",
+      };
+    }
+  }
+
+  /**
+   * Create Transfer Recipient on Paystack for Payouts
+   * POST /transferrecipient
+   */
+  async createTransferRecipient(params: {
+    name: string;
+    accountNumber: string;
+    bankCode: string;
+    currency?: string;
+  }): Promise<{
+    success: boolean;
+    recipientCode?: string;
+    error?: string;
+  }> {
+    try {
+      if (this.secretKey && !this.secretKey.includes("mock")) {
+        const response = await fetch(`${this.baseUrl}/transferrecipient`, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${this.secretKey}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            type: "nuban",
+            name: params.name,
+            account_number: params.accountNumber,
+            bank_code: params.bankCode,
+            currency: params.currency || "NGN",
+          }),
+        });
+
+        const result = await response.json();
+        if (response.ok && result.status && result.data) {
+          return {
+            success: true,
+            recipientCode: result.data.recipient_code,
+          };
+        }
+        return {
+          success: false,
+          error: result.message || "Failed to create transfer recipient on Paystack",
+        };
+      }
+
+      return {
+        success: true,
+        recipientCode: `RCP_mock_${Date.now()}`,
+      };
+    } catch (err: any) {
+      console.error("[PaystackService] createTransferRecipient Error:", err);
+      return {
+        success: false,
+        error: err.message || "Network error creating transfer recipient",
+      };
+    }
+  }
 }
 
 // Singleton Instance

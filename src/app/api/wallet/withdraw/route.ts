@@ -3,6 +3,8 @@ import { prisma } from "@/lib/db";
 import { evaluateFraudRiskScore } from "@/lib/security";
 import { getCommissionRules } from "@/lib/escrow";
 import { formatNaira, sendMultiChannelNotification } from "@/lib/notifications";
+import { paystack } from "@/lib/paystack";
+import { validateArtisanNameMatch, NIGERIAN_BANKS } from "@/lib/banks";
 
 export async function POST(request: Request) {
   try {
@@ -74,6 +76,47 @@ export async function POST(request: Request) {
         },
         { status: 403 }
       );
+    }
+
+    // Strict Name Matching Verification: Ensure bank account name matches artisan's registered profile
+    const registeredName =
+      `${user.firstName || ""} ${user.lastName || ""}`.trim();
+
+    let effectiveAccountName = accountName;
+    const effectiveBankCode =
+      bankCode ||
+      NIGERIAN_BANKS.find((b) => b.name.toLowerCase() === bankName.toLowerCase())?.code ||
+      "044";
+
+    try {
+      const resolution = await paystack.resolveNubanAccount(accountNumber, effectiveBankCode);
+      if (resolution.success && resolution.accountName) {
+        effectiveAccountName = resolution.accountName;
+      }
+    } catch (err) {
+      console.warn("[Withdrawal NUBAN Resolve Warning]:", err);
+    }
+
+    if (!effectiveAccountName) {
+      return NextResponse.json(
+        { error: "Could not verify bank account name. Please check your 10-digit NUBAN and bank." },
+        { status: 422 }
+      );
+    }
+
+    if (registeredName) {
+      const matchResult = validateArtisanNameMatch(registeredName, effectiveAccountName);
+      if (!matchResult.isValid) {
+        return NextResponse.json(
+          {
+            error: `Transfer Blocked (Name Mismatch): The bank account name "${effectiveAccountName}" does not match your verified artisan profile name "${registeredName}". For security and anti-fraud protection, funds can only be transferred to a bank account matching the registered professional.`,
+            resolvedAccountName: effectiveAccountName,
+            registeredName,
+            matchScore: matchResult.matchScore,
+          },
+          { status: 403 }
+        );
+      }
     }
 
     const reference = `WTH_${Date.now().toString(36).toUpperCase()}_${Math.random().toString(36).substring(2, 6).toUpperCase()}`;

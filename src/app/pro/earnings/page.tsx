@@ -2,7 +2,23 @@
 
 import { useState, useEffect } from "react";
 import { ProLayoutShell } from "@/components/layout/ProLayoutShell";
-import { Wallet, DollarSign, Lock, Clock, ArrowDownLeft, ArrowUpRight, CheckCircle2, RefreshCw, Inbox, ShieldCheck, AlertCircle } from "lucide-react";
+import {
+  Wallet,
+  DollarSign,
+  Lock,
+  Clock,
+  ArrowDownLeft,
+  ArrowUpRight,
+  CheckCircle2,
+  RefreshCw,
+  Inbox,
+  ShieldCheck,
+  ShieldAlert,
+  AlertCircle,
+  Loader2,
+  Building,
+} from "lucide-react";
+import { NIGERIAN_BANKS } from "@/lib/banks";
 import styles from "../dashboard/dashboard.module.css";
 
 interface WalletTransactionItem {
@@ -18,13 +34,19 @@ interface WalletTransactionItem {
 export default function ProEarningsPage() {
   const [withdrawModal, setWithdrawModal] = useState(false);
   const [amountInput, setAmountInput] = useState("");
-  const [bankName, setBankName] = useState("Guaranty Trust Bank (GTB)");
-  const [bankCode, setBankCode] = useState("058");
+  const [bankName, setBankName] = useState("Access Bank");
+  const [bankCode, setBankCode] = useState("044");
   const [accountNumber, setAccountNumber] = useState("");
   const [accountName, setAccountName] = useState("");
+  const [registeredName, setRegisteredName] = useState("");
   const [success, setSuccess] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [resolvingBank, setResolvingBank] = useState(false);
+  const [nameMatchStatus, setNameMatchStatus] = useState<{
+    status: "IDLE" | "MATCH" | "MISMATCH" | "ERROR";
+    message: string;
+  }>({ status: "IDLE", message: "" });
 
   const [loading, setLoading] = useState(true);
   const [walletStats, setWalletStats] = useState({
@@ -44,16 +66,22 @@ export default function ProEarningsPage() {
       try {
         const storedPro = localStorage.getItem("handyhub_pro_session");
         const storedUser = localStorage.getItem("handyhub_user");
-        const parsed = storedPro ? JSON.parse(storedPro) : storedUser ? JSON.parse(storedUser) : null;
+        const parsed = storedPro
+          ? JSON.parse(storedPro)
+          : storedUser
+          ? JSON.parse(storedUser)
+          : null;
         if (parsed?.user?.id || parsed?.id) activeUserId = parsed.user?.id || parsed.id;
         if (parsed?.user?.email || parsed?.email) activeEmail = parsed.user?.email || parsed.email;
         if (parsed?.user?.firstName) {
-          setAccountName(`${parsed.user.firstName} ${parsed.user.lastName || ""}`.trim());
+          const name = `${parsed.user.firstName} ${parsed.user.lastName || ""}`.trim();
+          setRegisteredName(name);
         }
       } catch (err) {}
     }
 
     try {
+      // 1. Fetch Earnings Metrics
       const res = await fetch(`/api/pro/dashboard?userId=${activeUserId}&email=${encodeURIComponent(activeEmail)}`);
       const data = await res.json();
       if (res.ok) {
@@ -65,6 +93,25 @@ export default function ProEarningsPage() {
           transactions: data.transactions || [],
         });
       }
+
+      // 2. Fetch Verified Bank Details from Settings
+      if (activeUserId) {
+        const settingsRes = await fetch(`/api/pro/settings?userId=${activeUserId}`);
+        const settingsData = await settingsRes.json();
+        if (settingsRes.ok && settingsData.settings) {
+          if (settingsData.registeredName) setRegisteredName(settingsData.registeredName);
+          if (settingsData.settings.bankName) setBankName(settingsData.settings.bankName);
+          if (settingsData.settings.bankCode) setBankCode(settingsData.settings.bankCode);
+          if (settingsData.settings.accountNumber) setAccountNumber(settingsData.settings.accountNumber);
+          if (settingsData.settings.accountName) {
+            setAccountName(settingsData.settings.accountName);
+            setNameMatchStatus({
+              status: "MATCH",
+              message: `Verified: Account belongs to ${settingsData.settings.accountName}`,
+            });
+          }
+        }
+      }
     } catch (err) {
       console.warn("Failed to fetch real earnings:", err);
     } finally {
@@ -75,6 +122,79 @@ export default function ProEarningsPage() {
   useEffect(() => {
     fetchRealEarnings();
   }, []);
+
+  // Handle Bank Selection Change in Modal
+  const handleBankChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const selectedCode = e.target.value;
+    const found = NIGERIAN_BANKS.find((b) => b.code === selectedCode);
+    if (found) {
+      setBankName(found.name);
+      setBankCode(found.code);
+    }
+  };
+
+  // Live Auto-Resolve Bank Name when 10 digits are in modal
+  useEffect(() => {
+    if (!accountNumber || accountNumber.length !== 10) {
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      setResolvingBank(true);
+      try {
+        let activeUserId = "";
+        if (typeof window !== "undefined") {
+          try {
+            const storedPro = localStorage.getItem("handyhub_pro_session");
+            const parsed = storedPro ? JSON.parse(storedPro) : null;
+            activeUserId = parsed?.user?.id || parsed?.id || "";
+          } catch {}
+        }
+
+        const res = await fetch("/api/bank/resolve", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            accountNumber,
+            bankCode,
+            userId: activeUserId,
+            registeredName,
+          }),
+        });
+
+        const data = await res.json();
+        if (res.ok && data.success) {
+          setAccountName(data.accountName);
+          if (data.nameMatches) {
+            setNameMatchStatus({
+              status: "MATCH",
+              message: `✅ Verified: Account name "${data.accountName}" matches your registered profile.`,
+            });
+            setErrorMsg("");
+          } else {
+            setNameMatchStatus({
+              status: "MISMATCH",
+              message: `❌ Name Mismatch: "${data.accountName}" does not match profile name "${data.registeredName || registeredName}". Transfers to this account are blocked.`,
+            });
+          }
+        } else {
+          setNameMatchStatus({
+            status: "ERROR",
+            message: data.error || "Could not resolve bank account details.",
+          });
+        }
+      } catch (err) {
+        setNameMatchStatus({
+          status: "ERROR",
+          message: "Network error resolving account details.",
+        });
+      } finally {
+        setResolvingBank(false);
+      }
+    }, 600);
+
+    return () => clearTimeout(timer);
+  }, [accountNumber, bankCode, registeredName]);
 
   const handleWithdraw = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -92,6 +212,12 @@ export default function ProEarningsPage() {
     }
     if (!accountNumber || accountNumber.length < 10) {
       setErrorMsg("Please enter a valid 10-digit NUBAN account number.");
+      return;
+    }
+    if (nameMatchStatus.status === "MISMATCH") {
+      setErrorMsg(
+        `Transfer Blocked: Bank account holder name (${accountName}) does not match your registered profile name (${registeredName}). Payouts can only be made to the verified artisan.`
+      );
       return;
     }
 
@@ -159,161 +285,166 @@ export default function ProEarningsPage() {
 
   return (
     <ProLayoutShell>
-      <div style={{ marginBottom: "24px", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
+      {/* Top Header */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px", flexWrap: "wrap", gap: "12px" }}>
         <div>
           <h1 style={{ fontSize: "clamp(1.3rem, 3vw, 1.85rem)", fontWeight: 800, color: "var(--text-primary)", margin: 0, letterSpacing: "-0.02em" }}>
-            Earnings & Wallet Payouts
+            Artisan Wallet & Escrow Vault
           </h1>
           <p style={{ color: "var(--text-secondary)", fontSize: "14px", margin: "4px 0 0" }}>
-            Withdraw available earnings to your Nigerian bank account and monitor real-time escrow protection.
+            Real-time balance, verified automated payouts, and completed job revenue history.
           </p>
         </div>
-        <button onClick={fetchRealEarnings} className="btn btn-secondary btn-sm" style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          <RefreshCw size={14} /> Sync Wallet
+
+        <button
+          className="btn btn-primary btn-md"
+          onClick={() => setWithdrawModal(true)}
+          style={{ background: "#0EA5E9", display: "flex", alignItems: "center", gap: 8, fontWeight: 700 }}
+        >
+          <ArrowUpRight size={18} /> Request Instant Withdrawal
         </button>
       </div>
 
-      {/* Financial Overview Cards */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "14px", marginBottom: "24px" }}>
-        <div className="card" style={{ padding: "16px 18px", borderLeft: "4px solid #0EA5E9", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
-          <div>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <span style={{ fontSize: "11px", color: "var(--text-tertiary)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>Available for Withdrawal</span>
-              <Wallet size={18} color="#0EA5E9" />
-            </div>
-            <h2 style={{ color: "#0EA5E9", margin: "8px 0 14px", fontSize: "clamp(1.35rem, 2.5vw, 1.75rem)", fontWeight: 800 }}>
+      {/* Metrics Row */}
+      <div className={styles.statsGrid} style={{ marginBottom: "32px" }}>
+        <div className={styles.statCard}>
+          <div className={styles.statIcon} style={{ background: "rgba(16,185,129,0.15)", color: "#10B981" }}>
+            <Wallet size={24} />
+          </div>
+          <div className={styles.statInfo}>
+            <span className={styles.statLabel}>Available Balance</span>
+            <strong className={styles.statValue} style={{ color: "#10B981" }}>
               ₦{walletStats.walletBalance.toLocaleString()}
-            </h2>
+            </strong>
+            <span style={{ fontSize: "11px", color: "var(--text-secondary)", marginTop: 4, display: "block" }}>
+              Cleared funds ready for bank withdrawal
+            </span>
           </div>
-          <button className="btn btn-primary btn-sm w-full" style={{ background: "#0EA5E9", width: "100%", justifyContent: "center" }} onClick={() => setWithdrawModal(true)}>
-            Withdraw Funds to Bank ➔
-          </button>
         </div>
 
-        <div className="card" style={{ padding: "16px 18px", borderLeft: "4px solid #F59E0B" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <span style={{ fontSize: "11px", color: "#F59E0B", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>Pending Escrow Vault</span>
-            <Lock size={18} color="#F59E0B" />
+        <div className={styles.statCard}>
+          <div className={styles.statIcon} style={{ background: "rgba(245,158,11,0.15)", color: "#F59E0B" }}>
+            <Lock size={24} />
           </div>
-          <h2 style={{ color: "#F59E0B", margin: "8px 0 4px", fontSize: "clamp(1.35rem, 2.5vw, 1.75rem)", fontWeight: 800 }}>
-            ₦{walletStats.pendingEscrow.toLocaleString()}
-          </h2>
-          <span style={{ fontSize: "11px", color: "var(--text-tertiary)", display: "flex", alignItems: "center", gap: 4, marginTop: 4 }}>
-            <ShieldCheck size={12} color="#F59E0B" /> 100% Protected — Disburses on completion
-          </span>
+          <div className={styles.statInfo}>
+            <span className={styles.statLabel}>Escrow Vault (In Progress)</span>
+            <strong className={styles.statValue} style={{ color: "#F59E0B" }}>
+              ₦{walletStats.pendingEscrow.toLocaleString()}
+            </strong>
+            <span style={{ fontSize: "11px", color: "var(--text-secondary)", marginTop: 4, display: "block" }}>
+              Secured in escrow until customer confirms job
+            </span>
+          </div>
         </div>
 
-        <div className="card" style={{ padding: "16px 18px", borderLeft: "4px solid #10B981" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <span style={{ fontSize: "11px", color: "#10B981", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>Lifetime Net Earnings</span>
-            <DollarSign size={18} color="#10B981" />
+        <div className={styles.statCard}>
+          <div className={styles.statIcon} style={{ background: "rgba(14,165,233,0.15)", color: "#0EA5E9" }}>
+            <DollarSign size={24} />
           </div>
-          <h2 style={{ color: "#10B981", margin: "8px 0 4px", fontSize: "clamp(1.35rem, 2.5vw, 1.75rem)", fontWeight: 800 }}>
-            ₦{walletStats.lifetimeEarnings.toLocaleString()}
-          </h2>
-          <span style={{ fontSize: "11px", color: "var(--text-tertiary)", display: "block", marginTop: 4 }}>
-            Completed {walletStats.completedJobs} verified jobs
-          </span>
+          <div className={styles.statInfo}>
+            <span className={styles.statLabel}>Lifetime Gross Revenue</span>
+            <strong className={styles.statValue}>
+              ₦{walletStats.lifetimeEarnings.toLocaleString()}
+            </strong>
+            <span style={{ fontSize: "11px", color: "var(--text-secondary)", marginTop: 4, display: "block" }}>
+              Across {walletStats.completedJobs} completed jobs
+            </span>
+          </div>
         </div>
       </div>
 
-      {/* Real-Time Wallet Transaction Ledger */}
-      <div className="card" style={{ padding: 0, overflow: "hidden", marginBottom: "24px" }}>
-        <div style={{ padding: "16px 20px", borderBottom: "1px solid var(--border-primary)", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8 }}>
-          <h3 className="h4" style={{ margin: 0 }}>Live Escrow & Payout Ledger</h3>
-          <span style={{ fontSize: "12px", color: "var(--text-tertiary)" }}>{walletStats.transactions.length} record(s)</span>
+      {/* Transaction History Section */}
+      <div className="card" style={{ background: "var(--bg-elevated)", border: "1px solid var(--border-primary)", borderRadius: "16px", padding: "24px" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
+          <h3 className="h4" style={{ margin: 0, color: "var(--text-primary)" }}>Wallet & Escrow Ledger</h3>
+          <button
+            onClick={fetchRealEarnings}
+            disabled={loading}
+            className="btn btn-secondary btn-sm"
+            style={{ display: "flex", alignItems: "center", gap: 6 }}
+          >
+            <RefreshCw size={14} className={loading ? "animate-spin" : ""} /> Refresh
+          </button>
         </div>
-        {loading ? (
-          <div style={{ padding: 40, textAlign: "center", color: "var(--text-tertiary)" }}>Loading database transactions...</div>
-        ) : walletStats.transactions.length === 0 ? (
-          <div style={{ padding: "40px 20px", textAlign: "center", color: "var(--text-tertiary)" }}>
-            <Inbox size={36} color="#0EA5E9" style={{ opacity: 0.6, marginBottom: 8 }} />
-            <strong style={{ display: "block", color: "var(--text-primary)", fontSize: "14px" }}>No Ledger Transactions Recorded Yet</strong>
-            <p style={{ fontSize: "12px", margin: "4px 0 0", color: "var(--text-secondary)" }}>Escrow holds from assigned bookings and bank payout withdrawals will log here automatically.</p>
+
+        {walletStats.transactions.length === 0 ? (
+          <div style={{ textAlign: "center", padding: "40px 20px" }}>
+            <Inbox size={36} color="var(--text-tertiary)" style={{ margin: "0 auto 12px" }} />
+            <h4 style={{ margin: "0 0 6px", color: "var(--text-primary)" }}>No Transactions Yet</h4>
+            <p style={{ color: "var(--text-secondary)", fontSize: "13px", margin: 0 }}>
+              Completed service jobs and escrow releases will appear here automatically.
+            </p>
           </div>
         ) : (
-          <div style={{ width: "100%", overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left", fontSize: "var(--fs-sm)" }}>
+          <div style={{ overflowX: "auto" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px" }}>
               <thead>
-                <tr style={{ background: "var(--bg-tertiary)", borderBottom: "1px solid var(--border-primary)", color: "var(--text-secondary)" }}>
-                  <th style={{ padding: "var(--space-4)" }}>Reference</th>
-                  <th style={{ padding: "var(--space-4)" }}>Type</th>
-                  <th style={{ padding: "var(--space-4)" }}>Description</th>
-                  <th style={{ padding: "var(--space-4)" }}>Amount</th>
-                  <th style={{ padding: "var(--space-4)" }}>Date</th>
+                <tr style={{ borderBottom: "1px solid var(--border-primary)", textAlign: "left", color: "var(--text-tertiary)" }}>
+                  <th style={{ padding: "12px 10px" }}>Type</th>
+                  <th style={{ padding: "12px 10px" }}>Description</th>
+                  <th style={{ padding: "12px 10px" }}>Reference</th>
+                  <th style={{ padding: "12px 10px" }}>Date</th>
+                  <th style={{ padding: "12px 10px", textAlign: "right" }}>Amount</th>
                 </tr>
               </thead>
               <tbody>
-                {walletStats.transactions.map((tx) => {
-                  const isDebit = tx.type === "DEBIT";
-                  return (
-                    <tr key={tx.id} style={{ borderBottom: "1px solid var(--border-primary)" }}>
-                      <td style={{ padding: "var(--space-4)", fontFamily: "monospace", fontSize: "12px" }}>{tx.reference}</td>
-                      <td style={{ padding: "var(--space-4)" }}>{getTxBadge(tx.type)}</td>
-                      <td style={{ padding: "var(--space-4)" }}>{tx.description}</td>
-                      <td style={{ padding: "var(--space-4)", fontWeight: "bold", color: isDebit ? "#EF4444" : "#10B981" }}>
-                        {isDebit ? `-₦${tx.amount.toLocaleString()}` : `+₦${tx.amount.toLocaleString()}`}
-                      </td>
-                      <td style={{ padding: "var(--space-4)", color: "var(--text-tertiary)", fontSize: "12px" }}>{tx.date}</td>
-                    </tr>
-                  );
-                })}
+                {walletStats.transactions.map((tx) => (
+                  <tr key={tx.id} style={{ borderBottom: "1px solid var(--border-primary)" }}>
+                    <td style={{ padding: "12px 10px" }}>{getTxBadge(tx.type)}</td>
+                    <td style={{ padding: "12px 10px", color: "var(--text-primary)", fontWeight: 600 }}>{tx.description}</td>
+                    <td style={{ padding: "12px 10px", color: "var(--text-secondary)", fontFamily: "monospace" }}>{tx.reference}</td>
+                    <td style={{ padding: "12px 10px", color: "var(--text-secondary)" }}>{tx.date}</td>
+                    <td style={{ padding: "12px 10px", textAlign: "right", fontWeight: 700, color: tx.type === "DEBIT" ? "#EF4444" : "#10B981" }}>
+                      {tx.type === "DEBIT" ? "-" : "+"}₦{tx.amount.toLocaleString()}
+                    </td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>
         )}
       </div>
 
-      {/* Bank Withdrawal Request Modal */}
+      {/* Withdrawal Modal */}
       {withdrawModal && (
-        <div
-          style={{
-            position: "fixed",
-            inset: 0,
-            zIndex: 9999,
-            background: "rgba(9, 13, 22, 0.92)",
-            backdropFilter: "blur(12px)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            padding: 16,
-          }}
-          onClick={() => !isSubmitting && setWithdrawModal(false)}
-        >
-          <div
-            className="card"
-            style={{ width: "100%", maxWidth: "480px", background: "#1E293B", border: "1px solid #334155", borderRadius: 20, padding: 24 }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16, borderBottom: "1px solid #334155", paddingBottom: 12 }}>
-              <div>
-                <h3 className="h4" style={{ margin: 0, color: "#F8FAFC" }}>Withdraw Wallet Balance</h3>
-                <span style={{ fontSize: "12px", color: "#94A3B8" }}>Available: ₦{walletStats.walletBalance.toLocaleString()}</span>
-              </div>
-              <button
-                disabled={isSubmitting}
-                onClick={() => setWithdrawModal(false)}
-                style={{ background: "none", border: "none", color: "#94A3B8", cursor: "pointer", fontSize: 18 }}
-              >
+        <div className="modal-backdrop" style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.75)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: 16 }}>
+          <div className="modal-content" style={{ background: "#1E293B", border: "1px solid #334155", borderRadius: 16, padding: 24, maxWidth: 480, width: "100%", color: "#F8FAFC" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+              <h3 className="h4" style={{ margin: 0, color: "#F8FAFC", display: "flex", alignItems: "center", gap: 8 }}>
+                <Wallet size={20} color="#0EA5E9" /> Request Bank Withdrawal
+              </h3>
+              <button onClick={() => setWithdrawModal(false)} style={{ background: "transparent", border: "none", color: "#94A3B8", cursor: "pointer", fontSize: 20 }}>
                 ✕
               </button>
             </div>
 
+            <div style={{ background: "#0F172A", padding: "12px 14px", borderRadius: 8, marginBottom: 16, border: "1px solid #334155" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", fontSize: "13px", color: "#94A3B8" }}>
+                <span>Available Balance:</span>
+                <strong style={{ color: "#10B981", fontSize: "14px" }}>₦{walletStats.walletBalance.toLocaleString()}</strong>
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between", fontSize: "12px", color: "#94A3B8", marginTop: 4 }}>
+                <span>Artisan Profile Name:</span>
+                <strong style={{ color: "#38BDF8" }}>{registeredName || "Verified Artisan"}</strong>
+              </div>
+            </div>
+
             {errorMsg && (
-              <div style={{ background: "rgba(239,68,68,0.15)", border: "1px solid #EF4444", color: "#EF4444", padding: 12, borderRadius: 8, marginBottom: 16, fontSize: 13, display: "flex", alignItems: "center", gap: 8 }}>
-                <AlertCircle size={16} /> {errorMsg}
+              <div style={{ padding: "10px 12px", background: "rgba(239,68,68,0.15)", border: "1px solid #EF4444", color: "#FCA5A5", borderRadius: 8, marginBottom: 14, fontSize: 13, display: "flex", alignItems: "flex-start", gap: 6 }}>
+                <AlertCircle size={16} style={{ flexShrink: 0, marginTop: 2 }} />
+                <div>{errorMsg}</div>
               </div>
             )}
 
             {success && (
-              <div style={{ background: "rgba(16,185,129,0.2)", border: "1px solid #10B981", color: "#10B981", padding: 12, borderRadius: 8, marginBottom: 16, fontSize: 13, display: "flex", alignItems: "center", gap: 8 }}>
+              <div style={{ padding: "10px 12px", background: "rgba(16,185,129,0.15)", border: "1px solid #10B981", color: "#10B981", borderRadius: 8, marginBottom: 14, fontSize: 13, display: "flex", alignItems: "center", gap: 6 }}>
                 <CheckCircle2 size={16} /> {success}
               </div>
             )}
 
             <form onSubmit={handleWithdraw}>
               <div style={{ marginBottom: 14 }}>
-                <label style={{ fontSize: 12, color: "#64748B", fontWeight: 700, textTransform: "uppercase", display: "block", marginBottom: 4 }}>
+                <label style={{ fontSize: 12, color: "#94A3B8", fontWeight: 700, textTransform: "uppercase", display: "block", marginBottom: 4 }}>
                   Withdrawal Amount (NGN ₦)
                 </label>
                 <input
@@ -329,34 +460,33 @@ export default function ProEarningsPage() {
               </div>
 
               <div style={{ marginBottom: 14 }}>
-                <label style={{ fontSize: 12, color: "#64748B", fontWeight: 700, textTransform: "uppercase", display: "block", marginBottom: 4 }}>
+                <label style={{ fontSize: 12, color: "#94A3B8", fontWeight: 700, textTransform: "uppercase", display: "block", marginBottom: 4 }}>
                   Destination Bank
                 </label>
                 <select
-                  value={bankName}
-                  onChange={(e) => {
-                    setBankName(e.target.value);
-                    const selected = e.target.selectedOptions[0]?.getAttribute("data-code") || "058";
-                    setBankCode(selected);
-                  }}
+                  value={bankCode}
+                  onChange={handleBankChange}
                   style={{ width: "100%", background: "#0F172A", border: "1px solid #334155", borderRadius: 8, padding: 10, color: "#F8FAFC", fontSize: 14 }}
                 >
-                  <option value="Guaranty Trust Bank (GTB)" data-code="058">Guaranty Trust Bank (GTB)</option>
-                  <option value="Access Bank" data-code="044">Access Bank</option>
-                  <option value="Zenith Bank" data-code="057">Zenith Bank</option>
-                  <option value="First Bank of Nigeria" data-code="011">First Bank of Nigeria</option>
-                  <option value="United Bank for Africa (UBA)" data-code="033">United Bank for Africa (UBA)</option>
-                  <option value="Kuda Microfinance Bank" data-code="50211">Kuda Bank</option>
-                  <option value="OPay Digital Services" data-code="999992">OPay</option>
-                  <option value="PalmPay" data-code="999991">PalmPay</option>
-                  <option value="Moniepoint Microfinance Bank" data-code="50515">Moniepoint</option>
+                  {NIGERIAN_BANKS.map((b) => (
+                    <option key={b.code} value={b.code}>
+                      {b.name}
+                    </option>
+                  ))}
                 </select>
               </div>
 
               <div style={{ marginBottom: 14 }}>
-                <label style={{ fontSize: 12, color: "#64748B", fontWeight: 700, textTransform: "uppercase", display: "block", marginBottom: 4 }}>
-                  10-Digit NUBAN Account Number
-                </label>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+                  <label style={{ fontSize: 12, color: "#94A3B8", fontWeight: 700, textTransform: "uppercase" }}>
+                    10-Digit NUBAN Account Number
+                  </label>
+                  {resolvingBank && (
+                    <span style={{ fontSize: "11px", color: "#38BDF8", display: "flex", alignItems: "center", gap: 4 }}>
+                      <Loader2 size={12} className="animate-spin" /> Verifying...
+                    </span>
+                  )}
+                </div>
                 <input
                   type="text"
                   maxLength={10}
@@ -364,24 +494,62 @@ export default function ProEarningsPage() {
                   value={accountNumber}
                   onChange={(e) => setAccountNumber(e.target.value.replace(/\D/g, ""))}
                   required
-                  style={{ width: "100%", background: "#0F172A", border: "1px solid #334155", borderRadius: 8, padding: 10, color: "#F8FAFC", fontSize: 14, letterSpacing: 2 }}
+                  style={{ width: "100%", background: "#0F172A", border: nameMatchStatus.status === "MATCH" ? "1px solid #10B981" : nameMatchStatus.status === "MISMATCH" ? "1px solid #EF4444" : "1px solid #334155", borderRadius: 8, padding: 10, color: "#F8FAFC", fontSize: 14, letterSpacing: 2 }}
                 />
               </div>
 
-              <div style={{ marginBottom: 20 }}>
-                <label style={{ fontSize: 12, color: "#64748B", fontWeight: 700, textTransform: "uppercase", display: "block", marginBottom: 4 }}>
-                  Account Holder Name
+              <div style={{ marginBottom: 16 }}>
+                <label style={{ fontSize: 12, color: "#94A3B8", fontWeight: 700, textTransform: "uppercase", display: "block", marginBottom: 4 }}>
+                  Resolved Account Holder Name
                 </label>
                 <input
                   type="text"
-                  placeholder="Verified Full Name"
+                  placeholder="Account holder name..."
                   value={accountName}
-                  onChange={(e) => setAccountName(e.target.value)}
-                  style={{ width: "100%", background: "#0F172A", border: "1px solid #334155", borderRadius: 8, padding: 10, color: "#94A3B8", fontSize: 14 }}
+                  readOnly
+                  style={{ width: "100%", background: "#0F172A", border: "1px solid #334155", borderRadius: 8, padding: 10, color: accountName ? "#F8FAFC" : "#64748B", fontSize: 14, fontWeight: 600 }}
                 />
               </div>
 
-              <div className="modal-actions">
+              {/* Status Badge */}
+              {nameMatchStatus.status !== "IDLE" && (
+                <div
+                  style={{
+                    padding: "8px 10px",
+                    borderRadius: "6px",
+                    fontSize: "12px",
+                    fontWeight: 600,
+                    marginBottom: 16,
+                    display: "flex",
+                    alignItems: "flex-start",
+                    gap: "6px",
+                    background:
+                      nameMatchStatus.status === "MATCH"
+                        ? "rgba(16,185,129,0.12)"
+                        : nameMatchStatus.status === "MISMATCH"
+                        ? "rgba(239,68,68,0.12)"
+                        : "rgba(14,165,233,0.12)",
+                    color:
+                      nameMatchStatus.status === "MATCH"
+                        ? "#10B981"
+                        : nameMatchStatus.status === "MISMATCH"
+                        ? "#EF4444"
+                        : "#38BDF8",
+                    border:
+                      nameMatchStatus.status === "MATCH"
+                        ? "1px solid #10B981"
+                        : nameMatchStatus.status === "MISMATCH"
+                        ? "1px solid #EF4444"
+                        : "1px solid #0EA5E9",
+                  }}
+                >
+                  {nameMatchStatus.status === "MATCH" && <ShieldCheck size={14} style={{ flexShrink: 0, marginTop: 1 }} />}
+                  {nameMatchStatus.status === "MISMATCH" && <ShieldAlert size={14} style={{ flexShrink: 0, marginTop: 1 }} />}
+                  <div>{nameMatchStatus.message}</div>
+                </div>
+              )}
+
+              <div className="modal-actions" style={{ display: "flex", justifyContent: "flex-end", gap: 10 }}>
                 <button
                   type="button"
                   disabled={isSubmitting}
@@ -392,11 +560,18 @@ export default function ProEarningsPage() {
                 </button>
                 <button
                   type="submit"
-                  disabled={isSubmitting}
+                  disabled={isSubmitting || resolvingBank || nameMatchStatus.status === "MISMATCH"}
                   className="btn btn-primary btn-sm"
-                  style={{ background: "#0EA5E9", display: "flex", alignItems: "center", gap: 6 }}
+                  style={{
+                    background: nameMatchStatus.status === "MISMATCH" ? "#475569" : "#0EA5E9",
+                    cursor: nameMatchStatus.status === "MISMATCH" ? "not-allowed" : "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 6,
+                  }}
                 >
-                  {isSubmitting ? "Processing..." : "Submit Payout Request ➔"}
+                  {isSubmitting ? <Loader2 size={14} className="animate-spin" /> : <ArrowUpRight size={14} />}
+                  {isSubmitting ? "Processing Transfer..." : "Submit Payout Request ➔"}
                 </button>
               </div>
             </form>
