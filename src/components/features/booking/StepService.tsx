@@ -269,7 +269,12 @@ export function StepService({ booking, updateBooking, onNext }: StepProps) {
                 <button
                   key={cat.id}
                   className={styles.categoryCard}
-                  onClick={() => setSelectedCategory(cat.id)}
+                  onClick={() => {
+                    setSelectedCategory(cat.id);
+                    if (cat.services.length > 0) {
+                      activateServiceCard(cat.services[0]);
+                    }
+                  }}
                 >
                   <div className={styles.categoryIcon} style={{ backgroundColor: `${cat.color}15`, color: cat.color }}>
                     <IconComp size={24} />
@@ -285,7 +290,19 @@ export function StepService({ booking, updateBooking, onNext }: StepProps) {
         </>
       ) : (
         <>
-          <button className={styles.backToCategories} onClick={() => setSelectedCategory("")}>
+          <button
+            className={styles.backToCategories}
+            onClick={() => {
+              setSelectedCategory("");
+              updateBooking({
+                serviceCategory: "",
+                serviceId: "",
+                serviceName: "",
+                servicePrice: 0,
+                totalPrice: 0,
+              });
+            }}
+          >
             ← All Service Categories
           </button>
           <h2 className={styles.stepTitle}>{activeCategory?.name} Options</h2>

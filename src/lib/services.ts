@@ -29,8 +29,8 @@ export const POPULAR_SUGGESTIONS: PopularSuggestion[] = [
   {
     text: "Residential routine cleaning monthly plan",
     label: "Residential Routine Cleaning (Monthly Plans)",
-    categoryId: "cleaning",
-    serviceId: "residential-routine-cleaning",
+    categoryId: "routine-cleaning",
+    serviceId: "routine-cleaning-silver",
   },
   {
     text: "My kitchen sink is leaking",

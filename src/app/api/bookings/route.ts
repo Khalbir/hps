@@ -14,7 +14,8 @@ export const dynamic = "force-dynamic";
  * Maps service categories/slugs to the normalized tradeCategory values stored in TradeVerification
  */
 const TRADE_SLUG_MAP: Record<string, string[]> = {
-  cleaning: ["cleaning", "residential-cleaning", "commercial-cleaning", "deep-cleaning", "post-construction"],
+  cleaning: ["cleaning", "routine-cleaning", "residential-cleaning", "commercial-cleaning", "deep-cleaning", "post-construction"],
+  "routine-cleaning": ["routine-cleaning", "routine-cleaning-silver", "routine-cleaning-gold", "routine-cleaning-platinum", "cleaning"],
   fumigation: ["fumigation", "pest-control", "residential-fumigation", "commercial-fumigation"],
   upholstery: ["upholstery", "carpet", "sofa", "mattress", "carpet-cleaning", "sofa-couch-cleaning"],
   plumbing: ["plumbing", "pipe", "drainage", "water-heater", "borehole"],
