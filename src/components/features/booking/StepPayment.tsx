@@ -194,7 +194,7 @@ export function StepPayment({ booking, updateBooking, onNext, onBack }: StepProp
       plan: (booking.planTier as ServicePlanTier) || "SILVER",
       bedrooms: booking.bedrooms || 2,
       bathrooms: booking.bathrooms || 1,
-      isFurnished: booking.isFurnished || false,
+      isFurnished: booking.isFurnished !== false,
       dirtLevel: booking.dirtLevel || "MODERATE",
       quantity: booking.quantity || 1,
       regionalZoneId: booking.regionalZoneId || "abuja-suburbs",

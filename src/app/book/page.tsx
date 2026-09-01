@@ -185,7 +185,8 @@ function BookingContent() {
             totalPrice: matched ? price : (prev.totalPrice || price),
             bedrooms: isProp ? (prev.bedrooms || 2) : 1,
             bathrooms: isProp ? (prev.bathrooms || 1) : 1,
-            isFurnished: isProp ? Boolean(prev.isFurnished) : false,
+            isFurnished: isProp ? (prev.isFurnished !== undefined ? Boolean(prev.isFurnished) : true) : true,
+            dirtLevel: isProp ? (prev.dirtLevel || "MODERATE") : "LIGHT",
             initialQuery: queryParam || undefined,
           };
           saveToStorage(STORAGE_KEYS.PENDING_BOOKING, updated);

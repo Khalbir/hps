@@ -63,6 +63,9 @@ export function StepService({ booking, updateBooking, onNext }: StepProps) {
     if (booking.serviceCategory) {
       setSelectedCategory(booking.serviceCategory);
     }
+    if (booking.isFurnished === undefined) {
+      updateBooking({ isFurnished: true });
+    }
   }, [booking.serviceCategory]);
 
   const activeCategory = SERVICE_CATEGORIES.find((c) => c.id === selectedCategory);

@@ -76,7 +76,7 @@ export function BookingSummary({ booking, currentStep }: Props) {
       plan: planTier,
       bedrooms: isProp ? (booking.bedrooms || 2) : 1,
       bathrooms: isProp ? (booking.bathrooms || 1) : 1,
-      isFurnished: isProp ? Boolean(booking.isFurnished) : false,
+      isFurnished: isProp ? (booking.isFurnished !== false) : false,
       dirtLevel: isProp ? (booking.dirtLevel || "MODERATE") : "LIGHT",
       quantity: booking.quantity || 1,
       regionalZoneId: booking.regionalZoneId || "abuja-suburbs",
@@ -117,7 +117,7 @@ export function BookingSummary({ booking, currentStep }: Props) {
                       : "Twice a Month Plan (2 Visits/Month)"
                     : `${SERVICE_PLANS[planTier]?.name || planTier}`
                   : isProp
-                  ? `${booking.bedrooms || 1} Bed · ${booking.bathrooms || 1} Bath${booking.isFurnished ? " · Furnished" : ""}`
+                  ? `${booking.bedrooms || 2} Bed · ${booking.bathrooms || 1} Bath${booking.isFurnished !== false ? " · Furnished" : " · Unfurnished"}`
                   : booking.quantity && booking.quantity > 1
                   ? `Quantity: ${booking.quantity}`
                   : "Standard Service"}

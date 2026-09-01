@@ -45,6 +45,9 @@ export function StepDetails({ booking, updateBooking, onNext, onBack }: StepProp
       } catch (err) {}
     }
     loadPricingRules();
+    if (booking.isFurnished === undefined) {
+      updateBooking({ isFurnished: true });
+    }
   }, []);
 
   const isCleaning = booking.serviceCategory === "cleaning";
