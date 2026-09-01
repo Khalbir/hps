@@ -90,6 +90,8 @@ export function StepService({ booking, updateBooking, onNext }: StepProps) {
     if (svc.id.includes("platinum")) planToUse = "PLATINUM";
 
     const isProp = pModel === "PROPERTY_BASED";
+    const effectiveFurnished = isProp ? (booking.isFurnished !== undefined ? Boolean(booking.isFurnished) : true) : false;
+    const effectiveDirt = isProp ? (booking.dirtLevel || "MODERATE") : "LIGHT";
     const calc = calculateJobPrice(
       {
         serviceId: svc.id,
@@ -98,8 +100,8 @@ export function StepService({ booking, updateBooking, onNext }: StepProps) {
         plan: planToUse,
         bedrooms: isProp ? (booking.bedrooms || 2) : (pModel === "SUBSCRIPTION" ? (booking.bedrooms || 1) : 1),
         bathrooms: isProp ? (booking.bathrooms || 1) : (pModel === "SUBSCRIPTION" ? (booking.bathrooms || 1) : 1),
-        isFurnished: isProp ? Boolean(booking.isFurnished) : false,
-        dirtLevel: isProp ? (booking.dirtLevel || "MODERATE") : "LIGHT",
+        isFurnished: effectiveFurnished,
+        dirtLevel: effectiveDirt,
         quantity: svcQty,
         regionalZoneId: booking.regionalZoneId || "abuja-suburbs",
         isExpressSchedule: booking.isEmergency || false,
@@ -116,6 +118,8 @@ export function StepService({ booking, updateBooking, onNext }: StepProps) {
       pricingModel: pModel,
       planTier: planToUse,
       quantity: svcQty,
+      isFurnished: effectiveFurnished,
+      dirtLevel: effectiveDirt,
       totalPrice: calc.totalPriceNgn,
     });
   };
@@ -146,6 +150,8 @@ export function StepService({ booking, updateBooking, onNext }: StepProps) {
       const pModel = (svc.pricingModel as PricingModel) || "FIXED";
       const svcQty = getServiceQuantity(svc.id);
       const isProp = pModel === "PROPERTY_BASED";
+      const effectiveFurnished = isProp ? (booking.isFurnished !== undefined ? Boolean(booking.isFurnished) : true) : false;
+      const effectiveDirt = isProp ? (booking.dirtLevel || "MODERATE") : "LIGHT";
       const calc = calculateJobPrice(
         {
           serviceId: svc.id,
@@ -154,8 +160,8 @@ export function StepService({ booking, updateBooking, onNext }: StepProps) {
           plan: selectedPlanTier || (booking.planTier as ServicePlanTier) || "SILVER",
           bedrooms: isProp ? (booking.bedrooms || 2) : (pModel === "SUBSCRIPTION" ? (booking.bedrooms || 1) : 1),
           bathrooms: isProp ? (booking.bathrooms || 1) : (pModel === "SUBSCRIPTION" ? (booking.bathrooms || 1) : 1),
-          isFurnished: isProp ? Boolean(booking.isFurnished) : false,
-          dirtLevel: isProp ? (booking.dirtLevel || "MODERATE") : "LIGHT",
+          isFurnished: effectiveFurnished,
+          dirtLevel: effectiveDirt,
           quantity: svcQty,
           regionalZoneId: booking.regionalZoneId || "abuja-suburbs",
           isExpressSchedule: booking.isEmergency || false,
@@ -168,6 +174,8 @@ export function StepService({ booking, updateBooking, onNext }: StepProps) {
           pricingModel: pModel,
           planTier: selectedPlanTier,
           quantity: svcQty,
+          isFurnished: effectiveFurnished,
+          dirtLevel: effectiveDirt,
           totalPrice: calc.totalPriceNgn,
         });
       }
@@ -215,6 +223,8 @@ export function StepService({ booking, updateBooking, onNext }: StepProps) {
     const svcQty = getServiceQuantity(svc.id);
     const planToUse = pModel === "SUBSCRIPTION" ? selectedPlanTier : (booking.planTier as ServicePlanTier) || "SILVER";
     const isProp = pModel === "PROPERTY_BASED";
+    const effectiveFurnished = isProp ? (booking.isFurnished !== undefined ? Boolean(booking.isFurnished) : true) : false;
+    const effectiveDirt = isProp ? (booking.dirtLevel || "MODERATE") : "LIGHT";
     const calc = calculateJobPrice(
       {
         serviceId: svc.id,
@@ -223,8 +233,8 @@ export function StepService({ booking, updateBooking, onNext }: StepProps) {
         plan: planToUse,
         bedrooms: isProp ? (booking.bedrooms || 2) : (pModel === "SUBSCRIPTION" ? (booking.bedrooms || 1) : 1),
         bathrooms: isProp ? (booking.bathrooms || 1) : (pModel === "SUBSCRIPTION" ? (booking.bathrooms || 1) : 1),
-        isFurnished: isProp ? Boolean(booking.isFurnished) : false,
-        dirtLevel: isProp ? (booking.dirtLevel || "MODERATE") : "LIGHT",
+        isFurnished: effectiveFurnished,
+        dirtLevel: effectiveDirt,
         quantity: svcQty,
         regionalZoneId: booking.regionalZoneId || "abuja-suburbs",
         isExpressSchedule: booking.isEmergency || false,
@@ -240,6 +250,8 @@ export function StepService({ booking, updateBooking, onNext }: StepProps) {
       pricingModel: pModel,
       planTier: planToUse,
       quantity: svcQty,
+      isFurnished: effectiveFurnished,
+      dirtLevel: effectiveDirt,
       totalPrice: calc.totalPriceNgn,
     });
     onNext();
@@ -400,9 +412,9 @@ export function StepService({ booking, updateBooking, onNext }: StepProps) {
                           borderRadius: "6px",
                           fontSize: "11px",
                           fontWeight: 700,
-                          border: !booking.isFurnished ? "1px solid #0EA5E9" : "1px solid #334155",
-                          background: !booking.isFurnished ? "rgba(14,165,233,0.15)" : "#1E293B",
-                          color: !booking.isFurnished ? "#38BDF8" : "#94A3B8",
+                          border: (booking.isFurnished === false) ? "1px solid #0EA5E9" : "1px solid #334155",
+                          background: (booking.isFurnished === false) ? "rgba(14,165,233,0.15)" : "#1E293B",
+                          color: (booking.isFurnished === false) ? "#38BDF8" : "#94A3B8",
                           cursor: "pointer",
                           textAlign: "center",
                           whiteSpace: "nowrap",
@@ -421,9 +433,9 @@ export function StepService({ booking, updateBooking, onNext }: StepProps) {
                           borderRadius: "6px",
                           fontSize: "11px",
                           fontWeight: 700,
-                          border: booking.isFurnished ? "1px solid #0EA5E9" : "1px solid #334155",
-                          background: booking.isFurnished ? "rgba(14,165,233,0.15)" : "#1E293B",
-                          color: booking.isFurnished ? "#38BDF8" : "#94A3B8",
+                          border: (booking.isFurnished !== false) ? "1px solid #0EA5E9" : "1px solid #334155",
+                          background: (booking.isFurnished !== false) ? "rgba(14,165,233,0.15)" : "#1E293B",
+                          color: (booking.isFurnished !== false) ? "#38BDF8" : "#94A3B8",
                           cursor: "pointer",
                           textAlign: "center",
                           whiteSpace: "nowrap",
@@ -477,6 +489,8 @@ export function StepService({ booking, updateBooking, onNext }: StepProps) {
               const svcQty = getServiceQuantity(svc.id);
               const planForCalc = pModel === "SUBSCRIPTION" ? selectedPlanTier : (booking.planTier as ServicePlanTier) || "SILVER";
               const isProp = pModel === "PROPERTY_BASED";
+              const effectiveFurnished = isProp ? (booking.isFurnished !== undefined ? Boolean(booking.isFurnished) : true) : false;
+              const effectiveDirt = isProp ? (booking.dirtLevel || "MODERATE") : "LIGHT";
               const calc = calculateJobPrice(
                 {
                   serviceId: svc.id,
@@ -485,8 +499,8 @@ export function StepService({ booking, updateBooking, onNext }: StepProps) {
                   plan: planForCalc,
                   bedrooms: isProp ? (booking.bedrooms || 2) : (pModel === "SUBSCRIPTION" ? (booking.bedrooms || 1) : 1),
                   bathrooms: isProp ? (booking.bathrooms || 1) : (pModel === "SUBSCRIPTION" ? (booking.bathrooms || 1) : 1),
-                  isFurnished: isProp ? Boolean(booking.isFurnished) : false,
-                  dirtLevel: isProp ? (booking.dirtLevel || "MODERATE") : "LIGHT",
+                  isFurnished: effectiveFurnished,
+                  dirtLevel: effectiveDirt,
                   quantity: svcQty,
                   regionalZoneId: booking.regionalZoneId || "abuja-suburbs",
                   isExpressSchedule: booking.isEmergency || false,

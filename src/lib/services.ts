@@ -124,7 +124,7 @@ export const SERVICE_CATEGORIES: ServiceCategory[] = [
     color: "#0EA5E9",
     keywords: ["clean", "cleaning", "dust", "deep clean", "office clean", "janitor", "wash", "sweeping", "mopping", "post construction"],
     services: [
-      { id: "residential-cleaning", name: "Residential Deep Cleaning (One-Time)", price: 15000, desc: "Standard deep cleaning for apartments and houses", pricingModel: "PROPERTY_BASED" },
+      { id: "residential-cleaning", name: "Cleaning", price: 15000, desc: "Standard deep cleaning for apartments and houses", pricingModel: "PROPERTY_BASED" },
       { id: "deep-cleaning", name: "Full Flat Deep Scrub", price: 25000, desc: "Thorough deep cleaning of every surface, kitchen and bathrooms", pricingModel: "PROPERTY_BASED" },
       { id: "commercial-cleaning", name: "Commercial & Office Cleaning", price: 35000, desc: "Office and business space cleaning", pricingModel: "QUANTITY_BASED", unitLabel: "per office space" },
       { id: "post-construction", name: "Post Construction Cleaning", price: 0, desc: "Cleanup after renovation (Free site inspection & quote)", pricingModel: "CUSTOM_QUOTE" },

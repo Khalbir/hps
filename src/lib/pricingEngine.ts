@@ -230,7 +230,7 @@ export function calculateJobPrice(
     plan = "SILVER",
     bedrooms = 2,
     bathrooms = 1,
-    isFurnished = false,
+    isFurnished = true,
     dirtLevel = "MODERATE",
     quantity = 1,
     regionalZoneId = "abuja-suburbs",

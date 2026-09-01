@@ -91,7 +91,7 @@ export function StepDetails({ booking, updateBooking, onNext, onBack }: StepProp
         plan: plan || (booking.planTier as ServicePlanTier) || "SILVER",
         bedrooms: isPropertyBased ? bedrooms : 1,
         bathrooms: isPropertyBased ? bathrooms : 1,
-        isFurnished: isPropertyBased ? Boolean(booking.isFurnished) : false,
+        isFurnished: isPropertyBased ? (booking.isFurnished !== undefined ? Boolean(booking.isFurnished) : true) : false,
         dirtLevel: isPropertyBased ? (booking.dirtLevel || "MODERATE") : "LIGHT",
         quantity: isQuantityBased ? (qty !== undefined ? qty : (booking.quantity || 1)) : 1,
         regionalZoneId: booking.regionalZoneId || "abuja-suburbs",
@@ -283,7 +283,7 @@ export function StepDetails({ booking, updateBooking, onNext, onBack }: StepProp
                     const total = getComputedPrice(booking.bedrooms || 2, booking.bathrooms || 1, booking.quantity || 1, booking.planTier as ServicePlanTier);
                     updateBooking({ isFurnished: false, totalPrice: total });
                   }}
-                  className={`${styles.counterBtn} ${!booking.isFurnished ? styles.counterBtnActive : ""}`}
+                  className={`${styles.counterBtn} ${(booking.isFurnished === false) ? styles.counterBtnActive : ""}`}
                   style={{ padding: "10px", height: "auto", fontSize: "12px", fontWeight: 700 }}
                 >
                   {isFumigation ? "Vacant / Empty" : "Unfurnished"}
@@ -295,7 +295,7 @@ export function StepDetails({ booking, updateBooking, onNext, onBack }: StepProp
                     const total = getComputedPrice(booking.bedrooms || 2, booking.bathrooms || 1, booking.quantity || 1, booking.planTier as ServicePlanTier);
                     updateBooking({ isFurnished: true, totalPrice: total });
                   }}
-                  className={`${styles.counterBtn} ${booking.isFurnished ? styles.counterBtnActive : ""}`}
+                  className={`${styles.counterBtn} ${(booking.isFurnished !== false) ? styles.counterBtnActive : ""}`}
                   style={{ padding: "10px", height: "auto", fontSize: "12px", fontWeight: 700 }}
                 >
                   Furnished (+₦5k)

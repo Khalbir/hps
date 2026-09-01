@@ -38,10 +38,10 @@ const services = [
   },
   {
     icon: Sparkles,
-    name: "Residential Cleaning (One-Time)",
+    name: "Cleaning",
     category: "cleaning",
     slug: "residential-cleaning",
-    description: "Deep detailed cleaning for apartments & houses",
+    description: "Standard deep detailed cleaning for apartments & houses",
     price: "₦15,000",
     color: "#0EA5E9",
     bgColor: "rgba(14, 165, 233, 0.08)",
