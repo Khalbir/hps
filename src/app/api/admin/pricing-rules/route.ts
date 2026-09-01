@@ -95,7 +95,7 @@ export async function POST(request: Request) {
       {
         success: true,
         message: "Executive pricing adjustments saved & published live!",
-        rules,
+        rules: targetRules,
       },
       { headers: NO_CACHE_HEADERS }
     );
