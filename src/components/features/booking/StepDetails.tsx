@@ -301,7 +301,7 @@ export function StepDetails({ booking, updateBooking, onNext, onBack }: StepProp
                   className={`${styles.counterBtn} ${(booking.isFurnished !== false) ? styles.counterBtnActive : ""}`}
                   style={{ padding: "10px", height: "auto", fontSize: "12px", fontWeight: 700 }}
                 >
-                  Furnished (+₦5k)
+                  {isFumigation ? "Furnished" : `Furnished (+₦${((pricingRules.furnishedSurchargeNgn ?? 5000) >= 1000 ? `${(pricingRules.furnishedSurchargeNgn ?? 5000) / 1000}k` : (pricingRules.furnishedSurchargeNgn ?? 5000))})`}
                 </button>
               </div>
             </div>

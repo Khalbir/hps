@@ -415,8 +415,8 @@ export function StepService({ booking, updateBooking, onNext }: StepProps) {
                           borderRadius: "6px",
                           fontSize: "11px",
                           fontWeight: 700,
-                          border: (booking.isFurnished === false) ? "1px solid #0EA5E9" : "1px solid #334155",
-                          background: (booking.isFurnished === false) ? "rgba(14,165,233,0.15)" : "#1E293B",
+                          border: (booking.isFurnished === false) ? "2px solid #0EA5E9" : "1px solid #334155",
+                          background: (booking.isFurnished === false) ? "rgba(14,165,233,0.2)" : "#1E293B",
                           color: (booking.isFurnished === false) ? "#38BDF8" : "#94A3B8",
                           cursor: "pointer",
                           textAlign: "center",
@@ -436,8 +436,8 @@ export function StepService({ booking, updateBooking, onNext }: StepProps) {
                           borderRadius: "6px",
                           fontSize: "11px",
                           fontWeight: 700,
-                          border: (booking.isFurnished !== false) ? "1px solid #0EA5E9" : "1px solid #334155",
-                          background: (booking.isFurnished !== false) ? "rgba(14,165,233,0.15)" : "#1E293B",
+                          border: (booking.isFurnished !== false) ? "2px solid #0EA5E9" : "1px solid #334155",
+                          background: (booking.isFurnished !== false) ? "rgba(14,165,233,0.2)" : "#1E293B",
                           color: (booking.isFurnished !== false) ? "#38BDF8" : "#94A3B8",
                           cursor: "pointer",
                           textAlign: "center",
@@ -447,7 +447,7 @@ export function StepService({ booking, updateBooking, onNext }: StepProps) {
                           boxSizing: "border-box",
                         }}
                       >
-                        Furnished (+₦5k)
+                        {selectedCategory === "fumigation" ? "Furnished" : `Furnished (+₦${((pricingRules.furnishedSurchargeNgn ?? 5000) >= 1000 ? `${(pricingRules.furnishedSurchargeNgn ?? 5000) / 1000}k` : (pricingRules.furnishedSurchargeNgn ?? 5000))})`}
                       </button>
                     </div>
                   </div>

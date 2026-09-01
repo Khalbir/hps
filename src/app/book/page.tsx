@@ -100,7 +100,13 @@ function BookingContent() {
   });
   const [booking, setBooking] = useState<BookingData>(() => {
     if (typeof window !== "undefined") {
-      return loadFromStorage<BookingData>(STORAGE_KEYS.PENDING_BOOKING, initialBookingData);
+      const stored = loadFromStorage<BookingData>(STORAGE_KEYS.PENDING_BOOKING, initialBookingData);
+      return {
+        ...initialBookingData,
+        ...stored,
+        isFurnished: true,
+        dirtLevel: stored.dirtLevel || "MODERATE",
+      };
     }
     return initialBookingData;
   });
@@ -185,7 +191,7 @@ function BookingContent() {
             totalPrice: matched ? price : (prev.totalPrice || price),
             bedrooms: isProp ? (prev.bedrooms || 2) : 1,
             bathrooms: isProp ? (prev.bathrooms || 1) : 1,
-            isFurnished: isProp ? (prev.isFurnished !== undefined ? Boolean(prev.isFurnished) : true) : true,
+            isFurnished: true,
             dirtLevel: isProp ? (prev.dirtLevel || "MODERATE") : "LIGHT",
             initialQuery: queryParam || undefined,
           };
