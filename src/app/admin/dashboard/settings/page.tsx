@@ -266,6 +266,28 @@ export default function SettingsAndBackupsPage() {
     }
   };
 
+  const handleResetPricingRules = async () => {
+    if (!confirm("Are you sure you want to reset all pricing rules & service overrides to the canonical Nigerian standard matrix?")) return;
+    setSavingRules(true);
+    try {
+      const res = await fetch("/api/admin/pricing-rules", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "RESET" }),
+      });
+      const data = await res.json();
+      if (res.ok && data.rules) {
+        setRulesConfig(data.rules);
+        setToast("All pricing rules & overrides restored to system defaults! 🔄");
+      }
+    } catch (err) {
+      setToast("Failed to reset pricing rules.");
+    } finally {
+      setSavingRules(false);
+      setTimeout(() => setToast(""), 4000);
+    }
+  };
+
   return (
     <AdminLayoutShell>
       <header className={styles.adminTopBar} style={{ marginBottom: "var(--space-6)" }}>
@@ -459,14 +481,24 @@ export default function SettingsAndBackupsPage() {
               </span>
             </div>
 
-            <button
-              onClick={handleSavePricingRules}
-              disabled={savingRules}
-              className="btn btn-primary btn-md"
-              style={{ background: "#0EA5E9", display: "flex", alignItems: "center", gap: "8px" }}
-            >
-              <Save size={16} /> {savingRules ? "Saving Rules..." : "Save Pricing Matrix Live 💾"}
-            </button>
+            <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
+              <button
+                onClick={handleResetPricingRules}
+                disabled={savingRules}
+                className="btn btn-secondary btn-md"
+                style={{ background: "#334155", color: "#F8FAFC", display: "flex", alignItems: "center", gap: "6px" }}
+              >
+                <RefreshCw size={14} /> Restore Defaults 🔄
+              </button>
+              <button
+                onClick={handleSavePricingRules}
+                disabled={savingRules}
+                className="btn btn-primary btn-md"
+                style={{ background: "#0EA5E9", display: "flex", alignItems: "center", gap: "8px" }}
+              >
+                <Save size={16} /> {savingRules ? "Saving Rules..." : "Save Pricing Matrix Live 💾"}
+              </button>
+            </div>
           </div>
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
@@ -640,14 +672,24 @@ export default function SettingsAndBackupsPage() {
               </span>
             </div>
 
-            <button
-              onClick={handleSavePricingRules}
-              disabled={savingRules}
-              className="btn btn-primary btn-md"
-              style={{ background: "#10B981", display: "flex", alignItems: "center", gap: "8px", fontWeight: 700 }}
-            >
-              <Save size={16} /> {savingRules ? "Saving Adjustments..." : "Save Executive Adjustments Live 💾"}
-            </button>
+            <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
+              <button
+                onClick={handleResetPricingRules}
+                disabled={savingRules}
+                className="btn btn-secondary btn-md"
+                style={{ background: "#334155", color: "#F8FAFC", display: "flex", alignItems: "center", gap: "6px" }}
+              >
+                <RefreshCw size={14} /> Restore Defaults 🔄
+              </button>
+              <button
+                onClick={handleSavePricingRules}
+                disabled={savingRules}
+                className="btn btn-primary btn-md"
+                style={{ background: "#10B981", display: "flex", alignItems: "center", gap: "8px", fontWeight: 700 }}
+              >
+                <Save size={16} /> {savingRules ? "Saving Adjustments..." : "Save Executive Adjustments Live 💾"}
+              </button>
+            </div>
           </div>
 
           {/* Controls Bar: Search & Model Filter Tabs */}

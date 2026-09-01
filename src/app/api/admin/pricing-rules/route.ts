@@ -16,12 +16,7 @@ const NO_CACHE_HEADERS = {
 // GET /api/admin/pricing-rules
 export async function GET() {
   try {
-    // 1. Check in-memory cache first for instant updates
-    if (inMemoryRulesConfig) {
-      return NextResponse.json({ success: true, rules: inMemoryRulesConfig }, { headers: NO_CACHE_HEADERS });
-    }
-
-    // 2. Try DB Setting table
+    // 1. Try DB Setting table first for true live source of truth
     const setting = await prisma.setting.findUnique({
       where: { key: "pricing_rules_config" },
     }).catch(() => null);
@@ -32,6 +27,11 @@ export async function GET() {
         inMemoryRulesConfig = parsed;
         return NextResponse.json({ success: true, rules: parsed }, { headers: NO_CACHE_HEADERS });
       } catch (e) {}
+    }
+
+    // 2. Check in-memory cache as fallback
+    if (inMemoryRulesConfig) {
+      return NextResponse.json({ success: true, rules: inMemoryRulesConfig }, { headers: NO_CACHE_HEADERS });
     }
 
     // 3. Fallback: Check AuditLog table for latest UPDATE_RULES entry
@@ -59,15 +59,21 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { rules } = body;
+    const { rules, action } = body;
 
-    if (!rules || typeof rules !== "object") {
+    let targetRules = rules;
+
+    if (action === "RESET") {
+      targetRules = DEFAULT_PRICING_RULES;
+    }
+
+    if (!targetRules || typeof targetRules !== "object") {
       return NextResponse.json({ error: "Invalid pricing rules object" }, { status: 400 });
     }
 
     // Update in-memory cache immediately
-    inMemoryRulesConfig = rules;
-    const jsonString = JSON.stringify(rules);
+    inMemoryRulesConfig = targetRules;
+    const jsonString = JSON.stringify(targetRules);
 
     // Save to Setting table & AuditLog table
     await prisma.setting.upsert({
