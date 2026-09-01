@@ -113,6 +113,9 @@ export default function ProNotificationsPage() {
           notifications.map((n) => {
             const isActionRequired = (n.title.includes("Assigned") || n.title.includes("Available") || n.jobAction === "ACCEPT_REQUIRED") && !n.title.includes("Cancelled") && !n.title.includes("Completed");
             const isCompletedOrPayout = n.title.includes("Completed") || n.type === "PAYMENT" || n.title.includes("Payout");
+            const isWithdrawalSent = n.title.includes("Sent") || n.title.includes("Approved") || (n.data && n.data.includes('"status":"SENT"'));
+            const isWithdrawalProcessing = n.title.includes("Processing") || n.title.includes("Submitted") || n.title.includes("Requested");
+            const isWithdrawalRejected = n.title.includes("Rejected") || n.title.includes("Refunded");
 
             return (
               <div
@@ -125,11 +128,26 @@ export default function ProNotificationsPage() {
                 }}
               >
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 6, gap: 12 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
                     <div style={{ background: "var(--bg-tertiary)", padding: 6, borderRadius: 8, display: "flex" }}>
                       {getIcon(n)}
                     </div>
                     <strong style={{ fontSize: "var(--fs-sm)", color: "var(--text-primary)" }}>{n.title}</strong>
+                    {isWithdrawalSent && (
+                      <span className="badge" style={{ background: "rgba(16,185,129,0.2)", color: "#10B981", fontWeight: 800, fontSize: "11px" }}>
+                        SENT 💸
+                      </span>
+                    )}
+                    {isWithdrawalProcessing && (
+                      <span className="badge" style={{ background: "rgba(14,165,233,0.2)", color: "#38BDF8", fontWeight: 800, fontSize: "11px" }}>
+                        PROCESSING ⏳
+                      </span>
+                    )}
+                    {isWithdrawalRejected && (
+                      <span className="badge" style={{ background: "rgba(239,68,68,0.2)", color: "#EF4444", fontWeight: 800, fontSize: "11px" }}>
+                        REFUNDED ↩️
+                      </span>
+                    )}
                   </div>
                   <span style={{ fontSize: "11px", color: "var(--text-tertiary)", whiteSpace: "nowrap" }}>
                     {new Date(n.createdAt).toLocaleDateString()} • {new Date(n.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { notifyBookingStatusChange } from "@/lib/notifications";
+import { notifyBookingStatusChange, sendMultiChannelNotification, formatNaira } from "@/lib/notifications";
 import { releaseEscrowPayout, refundEscrowPayment } from "@/lib/escrow";
 
 export async function POST(request: Request) {
@@ -233,6 +233,77 @@ export async function POST(request: Request) {
         data: { status: "COMPLETED" },
       });
 
+      const user = targetWithdrawal.wallet?.user;
+
+      if (user) {
+        // 1. Update any existing in-app notification mentioning this withdrawal reference
+        const existingNotifications = await prisma.notification.findMany({
+          where: {
+            userId: user.id,
+            type: "PAYMENT",
+            OR: [
+              { message: { contains: targetWithdrawal.reference } },
+              { title: { contains: "Withdrawal" } },
+            ],
+          },
+        }).catch(() => []);
+
+        if (existingNotifications.length > 0) {
+          await prisma.notification.updateMany({
+            where: {
+              id: { in: existingNotifications.map((n) => n.id) },
+              message: { contains: targetWithdrawal.reference },
+            },
+            data: {
+              title: "Withdrawal Approved & Sent 💸",
+              message: `Your withdrawal of ${formatNaira(targetWithdrawal.amount)} to ${targetWithdrawal.bankName} (${targetWithdrawal.accountNumber}) has been APPROVED and SENT! Ref: ${targetWithdrawal.reference}`,
+              data: JSON.stringify({
+                status: "SENT",
+                amount: formatNaira(targetWithdrawal.amount),
+                bankName: targetWithdrawal.bankName,
+                accountNumber: targetWithdrawal.accountNumber,
+                reference: targetWithdrawal.reference,
+              }),
+            },
+          }).catch(() => {});
+        } else {
+          // Create explicit Sent notification
+          await prisma.notification.create({
+            data: {
+              userId: user.id,
+              type: "PAYMENT",
+              title: "Withdrawal Approved & Sent 💸",
+              message: `Your withdrawal of ${formatNaira(targetWithdrawal.amount)} to ${targetWithdrawal.bankName} (${targetWithdrawal.accountNumber}) has been APPROVED and SENT! Ref: ${targetWithdrawal.reference}`,
+              data: JSON.stringify({
+                status: "SENT",
+                amount: formatNaira(targetWithdrawal.amount),
+                bankName: targetWithdrawal.bankName,
+                accountNumber: targetWithdrawal.accountNumber,
+                reference: targetWithdrawal.reference,
+              }),
+            },
+          }).catch(() => {});
+        }
+
+        // 2. Dispatch Multi-Channel Notification
+        await sendMultiChannelNotification({
+          userId: user.id,
+          recipientEmail: user.email,
+          recipientPhone: user.phone || undefined,
+          recipientName: `${user.firstName || ""} ${user.lastName || ""}`.trim() || "Artisan Partner",
+          type: "PAYMENT",
+          title: "Withdrawal Approved & Sent 💸",
+          message: `Your payout of ${formatNaira(targetWithdrawal.amount)} has been approved and sent to your ${targetWithdrawal.bankName} account (${targetWithdrawal.accountNumber}). Ref: ${targetWithdrawal.reference}`,
+          metadata: {
+            "Status": "SENT / APPROVED",
+            "Amount": formatNaira(targetWithdrawal.amount),
+            "Bank": targetWithdrawal.bankName,
+            "Account Number": targetWithdrawal.accountNumber,
+            "Reference": targetWithdrawal.reference,
+          },
+        }).catch((err) => console.warn("[Withdrawal Settled Notification Warning]:", err));
+      }
+
       await prisma.auditLog.create({
         data: {
           userId: adminUserId || "ADMIN_SESSION",
@@ -251,7 +322,7 @@ export async function POST(request: Request) {
 
       return NextResponse.json({
         success: true,
-        message: `Payout of ₦${targetWithdrawal.amount.toLocaleString()} for ref #${targetWithdrawal.reference} marked as SETTLED / PAID! 🎉`,
+        message: `Payout of ₦${targetWithdrawal.amount.toLocaleString()} for ref #${targetWithdrawal.reference} marked as SETTLED / PAID and artisan notified! 🎉`,
       });
     }
 
@@ -260,12 +331,14 @@ export async function POST(request: Request) {
       const { withdrawalId, reference } = body;
       const targetWithdrawal = await prisma.withdrawalRequest.findFirst({
         where: { OR: [{ id: withdrawalId || "" }, { reference: reference || "" }] },
-        include: { wallet: true },
+        include: { wallet: { include: { user: true } } },
       });
 
       if (!targetWithdrawal) {
         return NextResponse.json({ error: "Withdrawal request not found" }, { status: 404 });
       }
+
+      const user = targetWithdrawal.wallet?.user;
 
       // Return funds to wallet
       await prisma.$transaction(async (tx: any) => {
@@ -302,9 +375,36 @@ export async function POST(request: Request) {
         });
       });
 
+      if (user) {
+        await prisma.notification.create({
+          data: {
+            userId: user.id,
+            type: "PAYMENT",
+            title: "Withdrawal Request Rejected & Refunded ↩️",
+            message: `Your withdrawal request of ${formatNaira(targetWithdrawal.amount)} was rejected: ${reason || "Account detail discrepancy"}. The funds have been refunded back to your available wallet balance.`,
+            data: JSON.stringify({
+              status: "REJECTED",
+              amount: formatNaira(targetWithdrawal.amount),
+              reference: targetWithdrawal.reference,
+              reason: reason || "Account detail discrepancy",
+            }),
+          },
+        }).catch(() => {});
+
+        await sendMultiChannelNotification({
+          userId: user.id,
+          recipientEmail: user.email,
+          recipientPhone: user.phone || undefined,
+          recipientName: `${user.firstName || ""} ${user.lastName || ""}`.trim() || "Artisan Partner",
+          type: "PAYMENT",
+          title: "Withdrawal Request Rejected & Refunded ↩️",
+          message: `Your withdrawal of ${formatNaira(targetWithdrawal.amount)} was not approved and the amount has been refunded back into your wallet balance. Reason: ${reason || "Account detail discrepancy"}`,
+        }).catch(() => {});
+      }
+
       return NextResponse.json({
         success: true,
-        message: `Withdrawal #${targetWithdrawal.reference} rejected. ₦${targetWithdrawal.amount.toLocaleString()} has been refunded to the artisan's wallet balance.`,
+        message: `Withdrawal ref #${targetWithdrawal.reference} rejected and ₦${targetWithdrawal.amount.toLocaleString()} refunded to artisan wallet.`,
       });
     }
 

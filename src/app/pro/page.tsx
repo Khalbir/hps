@@ -194,6 +194,103 @@ export default function ProDashboard() {
         </p>
       </div>
 
+      {/* Dynamic Payout / Withdrawal Status Alert Banner */}
+      {proData.activeWithdrawalAlert && (
+        <div
+          style={{
+            background:
+              proData.activeWithdrawalAlert.status === "SENT"
+                ? "linear-gradient(135deg, rgba(16, 185, 129, 0.18) 0%, rgba(14, 165, 233, 0.18) 100%)"
+                : proData.activeWithdrawalAlert.status === "REJECTED"
+                ? "linear-gradient(135deg, rgba(239, 68, 68, 0.15) 0%, rgba(245, 158, 11, 0.15) 100%)"
+                : "linear-gradient(135deg, rgba(14, 165, 233, 0.15) 0%, rgba(99, 102, 241, 0.15) 100%)",
+            border: `2px solid ${
+              proData.activeWithdrawalAlert.status === "SENT"
+                ? "#10B981"
+                : proData.activeWithdrawalAlert.status === "REJECTED"
+                ? "#EF4444"
+                : "#0EA5E9"
+            }`,
+            borderRadius: "16px",
+            padding: "16px 20px",
+            marginBottom: "20px",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            flexWrap: "wrap",
+            gap: "14px",
+            boxShadow:
+              proData.activeWithdrawalAlert.status === "SENT"
+                ? "0 4px 20px rgba(16, 185, 129, 0.25)"
+                : "0 4px 16px rgba(14, 165, 233, 0.2)",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: 14, flex: 1, minWidth: "260px" }}>
+            <span style={{ fontSize: "28px" }}>
+              {proData.activeWithdrawalAlert.status === "SENT" ? "💸" : proData.activeWithdrawalAlert.status === "REJECTED" ? "↩️" : "⏳"}
+            </span>
+            <div>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 2 }}>
+                <strong
+                  style={{
+                    color:
+                      proData.activeWithdrawalAlert.status === "SENT"
+                        ? "#10B981"
+                        : proData.activeWithdrawalAlert.status === "REJECTED"
+                        ? "#EF4444"
+                        : "#38BDF8",
+                    fontSize: "15px",
+                    fontWeight: 800,
+                  }}
+                >
+                  {proData.activeWithdrawalAlert.title}
+                </strong>
+                <span
+                  className="badge"
+                  style={{
+                    background:
+                      proData.activeWithdrawalAlert.status === "SENT"
+                        ? "rgba(16, 185, 129, 0.2)"
+                        : proData.activeWithdrawalAlert.status === "REJECTED"
+                        ? "rgba(239, 68, 68, 0.2)"
+                        : "rgba(14, 165, 233, 0.2)",
+                    color:
+                      proData.activeWithdrawalAlert.status === "SENT"
+                        ? "#10B981"
+                        : proData.activeWithdrawalAlert.status === "REJECTED"
+                        ? "#EF4444"
+                        : "#38BDF8",
+                    fontSize: "11px",
+                    fontWeight: 800,
+                  }}
+                >
+                  {proData.activeWithdrawalAlert.badge}
+                </span>
+              </div>
+              <span style={{ color: "var(--text-secondary)", fontSize: "13px", lineHeight: 1.4, display: "block" }}>
+                {proData.activeWithdrawalAlert.message}
+              </span>
+            </div>
+          </div>
+          <Link
+            href="/pro/earnings"
+            className="btn btn-secondary btn-sm"
+            style={{
+              fontWeight: 700,
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 6,
+              textDecoration: "none",
+              background: "#0F172A",
+              color: "#F8FAFC",
+              border: "1px solid #334155",
+            }}
+          >
+            💰 View Wallet Ledger ➔
+          </Link>
+        </div>
+      )}
+
       {/* Urgent Pending Dispatch Acceptance Banner */}
       {pendingAcceptanceJobs.length > 0 && (
         <div style={{

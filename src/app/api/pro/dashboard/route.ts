@@ -213,6 +213,76 @@ export async function GET(request: Request) {
       lifetimeEarnings = releasesTotal || (walletBalance + completedJobs * 15000);
     }
 
+    let activeWithdrawalAlert: any = null;
+    let recentWithdrawals: any[] = [];
+
+    if (wallet) {
+      const dbWithdrawals = await prisma.withdrawalRequest.findMany({
+        where: { walletId: wallet.id },
+        orderBy: { createdAt: "desc" },
+        take: 5,
+      }).catch(() => []);
+
+      recentWithdrawals = dbWithdrawals.map((w) => ({
+        id: w.id,
+        amount: w.amount,
+        bankName: w.bankName,
+        accountNumber: w.accountNumber,
+        accountName: w.accountName,
+        status: w.status,
+        reference: w.reference,
+        date: new Date(w.createdAt).toLocaleDateString(),
+      }));
+
+      const latestW = dbWithdrawals[0];
+      if (latestW) {
+        if (latestW.status === "PROCESSING" || latestW.status === "PENDING") {
+          activeWithdrawalAlert = {
+            id: latestW.id,
+            status: "PROCESSING",
+            badge: "Processing Payout",
+            title: "⏳ Withdrawal Request In Progress",
+            message: `Your payout of ₦${latestW.amount.toLocaleString()} to ${latestW.bankName} (${latestW.accountNumber}) has been submitted and is currently processing.`,
+            amount: latestW.amount,
+            bankName: latestW.bankName,
+            accountNumber: latestW.accountNumber,
+            reference: latestW.reference,
+            date: new Date(latestW.createdAt).toLocaleDateString(),
+          };
+        } else if (latestW.status === "COMPLETED" || latestW.status === "SENT") {
+          const daysSinceCompleted = (Date.now() - new Date(latestW.updatedAt).getTime()) / (1000 * 60 * 60 * 24);
+          if (daysSinceCompleted <= 7) {
+            activeWithdrawalAlert = {
+              id: latestW.id,
+              status: "SENT",
+              badge: "Approved & Sent 💸",
+              title: "🎉 Withdrawal Approved & Sent!",
+              message: `Your payout of ₦${latestW.amount.toLocaleString()} has been approved and sent to your ${latestW.bankName} account (${latestW.accountNumber}). Funds have been disbursed.`,
+              amount: latestW.amount,
+              bankName: latestW.bankName,
+              accountNumber: latestW.accountNumber,
+              reference: latestW.reference,
+              date: new Date(latestW.updatedAt).toLocaleDateString(),
+            };
+          }
+        } else if (latestW.status === "REJECTED") {
+          const daysSinceRejected = (Date.now() - new Date(latestW.updatedAt).getTime()) / (1000 * 60 * 60 * 24);
+          if (daysSinceRejected <= 4) {
+            activeWithdrawalAlert = {
+              id: latestW.id,
+              status: "REJECTED",
+              badge: "Refunded to Wallet",
+              title: "Withdrawal Returned ↩️",
+              message: `Your payout request of ₦${latestW.amount.toLocaleString()} was not approved and has been refunded back into your available wallet balance.`,
+              amount: latestW.amount,
+              reference: latestW.reference,
+              date: new Date(latestW.updatedAt).toLocaleDateString(),
+            };
+          }
+        }
+      }
+    }
+
     let docs: any = {};
     try {
       if (pro?.documents) {
@@ -324,6 +394,8 @@ export async function GET(request: Request) {
       reviews: proReviews,
       activeJobs: activeBookings,
       transactions,
+      activeWithdrawalAlert,
+      recentWithdrawals,
     });
   } catch (error: any) {
     console.error("[Pro Dashboard API Error]:", error);
